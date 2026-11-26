@@ -30,6 +30,8 @@ export const BR = {
     pauseLive: 'BR-0109',
     /** Not in the §8 table: a rule hit's row (R-01 to R-12), the list the digest also sends. */
     alertRow: 'BR-0110',
+    /** Not in the §8 table: a code watched from its dossier (BR-0507), pinned here and in the digest. */
+    watchedRow: 'BR-0111',
     ...states('01'),
   },
   /** B02 Pages. */

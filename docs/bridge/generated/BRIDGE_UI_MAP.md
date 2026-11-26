@@ -6,7 +6,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 
 | Screen | Name | Route | Codes |
 | --- | --- | --- | --- |
-| B01 | Pulse | /admin | 14 |
+| B01 | Pulse | /admin | 15 |
 | B02 | Pages | /admin/clubhouse | 14 |
 | B03 | Controls | /admin/clubhouse/controls | 11 |
 | B04 | Actions | /admin/clubhouse/actions | 12 |
@@ -22,7 +22,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | B14 | Command palette | ⌘K, every /admin screen | 6 |
 | B15 | Shell | every /admin screen | 7 |
 
-163 codes in all.
+164 codes in all.
 
 ## B01 Pulse
 
@@ -38,6 +38,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-0108 | Copy | A Markdown pulse report | `BR.pulse.copy` |
 | BR-0109 | Pause live | Stops auto-refresh (the existing AutoRefresh) | `BR.pulse.pauseLive` |
 | BR-0110 | Alert row | A rule hit (R-01 to R-12); the same list the digest sends | `BR.pulse.alertRow` |
+| BR-0111 | Watched code row | A code watched from its dossier (BR-0507), with its failures in the window; opens the dossier | `BR.pulse.watchedRow` |
 | BR-0190 | Loading | Skeleton while the screen reads | `BR.pulse.loading` |
 | BR-0191 | Empty | Nothing to show yet | `BR.pulse.empty` |
 | BR-0192 | Failed | The read failed; Try again | `BR.pulse.failed` |

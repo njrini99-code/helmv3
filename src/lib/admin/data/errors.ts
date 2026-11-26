@@ -54,6 +54,8 @@ export interface ErrorsTabFilters {
    *  /admin/errors?feature=<key> narrows the in-app incident feed to
    *  admin_events.feature = <key>. */
   feature?: FeatureKey;
+  /** A Clubhouse CH code (admin_events.ch_code): the Bridge's B04 "Open in Incidents" per failure reason. */
+  ch?: string;
   windowHours: number;
   /**
    * Kind filter, layered on top of the existing severity/source/sport chips.
@@ -110,6 +112,8 @@ export function parseErrorsFilters(
   if (source && SOURCES.has(source)) filters.source = source;
   const feature = first(searchParams.feature);
   if (feature && FEATURE_KEYS.has(feature as FeatureKey)) filters.feature = feature as FeatureKey;
+  const ch = first(searchParams.ch);
+  if (ch && /^CH-\d{3,6}$/i.test(ch)) filters.ch = ch.toUpperCase();
   const window = Number(first(searchParams.window));
   if (Number.isFinite(window) && window > 0 && window <= 720) filters.windowHours = window;
   const kind = first(searchParams.kind);
@@ -170,6 +174,7 @@ export function describeErrorsFilters(filters: ErrorsTabFilters): string {
     const label = FEATURE_REGISTRY.find((f) => f.key === filters.feature)?.label ?? filters.feature;
     parts.push(`feature=${label} (${filters.feature})`);
   }
+  if (filters.ch) parts.push(`ch=${filters.ch} (app events only)`);
   return parts.join('; ');
 }
 
@@ -260,6 +265,7 @@ export async function fetchErrorsTab(filters: ErrorsTabFilters): Promise<{
     severity: filters.severity,
     source: filters.source,
     feature: filters.feature,
+    ...(filters.ch ? { ch: filters.ch } : {}),
     ...(filters.scope ? { scope: filters.scope } : {}),
   };
   const scope = filters.scope;

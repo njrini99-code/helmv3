@@ -19,7 +19,11 @@ import {
   type ClubhouseScope,
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, PendingControl, Section } from '../../_components/frame';
+import { readNotes, readPeopleNames } from '@/lib/admin/clubhouse/live';
+import type { LiveState } from '@/lib/admin/clubhouse/live-model';
+import type { BridgeNoteRow } from '@/lib/admin/clubhouse/notes';
+import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, Section } from '../../_components/frame';
+import { ExpectedNote, WatchControl } from '../../_components/CodeNotes';
 import { ActionChip, CategoryTag, ControlChip, IdChip, PageChip, StatusTag } from '../../_components/chips';
 import { ForceState } from '../../_components/ForceState';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
@@ -27,6 +31,8 @@ import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
 export const metadata: Metadata = { title: 'Code' };
 
 export const dynamic = 'force-dynamic';
+
+const NO_CH = 'This ID has no CH code, and the rules and counters key on CH codes, so it cannot be marked expected or watched.';
 
 function FileLink({ location }: { location: string }) {
   return (
@@ -101,7 +107,23 @@ export default async function ClubhouseCodeDossier({
       </ClubhouseFrame>
     );
   }
-  return <Dossier graph={graph} id={Number(value)} entry={entry} scope={scope} pages={pages} />;
+  // The owner's notes on this code: marked expected (BR-0506) and watched (BR-0507). Who marked it is read live.
+  const notes = await readNotes();
+  const expected = entry.ch ? (notes.data.expected.get(entry.ch) ?? null) : null;
+  const watching = entry.ch ? (notes.data.watched.get(entry.ch) ?? null) : null;
+  const names = expected?.created_by ? await readPeopleNames([expected.created_by]) : new Map();
+  const who = expected?.created_by ? names.get(expected.created_by) : undefined;
+  const by = who ? (who.name ?? who.email ?? null) : null;
+  return (
+    <Dossier
+      graph={graph}
+      id={Number(value)}
+      entry={entry}
+      scope={scope}
+      pages={pages}
+      notes={{ state: entry.ch ? notes.state : 'no-signal', expected, watching, by, why: entry.ch ? undefined : NO_CH }}
+    />
+  );
 }
 
 function Dossier({
@@ -110,12 +132,15 @@ function Dossier({
   entry,
   scope,
   pages,
+  notes,
 }: {
   graph: BridgeGraph;
   id: number;
   entry: GraphId;
   scope: ClubhouseScope;
   pages: { id: string; name: string }[];
+  /** The code's open notes. A code with no CH code cannot be marked or watched (rules and counters key on CH codes). */
+  notes: { state: LiveState; expected: BridgeNoteRow | null; watching: BridgeNoteRow | null; by: string | null; why?: string };
 }) {
   const files = codeFiles(graph, entry);
   const actions = actionsEndingIn(graph, id);
@@ -141,6 +166,8 @@ function Dossier({
     `Where: ${[...files.exact, ...files.indexed].join(', ') || 'not located'}`,
     `Tests: ${(entry.tests ?? []).join(', ') || 'none listed'}`,
     `Actions that end here: ${actions.join(', ') || 'none'}`,
+    notes.expected ? `Marked expected: ${notes.expected.body}` : null,
+    notes.watching ? 'Watched: pinned to Pulse and the digest' : null,
     '',
     'Live, who and why: no signal yet.',
   ]
@@ -166,8 +193,7 @@ function Dossier({
       actions={
         <>
           <ForceState page={entry.page as PageId} code={BR.codes.forceState} />
-          <PendingControl code={BR.codes.markExpected} label="Mark expected…" arrives="Marking a firing as normal needs the Bridge notes table (bridge_notes), which arrives with the held migration 20261124090000." />
-          <PendingControl code={BR.codes.watch} label="Watch" arrives="Watching pins a code to Pulse and the digest; the watch list needs the Bridge notes table (bridge_notes), which arrives with the held migration 20261124090000." />
+          <WatchControl id={id} watching={notes.watching} state={notes.state} why={notes.why} />
           <PackLink code={BR.codes.pack} target={String(id)} />
         </>
       }
@@ -176,7 +202,15 @@ function Dossier({
         <PageChip id={entry.page} name={graph.pages[entry.page]?.name} href={withScope(clubhouseHref.page(entry.page), scope)} br={BR.pages.row} />
         <CategoryTag category={entry.category} />
         <StatusTag status={entry.status} />
+        {notes.expected ? (
+          <a href="#expected" className="rounded-full border border-border-subtle bg-surface-sunken px-2 py-0.5 text-caption text-text-secondary hover:text-text-primary">
+            marked expected
+          </a>
+        ) : null}
+        {notes.watching ? <span className="rounded-full border border-border-subtle bg-surface-sunken px-2 py-0.5 text-caption text-text-secondary">watched</span> : null}
       </div>
+
+      <ExpectedNote id={id} note={notes.expected} by={notes.by} state={notes.state} why={notes.why} />
 
       <Section title="The contract" description={entry.name}>
         <dl className="grid gap-x-6 gap-y-2 text-body-sm sm:grid-cols-[8rem_1fr]">

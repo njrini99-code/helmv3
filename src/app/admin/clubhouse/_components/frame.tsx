@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { PackageOpen, RadioTower } from 'lucide-react';
-import { Button, Surface } from '@/components/fairway';
+import { Surface } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { BridgeGraph } from '@/lib/admin/clubhouse/graph';
 import { clubhouseHref, describeScope, liveRef, type ClubhouseScope } from '@/lib/admin/clubhouse/screens';
@@ -237,28 +237,6 @@ export function GraphUnavailable({ code, title, retryHref }: { code: string; tit
         }
       />
     </div>
-  );
-}
-
-/**
- * A control the plan numbers that cannot work yet, because its store does not exist (Mark expected, Watch and the
- * Duet queue wait for bridge_notes in the held migration 20261124090000). It renders, carries its code and says what
- * it waits for, rather than vanishing: a control that disappears can't be learned.
- */
-export function PendingControl({ code, label, arrives }: { code: string; label: string; arrives: string }) {
-  return (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      disabled
-      data-br={code}
-      title={arrives}
-      className="cursor-not-allowed border border-dashed border-border-strong text-text-tertiary"
-    >
-      {label}
-      <span className="sr-only">: {arrives}</span>
-    </Button>
   );
 }
 

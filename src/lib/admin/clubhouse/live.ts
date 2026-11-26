@@ -19,6 +19,7 @@ import {
   type SessionEventRow,
   type SessionRow,
 } from './live-model';
+import { EMPTY_NOTES, NOTE_COLUMNS, indexNotes, type BridgeNoteRow, type NotesIndex } from './notes';
 import type { BridgeAlert } from './rules';
 import { liveRef } from './screens';
 
@@ -227,6 +228,21 @@ export async function readDrift(sinceIso: string): Promise<LiveRead<DriftRow[]>>
   }
 }
 
+/**
+ * The Bridge's open notes (bridge_notes): codes marked expected, watched codes and the Duet desk's queue. Archived,
+ * unmarked and stopped rows are not read. A super admin's own state, so it is small; capped at one page.
+ */
+export async function readNotes(): Promise<LiveRead<NotesIndex>> {
+  try {
+    const { data, error } = await db().from('bridge_notes').select(NOTE_COLUMNS).is('resolved_at', null).order('created_at', { ascending: false }).limit(PAGE_SIZE);
+    if (error) return fail(error, EMPTY_NOTES);
+    const rows = (data ?? []) as BridgeNoteRow[];
+    return { state: 'ok', data: indexNotes(rows), truncated: rows.length === PAGE_SIZE };
+  } catch (e) {
+    return { state: 'error', data: EMPTY_NOTES, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export interface PersonName {
   name: string | null;
   email: string | null;
@@ -321,6 +337,8 @@ export interface LiveSnapshot {
   failedSessions: SessionRow[];
   /** The failed sessions' events (the rules read them; a context pack reuses them rather than reading twice). */
   failedEvents: SessionEventRow[];
+  /** The owner's open notes: expected codes (R-01 and R-02 skip them) and watched codes (Pulse, the digest). */
+  notes: NotesIndex;
   errors: string[];
 }
 
@@ -343,13 +361,14 @@ export async function readLiveSnapshot(graph: BridgeGraph, now: number = Date.no
   const weekStart = new Date(now - 8 * 24 * HOUR_MS).toISOString();
   const sameHours = [1, 2, 3, 4].map((w) => new Date(hour - w * 7 * 24 * HOUR_MS).toISOString());
 
-  const [last, day, baseline, same, drift, sessions] = await Promise.all([
+  const [last, day, baseline, same, drift, sessions, notes] = await Promise.all([
     readLastEnvelope(),
     readHourly({ sinceIso: dayStart }),
     readHourly({ sinceIso: weekStart, untilIso: dayStart }),
     readHourlyAt(sameHours),
     readDrift(dayStart),
     readSessions({ sinceIso: dayStart, failedOnly: true, limit: 300 }),
+    readNotes(),
   ]);
   const events = await readSessionEvents(sessions.data.map((s) => s.session_id));
 
@@ -363,7 +382,10 @@ export async function readLiveSnapshot(graph: BridgeGraph, now: number = Date.no
     now,
     activeHours: isActiveHour(now, same.state === 'ok' && same.data.length ? sameHourCount : null),
   });
-  const state = worst([last.state, day.state, baseline.state, same.state, drift.state, sessions.state, events.state]);
+  // Notes are the owner's own state, not signal: a missing table does not make the snapshot "no signal", but a failed
+  // read does make it an error, and then nothing counts as expected (the rules fire more, never less).
+  const state = worst([last.state, day.state, baseline.state, same.state, drift.state, sessions.state, events.state, notes.state === 'error' ? 'error' : 'ok']);
+  const notesIndex = notes.state === 'ok' ? notes.data : EMPTY_NOTES;
   const alerts =
     state === 'no-signal'
       ? []
@@ -378,6 +400,7 @@ export async function readLiveSnapshot(graph: BridgeGraph, now: number = Date.no
           drift: drift.data,
           pipe,
           categoryOf: categoryLookup(graph),
+          expectedCodes: new Set(notesIndex.expected.keys()),
         });
   return {
     state,
@@ -391,7 +414,8 @@ export async function readLiveSnapshot(graph: BridgeGraph, now: number = Date.no
     drift: drift.data,
     failedSessions: sessions.data,
     failedEvents: events.data,
-    errors: [last, day, baseline, same, drift, sessions, events].map((r) => r.error).filter((e): e is string => Boolean(e)),
+    notes: notesIndex,
+    errors: [last, day, baseline, same, drift, sessions, events, notes].map((r) => r.error).filter((e): e is string => Boolean(e)),
   };
 }
 

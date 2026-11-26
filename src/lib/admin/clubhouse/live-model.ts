@@ -166,6 +166,8 @@ export const liveHref = {
   releases: () => '/admin/clubhouse/releases',
   release: (sha: string) => `/admin/clubhouse/releases/${encodeURIComponent(sha)}`,
   incident: (fp: string) => `/admin/errors/${encodeURIComponent(fp)}`,
+  /** Incidents narrowed to one Clubhouse code, every kind (B04's failure reasons, BR-0405). App events only. */
+  incidentsForCode: (ch: string) => `/admin/errors?ch=${encodeURIComponent(ch)}&kind=all`,
 };
 
 /** Rows in the scope: role and platform are columns; a page scope keeps that page's rows. */
@@ -688,6 +690,8 @@ export interface RulesInput {
   pipe: PipeStatus;
   /** The contract category of a code (R-01's severity; B09 waits). */
   categoryOf: (code: string) => number | null;
+  /** Codes the owner marked expected on B05 (BR-0506): R-01 and R-02 skip them. Unread notes mean none are skipped. */
+  expectedCodes?: ReadonlySet<string>;
 }
 
 const SEVERITY_ORDER: Record<AlertSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -703,8 +707,9 @@ export function runRules(i: RulesInput): BridgeAlert[] {
 
   // R-01: this hour's count against the same hour on each of the previous four weeks (a missing week counts as zero).
   const weeks = [1, 2, 3, 4].map((w) => new Date(hour - w * 7 * 24 * HOUR_MS).toISOString());
+  const expected = i.expectedCodes ?? new Set<string>();
   for (const c of codeTotals(i.hourRows)) {
-    if (c.code === 'unknown') continue;
+    if (c.code === 'unknown' || expected.has(c.code)) continue;
     const baseline = weeks.map((iso) => sum(i.sameHourRows.filter((r) => r.code === c.code && Date.parse(r.bucket_hour) === Date.parse(iso))));
     out.push(spike({ code: c.code, page: c.page, release: i.release ?? '', category: i.categoryOf(c.code) ?? 0, count: c.count, baseline }));
   }
@@ -713,7 +718,7 @@ export function runRules(i: RulesInput): BridgeAlert[] {
   if (i.release) {
     const earlier = new Set([...i.baselineRows, ...i.dayRows].filter((r) => r.release !== i.release && isFailureRow(r)).map((r) => r.code));
     for (const c of codeTotals(i.dayRows.filter((r) => r.release === i.release && isFailureRow(r)))) {
-      if (c.code === 'unknown') continue;
+      if (c.code === 'unknown' || expected.has(c.code)) continue;
       out.push(newAfterRelease({ code: c.code, page: c.page, release: i.release, isFailure: true, seenInEarlierReleases: earlier.has(c.code), users: c.users }));
     }
   }

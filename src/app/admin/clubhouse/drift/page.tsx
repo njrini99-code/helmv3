@@ -83,7 +83,7 @@ export default async function ClubhouseDriftPage({ searchParams }: { searchParam
       noSignalCode={BR.drift.noSignal}
       copyCode={BR.drift.export}
       report={report}
-      sources={[GRAPH_SOURCE, 'config/clubhouse/controls/*.json', 'public.clubhouse_drift (held migration 20261124090000)']}
+      sources={[GRAPH_SOURCE, 'config/clubhouse/controls/*.json', 'public.clubhouse_drift']}
       actions={
         <span data-br={BR.drift.export}>
           <CopyReportButton report={json} label="Copy as JSON" size="sm" />

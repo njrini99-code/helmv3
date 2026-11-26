@@ -591,6 +591,8 @@ export interface CodeFilter {
   page: PageId | null;
   category: number | null;
   status: IdStatus | null;
+  /** Marked expected on its dossier (BR-0506): only those, only the rest, or either. */
+  expected: 'yes' | 'no' | null;
   /** 1-based result page. */
   p: number;
 }
@@ -600,7 +602,8 @@ export function parseCodeFilter(sp: SearchParams | undefined, scope: ClubhouseSc
   const rawStatus = first(sp?.status);
   const status = (ID_STATUSES as readonly string[]).includes(rawStatus ?? '') ? (rawStatus as IdStatus) : null;
   const p = Math.max(1, Math.floor(Number(first(sp?.p)) || 1));
-  return { q, page: scope.page, category: parseCategory(sp?.cat), status, p };
+  const exp = first(sp?.exp);
+  return { q, page: scope.page, category: parseCategory(sp?.cat), status, expected: exp === 'yes' || exp === 'no' ? exp : null, p };
 }
 
 export interface CodeRow extends GraphId {
@@ -624,14 +627,17 @@ function codeMatches(graph: BridgeGraph, key: string, id: GraphId, needle: strin
   return hay.some((h) => h?.toLowerCase().includes(needle));
 }
 
-export function codeRows(graph: BridgeGraph, filter: CodeFilter): { rows: CodeRow[]; total: number; pages: number; p: number } {
+/** `expected` is the CH codes marked expected (bridge_notes); without it the expected filter matches nothing. */
+export function codeRows(graph: BridgeGraph, filter: CodeFilter, expected: ReadonlySet<string> = new Set()): { rows: CodeRow[]; total: number; pages: number; p: number } {
   const needle = filter.q.toLowerCase();
+  const isExpected = (id: GraphId) => Boolean(id.ch && expected.has(id.ch));
   const all = Object.entries(graph.ids)
     .filter(
       ([key, id]) =>
         (!filter.page || id.page === filter.page) &&
         (!filter.category || id.category === filter.category) &&
         (!filter.status || id.status === filter.status) &&
+        (!filter.expected || (filter.expected === 'yes') === isExpected(id)) &&
         (!needle || codeMatches(graph, key, id, needle)),
     )
     .map(([key, id]) => ({ ...id, id: Number(key) }))

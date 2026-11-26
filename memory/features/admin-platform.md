@@ -1517,7 +1517,7 @@ line, the truth line, the scope bar, the body, the evidence footer.
 | B05 Codes | `/admin/clubhouse/codes`, `/[bridgeId]` | Shift+C | graph |
 | B11 Drift | `/admin/clubhouse/drift` | Shift+N | graph; `clubhouse_drift` |
 | B12 Readiness | `/admin/clubhouse/readiness` | Shift+M | graph |
-| B13 Duet desk | `/admin/clubhouse/duet` | none | graph; `admin_events` Bridge columns; the live snapshot (`clubhouse_signal_hourly`, `clubhouse_sessions`, `clubhouse_session_events`) |
+| B13 Duet desk | `/admin/clubhouse/duet` | none | graph; `admin_events` Bridge columns; the live snapshot (`clubhouse_signal_hourly`, `clubhouse_sessions`, `clubhouse_session_events`); the queue (`bridge_notes`) |
 | B14 ⌘K | every screen | ⌘K | `GET /api/admin/clubhouse/search` |
 
 The plan's letters (P, O, A, G, D, Q, S, Y, E, V) are retired shortcuts
@@ -1546,9 +1546,36 @@ before) and the rules firing; the matching is pure in `pack-live.ts`. People
 are pseudonymous (`u-` + a SHA-256 prefix, teams `t-`) unless "Include names"
 is ticked (D7); a person or team pack's own subject is pseudonymous too. The
 dossiers' "Context pack" controls, B08's person and team pack, B10's
-Regression pack, B12's "Send as a pack" and ⌘K `>pack <target>` open it. The
-queue (Mark sent, Verify after release, Archive) waits on `bridge_notes` in
-the held migration.
+Regression pack, B12's "Send as a pack" and ⌘K `>pack <target>` open it.
+
+### The Bridge's notes (`bridge_notes`)
+
+The owner's own state, kept forever, read by `readNotes` (`live.ts`) and modelled
+in `src/lib/admin/clubhouse/notes.ts`; written only by the super-admin server
+actions in `src/app/admin/actions/bridge-notes.ts` (service role; the table
+grants authenticated users SELECT only). The table has no status column, so
+nothing about a pack's progress is stored: it is worked out.
+
+- **Mark expected… (BR-0506)** on a code's dossier keeps a reason with who and
+  when; R-01 and R-02 skip a code marked expected (`RulesInput.expectedCodes`,
+  fed by the live snapshot; if the notes can't be read, nothing is skipped and
+  the read error makes the snapshot an error). Unmark resolves it. B05's
+  explorer shows "marked expected" and filters on it (`?exp=yes|no`).
+- **Watch (BR-0507)** pins a code to Pulse (the Watched block, BR-0111) and the
+  digest's Clubhouse section (`Watched:`), with its failures and people in the
+  window; a quiet code shows at zero.
+- **The B13 queue.** Mark sent (BR-1304) keeps the pack's target key only (a
+  `pack` row; `created_at` is when it was sent). The first release first seen
+  in an hour after that decides it (`packVerdict`): none of the pack's failure
+  codes (`packWatchCodes`) failed there is fixed, any did is regressed, no
+  such release yet is waiting; a release or finding pack has no codes of its
+  own and is just "sent". Verify after release (BR-1305) opens B10 at that
+  release. Archive (BR-1306) resolves the row. A person's or a team's pack is
+  never kept (D7: the table is kept forever and the key holds their id).
+- **B04's failure reasons (BR-0405)** open Incidents narrowed to the
+  outcome's CH code: `/admin/errors?ch=CH-…&kind=all` filters
+  `admin_events.ch_code` (`parseErrorsFilters`, `IncidentFeedFilters.ch`); a
+  CH-narrowed feed is app events only, since no Sentry issue carries a CH code.
 
 B04's "Sessions" opens B07 with `?act=ACT-…`: the sessions whose kept events
 ran the action (`readSessionIdsForAction`; only sessions with a failure keep
@@ -1560,10 +1587,10 @@ opens B11's pipe panel at `/admin/clubhouse/drift?pipe=1#pipe`.
 Clubhouse sends signals to `POST /api/ch/signal`
 (`src/app/api/ch/signal/route.ts`), which resolves them against the graph,
 writes failures to `admin_events` and counts the rest through
-`clubhouse_ingest_signals`. The tables are in held migration
-`supabase/migrations/20261124090000_clubhouse_bridge_signals.sql`. Until it is
-applied and the `clubhouse_signals` switch is on, every live figure on the
-Bridge reads "No signal yet" (each screen's BR-xx93).
+`clubhouse_ingest_signals`. The tables come from
+`supabase/migrations/20261124090000_clubhouse_bridge_signals.sql`, applied to
+production on 2026-11-26. Until the `clubhouse_signals` switch is on, no
+signal arrives and the live figures stay empty.
 
 ### The gates
 
@@ -1588,7 +1615,7 @@ Bridge reads "No signal yet" (each screen's BR-xx93).
 
 | Switch | Default | What it does |
 | --- | --- | --- |
-| Migration 20261124090000 | held | Creates the signal tables and the `admin_events` Bridge columns |
+| Migration 20261124090000 | applied 2026-11-26 | Created the signal tables, `bridge_notes` and the `admin_events` Bridge columns |
 | `clubhouse_signals` flag | off | `POST /api/ch/signal` answers 204 while off |
 | `BRIDGE_DUET_TOKEN` | unset | The read-only Duet door (`GET /api/admin/clubhouse/duet/{packs,drift}`, `src/lib/admin/clubhouse/duet-access.ts`): 404 and no reads while unset or under 32 characters; then a bearer token compared as SHA-256 digests with `timingSafeEqual`, 60 requests a minute per caller on the durable limiter (503 in production if it is down), every read audited to `audit_log` (`new_data.target`; a names read that can't be audited is refused). Generate it with `openssl rand -base64 48` |
 | `BRIDGE_DUET_ALLOW_NAMES` | unset | Only `"1"` lets a Duet request's `names=1` print names (never emails, never raw ids); otherwise people stay pseudonymous |

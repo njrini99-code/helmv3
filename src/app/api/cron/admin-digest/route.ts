@@ -65,7 +65,7 @@ async function readClubhouseDigest(now: number): Promise<ClubhouseDigest | undef
     const graph = loadBridgeGraph();
     if (!graph) return undefined;
     const s = await readLiveSnapshot(graph, now);
-    return clubhouseDigest({ state: s.state, graph, dayRows: s.dayRows, alerts: s.alerts, pipe: s.pipe, release: s.release, driftCount: s.drift.length });
+    return clubhouseDigest({ state: s.state, graph, dayRows: s.dayRows, alerts: s.alerts, pipe: s.pipe, release: s.release, driftCount: s.drift.length, notes: s.notes });
   } catch (error) {
     void logServerError('[admin-digest] Clubhouse section failed', { action: 'admin-digest.clubhouse', metadata: { error: error instanceof Error ? error.message : String(error) } });
     return undefined;

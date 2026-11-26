@@ -19,6 +19,7 @@ import {
   type PipeStatus,
   type ReleaseDiff,
 } from './live-model';
+import { EMPTY_NOTES, watchedCodes, type NotesIndex, type WatchedCode } from './notes';
 import type { BridgeAlert } from './rules';
 import { clubhouseHref } from './screens';
 import { liveHref } from './live-model';
@@ -44,6 +45,8 @@ export interface PulseModel {
   rising: BridgeAlert[];
   slipping: Array<{ alert: BridgeAlert | null; stat: ActionStat }>;
   release: { release: string; base: string | null; diff: ReleaseDiff } | null;
+  /** Codes watched from their dossier (BR-0507), with what they did in the window. */
+  watched: WatchedCode[];
 }
 
 /** Actions shown under "slipping": the ones a rule named, then the lowest success rates with real traffic. */
@@ -58,6 +61,8 @@ export function pulseModel(i: {
   release: string | null;
   /** The evidence reads that failed. A live pipe with a failed hourly or session read still cannot give an all-clear. */
   readErrors?: readonly string[];
+  /** The owner's open notes; watched codes are pinned to Pulse. */
+  notes?: NotesIndex;
 }): PulseModel {
   const headline = headlineAlerts(i.alerts);
   const counts = { critical: 0, high: 0, medium: 0, low: 0 } as Record<BridgeAlert['severity'], number>;
@@ -90,6 +95,7 @@ export function pulseModel(i: {
     rising: i.alerts.filter((a) => a.rule === 'R-01' || a.rule === 'R-02'),
     slipping,
     release: live ? { release: live, base, diff: releaseDiff(i.dayRows, live, base) } : null,
+    watched: watchedCodes(i.notes ?? EMPTY_NOTES, i.rows),
   };
 }
 
@@ -133,6 +139,8 @@ export interface ClubhouseDigest {
   topCodes: Array<{ code: string; count: number; users: number }>;
   release: { release: string; base: string | null; newCodes: number; rising: number; gone: number } | null;
   driftCount: number;
+  /** Codes watched from their dossier (BR-0507): what each did in the last day, a quiet one at zero. */
+  watched: Array<{ code: string; failures: number; users: number }>;
 }
 
 const DIGEST_RULES = new Set(['R-01', 'R-02', 'R-03', 'R-04', 'R-05', 'R-06', 'R-07', 'R-09']);
@@ -145,8 +153,9 @@ export function clubhouseDigest(i: {
   pipe: PipeStatus;
   release: string | null;
   driftCount: number;
+  notes?: NotesIndex;
 }): ClubhouseDigest {
-  const m = pulseModel({ graph: i.graph, rows: i.dayRows, dayRows: i.dayRows, alerts: i.alerts, pipe: i.pipe, release: i.release });
+  const m = pulseModel({ graph: i.graph, rows: i.dayRows, dayRows: i.dayRows, alerts: i.alerts, pipe: i.pipe, release: i.release, notes: i.notes });
   const d = m.release?.diff;
   return {
     state: i.pipe.tone === 'off' ? 'off' : i.state,
@@ -157,6 +166,7 @@ export function clubhouseDigest(i: {
     topCodes: codeTotals(i.dayRows.filter(isFailureRow)).slice(0, 5).map((c) => ({ code: c.code, count: c.count, users: c.users })),
     release: m.release && d ? { release: m.release.release, base: m.release.base, newCodes: d.codes.filter((c) => c.kind === 'new').length, rising: d.codes.filter((c) => c.kind === 'rising').length, gone: d.codes.filter((c) => c.kind === 'gone').length } : null,
     driftCount: i.driftCount,
+    watched: m.watched.map((w) => ({ code: w.code, failures: w.failures, users: w.users })),
   };
 }
 
@@ -173,6 +183,7 @@ export function clubhouseDigestLines(c: ClubhouseDigest | undefined): string[] {
   if (c.topCodes.length) out.push(`  Top codes: ${c.topCodes.map((t) => `${t.code} ×${t.count} (${t.users} people)`).join(', ')}`);
   if (c.release) out.push(`  Release ${c.release.release.slice(0, 7)}${c.release.base ? ` vs ${c.release.base.slice(0, 7)}` : ''}: ${c.release.newCodes} new, ${c.release.rising} rising, ${c.release.gone} gone`);
   out.push(`  Drift: ${c.driftCount} kind${c.driftCount === 1 ? '' : 's'} in the last day`);
+  if (c.watched.length) out.push(`  Watched: ${c.watched.map((w) => `${w.code} ×${w.failures} (${w.users} people)`).join(', ')}`);
   return out;
 }
 
@@ -187,6 +198,7 @@ export function pulseReport(m: PulseModel): string {
     '',
     '## Needs a look',
     ...(m.headline.length ? m.headline.map((a) => `- ${a.rule} ${a.severity}: ${a.title}`) : [m.allClear ? '- Nothing high or critical.' : m.readFailures ? '- Nothing fired, but some evidence could not be read.' : '- Nothing fired, but the pipe cannot vouch for it.']),
+    ...(m.watched.length ? ['', '## Watched', ...m.watched.map((w) => `- ${w.code}: ${w.failures} failure${w.failures === 1 ? '' : 's'}, ${w.users} ${w.users === 1 ? 'person' : 'people'} in the window`)] : []),
     '',
     '## Page wall',
     ...wallInWords(m.tiles).map((l) => `- ${l}`),

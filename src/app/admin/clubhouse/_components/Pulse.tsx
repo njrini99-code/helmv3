@@ -42,6 +42,7 @@ export async function ClubhousePulse({ searchParams }: { searchParams?: SearchPa
     pipe: snapshot.pipe,
     release: snapshot.release,
     readErrors: [...snapshot.errors, ...('error' in windowRows && windowRows.error ? [windowRows.error] : [])],
+    notes: snapshot.notes,
   });
   const incidents = (board?.incidents ?? [])
     .slice()

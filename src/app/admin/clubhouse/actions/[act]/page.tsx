@@ -5,6 +5,7 @@ import { ExternalLink } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import {
+  FAILURE_CATEGORIES,
   actionOutcomes,
   categoryName,
   clubhouseHref,
@@ -16,7 +17,7 @@ import {
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
 import { liveHref } from '@/lib/admin/clubhouse/live-model';
-import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, PendingControl, Section } from '../../_components/frame';
+import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, Section } from '../../_components/frame';
 import { ControlChip, IdChip, PageChip, StatusTag } from '../../_components/chips';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
 
@@ -63,6 +64,8 @@ export default async function ClubhouseActionDossier({
   if (!action) notFound();
 
   const outcomes = actionOutcomes(graph, action);
+  // B04 BR-0405: a failure reason is a failure-category outcome with a CH code; Incidents narrows to that code.
+  const failureReasons = outcomes.filter((o) => o.ch && o.category !== undefined && FAILURE_CATEGORIES.has(o.category) && !o.missing);
   const controls = controlsStarting(graph, [id]);
   const wiring = [
     { label: 'Component', value: action.component },
@@ -178,11 +181,29 @@ export default async function ClubhouseActionDossier({
             </div>
           </dl>
         </Section>
-        <Section title="Why it failed">
+        <Section title="Why it failed" description="Each failure reason opens Incidents narrowed to its code (admin_events.ch_code).">
           <NoSignal code={BR.actions.noSignal} what="Failures grouped by server code and by the server half" />
-          <div className="mt-2">
-            <PendingControl code={BR.actions.failureReason} label="Open in Incidents" arrives="Each failure reason opens Incidents filtered to it once failures are counted, which needs the signal tables and the admin_events Bridge columns from the held migration 20261124090000." />
-          </div>
+          {failureReasons.length === 0 ? (
+            <p className="mt-2 text-body-sm text-text-secondary">This action has no failure outcome with a CH code.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-border-subtle">
+              {failureReasons.map((o) => (
+                <li key={o.outcome}>
+                  <Link
+                    href={liveHref.incidentsForCode(o.ch!)}
+                    prefetch={false}
+                    data-br={BR.actions.failureReason}
+                    className="flex min-h-11 min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1 py-2 hover:bg-surface-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+                  >
+                    <span className="min-w-0 break-words text-body-sm text-text-primary">
+                      <span className="font-fw-mono text-caption text-text-secondary">{o.outcome}</span> · {o.meaning ?? 'no meaning in the contract'}
+                    </span>
+                    <span className="font-fw-mono text-caption text-accent-ink">{o.ch} · Open in Incidents</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
         <Section title="Controls that run it" className="lg:col-span-2">
           {controls.length === 0 ? (
