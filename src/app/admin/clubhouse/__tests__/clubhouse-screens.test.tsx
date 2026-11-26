@@ -173,6 +173,7 @@ describe('B04 Actions', () => {
       BR.actions.copy,
       BR.actions.noSignal,
     ]);
+    expect(c.querySelector(`a[data-br="${BR.actions.sessions}"]`)?.getAttribute('href')).toBe('/admin/clubhouse/sessions?act=ACT-P007-SEND-MESSAGE');
   });
 });
 

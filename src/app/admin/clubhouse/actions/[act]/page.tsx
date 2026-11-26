@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { ExternalLink } from 'lucide-react';
@@ -14,6 +15,7 @@ import {
   withScope,
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
+import { liveHref } from '@/lib/admin/clubhouse/live-model';
 import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, PendingControl, Section } from '../../_components/frame';
 import { ControlChip, IdChip, PageChip, StatusTag } from '../../_components/chips';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
@@ -96,7 +98,14 @@ export default async function ClubhouseActionDossier({
       sources={[GRAPH_SOURCE]}
       actions={
         <>
-          <PendingControl code={BR.actions.sessions} label="Sessions" arrives="Sessions that hit this action arrive with B07, in PR 3." />
+          <Link
+            href={withScope(liveHref.sessions(), scope, { act: id })}
+            data-br={BR.actions.sessions}
+            prefetch={false}
+            className="inline-flex min-h-9 items-center rounded-fw-sm border border-border-control px-3 text-caption font-medium text-text-secondary hover:border-border-strong hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+          >
+            Sessions
+          </Link>
           <PackLink code={BR.actions.pack} target={id} />
         </>
       }

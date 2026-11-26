@@ -16,7 +16,7 @@ import {
   type LiveScope,
   type SessionRow,
 } from '@/lib/admin/clubhouse/live-model';
-import { readPipe, readSessions } from '@/lib/admin/clubhouse/live';
+import { readPipe, readSessionIdsForAction, readSessions } from '@/lib/admin/clubhouse/live';
 import { markdownTable, type ClubhouseScope, type SearchParams } from '@/lib/admin/clubhouse/screens';
 import { ClubhouseFrame, GraphUnavailable, LinkChips, NoSignal } from '../_components/frame';
 import { GRAPH_SOURCE, readClubhouse } from '../_components/load';
@@ -34,7 +34,8 @@ function one(raw: string | string[] | undefined): string | null {
 
 /**
  * B07 Sessions, the index (plan §8): sessions in the window, the ones with a failure first. People show as short ids
- * (D7): a name is read only when a session or a person is opened.
+ * (D7): a name is read only when a session or a person is opened. `?act=ACT-…` (B04's "Sessions", BR-0406) keeps the
+ * sessions whose events ran that action; only sessions with a failure keep events, so those are the ones it finds.
  */
 export default async function ClubhouseSessionsPage({ searchParams }: { searchParams?: Promise<SearchParams> }) {
   await requireSuperAdmin();
@@ -46,11 +47,16 @@ export default async function ClubhouseSessionsPage({ searchParams }: { searchPa
   const failed = one(sp.failed) === '1';
   const release = one(sp.rel);
   const user = one(sp.user);
+  const rawAct = one(sp.act)?.toUpperCase() ?? null;
+  // Only an action the contract knows: anything else is dropped, never echoed into a query.
+  const act = rawAct && graph.actions[rawAct] ? rawAct : null;
   const now = Date.now();
+  const sinceIso = new Date(now - WINDOW_MS[live.w]).toISOString();
 
-  const [pipe, sessions] = await Promise.all([
+  const [pipe, sessions, actSessions] = await Promise.all([
     readPipe(now),
-    readSessions({ sinceIso: new Date(now - WINDOW_MS[live.w]).toISOString(), failedOnly: failed, release: release ?? undefined, userId: user ?? undefined, limit: 500 }),
+    readSessions({ sinceIso, failedOnly: failed || act !== null, release: release ?? undefined, userId: user ?? undefined, limit: 500 }),
+    act ? readSessionIdsForAction(act, { sinceIso }) : Promise.resolve(null),
   ]);
   const rows = sortSessions(
     filterSessions(sessions.data, {
@@ -60,12 +66,15 @@ export default async function ClubhouseSessionsPage({ searchParams }: { searchPa
       page: scope.page,
       release,
       user,
+      only: actSessions ? new Set(actSessions.data) : null,
     }),
   );
+  const readState = actSessions && actSessions.state !== 'ok' && sessions.state === 'ok' ? actSessions : sessions;
+  const keep = { failed: failed ? 1 : null, rel: release, user, act };
   const report = [
     '# Clubhouse sessions',
     '',
-    `${rows.length} session${rows.length === 1 ? '' : 's'} (${live.w}${failed ? ', with a failure' : ''}). People are short ids.`,
+    `${rows.length} session${rows.length === 1 ? '' : 's'} (${live.w}${failed ? ', with a failure' : ''}${act ? `, that ran ${act}` : ''}). People are short ids.`,
     '',
     markdownTable(
       ['Session', 'Person', 'Role', 'Platform', 'Release', 'Minutes', 'Pages', 'Failures'],
@@ -83,29 +92,36 @@ export default async function ClubhouseSessionsPage({ searchParams }: { searchPa
       noSignalCode={BR.sessions.noSignal}
       copyCode={BR.sessions.copy}
       report={report}
-      live={{ pipe, scope: live, truncated: sessions.truncated }}
+      live={{ pipe, scope: live, truncated: sessions.truncated || Boolean(actSessions?.truncated) }}
       sources={['clubhouse_sessions (30 days kept)', GRAPH_SOURCE]}
     >
       <LinkChips
         label="Show"
         code={BR.sessions.filters}
         options={[
-          { key: 'all', label: 'All sessions', href: withLive(liveHref.sessions(), scope, live, { failed: null, rel: release, user }), active: !failed },
-          { key: 'failed', label: 'With a failure', href: withLive(liveHref.sessions(), scope, live, { failed: 1, rel: release, user }), active: failed },
-          ...(release ? [{ key: 'rel', label: `Release ${release.slice(0, 7)} ×`, href: withLive(liveHref.sessions(), scope, live, { failed: failed ? 1 : null, user }), active: true }] : []),
-          ...(user ? [{ key: 'user', label: `Person ${shortId(user)} ×`, href: withLive(liveHref.sessions(), scope, live, { failed: failed ? 1 : null, rel: release }), active: true }] : []),
+          { key: 'all', label: 'All sessions', href: withLive(liveHref.sessions(), scope, live, { ...keep, failed: null }), active: !failed },
+          { key: 'failed', label: 'With a failure', href: withLive(liveHref.sessions(), scope, live, { ...keep, failed: 1 }), active: failed },
+          ...(release ? [{ key: 'rel', label: `Release ${release.slice(0, 7)} ×`, href: withLive(liveHref.sessions(), scope, live, { ...keep, rel: null }), active: true }] : []),
+          ...(user ? [{ key: 'user', label: `Person ${shortId(user)} ×`, href: withLive(liveHref.sessions(), scope, live, { ...keep, user: null }), active: true }] : []),
+          ...(act ? [{ key: 'act', label: `Ran ${graph.actions[act]?.label ?? act} ×`, href: withLive(liveHref.sessions(), scope, live, { ...keep, act: null }), active: true }] : []),
         ]}
       />
-      {sessions.state === 'no-signal' ? (
+      {act ? (
+        <p className="text-caption text-text-secondary">
+          Sessions with a failure whose events ran <span className="font-fw-mono">{act}</span>. Only sessions with a failure keep their events, so a
+          session where it simply worked is not listed.
+        </p>
+      ) : null}
+      {readState.state === 'no-signal' ? (
         <NoSignal code={BR.sessions.noSignal} what="Sessions, with their pages, failures and timelines," />
-      ) : sessions.state === 'error' ? (
-        <LiveFailed code={BR.sessions.failed} label="Clubhouse sessions" error={sessions.error} retryHref={withLive(liveHref.sessions(), scope, live)} />
+      ) : readState.state === 'error' ? (
+        <LiveFailed code={BR.sessions.failed} label="Clubhouse sessions" error={readState.error} retryHref={withLive(liveHref.sessions(), scope, live, keep)} />
       ) : rows.length === 0 ? (
         <div data-br={BR.sessions.empty}>
           <EmptyState
             variant="search"
-            title={failed ? 'No session with a failure' : 'No sessions in this window'}
-            description={failed ? 'Nobody hit a failure in this scope and window.' : 'Widen the window or clear the scope.'}
+            title={act ? 'No session with a failure ran it' : failed ? 'No session with a failure' : 'No sessions in this window'}
+            description={act ? 'Nobody whose session failed ran this action in this scope and window.' : failed ? 'Nobody hit a failure in this scope and window.' : 'Widen the window or clear the scope.'}
           />
         </div>
       ) : (

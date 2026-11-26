@@ -130,6 +130,8 @@ describe('sessions', () => {
     expect(sortSessions(rows).map((s) => s.session_id)).toEqual(['sess_bad00001', 'sess_ok000001']);
     const f = { failed: false, role: null, platform: 'desktop', page: null, release: null, user: null };
     expect(filterSessions(rows, f).map((s) => s.session_id)).toEqual(['sess_bad00001']);
+    expect(filterSessions(rows, { ...f, platform: null, only: new Set(['sess_ok000001']) }).map((s) => s.session_id)).toEqual(['sess_ok000001']);
+    expect(filterSessions(rows, { ...f, platform: null, only: null })).toHaveLength(2);
     expect(sessionMinutes(session({}))).toBe(20);
   });
   it('lays a timeline out one lane per page, in the order the person reached it', () => {

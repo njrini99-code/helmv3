@@ -194,6 +194,24 @@ export async function readSessionEvents(sessionIds: readonly string[], cap = EVE
   }
 }
 
+/**
+ * The sessions whose kept events ran this action (B04's "Sessions", BR-0406). Only sessions with a failure keep
+ * their events (plan §4.5), so this finds those, not every session that pressed it. Newest first, capped.
+ */
+export async function readSessionIdsForAction(actionId: string, o: { sinceIso?: string; cap?: number } = {}): Promise<LiveRead<string[]>> {
+  try {
+    let q = db().from('clubhouse_session_events').select('session_id').eq('action_id', actionId);
+    if (o.sinceIso) q = q.gte('sent_at', o.sinceIso);
+    const limit = Math.min(o.cap ?? PAGE_SIZE, PAGE_SIZE);
+    const { data, error } = await q.order('sent_at', { ascending: false }).limit(limit);
+    if (error) return fail(error, []);
+    const rows = (data ?? []) as Array<{ session_id: string }>;
+    return { state: 'ok', data: [...new Set(rows.map((r) => r.session_id))], truncated: rows.length === limit };
+  } catch (e) {
+    return { state: 'error', data: [], error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export async function readDrift(sinceIso: string): Promise<LiveRead<DriftRow[]>> {
   try {
     const { data, error } = await db().from('clubhouse_drift').select('kind, code, release, drift_count, first_seen, last_seen').gte('last_seen', sinceIso).order('last_seen', { ascending: false }).limit(PAGE_SIZE);

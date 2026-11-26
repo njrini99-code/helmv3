@@ -551,11 +551,14 @@ export interface SessionFilter {
   page: string | null;
   release: string | null;
   user: string | null;
+  /** Only these sessions (B04's "Sessions": the ones whose kept events ran an action). Null keeps every session. */
+  only?: ReadonlySet<string> | null;
 }
 
 export function filterSessions(rows: readonly SessionRow[], f: SessionFilter): SessionRow[] {
   return rows.filter(
     (s) =>
+      (!f.only || f.only.has(s.session_id)) &&
       (!f.failed || s.failure_count > 0) &&
       (!f.role || s.role === f.role) &&
       (!f.platform || s.platform === f.platform) &&

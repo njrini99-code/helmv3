@@ -43,6 +43,7 @@ vi.mock('@/lib/admin/clubhouse/live', () => {
     readPeopleNames: async () => new Map([[failed.user_id, { name: 'Test Coach', email: null }]]),
     readTeamName: async () => 'Fixture team',
     readAdminBridgeRows: async () => read([], []),
+    readSessionIdsForAction: async () => read(['sess_fail0001'], []),
   };
 });
 
@@ -74,6 +75,14 @@ describe('live screens over the seeded store', () => {
     const { container } = await renderPage(SessionsIndex({ searchParams: Promise.resolve({}) }));
     expect(has(container, BR.sessions.row)).toBe(true);
     expect(container.textContent).not.toContain('Test Coach');
+    cleanup();
+    // B04's "Sessions" (BR-0406): ?act= keeps the sessions whose kept events ran the action, and says so.
+    const byAct = await renderPage(SessionsIndex({ searchParams: Promise.resolve({ act: 'act-p007-send-message' }) }));
+    const rowLinks = [...byAct.container.querySelectorAll(`a[data-br="${BR.sessions.row}"]`)].map((a) => a.getAttribute('href'));
+    expect(rowLinks.length).toBeGreaterThan(0);
+    expect(rowLinks.every((h) => h?.startsWith('/admin/clubhouse/sessions/sess_fail0001'))).toBe(true);
+    expect(byAct.container.textContent).toContain('Only sessions with a failure keep their events');
+    expect(byAct.container.textContent).toContain('×');
     cleanup();
     const one = await renderPage(SessionPage({ params: Promise.resolve({ id: 'sess_fail0001' }), searchParams: Promise.resolve({}) }));
     for (const code of [BR.sessions.mark, BR.sessions.reproduce, BR.sessions.person, BR.sessions.idChip]) expect(has(one.container, code), code).toBe(true);
