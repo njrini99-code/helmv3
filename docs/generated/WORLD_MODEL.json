@@ -7267,6 +7267,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/admin/clubhouse/duet-access.ts",
+          "anchor": "src/lib/auth/rate-limit"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/admin/data/activation-funnel.ts",
           "anchor": "src/lib/supabase/fetch-all-rows"
         },
