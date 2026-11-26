@@ -657,3 +657,34 @@ items:
       - src/lib/coachhelm/v3/chat/engine/__tests__/unanswered-calls.test.ts
     queued_for_release: false
     first_seen: '2026-11-16T14:41:10Z'
+  - id: scoring-chart-touch-hold-2026-11-20
+    feature_id: stats_analytics
+    root_cause: >-
+      The scoring chart's touch-hold timer passed { clientX } (cast as never)
+      to a picker that read e.currentTarget, so every still hold threw
+      (Bridge 0822e4af, rel:497ba56b).
+    incident_id: memory/incidents/stats_analytics/INC-2026-11-20-scoring-chart-touch-hold.md
+    status: verified_in_production
+    risk: R1
+    sha: 2feb73e85cb51f9d40cfb5d1b4815dbbe6d8791a
+    pr: 2612
+    regression_tests:
+      - src/clubhouse/screens/stats/__tests__/scoring-feature-chart.test.tsx
+    queued_for_release: false
+    first_seen: '2026-11-20T12:47:00Z'
+  - id: standing-empty-feed-false-failure-2026-11-23
+    feature_id: coachhelm_ai
+    root_cause: >-
+      loadPlayerYourWeek passed loadPlayerStanding an intentionally empty feed
+      and readLadderReads logged it as a failed feed read (Bridge e1c5ca86,
+      rel:ad746dec).
+    incident_id: memory/incidents/coachhelm_ai/INC-2026-11-23-standing-empty-feed-false-failure.md
+    status: verified_in_production
+    risk: R1
+    sha: 2feb73e85cb51f9d40cfb5d1b4815dbbe6d8791a
+    pr: 2612
+    regression_tests:
+      - src/clubhouse/data/__tests__/coachhelm-file-loader.test.ts
+      - src/clubhouse/__tests__/coachhelm-standing.test.tsx
+    queued_for_release: false
+    first_seen: '2026-11-23T18:10:00Z'
