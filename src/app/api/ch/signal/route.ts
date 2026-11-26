@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
   } catch {
     user = null;
   }
-  if (!user) return new NextResponse(null, { status: 204 });
+  if (!user) return NextResponse.json({ error: 'Sign in required' }, { status: 401 });
 
   // sendBeacon flushes can arrive empty or cut short: read text first so they cost a cheap answer, not a 500.
   const raw = await request.text();

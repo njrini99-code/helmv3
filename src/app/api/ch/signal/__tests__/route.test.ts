@@ -254,11 +254,11 @@ describe('POST /api/ch/signal', () => {
     expect(res.status).toBe(500);
   });
 
-  it('stores nothing from a signed-out sender', async () => {
+  it('refuses a signed-out sender and stores nothing', async () => {
     vi.mocked(createClient).mockRejectedValueOnce(new Error('no cookies'));
     const calls = fakeDb();
     const res = await post({ signals: [signal({ kind: 'view', outcome: undefined, code: undefined, role: 'signed-out' })] });
-    expect(res.status).toBe(204);
+    expect(res.status).toBe(401);
     expect(calls).toEqual([]);
   });
 
