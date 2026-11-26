@@ -297,6 +297,7 @@ export function scanFile(text, file = 'x.tsx') {
           code: code ?? '',
           ctl: ctlOf(attrs, sf),
           href: href ? stringOf(href) ?? `{${nameOf(exprOf(href))}}` : null,
+          handler: handlerOf(attrs),
           submit: type === 'submit',
           ...identsOf(attrs),
           within: enclosingNames(node),
@@ -433,12 +434,46 @@ function viewportFor(file) {
   return 'all';
 }
 
-function describe(row, label, acts, actionLabels) {
+/** The page a route belongs to, by the manifests' routes (longest prefix). */
+function routePage(href, manifests) {
+  const path = href.split(/[?#]/)[0];
+  let best = null;
+  for (const m of manifests) for (const r of m.routes ?? []) if ((path === r || path.startsWith(`${r}/`)) && (!best || r.length > best.r.length)) best = { m, r };
+  return best?.m.name ?? null;
+}
+
+/** A first description, from what the code says: the action it runs, where it goes, or the handler it calls. */
+function describe(row, label, acts, actionLabels, manifests) {
   if (acts.length) return acts.map((id) => actionLabels.get(id)).join('; ');
-  const name = label ? `"${label}"` : 'This control';
-  if (row.href) return row.href.startsWith('{') ? `${name}: opens the link from ${row.href.slice(1, -1)}` : `${name}: goes to ${row.href}`;
-  const kind = /role=(\w+)/.exec(row.via)?.[1] ?? (/link/.test(row.via) ? 'link' : row.element === 'input' ? 'input' : 'button');
-  return `${name} ${kind}`;
+  const name = label ? `"${label}"` : 'Unnamed';
+  const kind = /role=(\w+)/.exec(row.via)?.[1] ?? (row.href !== null || /link/.test(row.via) ? 'link' : row.element === 'input' ? 'input' : 'button');
+  if (row.href && !row.href.startsWith('{')) {
+    const page = routePage(row.href, manifests);
+    return `${name} ${kind}: goes to ${page ? `${page} (${row.href})` : row.href}`;
+  }
+  if (row.href) return `${name} ${kind}: opens a page chosen at run time (${row.href.slice(1, -1)})`;
+  return row.handler ? `${name} ${kind}: runs ${row.handler}` : `${name} ${kind}`;
+}
+
+/** What a handler prop calls: `onClick={save}` → save, `onClick={() => sw.setOpen(false)}` → sw.setOpen. */
+function handlerOf(attrs) {
+  for (const p of ['onClick', 'onPress', 'onPointerDown', 'onSelect', 'onChange']) {
+    let e = exprOf(attrs.get(p));
+    if (!e) continue;
+    if (ts.isArrowFunction(e) || ts.isFunctionExpression(e)) {
+      const unwrap = (x) => {
+        while (x && (ts.isVoidExpression(x) || ts.isAwaitExpression(x) || ts.isParenthesizedExpression(x))) x = x.expression;
+        return x;
+      };
+      // The first call that does the work: a haptic tap or an event's preventDefault is not it.
+      const noise = (c) => /(^|\.)(haptic|preventDefault|stopPropagation)$/.test(c.expression.getText());
+      const calls = (ts.isBlock(e.body) ? e.body.statements.filter(ts.isExpressionStatement).map((st) => st.expression) : [e.body]).map(unwrap).filter((c) => c && ts.isCallExpression(c));
+      e = calls.find((c) => !noise(c))?.expression ?? null;
+    }
+    if (e && (ts.isIdentifier(e) || ts.isPropertyAccessExpression(e))) return e.getText().replace(/\s+/g, '').replace(/\?/g, '');
+    if (e && ts.isCallExpression(e)) return e.expression.getText().replace(/\s+/g, '');
+  }
+  return null;
 }
 
 // ── Loading ──
@@ -551,7 +586,7 @@ export function assign({ files, manifests, ledgers = {}, boardMd = '', today = '
       element: s.row.element,
       label,
       ...(labelTemplate && li.kind !== 'static' ? { labelTemplate } : {}),
-      description: old.description ?? describe(s.row, label ?? (labelTemplate ? labelTemplate : null), acts, actionLabels),
+      description: old.description ?? describe(s.row, label ?? (labelTemplate ? labelTemplate : null), acts, actionLabels, manifests),
       role: roleFor(s.file, s.m),
       viewport: viewportFor(s.file),
       actions: acts,
