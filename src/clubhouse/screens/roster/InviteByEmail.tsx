@@ -149,7 +149,7 @@ export function InviteByEmail({ enabled }: { enabled: boolean }) {
             <span>{c.text}</span>
             {!c.ok && <span className="ch-sr-only">, can’t be read as an email address</span>}
             {c.unsent && <span className="ch-sr-only">, didn’t send</span>}
-            <button type="button" className="ch-rs-em__x" aria-label={`Remove ${c.text}`} onClick={() => remove(c.text)}>
+            <button data-ctl="CTL-P003-001" type="button" className="ch-rs-em__x" aria-label={`Remove ${c.text}`} onClick={() => remove(c.text)}>
               <Icon icon={X} size={12} />
             </button>
           </span>
@@ -181,7 +181,7 @@ export function InviteByEmail({ enabled }: { enabled: boolean }) {
               ? `${MAX_INVITE_EMAILS} at a time. Send these, then add the rest.`
               : `They get the link and the team code. ${count} of ${MAX_INVITE_EMAILS}`}
         </span>
-        <Button variant="primary" size="sm" leftIcon={Mail} disabled={(count === 0 && !isInviteEmail(draft)) || bad > 0} busy={send.pending} onClick={() => void submit()}>
+        <Button data-ctl="CTL-P003-002" variant="primary" size="sm" leftIcon={Mail} disabled={(count === 0 && !isInviteEmail(draft)) || bad > 0} busy={send.pending} onClick={() => void submit()}>
           {count > 1 ? `Send ${count} invites` : 'Send invite'}
         </Button>
       </div>

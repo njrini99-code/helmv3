@@ -289,92 +289,92 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/roster/InviteByEmail.tsx`
 
-- 152 `button` "Remove {text}" (button, onClick)
-- 184 `Button` "{Send {count} invites|Send invite}" (button, onClick)
+- CTL-P003-001 152 `button` "Remove {text}" (button, onClick)
+- CTL-P003-002 184 `Button` "{Send {count} invites|Send invi…" (button, onClick)
 
 ### `src/clubhouse/screens/roster/Roster.tsx`
 
-- 447 `Button` "{Keep {firstName}|Keep player}" (button, onClick) CH-3501
-- 450 `Button` "{Removing…|Remove player}" (button, onClick) CH-3501
-- 539 `Button` "Export" (button, onClick)
-- 545 `Button` "Invite players" (button, onClick)
-- 599 `Button` "Invite players" (button, onClick) CH-3301
-- 605 `Button` "Copy team code" (button, onClick) CH-3301
-- 648 `Button` "{Sort players, by }" (button)
-- 779 `button` "{name}" (button, onClick)
-- 850 `IconButton` "{Actions for }" (button)
-- 862 `Button` "Show everyone" (button, onClick)
-- 867 `button` "{{Active|Inactive}|{…}} {name} {{, active|, …" (button, onClick)
-- 1024 `Button` "Done" (button, onClick)
-- 1031 `Button` "Copy" (button, onClick)
-- 1049 `Button` "Share" (button, onClick)
-- 1053 `Button` "Copy" (button, onClick)
-- 1077 `Button` "Open team settings" (button, href) CH-3304
+- CTL-P003-003 447 `Button` "{Keep {firstName}|Keep …" (button, onClick) CH-3501
+- CTL-P003-004 450 `Button` "{Removing…|Remove playe…" (button, onClick) CH-3501
+- CTL-P003-005 539 `Button` "Export" (button, onClick)
+- CTL-P003-006 545 `Button` "Invite players" (button, onClick)
+- CTL-P003-007 599 `Button` "Invite players" (button, onClick) CH-3301
+- CTL-P003-008 605 `Button` "Copy team code" (button, onClick) CH-3301
+- CTL-P003-009 648 `Button` "{Sort players, by }" (button)
+- CTL-P003-010 779 `button` "{name}" (button, onClick)
+- CTL-P003-011 850 `IconButton` "{Actions for }" (button)
+- CTL-P003-012 862 `Button` "Show everyone" (button, onClick)
+- CTL-P003-013 867 `button` "{{Active|Inactive}|{…}} {name} …" (button, onClick)
+- CTL-P003-014 1024 `Button` "Done" (button, onClick)
+- CTL-P003-015 1031 `Button` "Copy" (button, onClick)
+- CTL-P003-016 1049 `Button` "Share" (button, onClick)
+- CTL-P003-017 1053 `Button` "Copy" (button, onClick)
+- CTL-P003-018 1077 `Button` "Open team settings" (button, href) CH-3304
 
 ### `src/clubhouse/screens/roster/RosterLeaders.tsx`
 
-- 45 `button` "{label} {figure} {unit} {name} {{reason}|} . …" (button, onClick)
+- CTL-P003-019 45 `button` "{label} {figure} {unit} {name} {…" (button, onClick)
 
 ### `src/clubhouse/screens/roster/RosterLimit.tsx`
 
-- 136 `Button` "Close" (button, onClick)
-- 141 `Button` "Cancel" (button, onClick)
-- 144 `Button` "Save" (button, onClick)
-- 201 `Button` "Cancel" (button, onClick)
-- 204 `Button` "Save" (button, onClick)
-- 242 `Button` "{Roster limit|Set a roster limit}" (button, onClick)
+- CTL-P003-020 136 `Button` "Close" (button, onClick)
+- CTL-P003-021 141 `Button` "Cancel" (button, onClick)
+- CTL-P003-022 144 `Button` "Save" (button, onClick)
+- CTL-P003-023 201 `Button` "Cancel" (button, onClick)
+- CTL-P003-024 204 `Button` "Save" (button, onClick)
+- CTL-P003-025 242 `Button` "{Roster limit|Set a roster limi…" (button, onClick)
 
 ### `src/clubhouse/screens/roster/RosterPeek.tsx`
 
-- 145 `Button` "Message" (button, href)
-- 150 `Button` "Schedule 1:1" (button, href)
-- 176 `Button` "Open full profile" (button, href)
-- 210 `Link` "View insights" (link, href)
+- CTL-P003-026 145 `Button` "Message" (button, href)
+- CTL-P003-027 150 `Button` "Schedule 1:1" (button, href)
+- CTL-P003-028 176 `Button` "Open full profile" (button, href)
+- CTL-P003-029 210 `Link` "View insights" (link, href)
 
 ### `src/clubhouse/screens/roster/RosterPhoneCrh.tsx`
 
-- 173 `PhoneIconAction` "Invite players" (onClick)
-- 188 `Button` "Try again" (button, onClick) CH-3201
-- 196 `Button` "Invite players" (button, onClick) CH-3301
-- 200 `Button` "Copy team code" (button, onClick) CH-3301
-- 296 `PhoneIconAction` "Player actions" (onClick)
-- 356 `Button` "Keep editing" (button, onClick)
-- 357 `Button` "Discard" (button, onClick)
-- 438 `button` "{label} {{|{|{…}}}|}" (button, onClick) CH-3806
-- 486 `button` "{n} join {pluralWord}: {who}" (button, onClick)
-- 536 `Button` "{Approving…|Approve all {n}}" (button, onClick)
-- 556 `Button` "Decline" (button, onClick)
-- 559 `Button` "Approve" (button, onClick)
-- 576 `Button` "Copy" (button, onClick)
+- CTL-P003-030 173 `PhoneIconAction` "Invite players" (onClick)
+- CTL-P003-031 188 `Button` "Try again" (button, onClick) CH-3201
+- CTL-P003-032 196 `Button` "Invite players" (button, onClick) CH-3301
+- CTL-P003-033 200 `Button` "Copy team code" (button, onClick) CH-3301
+- CTL-P003-034 296 `PhoneIconAction` "Player actions" (onClick)
+- CTL-P003-035 356 `Button` "Keep editing" (button, onClick)
+- CTL-P003-036 357 `Button` "Discard" (button, onClick)
+- CTL-P003-037 438 `button` "{label} {{|{|{…}}}|}" (button, onClick) CH-3806
+- CTL-P003-038 486 `button` "{n} join {pluralWord}: {who}" (button, onClick)
+- CTL-P003-039 536 `Button` "{Approving…|Approve all {n}}" (button, onClick)
+- CTL-P003-040 556 `Button` "Decline" (button, onClick)
+- CTL-P003-041 559 `Button` "Approve" (button, onClick)
+- CTL-P003-042 576 `Button` "Copy" (button, onClick)
 
 ### `src/clubhouse/screens/roster/RosterProfileCrh.tsx`
 
-- 77 `Button` "Message" (button, href)
-- 82 `Button` "Plan 1:1" (button, href)
-- 140 `Link` "All {roundsAll} rounds this season" (link, href)
+- CTL-P003-043 77 `Button` "Message" (button, href)
+- CTL-P003-044 82 `Button` "Plan 1:1" (button, href)
+- CTL-P003-045 140 `Link` "All {roundsAll} rounds this season" (link, href)
 
 ### `src/clubhouse/screens/roster/RosterRequests.tsx`
 
-- 74 `Button` "Decline" (button, onClick)
-- 78 `Button` "Approve" (button, onClick)
+- CTL-P003-046 74 `Button` "Decline" (button, onClick)
+- CTL-P003-047 78 `Button` "Approve" (button, onClick)
 
 ### `src/clubhouse/screens/roster/RosterStatus.tsx`
 
-- 66 `Button` "Cancel" (button, onClick) CH-3502
-- 69 `Button` "{Saving…|{Mark inactive|Mark active}}" (button, onClick) CH-3502
+- CTL-P003-048 66 `Button` "Cancel" (button, onClick) CH-3502
+- CTL-P003-049 69 `Button` "{Saving…|{Mark inactive|…" (button, onClick) CH-3502
 
 ### `src/clubhouse/screens/roster/TeamRoster.tsx`
 
-- 140 `button` "{label}" (button, onClick)
-- 218 `Button` "Show everyone" (button, onClick) CH-3302
+- CTL-P003-050 140 `button` "{label}" (button, onClick)
+- CTL-P003-051 218 `Button` "Show everyone" (button, onClick) CH-3302
 
 ### `src/clubhouse/screens/roster/TeamRosterPhoneCrh.tsx`
 
-- 56 `Button` "Try again" (button, onClick) CH-3210
+- CTL-P003-052 56 `Button` "Try again" (button, onClick) CH-3210
 
 ### `src/clubhouse/ui/DataTable.tsx`
 
-- 102 `button` "{headerLabel}" (button, onClick)
+- CTL-P003-053 102 `button` "{headerLabel}" (button, onClick)
 
 ## P004 Stats (team)
 

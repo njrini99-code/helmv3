@@ -42,7 +42,7 @@ export function RosterLeaders({ players, statsError, clock, onOpen }: { players:
           // Named by its face, in the order it is drawn (MAC-09, N13C-19: Voice Control): the label, the figure and its unit,
           // the player; "Open profile" for a screen reader only. No aria-label to disagree with what it shows. A plain card
           // (ROSTER-04): the class year shows on the avatar coin only, not as a tint over the whole card.
-          <button key={kind} type="button" className="ch-rs-ldr" data-ch-press-scale=".97" onClick={() => onOpen(p.id)}>
+          <button data-ctl="CTL-P003-019" key={kind} type="button" className="ch-rs-ldr" data-ch-press-scale=".97" onClick={() => onOpen(p.id)}>
             <span className="ch-rs-ldr__k">
               {k.label}
               <Icon icon={k.icon} size={15} />

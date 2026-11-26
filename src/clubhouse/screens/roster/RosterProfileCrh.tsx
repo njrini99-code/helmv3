@@ -74,12 +74,12 @@ export function RosterProfileCrh({
         {(messageHref || planHref) && (
           <div className="ch-rsx-head__btns">
             {messageHref && (
-              <Button variant="primary" leftIcon={MessageSquare} href={messageHref} feel="press">
+              <Button data-ctl="CTL-P003-043" variant="primary" leftIcon={MessageSquare} href={messageHref} feel="press">
                 Message
               </Button>
             )}
             {planHref && (
-              <Button leftIcon={CalendarPlus} href={planHref} feel="press">
+              <Button data-ctl="CTL-P003-044" leftIcon={CalendarPlus} href={planHref} feel="press">
                 Plan 1:1
               </Button>
             )}
@@ -137,7 +137,7 @@ export function RosterProfileCrh({
             title="Recent rounds"
             actions={
               roundsHref && (p.roundsAll ?? p.rounds) > 0 ? (
-                <Link href={roundsHref} className="ch-rsx-link ch-num" aria-label={`All ${p.roundsAll ?? p.rounds} rounds this season`}>
+                <Link data-ctl="CTL-P003-045" href={roundsHref} className="ch-rsx-link ch-num" aria-label={`All ${p.roundsAll ?? p.rounds} rounds this season`}>
                   All {p.roundsAll ?? p.rounds}
                 </Link>
               ) : undefined
