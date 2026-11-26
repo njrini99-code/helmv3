@@ -455,89 +455,89 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/BestCard.tsx`
 
-- 123 `Button` "Share best score" (button, onClick)
-- 135 `Button` "Cancel" (button, onClick) CH-5810
-- 138 `Button` "Share" (button, onClick) CH-5810
+- CTL-P005-001 123 `Button` "Share best score" (button, onClick)
+- CTL-P005-002 135 `Button` "Cancel" (button, onClick) CH-5810
+- CTL-P005-003 138 `Button` "Share" (button, onClick) CH-5810
 
 ### `src/clubhouse/screens/stats/GameDetail.tsx`
 
-- 117 `Link` "{map} Deep dive" (link, href)
-- 262 `HowStatsCountLink` "(no label)" (link)
-- 296 `HowStatsCountLink` "(no label)" (link)
-- 550 `button` "{l}" (button, onClick)
+- CTL-P005-004 117 `Link` "{map} Deep dive" (link, href)
+- CTL-P005-005 262 `HowStatsCountLink` "How stats are counted (ledger)" (link)
+- CTL-P005-006 296 `HowStatsCountLink` "How stats are counted (ledger)" (link)
+- CTL-P005-007 550 `button` "{l}" (button, onClick)
 
 ### `src/clubhouse/screens/stats/GoalSheet.tsx`
 
-- 167 `Button` "Cancel" (button, onClick)
-- 170 `Button` "{Starting…|Start goal}" (button, onClick)
-- 194 `Button` "Make the target negative" (button, onClick)
+- CTL-P005-008 167 `Button` "Cancel" (button, onClick)
+- CTL-P005-009 170 `Button` "{Starting…|Start goal}" (button, onClick)
+- CTL-P005-010 194 `Button` "Make the target negative" (button, onClick)
 
 ### `src/clubhouse/screens/stats/Goals.tsx`
 
-- 22 `Button` "Set a goal" (button, onClick)
-- 61 `Button` "{Starting…|Accept}" (button, onClick)
-- 64 `Button` "{Dismissing…|Dismiss}" (button, onClick)
-- 130 `Button` "{Pausing…|Pause}" (button, onClick)
-- 135 `Button` "{Resuming…|Resume}" (button, onClick)
-- 140 `Button` "Abandon" (button, onClick)
-- 155 `Button` "Keep it" (button, onClick) CH-5501
-- 158 `Button` "{Abandoning…|Abandon goal}" (button, onClick) CH-5501
+- CTL-P005-011 22 `Button` "Set a goal" (button, onClick)
+- CTL-P005-012 61 `Button` "{Starting…|Accept}" (button, onClick)
+- CTL-P005-013 64 `Button` "{Dismissing…|Dismiss}" (button, onClick)
+- CTL-P005-014 130 `Button` "{Pausing…|Pause}" (button, onClick)
+- CTL-P005-015 135 `Button` "{Resuming…|Resume}" (button, onClick)
+- CTL-P005-016 140 `Button` "Abandon" (button, onClick)
+- CTL-P005-017 155 `Button` "Keep it" (button, onClick) CH-5501
+- CTL-P005-018 158 `Button` "{Abandoning…|Abandon go…" (button, onClick) CH-5501
 
 ### `src/clubhouse/screens/stats/LegBars.tsx`
 
-- 121 `button` "See {toLowerCase} in game detail" (button, onClick)
+- CTL-P005-019 121 `button` "See {toLowerCase} in game detail" (button, onClick)
 
 ### `src/clubhouse/screens/stats/PlayerStage.tsx`
 
-- 85 `ol` "Rounds, newest last. Use the arrow keys to read one." (onPointerDown)
+- CTL-P005-020 85 `ol` "Rounds, newest last. Use the arrow key…" (onPointerDown)
 
 ### `src/clubhouse/screens/stats/ProposalAnswer.tsx`
 
-- 36 `Button` "{Accepting…|Accept}" (button, onClick)
-- 39 `Button` "{Declining…|Decline}" (button, onClick)
+- CTL-P005-021 36 `Button` "{Accepting…|Accept}" (button, onClick)
+- CTL-P005-022 39 `Button` "{Declining…|Decline}" (button, onClick)
 
 ### `src/clubhouse/screens/stats/RoundTrend.tsx`
 
-- 106 `Link` "Open round" (link, href)
+- CTL-P005-023 106 `Link` "Open round" (link, href)
 
 ### `src/clubhouse/screens/stats/StatsPlayer.tsx`
 
-- 281 `Button` "{label}" (button, href)
-- 286 `IconButton` "Previous player" (button, href)
-- 290 `IconButton` "Next player" (button, href)
-- 305 `Button` "Message" (button, href)
-- 310 `Button` "Schedule 1:1" (button, href)
-- 315 `Button` "CoachHelm" (button, href)
-- 351 `Button` "{label}" (button, href)
-- 356 `IconButton` "Previous player" (button, href)
-- 360 `IconButton` "Next player" (button, href)
-- 383 `Button` "Message" (button, href)
-- 388 `Button` "Schedule 1:1" (button, href)
-- 393 `Button` "CoachHelm" (button, href)
-- 398 `Button` "Add focus area" (button, onClick)
-- 422 `button` "{l}{{n}|}" (button, onClick, role=tab)
-- 595 `Link` "{course}, {date}: open the round" (link, href)
-- 680 `Button` "Add focus area" (button, onClick)
-- 721 `GoalSetButton` "(no label)" (button)
-- 821 `Button` "Cancel" (button, onClick)
-- 824 `Button` "{Adding…|Propose focus area}" (button, onClick)
+- CTL-P005-024 281 `Button` "{label}" (button, href)
+- CTL-P005-025 286 `IconButton` "Previous player" (button, href)
+- CTL-P005-026 290 `IconButton` "Next player" (button, href)
+- CTL-P005-027 305 `Button` "Message" (button, href)
+- CTL-P005-028 310 `Button` "Schedule 1:1" (button, href)
+- CTL-P005-029 315 `Button` "CoachHelm" (button, href)
+- CTL-P005-030 351 `Button` "{label}" (button, href)
+- CTL-P005-031 356 `IconButton` "Previous player" (button, href)
+- CTL-P005-032 360 `IconButton` "Next player" (button, href)
+- CTL-P005-033 383 `Button` "Message" (button, href)
+- CTL-P005-034 388 `Button` "Schedule 1:1" (button, href)
+- CTL-P005-035 393 `Button` "CoachHelm" (button, href)
+- CTL-P005-036 398 `Button` "Add focus area" (button, onClick)
+- CTL-P005-037 422 `button` "{l}{{n}|}" (button, onClick, role=tab)
+- CTL-P005-038 595 `Link` "{course}, {date}: open the round" (link, href)
+- CTL-P005-039 680 `Button` "Add focus area" (button, onClick)
+- CTL-P005-040 721 `GoalSetButton` "Set a goal (ledger)" (button)
+- CTL-P005-041 821 `Button` "Cancel" (button, onClick)
+- CTL-P005-042 824 `Button` "{Adding…|Propose focus area}" (button, onClick)
 
 ### `src/clubhouse/screens/stats/StatsPlayerPhoneShs.tsx`
 
-- 248 `Button` "Add focus area" (button, onClick) CH-5207
-- 367 `PhoneIconAction` "Share {first}’s stats" (onClick)
-- 400 `Link` "Message {first}" (link, href)
-- 609 `button` "{label} {value}{{unit}|} {meta} . Open {DETA…" (button, onClick)
-- 1121 `button` "{{label}: {tag}|{label}: {formatSigned} a r…" (button, onClick)
-- 1151 `button` "{name} {label} {|{value}{unit}} {{formatSig…" (button, onClick)
-- 1223 `Link` "{course}, {date}: {join}. Open the round" (link, href)
-- 1258 `GoalSetButton` "(no label)" (button)
-- 1305 `Button` "Add focus area" (button, onClick)
+- CTL-P005-043 248 `Button` "Add focus area" (button, onClick) CH-5207
+- CTL-P005-044 367 `PhoneIconAction` "Share {first}’s stats" (onClick)
+- CTL-P005-045 400 `Link` "Message {first}" (link, href)
+- CTL-P005-046 609 `button` "{label} {value}{{unit}|} {meta}…" (button, onClick)
+- CTL-P005-047 1121 `button` "{{label}: {tag}|{label}: {form…" (button, onClick)
+- CTL-P005-048 1151 `button` "{name} {label} {|{value}{unit}…" (button, onClick)
+- CTL-P005-049 1223 `Link` "{course}, {date}: {join}. Open the ro…" (link, href)
+- CTL-P005-050 1258 `GoalSetButton` "Set a goal (ledger)" (button)
+- CTL-P005-051 1305 `Button` "Add focus area" (button, onClick)
 
 ### `src/clubhouse/screens/stats/detail.tsx`
 
-- 37 `summary` "How this is measured" (button)
-- 84 `summary` "More detail" (button)
+- CTL-P005-052 37 `summary` "How this is measured" (button)
+- CTL-P005-053 84 `summary` "More detail" (button)
 
 ## P006 Calendar
 

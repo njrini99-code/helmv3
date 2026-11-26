@@ -245,7 +245,7 @@ export function StatsPlayerPhoneShs({
         <GoalsCard data={data} onOpen={() => go('goals')} />
         {/* A write stays on the summary, so it never hides in a detail. */}
         {onAddFocus && (
-          <Button size="sm" leftIcon={Plus} onClick={onAddFocus}>
+          <Button data-ctl="CTL-P005-043" size="sm" leftIcon={Plus} onClick={onAddFocus}>
             Add focus area
           </Button>
         )}
@@ -364,7 +364,7 @@ export function StatsPlayerPhoneShs({
       }}
     >
       {coach ? (
-        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
+        <PhoneTop title="Player stats" heading={false} back={{ label: 'Team', onBack: () => (window.history.length > 1 && document.referrer.startsWith(window.location.origin) ? window.history.back() : onBackToTeam()) }} action={<PhoneIconAction data-ctl="CTL-P005-044" icon={Share} label={`Share ${first}’s stats`} onClick={() => void share()} />} />
       ) : (
         <>
           <PhoneTop title="My stats" heading={false} start />
@@ -397,7 +397,7 @@ export function StatsPlayerPhoneShs({
               </p>
             </span>
             {messageHref && (
-              <Link href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
+              <Link data-ctl="CTL-P005-045" href={messageHref} className="ch-spm-head__msg" aria-label={`Message ${first}`} data-ch-press="">
                 <Icon icon={MessageSquare} size={18} />
               </Link>
             )}
@@ -606,7 +606,7 @@ function Glance({ data, onOpen }: { data: ChPlayerProfile; onOpen: (id: StatsDet
   return (
     <div className="ch-shs-glance">
       {glanceTiles(data).map((t) => (
-        <button
+        <button data-ctl="CTL-P005-046"
           key={t.label}
           type="button"
           className="ch-shs-gc"
@@ -1118,7 +1118,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
           const bar = r.value == null ? null : divergeBar(r.value, scale);
           const on = pin === r.key;
           return (
-            <button key={r.key} type="button" className={`ch-shs-drow${r.total ? ' is-total' : ''}${on ? ' is-pinned' : ''}`} data-ch="stats-sg-row" aria-pressed={on} aria-label={r.value == null && r.tag ? `${r.label}: ${r.tag}` : `${r.label}: ${formatSigned(r.value)} a round${early && r.tag ? `, ${r.tag}` : ''}`} onClick={() => setPin(on ? null : r.key)}>
+            <button data-ctl="CTL-P005-047" key={r.key} type="button" className={`ch-shs-drow${r.total ? ' is-total' : ''}${on ? ' is-pinned' : ''}`} data-ch="stats-sg-row" aria-pressed={on} aria-label={r.value == null && r.tag ? `${r.label}: ${r.tag}` : `${r.label}: ${formatSigned(r.value)} a round${early && r.tag ? `, ${r.tag}` : ''}`} onClick={() => setPin(on ? null : r.key)}>
               <span className="lab">{r.label}</span>
               <span className="ch-shs-rail">
                 <span className="ch-shs-zero" />
@@ -1148,7 +1148,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
             const sg = legValue(data, p.leg);
             return (
               <li key={p.id}>
-                <button
+                <button data-ctl="CTL-P005-048"
                   type="button"
                   className="ch-shs-rrow is-part"
                   data-ch="stats-part-row"
@@ -1220,7 +1220,7 @@ function RoundsDetail({ data }: { data: ChPlayerProfile }) {
               return (
                 <li key={r.id}>
                   {href ? (
-                    <Link
+                    <Link data-ctl="CTL-P005-049"
                       href={href}
                       className="ch-shs-rrow"
                       data-ch="stats-round-row"
@@ -1255,7 +1255,7 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
       <ShsCard title="Goals this season" meta={plural(data.goals.length, 'goal')}>
         {!coach && (
           <>
-            <GoalSetButton />
+            <GoalSetButton data-ctl="CTL-P005-050" />
             <GoalSuggestions items={data.goalSuggestions} error={data.goalSuggestionsError} />
           </>
         )}
@@ -1302,7 +1302,7 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
         )}
       </ShsCard>
       {onAddFocus && (
-        <Button size="sm" leftIcon={Plus} onClick={onAddFocus}>
+        <Button data-ctl="CTL-P005-051" size="sm" leftIcon={Plus} onClick={onAddFocus}>
           Add focus area
         </Button>
       )}

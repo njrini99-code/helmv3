@@ -15,11 +15,11 @@ import { goalMetricLabel, goalStateWords } from './goal-words';
 import '../../styles/goals.css';
 
 /** "Set a goal" for the player's own Development tab; the sheet is GoalSheet. */
-export function GoalSetButton() {
+export function GoalSetButton({ 'data-ctl': ctl }: { 'data-ctl'?: string } = {}) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button size="sm" leftIcon={Plus} onClick={() => setOpen(true)}>
+      <Button data-ctl={ctl ?? 'CTL-P005-011'} size="sm" leftIcon={Plus} onClick={() => setOpen(true)}>
         Set a goal
       </Button>
       <GoalSheet open={open} onClose={() => setOpen(false)} />
@@ -58,10 +58,10 @@ function SuggestionRow({ s }: { s: ChGoalSuggestion }) {
         <span className="ch-num">{s.target == null ? `Over ${days} days` : `Aim for ${devValue(s.target, s.metric)} over ${days} days`}</span>
       </div>
       <span className="ch-gs__ans" role="group" aria-label={`Answer ${label}`}>
-        <Button size="sm" variant="primary" busy={accept.pending} disabled={pending} onClick={() => void accept.run()}>
+        <Button data-ctl="CTL-P005-012" size="sm" variant="primary" busy={accept.pending} disabled={pending} onClick={() => void accept.run()}>
           {accept.pending ? <span data-ch-code="CH-5405">Starting…</span> : 'Accept'}
         </Button>
-        <Button size="sm" variant="ghost" busy={dismiss.pending} disabled={pending} onClick={() => void dismiss.run()}>
+        <Button data-ctl="CTL-P005-013" size="sm" variant="ghost" busy={dismiss.pending} disabled={pending} onClick={() => void dismiss.run()}>
           {dismiss.pending ? <span data-ch-code="CH-5405">Dismissing…</span> : 'Dismiss'}
         </Button>
       </span>
@@ -127,17 +127,17 @@ export function GoalStatus({ id, title, state, coach }: { id: string; title: str
       {(canPause || canResume || canAbandon) && (
         <span className="ch-gl-ctl" role="group" aria-label={`Change ${title}`}>
           {canPause && (
-            <Button size="sm" variant="ghost" busy={pause.pending} disabled={pending} onClick={() => void pause.run()}>
+            <Button data-ctl="CTL-P005-014" size="sm" variant="ghost" busy={pause.pending} disabled={pending} onClick={() => void pause.run()}>
               {pause.pending ? <span data-ch-code="CH-5405">Pausing…</span> : 'Pause'}
             </Button>
           )}
           {canResume && (
-            <Button size="sm" variant="ghost" busy={resume.pending} disabled={pending} onClick={() => void resume.run()}>
+            <Button data-ctl="CTL-P005-015" size="sm" variant="ghost" busy={resume.pending} disabled={pending} onClick={() => void resume.run()}>
               {resume.pending ? <span data-ch-code="CH-5405">Resuming…</span> : 'Resume'}
             </Button>
           )}
           {canAbandon && (
-            <Button size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(true)}>
+            <Button data-ctl="CTL-P005-016" size="sm" variant="ghost" disabled={pending} onClick={() => setConfirming(true)}>
               Abandon
             </Button>
           )}
@@ -152,10 +152,10 @@ export function GoalStatus({ id, title, state, coach }: { id: string; title: str
           description={`${title} stops tracking progress and stays in the list marked Abandoned.`}
           footer={
             <>
-              <Button variant="ghost" onClick={() => setConfirming(false)}>
+              <Button data-ctl="CTL-P005-017" variant="ghost" onClick={() => setConfirming(false)}>
                 Keep it
               </Button>
-              <Button
+              <Button data-ctl="CTL-P005-018"
                 variant="primary"
                 busy={abandon.pending}
                 feel={null}

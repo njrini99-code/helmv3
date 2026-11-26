@@ -278,16 +278,16 @@ export function StatsPlayer({
           <header className="ch-shs-dhead" data-canopy-head="tight">
             {coach && (
               <div className="ch-st-back">
-                <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={back?.href ?? href(null, data.filter)}>
+                <Button data-ctl="CTL-P005-024" size="sm" variant="ghost" leftIcon={ChevronLeft} href={back?.href ?? href(null, data.filter)}>
                   {back?.label ?? 'Team stats'}
                 </Button>
                 {data.nav && (
                   <div className="ch-st-back__nav">
-                    <IconButton icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
+                    <IconButton data-ctl="CTL-P005-025" icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
                     <span className="ch-num">
                       {data.nav.index} of {data.nav.total}
                     </span>
-                    <IconButton icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
+                    <IconButton data-ctl="CTL-P005-026" icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
                   </div>
                 )}
               </div>
@@ -302,17 +302,17 @@ export function StatsPlayer({
               {coach && (
                 <div className="ch-shs-dhead__act">
                   {messageHref && (
-                    <Button leftIcon={MessageSquare} href={messageHref}>
+                    <Button data-ctl="CTL-P005-027" leftIcon={MessageSquare} href={messageHref}>
                       Message
                     </Button>
                   )}
                   {planHref && (
-                    <Button leftIcon={CalendarPlus} href={planHref}>
+                    <Button data-ctl="CTL-P005-028" leftIcon={CalendarPlus} href={planHref}>
                       Schedule 1:1
                     </Button>
                   )}
                   {insightsHref && (
-                    <Button leftIcon={Sparkles} href={insightsHref}>
+                    <Button data-ctl="CTL-P005-029" leftIcon={Sparkles} href={insightsHref}>
                       CoachHelm
                     </Button>
                   )}
@@ -348,16 +348,16 @@ export function StatsPlayer({
         <PrintHead subject={`${data.name} · Player stats`} />
         {coach && (
           <div className="ch-st-back">
-            <Button size="sm" variant="ghost" leftIcon={ChevronLeft} href={back?.href ?? href(null, data.filter)}>
+            <Button data-ctl="CTL-P005-030" size="sm" variant="ghost" leftIcon={ChevronLeft} href={back?.href ?? href(null, data.filter)}>
               {back?.label ?? 'Team stats'}
             </Button>
             {data.nav && (
               <div className="ch-st-back__nav">
-                <IconButton icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
+                <IconButton data-ctl="CTL-P005-031" icon={ChevronLeft} size="sm" label="Previous player" href={href(data.nav.prev, data.filter)} scroll={false} />
                 <span className="ch-num">
                   {data.nav.index} of {data.nav.total}
                 </span>
-                <IconButton icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
+                <IconButton data-ctl="CTL-P005-032" icon={ChevronRight} size="sm" label="Next player" href={href(data.nav.next, data.filter)} scroll={false} />
               </div>
             )}
           </div>
@@ -380,22 +380,22 @@ export function StatsPlayer({
             {coach && (messageHref || planHref || insightsHref || coachId) && (
               <div className="ch-pf-hero__act">
                 {messageHref && (
-                  <Button leftIcon={MessageSquare} href={messageHref}>
+                  <Button data-ctl="CTL-P005-033" leftIcon={MessageSquare} href={messageHref}>
                     Message
                   </Button>
                 )}
                 {planHref && (
-                  <Button leftIcon={CalendarPlus} href={planHref}>
+                  <Button data-ctl="CTL-P005-034" leftIcon={CalendarPlus} href={planHref}>
                     Schedule 1:1
                   </Button>
                 )}
                 {insightsHref && (
-                  <Button leftIcon={Sparkles} href={insightsHref}>
+                  <Button data-ctl="CTL-P005-035" leftIcon={Sparkles} href={insightsHref}>
                     CoachHelm
                   </Button>
                 )}
                 {coachId && (
-                  <Button variant="primary" leftIcon={Target} onClick={() => setFocusOpen(true)}>
+                  <Button data-ctl="CTL-P005-036" variant="primary" leftIcon={Target} onClick={() => setFocusOpen(true)}>
                     Add focus area
                   </Button>
                 )}
@@ -419,7 +419,7 @@ export function StatsPlayer({
         <div className="ch-pf-tabs">
           <div ref={tabsRef} className="ch-tabs" role="tablist" aria-label="Profile sections">
             {tabs.map(([t, l, n]) => (
-              <button
+              <button data-ctl="CTL-P005-037"
                 key={t}
                 type="button"
                 role="tab"
@@ -592,7 +592,7 @@ function RoundsTable({ rounds, role, tour, holes }: { rounds: ChPlayerProfile['r
                   {(() => {
                     const href = rebuiltHref(`/golf/dashboard/rounds/${r.id}`, role);
                     return href ? (
-                      <Link href={href} className="ch-tr__link ch-tr__name" title={r.course} aria-label={`${r.course}, ${r.date}: open the round`}>
+                      <Link data-ctl="CTL-P005-038" href={href} className="ch-tr__link ch-tr__name" title={r.course} aria-label={`${r.course}, ${r.date}: open the round`}>
                         {r.course}
                       </Link>
                     ) : (
@@ -677,7 +677,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                   {waiting > 0 && ` · ${waiting} waiting on ${coach ? first : 'you'}`}
                 </span>
                 {onAdd && (
-                  <Button size="sm" leftIcon={Plus} onClick={onAdd}>
+                  <Button data-ctl="CTL-P005-039" size="sm" leftIcon={Plus} onClick={onAdd}>
                     Add focus area
                   </Button>
                 )}
@@ -718,7 +718,7 @@ function Development({ data, coach, first, onAdd }: { data: ChPlayerProfile; coa
                 <span>
                   <b>this season</b>
                 </span>
-                {!coach && <GoalSetButton />}
+                {!coach && <GoalSetButton data-ctl="CTL-P005-040" />}
               </div>
             </>
           }
@@ -818,10 +818,10 @@ function FocusAreaSheet({ open, onClose, playerId, coachId, first }: { open: boo
       description={`${first} sees it as proposed and accepts it to start the improvement window.`}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P005-041" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={save.pending} feel={null} onClick={() => void submit()}>
+          <Button data-ctl="CTL-P005-042" variant="primary" busy={save.pending} feel={null} onClick={() => void submit()}>
             {save.pending ? <span data-ch-code="CH-5401">Adding…</span> : 'Propose focus area'}
           </Button>
         </>
