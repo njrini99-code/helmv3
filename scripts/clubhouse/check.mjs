@@ -31,6 +31,7 @@ import { loadManifests, runChangelogGate } from './changelog-gate.mjs';
 import { checkScreenshotLog } from './shots.mjs';
 import { checkLinks } from './links.mjs';
 import { checkDesignLanguage } from './design-language.mjs';
+import { checkClickableMap } from './clickable-map.mjs';
 
 /**
  * Red is for errors only (MOTION-AND-VISUAL 4.7, Nick 15 Nov 2026): a red token paints an error, a destructive action,
@@ -540,6 +541,9 @@ function main() {
 
   // The design system's token tables (design-refresh/DESIGN_LANGUAGE.md) are generated from tokens.css.
   violations.push(...checkDesignLanguage(root));
+
+  // The every-button map (CLUBHOUSE_CLICKABLE_MAP.md) moves with the code (D11, plan §4.7).
+  if (existsSync(join(root, 'src/clubhouse'))) violations.push(...checkClickableMap(root));
 
   if (violations.length) {
     console.error(gate.note);

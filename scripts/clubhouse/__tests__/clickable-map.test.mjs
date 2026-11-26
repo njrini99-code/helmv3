@@ -48,3 +48,23 @@ test('the map is deterministic and puts unclaimed files last under Shared', () =
   assert.doesNotMatch(a, /Generated (on|at) /);
   assert.match(a, /^- 5 `button` "Save plan" \(button, onClick\) CH-9001$/m);
 });
+
+test('checkClickableMap: clean when the map matches the code, a violation when a control is added', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { checkClickableMap, OUT } = await import('../clickable-map.mjs');
+  const root = mkdtempSync(join(tmpdir(), 'ch-clickables-'));
+  mkdirSync(join(root, 'config/clubhouse/pages'), { recursive: true });
+  writeFileSync(join(root, 'config/clubhouse/pages/P001-shell.json'), JSON.stringify({ id: 'P001', slug: 'shell', title: 'Shell', files: ['src/clubhouse/shell/'] }));
+  mkdirSync(join(root, 'src/clubhouse/shell'), { recursive: true });
+  writeFileSync(join(root, 'src/clubhouse/shell/A.tsx'), 'export const A = () => <button onClick={() => {}}>Save</button>;\n');
+  mkdirSync(join(root, 'docs/clubhouse/generated'), { recursive: true });
+  assert.equal(checkClickableMap(root).length, 1, 'a missing map is stale');
+  const { buildMap, loadManifests } = await import('../clickable-map.mjs');
+  const { readFileSync } = await import('node:fs');
+  writeFileSync(join(root, OUT), buildMap({ files: { 'src/clubhouse/shell/A.tsx': readFileSync(join(root, 'src/clubhouse/shell/A.tsx'), 'utf8') }, manifests: loadManifests(root) }));
+  assert.deepEqual(checkClickableMap(root), []);
+  writeFileSync(join(root, 'src/clubhouse/shell/B.tsx'), 'export const B = () => <button onClick={() => {}}>Send</button>;\n');
+  assert.match(checkClickableMap(root)[0], /is stale/);
+});
