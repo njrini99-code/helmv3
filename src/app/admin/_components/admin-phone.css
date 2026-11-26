@@ -6,8 +6,7 @@
  * the scroller's clip, and the whole page scrolls sideways: Readiness measured 1,348px wide on a 390px phone
  * (2026-11-26). `relative` keeps them inside.
  */
-.bridge-ivory .overflow-x-auto,
-.bridge-ivory .overflow-auto,
-.bridge-ivory .overflow-x-scroll {
+/* Scoped to the page column: the rail, the More sheet, ⌘K and overlays keep their own positioning. */
+[data-slot='fw-shell-content'] :is(.overflow-x-auto, .overflow-auto, .overflow-x-scroll) {
   position: relative;
 }

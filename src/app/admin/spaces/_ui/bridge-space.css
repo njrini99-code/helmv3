@@ -271,7 +271,8 @@
  */
 @media (pointer: coarse) {
   .bs-link { position: relative; }
-  .bs-link::after { content: ''; position: absolute; inset: -12px -8px; }
+  /* 10px down: a panel head's bottom padding, so the box never reaches the first row under it. */
+  .bs-link::after { content: ''; position: absolute; inset: -10px -8px; }
 }
 /* One focus ring for anything a keyboard reaches; the tap highlight is off, so focus has to be this visible. */
 .bs a:focus-visible,
