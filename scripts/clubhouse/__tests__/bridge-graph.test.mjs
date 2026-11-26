@@ -64,6 +64,24 @@ const graph = (over = {}) =>
     ...over,
   });
 
+test('controls come from the ledgers (plan §4.7): one record per id, tombstones apart, sorted', () => {
+  const ledgers = {
+    P007: {
+      controls: [
+        { id: 'CTL-P007-002', page: 'P007', file: 'src/clubhouse/screens/messages/A.tsx', element: 'a', label: null, labelTemplate: 'Open {name}', description: 'Opens the thread', role: 'both', viewport: 'all', actions: [], verdict: null, via: 'link' },
+        { id: 'CTL-P007-001', page: 'P007', file: 'src/clubhouse/screens/messages/A.tsx', element: 'button', label: 'Send', description: 'Send a message', role: 'both', viewport: 'phone', actions: ['ACT-P007-SEND'], verdict: { status: 'works', board: 'b', control: 'Send' }, code: 'CH-7004', via: 'button' },
+      ],
+      tombstones: [{ id: 'CTL-P007-003', file: 'src/clubhouse/screens/messages/A.tsx', label: 'Old', removedAt: '2026-11-25' }],
+    },
+  };
+  const g = graph({ ledgers });
+  assert.deepEqual(Object.keys(g.controls), ['CTL-P007-001', 'CTL-P007-002']);
+  assert.deepEqual(g.controls['CTL-P007-001'], { page: 'P007', file: 'src/clubhouse/screens/messages/A.tsx', element: 'button', label: 'Send', description: 'Send a message', role: 'both', viewport: 'phone', actions: ['ACT-P007-SEND'], verdict: { status: 'works', board: 'b', control: 'Send' }, code: 'CH-7004' });
+  assert.equal(g.controls['CTL-P007-002'].labelTemplate, 'Open {name}');
+  assert.deepEqual(g.controlTombstones, { 'CTL-P007-003': { file: 'src/clubhouse/screens/messages/A.tsx', label: 'Old', removedAt: '2026-11-25' } });
+  assert.notEqual(g.contentHash, graph().contentHash);
+});
+
 test('tableCells keeps an escaped pipe inside its cell', () => {
   assert.deepEqual(tableCells('| a | b \\| c | d |'), ['a', 'b | c', 'd']);
 });
