@@ -27,18 +27,26 @@ function trimPath(path: string): string {
 }
 
 /**
+ * Where an address lands, for switch timing: the path and the Bridge page it is. A query that changes the page
+ * (Team stats to one player, `?player=`) is a switch; a query that only filters one page, or a hash, is not.
+ */
+export function switchKey(pathname: string, search: string, role: string): string {
+  return `${trimPath(pathname)}|${pageForPath(pathname, search, role)}`;
+}
+
+/**
  * The start of a switch, from a tap on an in-app link: the main button, no modifier, the same tab and origin, and an
  * address other than this one. Anything else (a new tab, a download, a hash on this page) is not a switch.
  */
-function linkSwitch(e: MouseEvent, el: Element | null): SwitchStart | null {
+function linkSwitch(e: MouseEvent, el: Element | null, role: string): SwitchStart | null {
   if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null;
   const a = el?.closest('a[href]');
   if (!(a instanceof HTMLAnchorElement) || a.hasAttribute('download')) return null;
   if (a.target && a.target !== '_self') return null;
   const url = new URL(a.href, location.href);
   if (url.origin !== location.origin) return null;
-  const to = trimPath(url.pathname);
-  return to === trimPath(location.pathname) ? null : { at: performance.now(), to };
+  const to = switchKey(url.pathname, url.search, role);
+  return to === switchKey(location.pathname, location.search, role) ? null : { at: performance.now(), to };
 }
 
 function reportVital(metric: { name: string; value: number }) {
@@ -61,6 +69,11 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
   const page = pageForPath(pathname, search, role);
   const lastTeam = useRef<string | null | undefined>(undefined);
   const lastPath = useRef<string | null>(null);
+  // The listeners below are added once per enable; they read the role a link's page is judged as from here.
+  const roleRef = useRef(role);
+  useEffect(() => {
+    roleRef.current = role;
+  }, [role]);
   const switchStart = useRef<SwitchStart | null>(null);
   const pendingView = useRef<PendingView | null>(null);
 
@@ -73,7 +86,7 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
     // Switch time (Bridge Speed): from the tap or the back gesture that changed the address to the new page's first
     // frame (a loading state counts). The first view of a load has none (LCP covers it); a switch with no known start
     // (a push from code), or one slower than SWITCH_MAX_MS, has none either. A start is used once, or dropped.
-    const path = trimPath(pathname);
+    const path = `${trimPath(pathname)}|${page}`;
     const moved = lastPath.current !== null && lastPath.current !== path;
     lastPath.current = path;
     const start = switchStart.current;
@@ -111,7 +124,7 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
     const onClick = (e: MouseEvent) => {
       try {
         const el = e.target instanceof Element ? e.target : null;
-        const start = linkSwitch(e, el);
+        const start = linkSwitch(e, el, roleRef.current);
         if (start) switchStart.current = start;
         if (!el?.closest('[data-ui="clubhouse"]')) return;
         const control = el.closest('[data-ctl]')?.getAttribute('data-ctl') ?? undefined;
@@ -132,16 +145,18 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
     // address, so that is where it goes. A step between hashes on one page is not a switch.
     const onPopState = () => {
       try {
-        const to = trimPath(location.pathname);
+        const to = switchKey(location.pathname, location.search, roleRef.current);
         if (to !== lastPath.current) switchStart.current = { at: performance.now(), to };
       } catch {
         // A signal never gets in the way of going back.
       }
     };
-    // A tab put away mid-switch would time the time away: the waiting view goes now, untimed.
     const onVisibility = () => {
+      if (document.visibilityState !== 'hidden') return;
+      // A switch started and then put away would time the time away: drop its start, and send a waiting view untimed.
+      switchStart.current = null;
       const pending = pendingView.current;
-      if (document.visibilityState !== 'hidden' || !pending) return;
+      if (!pending) return;
       pendingView.current = null;
       cancelAnimationFrame(pending.frame);
       chSignal(pending.input);

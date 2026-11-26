@@ -31,3 +31,5 @@ Held items: none
   switch, left before paint, tab hidden), `signal.test.ts` (a timed view
   keeps its page and duration) and `ingest.test.ts` (a timed view lands in
   the hourly buckets).
+
+- A switch is a change of path or of Bridge page: Team stats to one player (`?player=`, P004 to P005) is timed; a query that only filters one page, or a hash, is not. A start dropped when the tab is put away before the new page arrives.

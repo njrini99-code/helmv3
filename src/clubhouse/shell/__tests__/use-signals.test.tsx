@@ -208,4 +208,42 @@ describe('useChSignals switch time', () => {
     runFrame();
     expect(kinds()).toEqual([{ kind: 'view', page: 'P003' }]);
   });
+  it('times a switch that only the query makes: Team stats to one player is P004 to P005', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/stats');
+    const { rerender } = renderHook((p: { search: string }) => useChSignals({ enabled: true, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/stats', search: p.search }), {
+      initialProps: { search: '' },
+    });
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/stats?player=p1');
+    now = 1150;
+    rerender({ search: '?player=p1' });
+    runFrame();
+    runFrame();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P005', durationMs: 150 }]);
+  });
+
+  it('does not time a query that stays on the same page, or a tap on a link to the same page with a filter', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/messages');
+    const { rerender } = renderHook((p: { search: string }) => useChSignals({ enabled: true, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/messages', search: p.search }), {
+      initialProps: { search: '' },
+    });
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/messages?thread=t1');
+    rerender({ search: '?thread=t1' });
+    expect(frames).toHaveLength(0);
+  });
+
+  it('drops a switch start when the tab is put away before the new page arrives', () => {
+    const { rerender } = mount();
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/roster');
+    const visibility = vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+    document.dispatchEvent(new Event('visibilitychange'));
+    visibility.mockRestore();
+    now = 20_000;
+    rerender({ pathname: '/golf/dashboard/roster' });
+    // No start, so the view goes at once, untimed, and nothing waits on a frame.
+    expect(frames).toHaveLength(0);
+    expect(kinds()).toEqual([{ kind: 'view' }]);
+  });
 });
