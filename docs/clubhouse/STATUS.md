@@ -558,7 +558,7 @@ a new production deploy.
    canary team UUIDs (`golf_teams.id`, comma-separated). `*` or an empty value
    means every team, so never leave it unset or empty for a canary, and the
    same holds when the list shrinks later.
-   `scripts/check-required-env.mjs` refuses a production build with a
+   `scripts/checks/check-required-env.mjs` refuses a production build with a
    Clubhouse flag on and the variable unset.
 3. In `config/feature-flags.yml`, set `golf_clubhouse_ui`
    `environment.production: true`, then run `npm run flags:generate` and

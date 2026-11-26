@@ -100,7 +100,7 @@ describe('never-gate: this suite never exercises a flag whose purpose/id names a
   // Runtime evaluation intentionally does not re-check the NEVER-GATE list —
   // that rule is enforced once, at generation time
   // (scripts/flags/lib.mjs#validateFlag via generate-flags.mjs, independently
-  // re-checked by scripts/check-feature-flags.mjs), so a config row that
+  // re-checked by scripts/checks/check-feature-flags.mjs), so a config row that
   // violates it never becomes part of FLAG_REGISTRY in the first place. See
   // src/lib/flags/__tests__/never-gate.test.ts for the keyword-detection
   // cases and scripts/flags/__tests__/lib.test.mjs for the generator refusing

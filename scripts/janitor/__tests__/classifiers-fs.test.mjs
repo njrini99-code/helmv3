@@ -123,8 +123,8 @@ test('missing-feature-mappings: NO_SIGNAL when registry.yml is absent', async ()
 function withStubbedOrphanScript(scriptBody, fn) {
   const dir = mkdtempSync(join(tmpdir(), 'janitor-orphan-'));
   try {
-    mkdirSync(join(dir, 'scripts'), { recursive: true });
-    const scriptPath = join(dir, 'scripts', 'find-orphan-mounts.mjs');
+    mkdirSync(join(dir, 'scripts', 'checks'), { recursive: true });
+    const scriptPath = join(dir, 'scripts', 'checks', 'find-orphan-mounts.mjs');
     writeFileSync(scriptPath, scriptBody);
     chmodSync(scriptPath, 0o755);
     return fn(dir);

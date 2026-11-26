@@ -7,7 +7,7 @@ import type { FlagDefinition } from './types';
  *
  * Enforcement point: `scripts/flags/lib.mjs#neverGateViolations` (the
  * generator refuses to write `registry.generated.ts` while a violation
- * exists) and, independently, `scripts/check-feature-flags.mjs` (so a
+ * exists) and, independently, `scripts/checks/check-feature-flags.mjs` (so a
  * hand-edited generated file cannot bypass the rule — see
  * `docs/CLAUDE.md`/shipping.md §1: "a DO NOT EDIT stamp is not evidence of
  * correctness"). This module is the single TypeScript source of truth for

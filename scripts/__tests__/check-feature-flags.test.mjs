@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkFlags, run } from '../check-feature-flags.mjs';
+import { checkFlags, run } from '../checks/check-feature-flags.mjs';
 
 function baseFlag(overrides = {}) {
   return {

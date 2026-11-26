@@ -3,7 +3,7 @@
  * Shared parse/validate/render logic for the feature-flag registry.
  *
  * Used by both `scripts/flags/generate-flags.mjs` (writes
- * `src/lib/flags/registry.generated.ts`) and `scripts/check-feature-flags.mjs`
+ * `src/lib/flags/registry.generated.ts`) and `scripts/checks/check-feature-flags.mjs`
  * (the CI expiry/governance gate). Both consume `config/feature-flags.yml`
  * independently through this module rather than one trusting the other's
  * output — a hand-edited `registry.generated.ts` cannot pass `flags:check`,

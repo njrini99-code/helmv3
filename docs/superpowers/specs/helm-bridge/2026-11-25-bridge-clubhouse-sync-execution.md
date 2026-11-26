@@ -189,7 +189,7 @@ landed. Build against a seeded fixture.
 
 - B11 Drift (the nine lists, each driven to zero and held by `clubhouse:check`).
 - B13 Duet desk, and the §9.2 read-only API (off until G4).
-- `config/bridge/contracts.json` and `BRIDGE_UI_MAP.md`, with category 25 rows
+- a new Bridge contracts file and its generated UI map (spec §6), with category 25 rows
   per page (D4).
 - The rail regrouping (D3; URLs unchanged).
 - Docs: DECISIONS, a Bridge feature doc, and the registry docs.

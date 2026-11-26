@@ -8,7 +8,7 @@ import { join, resolve } from 'node:path';
  * The script printed PASS over six 11-character placeholders. Run it for
  * real, in a directory with no env files so only the env we hand it counts.
  */
-const SCRIPT = resolve(__dirname, '../../../scripts/check-helm-bridge-env.mjs');
+const SCRIPT = resolve(__dirname, '../../../scripts/checks/check-helm-bridge-env.mjs');
 
 const WELL_FORMED: Record<string, string> = {
   SENTRY_READ_TOKEN: `sntrys_${'a'.repeat(48)}`,
@@ -32,7 +32,7 @@ function run(env: Record<string, string>, ...args: string[]) {
   return { status: result.status, out: `${result.stdout}\n${result.stderr}` };
 }
 
-describe('scripts/check-helm-bridge-env.mjs', () => {
+describe('scripts/checks/check-helm-bridge-env.mjs', () => {
   it('FAILS on six 11-character placeholders — the exact wall the old floor waved through', () => {
     const eleven = Object.fromEntries(Object.keys(WELL_FORMED).map((k) => [k, 'abcdefghijk']));
     const { status, out } = run(eleven);

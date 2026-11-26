@@ -9,7 +9,7 @@ const MAX_FINDINGS = 10;
 const COUNT_LINE = /^UNREACHABLE component files\s*:\s*(\d+)/m;
 
 /**
- * Reuses `npm run orphans:mounts` (scripts/find-orphan-mounts.mjs) rather
+ * Reuses `npm run orphans:mounts` (scripts/checks/find-orphan-mounts.mjs) rather
  * than re-implementing its render-graph walk. That script's own header is
  * explicit: "Read the output, don't gate on it" and documents three known
  * false-positive modes (non-literal mount names, a comment-stripper edge
@@ -17,7 +17,7 @@ const COUNT_LINE = /^UNREACHABLE component files\s*:\s*(\d+)/m;
  * confidence: medium for exactly that reason, never high.
  */
 export function run({ repoRoot }) {
-  const scriptPath = join(repoRoot, 'scripts', 'find-orphan-mounts.mjs');
+  const scriptPath = join(repoRoot, 'scripts', 'checks', 'find-orphan-mounts.mjs');
   let stdout;
   try {
     stdout = execFileSync('node', [scriptPath], { cwd: repoRoot, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -26,7 +26,7 @@ export function run({ repoRoot }) {
       classId: CLASS_ID,
       title: TITLE,
       verdict: NO_SIGNAL,
-      note: `scripts/find-orphan-mounts.mjs failed to run: ${err.message}`,
+      note: `scripts/checks/find-orphan-mounts.mjs failed to run: ${err.message}`,
       evidenceCommand: 'npm run orphans:mounts',
     };
   }
@@ -37,7 +37,7 @@ export function run({ repoRoot }) {
       classId: CLASS_ID,
       title: TITLE,
       verdict: NO_SIGNAL,
-      note: 'scripts/find-orphan-mounts.mjs ran but its output did not match the expected "UNREACHABLE component files : N" line — its output format may have changed.',
+      note: 'scripts/checks/find-orphan-mounts.mjs ran but its output did not match the expected "UNREACHABLE component files : N" line — its output format may have changed.',
       evidenceCommand: 'npm run orphans:mounts',
     };
   }

@@ -34,7 +34,7 @@ history (it is present in commit `ef1dc926` and any commit between it and
       - Local `.env.local` for every developer who uses this script.
       - Vercel Production and Preview environment variables.
       - Any CI/CD secret store that references it.
-- [ ] After rotation, run `scripts/check-required-env.mjs` (or the
+- [ ] After rotation, run `scripts/checks/check-required-env.mjs` (or the
       equivalent deploy-time env check) to confirm the new value is present
       everywhere before the next deploy.
 - [ ] Record the rotation date/outcome as a follow-up entry in this file (do

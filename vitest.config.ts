@@ -289,7 +289,7 @@ export default defineConfig({
           // is not a gap: RLS is tested for real by the pgTAP suites in
           // supabase/tests/rls/*.sql, which run against a fresh Postgres in
           // CI's "Supabase lint + RLS tests" job, and `npm run test:rls` runs
-          // THOSE (`bash scripts/test-pgtap.sh`), not this project — this
+          // THOSE (`bash scripts/db/test-pgtap.sh`), not this project — this
           // comment said `test:rls` "does nothing" long after the script was
           // repointed. Kept as a defined project so the naming convention
           // stays available; `vitest run --project rls` on its own is still

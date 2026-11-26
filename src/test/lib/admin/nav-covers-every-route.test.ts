@@ -84,8 +84,8 @@ describe('Bridge navigation covers every route', () => {
     // consolidation: production has no Stripe key (verified 2026-09-08 —
     // zero STRIPE_* variables across 68 production env vars), so the page
     // could only ever render its own "Invoicing is not available yet"
-    // notice. /admin/billing 307s to /admin; CreateInvoiceForm and
-    // src/lib/stripe/** are untouched, so restoring it is one commit.
+    // notice. /admin/billing 307s to /admin; src/lib/stripe/** is untouched
+    // (CreateInvoiceForm was deleted 2026-11-25 as unused; it is in git history).
     expect(navHrefs.has('/admin/teams')).toBe(true);
     expect(navHrefs.has('/admin/billing')).toBe(false);
   });

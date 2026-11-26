@@ -2,7 +2,7 @@
 
 # Tool Authority Matrix
 
-**Generated between the AUTOGEN markers** — `node scripts/gen-tool-authority.mjs`
+**Generated between the AUTOGEN markers** — `node scripts/gen/gen-tool-authority.mjs`
 rebuilds them from `config/tool-authority.json`,
 `config/control-plane-observations.json`, `.claude/settings.json` and
 `.mcp.json`.

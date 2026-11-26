@@ -943,7 +943,7 @@ describe('the CLI, against real worktrees', () => {
   });
 
   it('the budget CLI refuses a second mutation workspace, and does so in the fixture', () => {
-    const BUDGET = resolve(REPO, 'scripts/check-mutation-budget.mjs');
+    const BUDGET = resolve(REPO, 'scripts/checks/check-mutation-budget.mjs');
     const wt = join(tmp, 'wbudget');
     git(['worktree', 'add', '-q', '--no-track', '-b', 'agent/wbudget', wt, 'main'], canonical);
 
@@ -962,7 +962,7 @@ describe('the CLI, against real worktrees', () => {
   });
 
   it('the budget CLI allows creation when only canonical exists', () => {
-    const BUDGET = resolve(REPO, 'scripts/check-mutation-budget.mjs');
+    const BUDGET = resolve(REPO, 'scripts/checks/check-mutation-budget.mjs');
     const r = spawnSync('node', [BUDGET], {
       cwd: canonical,
       encoding: 'utf-8',

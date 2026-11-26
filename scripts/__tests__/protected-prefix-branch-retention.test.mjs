@@ -7,7 +7,7 @@
 // stale with no record in config/branch-retention.json's
 // `ci_prefix_branch_reviews` array. Pure classifier, no network.
 import { describe, it, expect } from 'vitest';
-import { classifyProtectedPrefixBranches, PROTECTED_CI_PREFIXES, PASS, FAIL } from '../control-plane-verify.mjs';
+import { classifyProtectedPrefixBranches, PROTECTED_CI_PREFIXES, PASS, FAIL } from '../checks/control-plane-verify.mjs';
 
 const NOW = new Date('2026-09-05T00:00:00Z');
 const OLD = '2026-01-01T00:00:00Z'; // well past any staleDays threshold

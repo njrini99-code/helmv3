@@ -211,7 +211,7 @@ them would have broken those routes, not the dead one.
   APIs, stale TODOs, oversized modules, unused tests, mock inflation,
   duplicate telemetry, missing feature mappings, abandoned experiments)
   using only signals this repo already produces — `config/baselines/.duplicate-exports-baseline.json`,
-  `config/baselines/.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,
+  `config/baselines/.doc-path-baseline.json`, `scripts/checks/find-orphan-mounts.mjs`,
   `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),
   `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every
   classifier returns one of three verdicts, `FINDINGS` /
@@ -606,7 +606,7 @@ them would have broken those routes, not the dead one.
 - **Credential values are validated by SHAPE, in one module.** Every one of
   the eight Bridge values in the local `.env.local` was exactly 11 characters,
   which cleared the old `length >= 10` floor in both
-  `scripts/check-helm-bridge-env.mjs` (printed PASS) and the runtime readers'
+  `scripts/checks/check-helm-bridge-env.mjs` (printed PASS) and the runtime readers'
   identical `usableSecret()` (treated Sentry as configured, so every local
   read failed soft and silently). `src/lib/admin/credential-shape.mjs` is the
   single implementation — `.mjs` so the plain-node script and the TS readers
@@ -1012,8 +1012,9 @@ no second incident, attention, release, or self-heal model (brief §44).
   had hand-rolled). `command-deck/tone.ts` keeps only the `StateTone`-keyed
   rail/ink map `AttentionStack.tsx` still uses for its row rail — no
   `premium/*` primitive covers that exact list-row shape, so this is the
-  fourth copy of the same small pairing `AttentionQueue.tsx`/`TruthStrip.tsx`/
-  `ChangeTimeline.tsx` each already keep, not a new one.
+  fourth copy of the same small pairing
+  `AttentionQueue.tsx`/`TruthStrip.tsx` (deleted 2026-11-25)/`ChangeTimeline.tsx`
+  each kept, not a new one.
 - **Tests**: 54 vitest cases across 11 files (own suite) plus
   `bridge-premium-p1`'s 38 (`src/components/admin/premium/**`,
   `src/lib/admin/incidents/__tests__/{genome,release-watch}.test.ts`) — all
@@ -1153,8 +1154,9 @@ split its nineteen-section column into `posture | performance | schema`.
 production first: `/admin/billing` (zero `STRIPE_*` variables across 68
 production env vars, so it could only render its own "not available" notice)
 and the Deploys Traffic panel (the Vercel Web Analytics API answers `404
-not_found` for this project). `CreateInvoiceForm`, `src/lib/stripe/**` and
-`fetchVercelWebInsights()` are all untouched — each is a one-commit restore.
+not_found` for this project). `src/lib/stripe/**` and
+`fetchVercelWebInsights()` are untouched — each is a one-commit restore.
+`CreateInvoiceForm` was deleted 2026-11-25 as unused (it is in git history).
 
 **Result: 30 nav destinations → 19, with no surface lost.**
 
@@ -1297,7 +1299,7 @@ Phase 0 entry above.
   still in progress with no run yet reads `unknown`, never a fabricated
   `missed`.
 - **`invariant-lattice.ts`** (`/admin/health`) — checked both brief-named
-  sources directly: `scripts/check-schema-invariants.sh` and
+  sources directly: `scripts/db/check-schema-invariants.sh` and
   `npm run test:business` are CI-only and persist NO outcome anywhere this
   codebase can read (no table, no `docs/generated` file, no `admin_events`
   row) — their lattice rows are honestly `unknown` on every single request,

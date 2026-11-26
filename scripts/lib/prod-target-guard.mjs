@@ -12,7 +12,7 @@
  *                                            against production (removed in
  *                                            2026-11: the demo generator in
  *                                            src/lib/golf/demo replaced them)
- *   scripts/debug-player-insert.mjs          deletes golf_players, no guard
+ *   scripts/db/debug-player-insert.mjs          deletes golf_players, no guard
  *
  * Each is scoped by a hardcoded id today, so the blast radius is small AS
  * WRITTEN. The hazard is not the current code — it is that nothing stops the

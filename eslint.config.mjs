@@ -22,7 +22,7 @@ import noHealthyValueOnError from "./eslint-rules/no-healthy-value-on-error.mjs"
 import noRawErrorInConsole from "./eslint-rules/no-raw-error-in-console.mjs";
 import noUncheckedPaginatedRead from "./eslint-rules/no-unchecked-paginated-read.mjs";
 // D8 (db-tooling-drift) — the .in() PostgREST URL-length trap
-// (.claude/rules/database.md). Ratcheted by scripts/supabase-chunk-audit.mjs.
+// (.claude/rules/database.md). Ratcheted by scripts/audits/supabase-chunk-audit.mjs.
 import noUnchunkedInFilter from "./eslint-rules/no-unchunked-in-filter.mjs";
 // Import restrictions built from data (the Clubhouse boundary and the legacy
 // loggers, plan phase 7b). Flat config replaces `no-restricted-imports` options
@@ -208,10 +208,10 @@ export default tseslint.config(
       // the existing 1,111 can be paid down directory by directory, and the
       // baseline lowered as they are. Flip this to "warn" once it reaches 0.
       "helm/no-unchecked-supabase-error": "off",
-      // Enforced by scripts/fail-open-audit.mjs, same reason as the rule above:
+      // Enforced by scripts/audits/fail-open-audit.mjs, same reason as the rule above:
       // turning it on here would fail Lint on every PR until the debt is paid.
       "helm/no-empty-collection-on-error": "off",
-      // Off by default like its siblings: scripts/healthy-on-error-audit.mjs
+      // Off by default like its siblings: scripts/audits/healthy-on-error-audit.mjs
       // turns it on to take a census, so existing debt does not block every
       // unrelated lint run.
       "helm/no-healthy-value-on-error": "off",
@@ -219,7 +219,7 @@ export default tseslint.config(
       // census, so existing debt does not block every unrelated lint run.
       "helm/no-unchecked-paginated-read": "off",
       // D8: off here for the same reason as its siblings above —
-      // scripts/supabase-chunk-audit.mjs turns it on to take a census so
+      // scripts/audits/supabase-chunk-audit.mjs turns it on to take a census so
       // existing debt does not block every unrelated lint run. See
       // .claude/skills/helm-supabase/SKILL.md for the trap this guards.
       "helm/no-unchunked-in-filter": "off",

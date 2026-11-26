@@ -1,5 +1,5 @@
 {
-  "$comment": "Identifiers named in the knowledge base that do not exist in src/lib/types/database.ts. This number may only go DOWN. See scripts/check-doc-schema-drift.mjs for why this file exists.",
+  "$comment": "Identifiers named in the knowledge base that do not exist in src/lib/types/database.ts. This number may only go DOWN. See scripts/checks/check-doc-schema-drift.mjs for why this file exists.",
   "total": 0,
   "identifiers": [],
   "byFile": {}

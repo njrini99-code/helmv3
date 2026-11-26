@@ -1,6 +1,6 @@
 {
   "$comment": [
-    "Floor for scripts/mutation-gate.mjs, which gates the weekly stryker-coachhelm",
+    "Floor for scripts/checks/mutation-gate.mjs, which gates the weekly stryker-coachhelm",
     "CircleCI job (previously `npx stryker run || true`, which masked every exit",
     "code including a crash — Phase K / K.4.1 and finding #10 of the Helm Bridge",
     "control-plane implementation plan; that plan document is scaffolding in a",
@@ -21,7 +21,7 @@
     "though this is a single committed number rather than a ratchet baseline",
     "(a ratchet baseline needs something to commit the update, and the weekly",
     "job runs on an ephemeral CircleCI container that cannot commit back to the",
-    "repo — see the comment at the top of scripts/mutation-gate.mjs)."
+    "repo — see the comment at the top of scripts/checks/mutation-gate.mjs)."
   ],
   "floor": 40,
   "scope": "src/lib/coachhelm/v2/**/*.ts"

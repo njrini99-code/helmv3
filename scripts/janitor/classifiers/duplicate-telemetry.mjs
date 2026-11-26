@@ -6,7 +6,7 @@ export const TITLE = 'Duplicate telemetry event names';
 // posthog.capture('event_name', ...) / analytics.track('event_name', ...) —
 // deliberately scoped to literal-string event names; a template-literal or
 // variable event name is invisible to this regex by construction (same
-// caveat scripts/find-orphan-mounts.mjs documents for non-literal names).
+// caveat scripts/checks/find-orphan-mounts.mjs documents for non-literal names).
 const PATTERN = "\\.(capture|track)\\(\\s*['\"]([^'\"]+)['\"]";
 const LITERAL_RE = /\.(capture|track)\(\s*['"]([^'"]+)['"]/;
 // The real PATTERN embeds both quote characters, which is not safely

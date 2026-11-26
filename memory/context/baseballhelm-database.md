@@ -531,7 +531,7 @@ RLS: per-user rows only, team-scoped via `is_baseball_team_member`; table uses *
 > "elite event model" — see the note there), are declared absent below so
 > `npm run docs:schema-drift` exempts them structurally instead of carrying
 > them in the numeric baseline. **Deleting or migrating this section is a
-> ratchet-down** — re-run `node scripts/check-doc-schema-drift.mjs --update`
+> ratchet-down** — re-run `node scripts/checks/check-doc-schema-drift.mjs --update`
 > afterwards.
 
 <!-- schema-drift-absent: baseball_availability_statuses, baseball_bodyweight_entries, baseball_import_field_mappings, baseball_lift_import_runs, baseball_lift_sessions, baseball_log_staff_change, baseball_organizations, baseball_readiness_checkins, baseball_signal_visibility, baseball_soreness_maps, baseball_stat_facts -->
