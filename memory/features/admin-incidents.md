@@ -514,7 +514,6 @@ always derived at read time.
 
 ## Related Docs
 
-- `docs/SECURITY_AUDIT.md`
 - `docs/observability/OBSERVABILITY.md`
 - `memory/features/admin-platform.md` — the shared shell this entry was
   carved from.

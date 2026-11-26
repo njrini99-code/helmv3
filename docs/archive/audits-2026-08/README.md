@@ -11,8 +11,9 @@ their own headers; read each against its date, and check live state before
 acting on one. Current truth lives in `memory/features/`, the generated files
 under `docs/generated/`, and the code.
 
-Two audits stayed in `docs/audits/` because `memory/registry.yml` routes
+Two audits stayed out of the archive because `memory/registry.yml` routes
 features to them and `knowledge:check` forbids routing to an archived
-document: `BASEBALLHELM_CANONICAL_SPEC.md` and
-`IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md`. Their evidence folder is here:
-`evidence/ios-premium-2026-08-25/`.
+document: `IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` (still in `docs/audits/`;
+its evidence folder is here: `evidence/ios-premium-2026-08-25/`) and
+`BASEBALLHELM_CANONICAL_SPEC.md`, the BaseballHelm UI authority, which moved
+to `docs/baseball/` in repo tidy 6 (2026-11-25).

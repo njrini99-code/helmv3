@@ -269,7 +269,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/setup/RESEND_SETUP.md` | current | - | - | - | - |
 | `docs/setup/RUN_ON_YOUR_MACHINE.md` | current | - | - | - | - |
 | `docs/setup/SUPABASE_MCP_SETUP.md` | current | - | - | - | - |
-| `docs/v3-decisions.md` | current | yes | - | yes | - |
 | `docs/v3-research-golf-domain.md` | current | yes | - | yes | - |
 | `docs/v3-rls-template.md` | current | yes | - | yes | - |
 | `docs/v3-wave-sequence.md` | superseded | - | - | yes | - |
@@ -327,7 +326,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/generated/RETRIEVAL_BENCH.md` | generated | - | - | - | - |
 | `docs/generated/WORLD_MODEL.md` | generated | - | - | - | - |
 | `docs/generated/contracts/README.md` | generated | - | - | - | - |
-| `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 4 |
+| `docs/generated/contracts/admin_platform.md` | generated | - | - | yes | 7 |
 | `docs/generated/contracts/coachhelm_ai.md` | generated | - | - | yes | - |
 | `docs/generated/contracts/golf_round_lifecycle.md` | generated | - | - | - | - |
 | `docs/operations/GENERATED_FILE_POLICY.md` | generated | - | - | - | - |
@@ -389,7 +388,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `design-refresh/practice-plan/COACHHELM_PRACTICE_PLAN.md` | current | - | - | - | - |
 | `design-refresh/prerequisites/N-00-practice-plan-builder.md` | current | - | - | yes | 13 |
 | `design-refresh/stats-home/02-PLAN.md` | current | - | - | - | - |
-| `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md` | current | yes | - | - | - |
 | `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` | current | yes | - | yes | 14 |
 | `docs/ai-system/HANDOFF_BRIDGE_CONTROL_PLANE_2026-09-03.md` | current | - | - | yes | 2 |
 | `docs/ai-system/HELM_AUTONOMY_CONTROL_PLANE.md` | current | yes | - | yes | - |
@@ -429,9 +427,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 | Path | Lifecycle | Routed | AUTOGEN | Authority? | Dead |
 | --- | --- | --- | --- | --- | --- |
-| `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 6 |
-| `docs/SECURITY_AUDIT.md` | current | yes | - | - | - |
-| `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 2 |
 | `docs/audits/IOS_PREMIUM_NATIVE_AUDIT_2026-08-25.md` | current | yes | - | yes | 4 |
 | `docs/clubhouse/ALL_PAGE_AUDIT.md` | current | - | - | - | - |
 | `docs/clubhouse/CLUBHOUSE_AUDIT_2026-11-13.md` | current | - | - | - | - |
@@ -472,9 +467,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
 | `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 5 |
-| `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md` | current | - | - | - | - |
-| `docs/v3-feature-audit.md` | current | yes | - | yes | 2 |
-| `docs/v3-page-audit.md` | current | yes | - | yes | 1 |
+| `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md` | current | yes | - | - | - |
 | `memory/prompts/master-feature-audit.md` | current | - | - | - | - |
 
 ### `STATE_SNAPSHOT`
@@ -667,7 +660,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 
 ### `ARCHIVE`
 
-108 file(s) under `docs/archive/` — historical evidence only, listed
+115 file(s) under `docs/archive/` — historical evidence only, listed
 by count rather than by name because none of them is a reference and enumerating
 them would bury everything above.
 
@@ -864,13 +857,13 @@ them would bury everything above.
 | `design/handoff/design-system/components/surfaces/Inset.prompt.md` | current | - | - | - | - |
 | `design/handoff/design-system/components/surfaces/Surface.prompt.md` | current | - | - | - | - |
 | `design/handoff/design-system/readme.md` | current | - | - | - | 2 |
-| `docs/BI_DASHBOARD_ARCHITECTURE.md` | current | yes | - | - | 21 |
 | `docs/HELM_OS.md` | current | - | - | yes | - |
 | `docs/REPO_MAP.md` | superseded | - | - | yes | 2 |
 | `docs/ai-system/FEATURE_FLAGS.md` | current | yes | - | yes | - |
 | `docs/ai-system/GOLFHELM_ADVANCED_RELIABILITY_EXTENSION.md` | current | yes | - | yes | 9 |
 | `docs/ai-system/GOLFHELM_SELF_HEALING_ENGINEERING_SYSTEM.md` | current | - | - | yes | 12 |
 | `docs/ai-system/helmv3-ai-codebase-intelligence.md` | current | yes | - | yes | - |
+| `docs/baseball/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 2 |
 | `docs/baseball/BASEBALLHELM_PRODUCTION_ROADMAP.md` | current | - | - | yes | 2 |
 | `docs/baseball/COACH_NAV_8TAB_PROPOSAL.md` | current | - | - | yes | 1 |
 | `docs/baseball/ENTRY_SCENES_DESIGN.md` | current | - | - | - | 1 |
@@ -2268,7 +2261,7 @@ them would bury everything above.
 | `docs/clubhouse/phone/live.md` | current | - | - | - | 1 |
 | `docs/clubhouse/phone/messages.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/practice.md` | current | - | - | - | - |
-| `docs/clubhouse/phone/push-opt-in.md` | current | - | - | - | - |
+| `docs/clubhouse/phone/push-opt-in.md` | current | yes | - | - | - |
 | `docs/clubhouse/phone/qualifiers.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/recruiting.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/reset-password.md` | current | - | - | - | - |
@@ -2366,7 +2359,7 @@ them would bury everything above.
 | `docs/operations/WORKSPACES.md` | current | - | - | yes | 2 |
 | `docs/operations/coderabbit-review-workflow.md` | current | - | - | - | - |
 | `docs/operations/context/COMPETITIVE_INTEL_BASELINE.md` | current | - | - | yes | - |
-| `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 1 |
+| `docs/operations/context/MISSION_CONTROL_CONTEXT_INDEX.md` | current | - | - | yes | 2 |
 | `docs/operations/context/PRODUCT_CONTEXT_PACK.md` | current | - | - | yes | - |
 | `docs/operations/context/SYSTEMS_AND_DATA_MAP.md` | current | - | - | yes | - |
 | `docs/operations/context/TELEMETRY_BASELINE.md` | current | - | - | yes | - |

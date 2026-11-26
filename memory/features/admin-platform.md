@@ -1684,10 +1684,7 @@ assumed it would:
 
 ## Related Docs
 
-- `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`
-- `docs/BI_DASHBOARD_ARCHITECTURE.md`
 - `docs/observability/OBSERVABILITY.md`
-- `docs/SECURITY_AUDIT.md`
 - `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —
   the Bridge Premium Observability brief the "Phase 0 truth models" and
   "Phase 5 Engineering OS" sections above implement. Verified resolvable in
