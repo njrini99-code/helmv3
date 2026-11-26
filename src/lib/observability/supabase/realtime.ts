@@ -65,7 +65,7 @@ export interface ObserveRealtimeChannelOptions {
   channelClass: string;
   subscriptionType: RealtimeSubscriptionType;
   /** The call site's OWN status callback (existing product logic —
-   *  `use-calendar-range-events.ts`'s "refetch on reconnect", `useAdminPresence.ts`'s
+   *  `use-calendar-range-events.ts`'s "refetch on reconnect", the (since deleted, 2026-11-25) `useAdminPresence.ts`'s
    *  `setIsConnected`, etc.). Called with the exact same `(status, err)` this
    *  wrapper receives, so existing behavior is fully preserved. A throw from
    *  this callback is swallowed (never breaks the channel's own subscribe
