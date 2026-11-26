@@ -39,7 +39,7 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     expires_at: null,
     default: false,
     environment: {
-      production: false,
+      production: true,
       preview: false,
       development: false,
     },
