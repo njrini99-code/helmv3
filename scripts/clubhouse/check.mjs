@@ -410,7 +410,7 @@ const FAIRWAY_CLASS = /\b(?:font-fw-[a-z-]+|bg-canvas|fw-[a-z]+-[a-z-]+|rounded-
 export function checkGolfRoutesClubhouseOnly(files) {
   const v = [];
   for (const [file, src] of Object.entries(files)) {
-    if (!file.startsWith('src/app/golf/') || file.startsWith('src/app/golf/admin/') || /\/__tests__\/|\.test\.tsx?$/.test(file)) continue;
+    if (!file.startsWith('src/app/golf/') || file.startsWith('src/app/golf/admin/') || file.includes('/__tests__/') || /\.test\.tsx?$/.test(file)) continue;
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
     for (const m of code.matchAll(NOT_CLUBHOUSE_IMPORT)) v.push(`${file}: imports ${m[1]}; GolfHelm routes draw Clubhouse only (src/clubhouse)`);
     for (const m of code.matchAll(FAIRWAY_CLASS)) v.push(`${file}: uses the Fairway class ${m[0]}; GolfHelm routes draw Clubhouse only`);
