@@ -125,7 +125,7 @@ export function QualifierDetailPhone({
           label: 'Qualifiers',
           onBack,
         }}
-        action={coach ? <PhoneIconAction icon={Ellipsis} label="Qualifier actions" onClick={() => setActions(true)} /> : undefined}
+        action={coach ? <PhoneIconAction data-ctl="CTL-P009-018" icon={Ellipsis} label="Qualifier actions" onClick={() => setActions(true)} /> : undefined}
       />
       <header className="ch-qfm-head">
         <span className="ch-qfm-head__k">
@@ -143,13 +143,13 @@ export function QualifierDetailPhone({
       {coach && (manage || closeDue) && (
         <div className="ch-qfm-acts" onClickCapture={onSelectionClick}>
           {manage && (
-            <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
+            <Button data-ctl="CTL-P009-019" leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
               Manage selections
             </Button>
           )}
           {/* The desk head's own key, on the page once closing is the job: the same question follows (CH-09501). */}
           {closeDue && (
-            <Button variant="ghost" leftIcon={Lock} feel="warning" onClick={onAskClose}>
+            <Button data-ctl="CTL-P009-020" variant="ghost" leftIcon={Lock} feel="warning" onClick={onAskClose}>
               Close qualifier
             </Button>
           )}
@@ -227,13 +227,13 @@ export function QualifierDetailPhone({
         description={status === 'completed' ? 'Closed to new rounds' : status === 'in_progress' ? 'Players are entering rounds' : 'Not started yet'}
       >
         <div className="ch-qfm-sheet">
-          <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
+          <Button data-ctl="CTL-P009-021" leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
             Edit details
           </Button>
           {/* F-02: the standings as a spreadsheet, through the share sheet. */}
           {b && b.rows.length > 0 && <ExportStandings name={data.name} board={b} numRounds={data.numRounds} label="Export standings" variant="secondary" size="md" />}
           {(status === 'in_progress' || closeDue) && (
-            <Button
+            <Button data-ctl="CTL-P009-022"
               leftIcon={Lock}
               feel="warning"
               onClick={() => {
@@ -245,7 +245,7 @@ export function QualifierDetailPhone({
             </Button>
           )}
           {status === 'completed' && (
-            <Button
+            <Button data-ctl="CTL-P009-023"
               leftIcon={LockOpen}
               busy={reopenPending}
               onClick={() => {
@@ -403,7 +403,7 @@ function Board({
           const slideRow = (
             <RankSlot id={r.playerId} slide={slide} armed={armed}>
               {canOpen(r) ? (
-                <button
+                <button data-ctl="CTL-P009-024"
                   type="button"
                   data-print-visible=""
                   className={'ch-qfm-lb__row' + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
@@ -478,12 +478,12 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetailCore; row: ChQRow
         (messageHref || statsHref) && (
           <>
             {messageHref && (
-              <Button leftIcon={MessageSquare} href={messageHref}>
+              <Button data-ctl="CTL-P009-025" leftIcon={MessageSquare} href={messageHref}>
                 Message
               </Button>
             )}
             {statsHref && (
-              <Button leftIcon={ChartColumn} href={statsHref}>
+              <Button data-ctl="CTL-P009-026" leftIcon={ChartColumn} href={statsHref}>
                 Stats
               </Button>
             )}
@@ -497,7 +497,7 @@ function PlayerRounds({ data, row, onClose }: { data: ChQDetailCore; row: ChQRow
             {Array.from({ length: data.numRounds }, (_, i) => {
               const r = played.find((x) => x.number === i + 1);
               return (
-                <button
+                <button data-ctl="CTL-P009-027"
                   key={i}
                   type="button"
                   className="ch-qfm-chip ch-num"

@@ -153,10 +153,10 @@ export function QualifierDetail({
       description={`${short.length ? `${short.join('. ')}. ` : ''}Players won’t be able to enter or submit rounds in ${data.name}, including rounds already started, until you reopen it. It moves to Concluded.`}
       footer={
         <>
-          <Button variant="ghost" onClick={() => setConfirmClose(false)}>
+          <Button data-ctl="CTL-P009-009" variant="ghost" onClick={() => setConfirmClose(false)}>
             Keep it open
           </Button>
-          <Button
+          <Button data-ctl="CTL-P009-010"
             variant="primary"
             busy={close.pending}
             feel={null}
@@ -203,7 +203,7 @@ export function QualifierDetail({
       <main className="ch-qf ch-qf--detail" data-canopy="">
         <PrintHead data={data} />
         <div className="ch-qf-back" onClickCapture={back.onClickCapture}>
-          <BackLink href={LIST_HREF}>Qualifiers</BackLink>
+          <BackLink data-ctl="CTL-P009-011" href={LIST_HREF}>Qualifiers</BackLink>
         </div>
         <header className="ch-qf-head" data-canopy-head="tight">
           <div>
@@ -217,15 +217,15 @@ export function QualifierDetail({
           {coach && (
             <div className="ch-qf-head__act" onClickCapture={selectionClick}>
               {data.selectionState !== 'selected' && (
-                <Button leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
+                <Button data-ctl="CTL-P009-012" leftIcon={Users} href={`${LIST}/${data.id}/selection`}>
                   Manage selections
                 </Button>
               )}
-              <Button leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
+              <Button data-ctl="CTL-P009-013" leftIcon={Pencil} href={`${LIST}/${data.id}/edit`}>
                 Edit qualifier
               </Button>
               {(status === 'in_progress' || !!feed.ended) && (
-                <Button
+                <Button data-ctl="CTL-P009-014"
                   variant="ghost"
                   leftIcon={Lock}
                   feel="warning"
@@ -238,7 +238,7 @@ export function QualifierDetail({
                 </Button>
               )}
               {status === 'completed' && (
-                <Button
+                <Button data-ctl="CTL-P009-015"
                   variant="ghost"
                   leftIcon={LockOpen}
                   busy={reopen.pending}
@@ -507,7 +507,7 @@ function Leaderboard({
                 <RankSlot id={r.playerId} slide={slide} armed={armed}>
                   {/* The row is a mouse target too; the keyboard path is the scorecards button in its last cell (44pt on touch). */}
                   {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus */}
-                  <div
+                  <div data-ctl="CTL-P009-016"
                     className={'ch-qf-row ch-qf-lbrow' + (openable ? ' ch-qf-rowbtn' : '') + (isOpen ? ' is-open' : '') + (me ? ' is-me' : '') + (r.position === 1 && r.played > 0 ? ' is-lead' : '')}
                     data-state={r.state ?? undefined}
                     role="row"
@@ -559,7 +559,7 @@ function Leaderboard({
                     </span>
                     <span role="cell">
                       {openable && (
-                        <button
+                        <button data-ctl="CTL-P009-017"
                           type="button"
                           className="ch-qf-open"
                           aria-expanded={isOpen}

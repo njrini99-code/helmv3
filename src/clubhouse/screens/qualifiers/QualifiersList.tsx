@@ -107,7 +107,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
         {/* One primary per screen: with no qualifiers the page empty state (CH-09301) carries Create qualifier. */}
         {coach && (data.listError || data.items.length > 0) && (
           <div className="ch-qf-head__act">
-            <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
+            <Button data-ctl="CTL-P009-056" variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
               New qualifier
             </Button>
           </div>
@@ -131,7 +131,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
           body={coach ? 'Set up a qualifier to rank players across counted rounds and pick your lineup.' : 'Your coach’s qualifiers show here once they’re set up.'}
           action={
             coach ? (
-              <Button variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
+              <Button data-ctl="CTL-P009-057" variant="primary" leftIcon={Plus} href={`${LIST}/new`}>
                 New qualifier
               </Button>
             ) : undefined
@@ -151,7 +151,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
                   ['concluded', 'Concluded', con.length],
                 ] as const
               ).map(([k, label, n]) => (
-                <button key={k} type="button" className="ch-qf-pill" aria-pressed={filter === k} onClick={() => choose(k)}>
+                <button data-ctl="CTL-P009-058" key={k} type="button" className="ch-qf-pill" aria-pressed={filter === k} onClick={() => choose(k)}>
                   {label}
                   <span>{n}</span>
                 </button>
@@ -184,7 +184,7 @@ export function QualifiersList({ data, live }: { data: ChQList; live?: Record<st
                   title="No qualifiers match your filters"
                   body="Try a different search, or clear the status filter."
                   action={
-                    <Button
+                    <Button data-ctl="CTL-P009-059"
                       size="sm"
                       onClick={() => {
                         setFilter('all');
@@ -305,7 +305,7 @@ function HeroWithNext({ item, standingsError, today, line, coach = false }: { it
     <div className="ch-qf-herobox">
       <Hero item={item} standingsError={standingsError} today={today} line={line} foot coach={coach} />
       <div className="ch-qf-herobox__foot" data-ch-code="CH-09906">
-        <Button variant="primary" leftIcon={Play} href={href} className="ch-qf-herobox__go">
+        <Button data-ctl="CTL-P009-060" variant="primary" leftIcon={Play} href={href} className="ch-qf-herobox__go">
           {[`Play round ${next.round}`, next.course].filter(Boolean).join(' · ')}
         </Button>
         <span className="ch-qf-cta ch-qf-herobox__more" aria-hidden="true">
@@ -326,7 +326,7 @@ function Hero({ item, standingsError, today, line, foot = false, coach = false }
   const live = item.status === 'in_progress' && !standingsError && item.leaders.length > 0;
   const ended = endedOf(item, standingsError, today);
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')} {...press(detailHref(item.id))}>
+    <Link data-ctl="CTL-P009-061" href={detailHref(item.id)} className="ch-qf-hero" onClick={opened(item.id, 'hero')} {...press(detailHref(item.id))}>
       <div className="ch-qf-hero__main">
         <StatusPill status={item.status} ended={ended} viewer={coach ? 'coach' : 'player'} />
         <h2>
@@ -384,7 +384,7 @@ function Card({ item, standingsError, today, line, coach = false }: { item: ChQL
   const press = usePressPrefetch();
   const ended = endedOf(item, standingsError, today);
   return (
-    <Link href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')} {...press(detailHref(item.id))}>
+    <Link data-ctl="CTL-P009-062" href={detailHref(item.id)} className="ch-qf-card" onClick={opened(item.id, 'card')} {...press(detailHref(item.id))}>
       <div className="ch-qf-card__h">
         <div>
           <h3>{item.name}</h3>
