@@ -15,7 +15,18 @@ import { SKY_KEYS } from './scene-sky';
  */
 export const SKY_OFFSET_KEY = 'ch-au-sky-offset';
 
-const KEYS = JSON.stringify(SKY_KEYS.map((k) => [k.h, k.top, k.amb, k.ambA, k.stars]));
+const SCRIPT_UNSAFE: Record<string, string> = { '<': '\\u003C', '>': '\\u003E', '/': '\\u002F', '\u2028': '\\u2028', '\u2029': '\\u2029' };
+
+/**
+ * JSON that is safe inside an inline <script>: nothing in it can close the tag ("</script>") or open a comment, and the
+ * two line separators JavaScript reads as line ends are escaped. Each escape is the same value to JSON.parse and to
+ * the script, so the data reads back unchanged.
+ */
+export function scriptJson(value: unknown): string {
+  return JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (ch) => SCRIPT_UNSAFE[ch] ?? ch);
+}
+
+const KEYS = scriptJson(SKY_KEYS.map((k) => [k.h, k.top, k.amb, k.ambA, k.stars]));
 
 /**
  * The Clubhouse sign in (the front door) is prerendered behind /golf's route boundary, which the server leaves showing

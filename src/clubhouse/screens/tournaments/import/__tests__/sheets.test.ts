@@ -106,4 +106,26 @@ describe('results import: reading a file', () => {
     for (const c of cells) expect(c).not.toMatch(/[<>]/);
     expect(cells[1]).toBe('72');
   });
+
+  it('drops script and style bodies whatever their case or nesting, and never leaves a tag to reassemble', () => {
+    const html =
+      '<table><tr>' +
+      '<td>A<SCRIPT type="x">alert(1)</SCRIPT>va</td>' +
+      '<td><<script>script>alert(2)</script>Lind</td>' +
+      '<td>Ava<style>td{color:red}</style> Lind</td>' +
+      '<td>Ava<br/>Lind<BR>x</td>' +
+      '<td>Ava <script src=x</td>' +
+      '<td>1 &lt; 2</td>' +
+      '</tr></table>';
+    const cells = readHtmlTables(html)[0]!.rows[0]!;
+    for (const c of cells.slice(0, 4)) expect(c).not.toMatch(/[<>]|script|alert/i);
+    expect(cells[0]).toBe('Ava');
+    expect(cells[1]).toBe('Lind');
+    expect(cells[2]).toBe('Ava Lind');
+    expect(cells[3]).toBe('Ava Lind x');
+    // A tag never closed is not a tag: its bracket goes and the rest stays as plain text.
+    expect(cells[4]).toBe('Ava script src=x');
+    // An escaped bracket is text the sheet said; it is decoded after the tags are gone and only ever shown as text.
+    expect(cells[5]).toBe('1 < 2');
+  });
 });

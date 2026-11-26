@@ -322,7 +322,7 @@ function detailLines(value: unknown, rawKey: string | null, depth: number, words
 }
 
 const UNIT_SAID: Record<Measurement['unit'], string> = { percent: '%', strokes: ' strokes', yards: ' yards', feet: ' feet', count: '', score: '', ratio: '' };
-const isStrokesGained = (m: { metric_id: string; metric_label: string }): boolean => /^sg(_|$)/.test(m.metric_id) || /^SG\b|strokes gained/i.test(m.metric_label);
+const isStrokesGained = (m: { metric_id: string; metric_label: string }): boolean => /^sg(_|$)/.test(m.metric_id) || /^SG\b/i.test(m.metric_label) || /strokes gained/i.test(m.metric_label);
 
 function measurementLine(m: Measurement, against?: string): string {
   const sg = isStrokesGained(m);
