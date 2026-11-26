@@ -166,3 +166,20 @@ export async function fetchBenLeahIssueBoard(): Promise<AdminFetchResult<BenLeah
     return failed(err instanceof Error ? err.message : String(err));
   }
 }
+
+/**
+ * The open Ben + Leah reports, read-only: one GitHub list call (cached 60 s), no label ensure and no Vercel read, so the
+ * Desk space (/admin/spaces/desk) can count them on every view without writing to GitHub. "Open" is GitHub's own state;
+ * the fuller in-production / fixed-pending-deploy split stays on /admin/ben-leah, which reads the deploy history.
+ */
+export async function fetchBenLeahOpenIssues(): Promise<AdminFetchResult<BenLeahGitHubIssue[]>> {
+  const token = issueToken();
+  if (!token) return unconfigured('GitHub issues API');
+  const { owner, repo } = issueRepo();
+  try {
+    const raw = await fetchRawIssues(token, owner, repo);
+    return ok(raw.map(normalizeIssue).filter((i) => i.state === 'open'));
+  } catch (err) {
+    return failed(err instanceof Error ? err.message : String(err));
+  }
+}
