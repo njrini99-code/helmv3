@@ -234,7 +234,7 @@ the static knowledge checks. `npm run knowledge:check` already runs registry
 globs, document-inventory, and feature-map validation, so these are kept as
 named stages inside that step rather than repeated standalone workflow steps.
 
-The `Lint` job parses `src` and `scripts` once through `scripts/lint-ci.mjs
+The `Lint` job parses `src` and `scripts` once through `scripts/checks/lint-ci.mjs
 --scan`, enabling the three normally disabled audit rules. Separate named
 steps consume that report: standard ESLint still requires zero warnings/errors
 in `src/**/*.{ts,tsx}` (excluding the three audit rules); the generic ratchet

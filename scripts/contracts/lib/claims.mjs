@@ -453,7 +453,7 @@ const TABLE_OBJECT_RE =
  * objects each migration creates/replaces, cross-checkable against
  * `src/lib/types/database.ts` by supersede.mjs. This extracts NAMES only; it
  * does not attempt column-level or RLS-policy-body comparison, which is
- * scripts/check-doc-schema-drift.mjs's and .claude/rules/database.md's job,
+ * scripts/checks/check-doc-schema-drift.mjs's and .claude/rules/database.md's job,
  * not this tool's.
  */
 export function claimsFromMigrations(sources) {

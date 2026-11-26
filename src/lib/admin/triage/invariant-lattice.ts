@@ -5,7 +5,7 @@
  * never run the checks at request time." Checked directly, per invariant
  * source named in the brief:
  *
- *  - `scripts/check-schema-invariants.sh` — a CI-only grep script
+ *  - `scripts/db/check-schema-invariants.sh` — a CI-only grep script
  *    (`.github/workflows/ci.yml`) that checks two hardcoded schema rules and
  *    writes its result NOWHERE persistent: no table, no `docs/generated`
  *    file, no `admin_events` row. There is no recorded outcome to read.
@@ -82,7 +82,7 @@ const UNREADABLE_SOURCES: readonly { id: string; label: string; group: string; d
     // The two used to share the same undifferentiated label.
     label: 'Schema invariants (CI only)',
     group: 'Schema',
-    detail: 'scripts/check-schema-invariants.sh runs in CI only and persists no outcome to read.',
+    detail: 'scripts/db/check-schema-invariants.sh runs in CI only and persists no outcome to read.',
   },
   {
     id: 'business-contracts',

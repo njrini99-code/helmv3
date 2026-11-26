@@ -35,7 +35,7 @@ export function toMutationGateCharter(config: MutationGateConfigFile): MutationG
     floor: config.floor,
     scope: config.scope,
     provisional: (config.$comment ?? []).some((line) => /PROVISIONAL/.test(line)),
-    evidenceCommand: 'node scripts/mutation-gate.mjs  # report only exists on the weekly stryker-coachhelm CircleCI job',
+    evidenceCommand: 'node scripts/checks/mutation-gate.mjs  # report only exists on the weekly stryker-coachhelm CircleCI job',
   };
 }
 

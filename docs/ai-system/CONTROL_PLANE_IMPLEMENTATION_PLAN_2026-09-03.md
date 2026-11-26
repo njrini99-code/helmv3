@@ -363,7 +363,7 @@ at `44f4ce183`, not a claim taken from a doc.
 | `config/branch-retention.json`, `mcp-connector-ids.json`, `tool-authority.json`, `control-plane-observations.json` | **EXIST** | `ls config/` |
 | `config/change-risk.yml` | **MISSING** | not in `ls config/` |
 | `config/feature-flags.yml` | **MISSING** | not in `ls config/` |
-| `scripts/control-plane-verify.mjs` | **EXISTS**, live (`npm run control-plane:verify`; `wc -l` it for current size) | header read, lines 1-40 |
+| `scripts/checks/control-plane-verify.mjs` | **EXISTS**, live (`npm run control-plane:verify`; `wc -l` it for current size) | header read, lines 1-40 |
 | `scripts/observability/diagnostics-health.mjs` | **EXISTS**, live evidence-path probe | header read |
 | `scripts/knowledge/*` | **EXISTS**, live (`npm run knowledge:*`; `find scripts/knowledge` for the current list) | `find scripts/knowledge` |
 | `scripts/release/` | **MISSING** | `find` — no such directory |
@@ -1040,7 +1040,7 @@ Chaos Lab), §18 (Janitor), §19 (OS self-improvement/learning metrics).
   `control-plane:verify` run) is a working, live implementation of "make
   gaps visible and unfadeable" — directly reusable as the janitor's
   finding format.
-- `scripts/control-plane-verify.mjs` already implements the
+- `scripts/checks/control-plane-verify.mjs` already implements the
   UNKNOWN-never-becomes-PASS discipline §16 and §19 both ask for at the
   meta level (verifying the control plane's own controls).
 

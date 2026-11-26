@@ -46,7 +46,7 @@ import { fileURLToPath } from 'node:url';
 // re-walking `git worktree list --porcelain` here keeps exactly one algorithm
 // for "what workspaces exist and what kind are they" — the same reason
 // repo-doctor's identity check stopped owning its own git calls.
-import { inspectWorkspaces } from '../check-mutation-budget.mjs';
+import { inspectWorkspaces } from '../checks/check-mutation-budget.mjs';
 import { shareWorkspaceRuntime } from './shared-workspace-runtime.mjs';
 import { DEFAULT_MUTATION_BUDGET, mutationBudgetDecision } from './worktree-lifecycle.mjs';
 import { canonicalRootOf } from '../../.claude/hooks/lib/workspace-identity.mjs';

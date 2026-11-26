@@ -41,7 +41,7 @@ import { join, resolve } from 'node:path';
 import { canonicalRootOf } from '../../../.claude/hooks/lib/workspace-identity.mjs';
 import { git } from '../lib/exec.mjs';
 import { check, Status } from '../result.mjs';
-import { inspectWorkspaces } from '../../check-mutation-budget.mjs';
+import { inspectWorkspaces } from '../../checks/check-mutation-budget.mjs';
 import { mutationBudgetDecision, DEFAULT_MUTATION_BUDGET } from '../../lib/worktree-lifecycle.mjs';
 
 export const meta = { id: 'worktree', title: 'Worktree hygiene' };

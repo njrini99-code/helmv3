@@ -31,7 +31,7 @@
  * confused with `recruiting`". Treating that as a product-dependency edge
  * would be exactly the false positive Phase E.7 warns about for the
  * import-graph pass, just with a docs source instead of an import. The same
- * `NEGATED` pattern `scripts/check-doc-path-drift.mjs` already uses for its
+ * `NEGATED` pattern `scripts/checks/check-doc-path-drift.mjs` already uses for its
  * own false-positive class is reused here for the same reason: a sentence
  * whose whole point is that two things are NOT related must not become an
  * edge asserting they are.
@@ -43,7 +43,7 @@ const BACKTICK_TOKEN_RE = /`([a-z][a-z0-9_]*)`/g;
 
 /**
  * A line whose point is that two things are NOT related. Same list
- * `scripts/check-doc-path-drift.mjs` uses for its own false-positive class,
+ * `scripts/checks/check-doc-path-drift.mjs` uses for its own false-positive class,
  * because the failure shape is identical: a sentence built to disclaim a
  * relationship must not be read as asserting one.
  */

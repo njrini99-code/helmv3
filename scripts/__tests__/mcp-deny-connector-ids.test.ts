@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { classifyMcpDenyConnectorIds, FAIL, GAP, PASS } from '../control-plane-verify.mjs';
+import { classifyMcpDenyConnectorIds, FAIL, GAP, PASS } from '../checks/control-plane-verify.mjs';
 
 const REPO = resolve(__dirname, '../..');
 const SB = 'e139bbde-4728-4ed3-977f-7b1b22f4b69c';

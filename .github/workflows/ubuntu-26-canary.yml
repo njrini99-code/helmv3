@@ -112,7 +112,7 @@ jobs:
           set -euo pipefail
           actionlint -color
           shellcheck --severity=warning --exclude=SC2088 .claude/hooks/*.sh
-          node scripts/sql-lint-ratchet.mjs
+          node scripts/ratchets/sql-lint-ratchet.mjs
 
   node-and-playwright:
     # Mirrors ci.yml > pr-smoke-a11y's install steps (npm ci, Playwright

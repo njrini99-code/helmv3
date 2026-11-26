@@ -77,7 +77,7 @@
   ledger entry matches a curated correction-marker phrase, linked to the
   earlier entry it most resembles by shared vocabulary — a prompt to verify,
   never asserted as fact).
-- Explicitly does NOT reimplement `scripts/check-doc-schema-drift.mjs`: it
+- Explicitly does NOT reimplement `scripts/checks/check-doc-schema-drift.mjs`: it
   reuses that script's own ground-truth file (`src/lib/types/database.ts`)
   and its baseline (`.doc-schema-baseline.json`, read-only) for a much
   narrower per-feature existence check, and inherits its registry-feature-id
@@ -123,9 +123,9 @@
   pass) against a synthetic fixture proving all three supersession tiers plus
   provenance and the FeatureKey-alias/unknown-id resolution paths — not the
   real repo's own content, so it cannot regress as this repo's docs change.
-  `node scripts/knowledge/check.mjs`, `node scripts/check-registry-globs.mjs`,
-  `node scripts/check-doc-path-drift.mjs`, `node
-  scripts/check-doc-schema-drift.mjs` all clean against this change (see this
+  `node scripts/knowledge/check.mjs`, `node scripts/checks/check-registry-globs.mjs`,
+  `node scripts/checks/check-doc-path-drift.mjs`, `node
+  scripts/checks/check-doc-schema-drift.mjs` all clean against this change (see this
   PR's body for full gate output). `npm run typecheck`/`npm run lint` NOT run
   — no `.ts`/`.tsx` app code changed, and this worktree does not install its
   own `node_modules` (symlinked to the canonical checkout's, read-only) per

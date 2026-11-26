@@ -18,7 +18,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, dirname } from 'node:path';
 
 const REPO = resolve(__dirname, '../../..');
-const VERIFY = resolve(REPO, 'scripts/control-plane-verify.mjs');
+const VERIFY = resolve(REPO, 'scripts/checks/control-plane-verify.mjs');
 
 /** Only the surface the static checks read. Copying the repo is not required. */
 const FIXTURE_PATHS = [
@@ -251,7 +251,7 @@ describe('failure injection — each control goes red for its own reason', () =>
 
 describe('runtime evidence expires when its configuration moves', () => {
   it('changing a service deny rule STALES that service observations', async () => {
-    const { fingerprintFor, resolveObservation } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor, resolveObservation } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const obs = { result: 'PASS', observed_at: 'fixture', configuration_fingerprint: fingerprintFor('Sentry', { settings, mcp }) };
@@ -270,7 +270,7 @@ describe('runtime evidence expires when its configuration moves', () => {
   it('an unrelated service is NOT staled by that change', async () => {
     // A fingerprint over the whole settings file would stale everything on every
     // edit, and people would learn to ignore STALE.
-    const { fingerprintFor } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const before = fingerprintFor('Vercel', { settings, mcp });
@@ -284,7 +284,7 @@ describe('runtime evidence expires when its configuration moves', () => {
     // `mcp__<uuid>__<tool>`, a spelling that contains no service name. A
     // fingerprint keyed on display names alone would let an edit to exactly
     // the rules that match what the session can call stale nothing.
-    const { fingerprintFor } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const id = '0badf00d-0000-4000-8000-000000000000';
@@ -304,7 +304,7 @@ describe('runtime evidence expires when its configuration moves', () => {
   });
 
   it('a service governed by nothing is marked ungoverned, not silently fresh', async () => {
-    const { fingerprintFor, isUngoverned } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor, isUngoverned } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     expect(isUngoverned(fingerprintFor('GitHub', { settings, mcp }))).toBe(true);
@@ -317,21 +317,21 @@ describe('github capability is fingerprintable — the gap that closed by measur
     // it in JS (insertion order), so identical capability produced different
     // digests and the check failed against itself. Two implementations of one
     // fact is the defect this repo keeps finding.
-    const { githubCapabilityFingerprint } = await import('../../../scripts/control-plane-verify.mjs');
+    const { githubCapabilityFingerprint } = await import('../../../scripts/checks/control-plane-verify.mjs');
     const a = githubCapabilityFingerprint({ account_id: 1, repo_id: 2, granted_scope_names: ['repo', 'gist'] });
     const b = githubCapabilityFingerprint({ granted_scope_names: ['gist', 'repo'], repo_id: 2, account_id: 1 });
     expect(a).toBe(b);
   });
 
   it('DROPPING a scope changes the digest — branch deletion depends on this path', async () => {
-    const { githubCapabilityFingerprint } = await import('../../../scripts/control-plane-verify.mjs');
+    const { githubCapabilityFingerprint } = await import('../../../scripts/checks/control-plane-verify.mjs');
     const full = githubCapabilityFingerprint({ account_id: 1, repo_id: 2, granted_scope_names: ['repo', 'workflow'] });
     const narrowed = githubCapabilityFingerprint({ account_id: 1, repo_id: 2, granted_scope_names: ['repo'] });
     expect(narrowed).not.toBe(full);
   });
 
   it('a different account or repo changes the digest', async () => {
-    const { githubCapabilityFingerprint } = await import('../../../scripts/control-plane-verify.mjs');
+    const { githubCapabilityFingerprint } = await import('../../../scripts/checks/control-plane-verify.mjs');
     const base = { account_id: 1, repo_id: 2, granted_scope_names: ['repo'] };
     expect(githubCapabilityFingerprint({ ...base, account_id: 9 })).not.toBe(githubCapabilityFingerprint(base));
     expect(githubCapabilityFingerprint({ ...base, repo_id: 9 })).not.toBe(githubCapabilityFingerprint(base));
@@ -350,7 +350,7 @@ describe('github capability is fingerprintable — the gap that closed by measur
 
 describe('exit semantics', () => {
   it('UNKNOWN outranks FAIL and never becomes PASS', async () => {
-    const { summarise, PASS, FAIL, UNKNOWN } = await import('../../../scripts/control-plane-verify.mjs');
+    const { summarise, PASS, FAIL, UNKNOWN } = await import('../../../scripts/checks/control-plane-verify.mjs');
     expect(summarise([{ state: PASS }]).code).toBe(0);
     expect(summarise([{ state: PASS }, { state: FAIL }]).code).toBe(1);
     expect(summarise([{ state: PASS }, { state: UNKNOWN }]).code).toBe(2);
@@ -379,7 +379,7 @@ describe('open-PR disposition residue — current state, with one exact exceptio
   const KEEP = { disposition: 'ACTIVE', worktree_policy: 'KEEP' };
 
   async function classify(over: Record<string, unknown>) {
-    const { classifyDispositionResidue } = await import('../../../scripts/control-plane-verify.mjs');
+    const { classifyDispositionResidue } = await import('../../../scripts/checks/control-plane-verify.mjs');
     return classifyDispositionResidue({ openPrs: [], recorded: {}, mergeFacts: {}, headSha: HEAD, ...over });
   }
 
@@ -517,7 +517,7 @@ describe('main branch protection is a fact the verifier reads, not one a human r
   };
 
   async function classify(over: Record<string, unknown>) {
-    const { classifyBranchProtection } = await import('../../../scripts/control-plane-verify.mjs');
+    const { classifyBranchProtection } = await import('../../../scripts/checks/control-plane-verify.mjs');
     return classifyBranchProtection({ lookup: 'OK', protection: OK, rulesets: [], gapRegistered: true, ...over });
   }
 
@@ -579,7 +579,7 @@ describe('main branch protection is a fact the verifier reads, not one a human r
 
 describe('the summary counts registered gaps, not checks that happen to report one', () => {
   it('five registered gaps and one GAP-state check reports five, not one', async () => {
-    const { summarise, PASS, GAP } = await import('../../../scripts/control-plane-verify.mjs');
+    const { summarise, PASS, GAP } = await import('../../../scripts/checks/control-plane-verify.mjs');
     const s = summarise([{ state: PASS }, { state: GAP }], [1, 2, 3, 4, 5].map((i) => ({ id: 'G' + i })));
     expect(s.registered_gap_count).toBe(5);
     expect(s.gap_state_check_count).toBe(1);
@@ -587,12 +587,12 @@ describe('the summary counts registered gaps, not checks that happen to report o
   });
 
   it('zero registered gaps reports zero', async () => {
-    const { summarise, PASS } = await import('../../../scripts/control-plane-verify.mjs');
+    const { summarise, PASS } = await import('../../../scripts/checks/control-plane-verify.mjs');
     expect(summarise([{ state: PASS }], []).registered_gap_count).toBe(0);
   });
 
   it('registered gaps never change the exit code by themselves', async () => {
-    const { summarise, PASS, FAIL, UNKNOWN } = await import('../../../scripts/control-plane-verify.mjs');
+    const { summarise, PASS, FAIL, UNKNOWN } = await import('../../../scripts/checks/control-plane-verify.mjs');
     const many = [1, 2, 3].map((i) => ({ id: 'G' + i }));
     expect(summarise([{ state: PASS }], many).code).toBe(0);
     expect(summarise([{ state: FAIL }], many).code).toBe(1);

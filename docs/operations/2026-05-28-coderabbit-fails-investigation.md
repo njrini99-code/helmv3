@@ -196,7 +196,7 @@ delete it if it's truly unused.
 
 ### 4.7 shellcheck + actionlint — **INHERITED NOISE**
 
-shellcheck fails on `scripts/apply-migration.sh:25` SC2155 (last
+shellcheck fails on `scripts/db/apply-migration.sh:25` SC2155 (last
 modified 2026-01-08). actionlint reports SC2086/SC2071/SC2251 in
 `.github/workflows/ci.yml`, `migration-lockdown.yml`, `review-gate.yml`
 — none of which were modified by today's PRs.

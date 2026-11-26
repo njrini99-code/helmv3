@@ -2388,4 +2388,4 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/knowledge/SOURCES.md` | current | - | - | - | - |
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 7 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 7 |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 8 |

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { countFile, regressions } from '../any-ratchet.mjs';
+import { countFile, regressions } from '../ratchets/any-ratchet.mjs';
 
 describe('any-ratchet', () => {
   it('counts explicit any in annotations, assertions, arrays and generics', () => {

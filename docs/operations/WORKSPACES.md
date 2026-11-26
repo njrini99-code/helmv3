@@ -34,7 +34,7 @@ ref to `git fetch`, or do the slice in the parent's checkout.
 | Rule | Value | What happens |
 | --- | --- | --- |
 | Checkout count (`DEFAULT_MUTATION_BUDGET`, `scripts/lib/worktree-lifecycle.mjs`) | 6 | Advisory. With 6 or more counted checkouts, creation prints a warning and carries on. `repo:doctor` warns above 7. The SessionStart line `worktrees: N linked (advisory; ...)` shows the count and nothing refuses at it. A folder count cannot tell how many agents are working. |
-| `HELM_MAX_MUTATION_WORKTREES=<n>` | unset | Opt-in. Setting it makes `<n>` a hard cap: creation refuses with `BUDGET_EXCEEDED` and `repo:doctor` fails instead of warning. Nothing sets it today. `scripts/check-mutation-budget.mjs` reports the same count as a CLI; creation does not call it. |
+| `HELM_MAX_MUTATION_WORKTREES=<n>` | unset | Opt-in. Setting it makes `<n>` a hard cap: creation refuses with `BUDGET_EXCEEDED` and `repo:doctor` fails instead of warning. Nothing sets it today. `scripts/checks/check-mutation-budget.mjs` reports the same count as a CLI; creation does not call it. |
 | Disk reserve (`HELM_DISK_RESERVE_GIB`, legacy `HELM_MIN_FREE_GIB`) | 12 GiB | Hard. Creation refuses with `DISK_LOW` when less than 12 GiB is free under the worktree home. At zero free bytes no command can run, not even the cleanup, so this is the machine's floor. |
 | Clone floor (`HELM_CLONE_RESERVE_GIB`, `HELM_CLONE_BUDGET_GIB`) | 2 GiB + 0.5 GiB | The `post-checkout` clone and the deps-hygiene backstop need only this much free, so a raw `git worktree add` can succeed where `new-worktree.sh` is refused. |
 

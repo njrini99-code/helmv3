@@ -12,7 +12,7 @@
  * checkable (a path either has a tracked file matching it or it does not; an
  * identifier either appears in generated schema truth or it does not).
  *
- * NOR DOES THIS REIMPLEMENT scripts/check-doc-schema-drift.mjs.
+ * NOR DOES THIS REIMPLEMENT scripts/checks/check-doc-schema-drift.mjs.
  *
  * That script is a repo-wide gate with a baseline ratchet, a `<!--
  * schema-drift-absent: ... -->` declared-absence convention, and full-corpus
@@ -88,7 +88,7 @@ function markSuperseded(claim, superseded) {
 /**
  * A NEGATED assertion is not a stale claim — it is a claim ABOUT an absence,
  * and is correct precisely because the path doesn't resolve. Same exemption
- * scripts/check-doc-path-drift.mjs makes, for the same reason: flagging it
+ * scripts/checks/check-doc-path-drift.mjs makes, for the same reason: flagging it
  * would demand a session "fix" a true statement.
  */
 const NEGATED_RE =

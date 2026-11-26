@@ -127,7 +127,7 @@ jobs:
       - name: Schema invariants
         id: schema_invariants
         continue-on-error: true
-        run: ./scripts/check-schema-invariants.sh
+        run: ./scripts/db/check-schema-invariants.sh
 
       # Catches `.limit(N > 1000)` including behind a named constant, which the
       # ast-grep rule cannot see through — that is exactly where the live
@@ -135,7 +135,7 @@ jobs:
       - name: PostgREST row caps
         id: row_caps
         continue-on-error: true
-        run: node scripts/check-row-cap-limits.mjs
+        run: node scripts/checks/check-row-cap-limits.mjs
 
       # `Database types drift` (database.ts vs the LIVE production schema) is
       # NOT a PR step any more (2026-09-23): a production apply turned every
@@ -384,7 +384,7 @@ jobs:
           VERCEL_API_TOKEN: ${{ secrets.VERCEL_API_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           INTERNAL_LOG_KEY: ${{ secrets.INTERNAL_LOG_KEY }}
-        run: node scripts/check-helm-bridge-env.mjs --drift
+        run: node scripts/checks/check-helm-bridge-env.mjs --drift
 
       # The npm script uses --node-modules-dir=none deliberately — and it
       # matters MORE now that this step shares a checkout with `npm ci`. With
@@ -624,12 +624,12 @@ jobs:
         run: |
           export HELM_ESLINT_REPORT="$RUNNER_TEMP/helm-eslint.json"
           printf 'HELM_ESLINT_REPORT=%s\n' "$HELM_ESLINT_REPORT" >> "$GITHUB_ENV"
-          node scripts/lint-ci.mjs --scan
+          node scripts/checks/lint-ci.mjs --scan
 
       - name: ESLint
         id: eslint
         continue-on-error: true
-        run: node scripts/lint-ci.mjs
+        run: node scripts/checks/lint-ci.mjs
 
       # The ratchet steps below carry continue-on-error so that ONE
       # failure can't mask the others — on 2026-08-18 a stale Supabase
