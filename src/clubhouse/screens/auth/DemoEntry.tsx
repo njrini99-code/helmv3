@@ -124,7 +124,7 @@ export function DemoEntry({ writes = defaultWrites, initial, navigate }: { write
       back={{ href: '/', label: 'Home', hideInApp: true }}
       foot={
         <span>
-          Already have an account? <Link href="/golf/login">Sign in</Link>
+          Already have an account? <Link data-ctl="CTL-P015-004" href="/golf/login">Sign in</Link>
         </span>
       }
       viewKey={view}
@@ -137,7 +137,7 @@ export function DemoEntry({ writes = defaultWrites, initial, navigate }: { write
         <div className="ch-au-form" data-ch-code="CH-15971">
           <h1>Try the live demo</h1>
           <p className="ch-au-sub">You’re already signed in. Continue where you left off.</p>
-          <GateKey idle="Continue to dashboard" working="Opening…" type="button" onClick={() => (navigate ? navigate(landing) : router.push(landing))} />
+          <GateKey data-ctl="CTL-P015-005" idle="Continue to dashboard" working="Opening…" type="button" onClick={() => (navigate ? navigate(landing) : router.push(landing))} />
         </div>
       ) : (
         <form className="ch-au-form" onSubmit={submit} noValidate aria-label="Demo access form" data-ch-code="CH-15970">

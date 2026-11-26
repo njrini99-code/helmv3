@@ -79,10 +79,10 @@ export function SceneMount({ camera = 'rest', play = false, hour: fixedHour }: {
       {/* A still of the actual course is in the server HTML. The form and artwork never wait for the animation chunk. */}
       <div className="ch-au-poster" aria-hidden="true" data-instant={instant ? '' : undefined}>
         <svg className="ch-au-poster__wide" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMax slice" focusable="false">
-          <image href="/clubhouse/auth/course-arrival.jpg" width="1600" height="1000" />
+          <image data-ctl="CTL-P015-024" href="/clubhouse/auth/course-arrival.jpg" width="1600" height="1000" />
         </svg>
         <svg className="ch-au-poster__tall" viewBox="650 0 760 1000" preserveAspectRatio="xMidYMax slice" focusable="false">
-          <image href="/clubhouse/auth/course-arrival.jpg" width="1600" height="1000" />
+          <image data-ctl="CTL-P015-025" href="/clubhouse/auth/course-arrival.jpg" width="1600" height="1000" />
         </svg>
         <div className="ch-au-poster__wash" style={posterWash(hour)} />
       </div>

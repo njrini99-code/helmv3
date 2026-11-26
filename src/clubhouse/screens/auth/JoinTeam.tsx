@@ -107,7 +107,7 @@ export function JoinTeam({ data, playerId, writes = gateWrites, initial, navigat
                 <b>{player.name}</b>
                 <span className="ch-au-plate__s">{[classLabel(player.year), player.email].filter(Boolean).join(' · ')}</span>
               </div>
-              <button
+              <button data-ctl="CTL-P015-016"
                 type="button"
                 className="ch-au-plate__swap"
                 onClick={() => void writes.switchAccount(`/golf/join/${data.code}`)}
@@ -126,9 +126,9 @@ export function JoinTeam({ data, playerId, writes = gateWrites, initial, navigat
               </AuthNotice>
             </div>
           )}
-          <GateKey idle={`Join ${team.name}`} working="Joining…" busy={busy} type="button" onClick={() => void join()} code="CH-15432" />
+          <GateKey data-ctl="CTL-P015-017" idle={`Join ${team.name}`} working="Joining…" busy={busy} type="button" onClick={() => void join()} code="CH-15432" />
           <p className="ch-au-alt">
-            <Link href="/golf/dashboard">Not now</Link>
+            <Link data-ctl="CTL-P015-018" href="/golf/dashboard">Not now</Link>
           </p>
         </div>
       ) : (
@@ -150,7 +150,7 @@ function Joined({ name, already, focusOnMount, onContinue }: { name: string; alr
         {already ? `You’re already on ${name}` : `You’re on ${name}`}
       </h1>
       <p className="ch-au-sub">Team schedules, rounds and messages are in your dashboard.</p>
-      <GateKey idle="Go to your dashboard" working="Opening…" type="button" onClick={onContinue} />
+      <GateKey data-ctl="CTL-P015-019" idle="Go to your dashboard" working="Opening…" type="button" onClick={onContinue} />
     </div>
   );
 }
@@ -165,9 +165,9 @@ export function JoinInvalid({ navigate }: { navigate?: (href: string) => void } 
       <div className="ch-au-form" role="alert" data-ch-code="CH-15935">
         <h1>That code doesn’t match a team</h1>
         <p className="ch-au-sub">It may have been typed wrong, or the team has changed its code. Check it with your coach.</p>
-        <GateKey idle="Try another code" working="Opening…" type="button" onClick={() => to('/golf/join')} />
+        <GateKey data-ctl="CTL-P015-020" idle="Try another code" working="Opening…" type="button" onClick={() => to('/golf/join')} />
         <p className="ch-au-alt">
-          <Link href="/golf/dashboard">Go to dashboard</Link>
+          <Link data-ctl="CTL-P015-021" href="/golf/dashboard">Go to dashboard</Link>
         </p>
       </div>
     </GateFrame>
