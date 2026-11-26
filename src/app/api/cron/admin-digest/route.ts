@@ -10,6 +10,9 @@ import { sendOpsDigest } from '@/lib/admin/digest/transport';
 import { digestRunOutcome } from '@/lib/admin/digest/outcome';
 import { CRON_REGISTRY, classifyCronStatus } from '@/lib/admin/cron-registry';
 import { fetchDeployFreshness } from '@/lib/admin/deploy-freshness';
+import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
+import { readLiveSnapshot } from '@/lib/admin/clubhouse/live';
+import { clubhouseDigest, type ClubhouseDigest } from '@/lib/admin/clubhouse/pulse';
 
 export const runtime = 'nodejs';
 export const maxDuration = 120;
@@ -49,6 +52,22 @@ async function fetchShippedYesterday(): Promise<Array<{ title: string; number: n
       .filter((i) => typeof i.title === 'string' && typeof i.number === 'number')
       .map((i) => ({ title: i.title as string, number: i.number as number }));
   } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The Clubhouse section (Bridge plan §10), from the same snapshot Pulse reads, so the email and the screen agree.
+ * Fail-soft: a read that throws leaves the section undefined, which the email says as "could not check".
+ */
+async function readClubhouseDigest(now: number): Promise<ClubhouseDigest | undefined> {
+  try {
+    const graph = loadBridgeGraph();
+    if (!graph) return undefined;
+    const s = await readLiveSnapshot(graph, now);
+    return clubhouseDigest({ state: s.state, graph, dayRows: s.dayRows, alerts: s.alerts, pipe: s.pipe, release: s.release, driftCount: s.drift.length });
+  } catch (error) {
+    void logServerError('[admin-digest] Clubhouse section failed', { action: 'admin-digest.clubhouse', metadata: { error: error instanceof Error ? error.message : String(error) } });
     return undefined;
   }
 }
@@ -270,7 +289,11 @@ export async function GET(req: NextRequest) {
       reds,
       shippedYesterday,
       deploy: { state: deploy.state, summary: deploy.summary },
+      clubhouse: await readClubhouseDigest(now.getTime()),
     };
+    // R-09 is the one Clubhouse rule that needs the owner today: a silent pipe
+    // makes every other all-clear untrusted. Digest only, no push (D10).
+    if (data.clubhouse?.alerts.some((a) => a.rule === 'R-09')) reds.push('Clubhouse signal pipe is silent (R-09): every Clubhouse all-clear is untrusted');
 
     const result = await sendOpsDigest(buildDigestEmail(data));
     if (!result.sent && !result.skipped) {

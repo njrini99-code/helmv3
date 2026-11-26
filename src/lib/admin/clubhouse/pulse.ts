@@ -6,6 +6,8 @@
 import type { BridgeGraph } from './graph';
 import {
   actionStats,
+  codeTotals,
+  isFailureRow,
   headlineAlerts,
   pageWall,
   previousRelease,
@@ -103,6 +105,60 @@ export function wallInWords(tiles: readonly PulseTile[]): string[] {
   }
   const fine = tiles.filter((t) => !t.quiet && t.failures === 0 && t.views > 0).length;
   if (fine) out.push(`${fine} page${fine === 1 ? '' : 's'} with traffic and no failures`);
+  return out;
+}
+
+/** The digest's Clubhouse section (plan §10): what the email says, built from the same model Pulse renders. */
+export interface ClubhouseDigest {
+  state: 'ok' | 'no-signal' | 'off' | 'error';
+  pipe: string;
+  untrusted: boolean;
+  /** R-01 to R-07 hits in the last day, plus R-09 when it holds. */
+  alerts: Array<{ rule: string; severity: string; title: string }>;
+  wall: string[];
+  topCodes: Array<{ code: string; count: number; users: number }>;
+  release: { release: string; base: string | null; newCodes: number; rising: number; gone: number } | null;
+  driftCount: number;
+}
+
+const DIGEST_RULES = new Set(['R-01', 'R-02', 'R-03', 'R-04', 'R-05', 'R-06', 'R-07', 'R-09']);
+
+export function clubhouseDigest(i: {
+  state: 'ok' | 'no-signal' | 'error';
+  graph: Pick<BridgeGraph, 'pages'>;
+  dayRows: readonly HourlyRow[];
+  alerts: readonly BridgeAlert[];
+  pipe: PipeStatus;
+  release: string | null;
+  driftCount: number;
+}): ClubhouseDigest {
+  const m = pulseModel({ graph: i.graph, rows: i.dayRows, dayRows: i.dayRows, alerts: i.alerts, pipe: i.pipe, release: i.release });
+  const d = m.release?.diff;
+  return {
+    state: i.pipe.tone === 'off' ? 'off' : i.state,
+    pipe: i.pipe.label,
+    untrusted: m.untrusted,
+    alerts: i.alerts.filter((a) => DIGEST_RULES.has(a.rule)).map((a) => ({ rule: a.rule, severity: a.severity, title: a.title })),
+    wall: wallInWords(m.tiles),
+    topCodes: codeTotals(i.dayRows.filter(isFailureRow)).slice(0, 5).map((c) => ({ code: c.code, count: c.count, users: c.users })),
+    release: m.release && d ? { release: m.release.release, base: m.release.base, newCodes: d.codes.filter((c) => c.kind === 'new').length, rising: d.codes.filter((c) => c.kind === 'rising').length, gone: d.codes.filter((c) => c.kind === 'gone').length } : null,
+    driftCount: i.driftCount,
+  };
+}
+
+/** Plain-text lines for the digest. Unknown is said as unknown, never as zero. */
+export function clubhouseDigestLines(c: ClubhouseDigest | undefined): string[] {
+  if (!c) return ['  Could not check.'];
+  if (c.state === 'off') return ['  The signal pipe is switched off; nothing was counted.'];
+  if (c.state === 'no-signal') return ['  No signal yet (the signal tables are held or empty); nothing was counted.'];
+  if (c.state === 'error') return ['  The signals could not be read.'];
+  const out = [`  ${c.pipe}${c.untrusted ? ' (no all-clear can be trusted)' : ''}`];
+  if (c.alerts.length) for (const a of c.alerts) out.push(`  - ${a.rule} ${a.severity}: ${a.title}`);
+  else out.push(c.untrusted ? '  No rule fired, but the pipe cannot vouch for it.' : '  No rule fired.');
+  for (const w of c.wall) out.push(`  ${w}`);
+  if (c.topCodes.length) out.push(`  Top codes: ${c.topCodes.map((t) => `${t.code} ×${t.count} (${t.users} people)`).join(', ')}`);
+  if (c.release) out.push(`  Release ${c.release.release.slice(0, 7)}${c.release.base ? ` vs ${c.release.base.slice(0, 7)}` : ''}: ${c.release.newCodes} new, ${c.release.rising} rising, ${c.release.gone} gone`);
+  out.push(`  Drift: ${c.driftCount} kind${c.driftCount === 1 ? '' : 's'} in the last day`);
   return out;
 }
 
