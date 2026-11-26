@@ -3,7 +3,7 @@
 # Control-plane enforcement inventory
 
 **Generated. Do not hand-edit between the AUTOGEN markers** —
-`node scripts/gen-enforcement-inventory.mjs` rewrites them from
+`node scripts/gen/gen-enforcement-inventory.mjs` rewrites them from
 `.claude/settings.json` and the hook scripts on disk.
 
 This file exists because prose could not notice a mechanism being deleted. On

@@ -26,14 +26,14 @@
  *
  * ET-4 lost two days to reading CONFIGURED as "that is all there is".
  *
- * Usage: node scripts/gen-tool-authority.mjs [--check]
+ * Usage: node scripts/gen/gen-tool-authority.mjs [--check]
  */
 import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const DECL = resolve(ROOT, 'config/tool-authority.json');
 const OBS = resolve(ROOT, 'config/control-plane-observations.json');
 const CONNECTOR_IDS = resolve(ROOT, 'config/mcp-connector-ids.json');
@@ -233,7 +233,7 @@ function header() {
 
 # Tool Authority Matrix
 
-**Generated between the AUTOGEN markers** — \`node scripts/gen-tool-authority.mjs\`
+**Generated between the AUTOGEN markers** — \`node scripts/gen/gen-tool-authority.mjs\`
 rebuilds them from \`config/tool-authority.json\`,
 \`config/control-plane-observations.json\`, \`.claude/settings.json\` and
 \`.mcp.json\`.
@@ -277,7 +277,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const cur = existsSync(OUT) ? readFileSync(OUT, 'utf-8') : '';
     if (cur !== next) {
       console.error('❌ docs/TOOL_AUTHORITY_MATRIX.md is stale.');
-      console.error('   Run: node scripts/gen-tool-authority.mjs && commit the result.');
+      console.error('   Run: node scripts/gen/gen-tool-authority.mjs && commit the result.');
       process.exit(1);
     }
     console.log('✅ tool authority matrix matches configuration and observations');

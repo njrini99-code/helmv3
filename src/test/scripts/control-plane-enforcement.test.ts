@@ -26,7 +26,7 @@ import { resolve } from 'node:path';
 const REPO = resolve(__dirname, '../../..');
 const SETTINGS = resolve(REPO, '.claude/settings.json');
 const INVENTORY = resolve(REPO, 'docs/CONTROL_PLANE_ENFORCEMENT.md');
-const GENERATOR = resolve(REPO, 'scripts/gen-enforcement-inventory.mjs');
+const GENERATOR = resolve(REPO, 'scripts/gen/gen-enforcement-inventory.mjs');
 
 type Settings = {
   hooks?: Record<string, Array<{ matcher?: string; hooks?: Array<{ command?: string }> }>>;
@@ -170,7 +170,7 @@ describe('the generated table cannot lie about its own columns', () => {
     // repo-controlled config, so the risk was a mangled table rather than an
     // injection. A table that misreports its own columns is still exactly what
     // this file exists not to produce.
-    const { esc } = await import('../../../scripts/gen-enforcement-inventory.mjs');
+    const { esc } = await import('../../../scripts/gen/gen-enforcement-inventory.mjs');
     expect(esc('Write|Edit')).toBe('Write\\|Edit');
     expect(esc('a\\b')).toBe('a\\\\b');
     expect(esc('a\\|b')).toBe('a\\\\\\|b');

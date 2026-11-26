@@ -32,22 +32,22 @@
  * PRESENT is not the same as one that has been exercised. Where this generator
  * can only read configuration, it says so.
  *
- * Usage:  node scripts/gen-enforcement-inventory.mjs [--check]
+ * Usage:  node scripts/gen/gen-enforcement-inventory.mjs [--check]
  *   --check  exit 1 if the file on disk differs from what would be generated
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/gen-enforcement-inventory.mjs',
+  name: 'scripts/gen/gen-enforcement-inventory.mjs',
   summary:
     "Generates docs/CONTROL_PLANE_ENFORCEMENT.md from the live configuration; --check compares instead of writing.",
   secrets: 'SUPABASE_SERVICE_ROLE_KEY',
 });
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SETTINGS = resolve(ROOT, '.claude/settings.json');
 const OUT = resolve(ROOT, 'docs/CONTROL_PLANE_ENFORCEMENT.md');
 
@@ -602,7 +602,7 @@ function render() {
 # Control-plane enforcement inventory
 
 **Generated. Do not hand-edit between the AUTOGEN markers** —
-\`node scripts/gen-enforcement-inventory.mjs\` rewrites them from
+\`node scripts/gen/gen-enforcement-inventory.mjs\` rewrites them from
 \`.claude/settings.json\` and the hook scripts on disk.
 
 This file exists because prose could not notice a mechanism being deleted. On
@@ -652,7 +652,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const current = existsSync(OUT) ? readFileSync(OUT, 'utf-8') : '';
     if (current !== next) {
       console.error('❌ docs/CONTROL_PLANE_ENFORCEMENT.md is stale.');
-      console.error('   Run: node scripts/gen-enforcement-inventory.mjs && commit the result.');
+      console.error('   Run: node scripts/gen/gen-enforcement-inventory.mjs && commit the result.');
       process.exit(1);
     }
     console.log('✅ enforcement inventory matches live configuration');

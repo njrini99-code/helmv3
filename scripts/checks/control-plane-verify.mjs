@@ -419,9 +419,9 @@ function checkGenerated() {
     return;
   }
   for (const [id, args] of [
-    ['enforcement-inventory-current', ['scripts/gen-enforcement-inventory.mjs', '--check']],
+    ['enforcement-inventory-current', ['scripts/gen/gen-enforcement-inventory.mjs', '--check']],
     ['generated-docs-current', ['scripts/regen-docs.mjs', '--check']],
-    ['tool-authority-matrix-current', ['scripts/gen-tool-authority.mjs', '--check']],
+    ['tool-authority-matrix-current', ['scripts/gen/gen-tool-authority.mjs', '--check']],
   ]) {
     const r = sh('node', args);
     add('generated', id, r.status === 0 ? PASS : FAIL,
@@ -717,7 +717,7 @@ function checkObservationFreshness() {
   const mcp = readJson(resolve(ROOT, '.mcp.json')) ?? {};
   const obs = readJson(resolve(ROOT, 'config/control-plane-observations.json'));
   if (!settings || !obs) return add('tools', 'observation-freshness', UNKNOWN, 'settings or observations unreadable');
-  return import('../gen-tool-authority.mjs').then(({ fingerprintFor }) => {
+  return import('../gen/gen-tool-authority.mjs').then(({ fingerprintFor }) => {
     const stale = (obs.observations ?? []).filter(
       (o) => o.configuration_fingerprint !== fingerprintFor(o.service, { settings, mcp }),
     );

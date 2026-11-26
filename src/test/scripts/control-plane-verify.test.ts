@@ -251,7 +251,7 @@ describe('failure injection — each control goes red for its own reason', () =>
 
 describe('runtime evidence expires when its configuration moves', () => {
   it('changing a service deny rule STALES that service observations', async () => {
-    const { fingerprintFor, resolveObservation } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor, resolveObservation } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const obs = { result: 'PASS', observed_at: 'fixture', configuration_fingerprint: fingerprintFor('Sentry', { settings, mcp }) };
@@ -270,7 +270,7 @@ describe('runtime evidence expires when its configuration moves', () => {
   it('an unrelated service is NOT staled by that change', async () => {
     // A fingerprint over the whole settings file would stale everything on every
     // edit, and people would learn to ignore STALE.
-    const { fingerprintFor } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const before = fingerprintFor('Vercel', { settings, mcp });
@@ -284,7 +284,7 @@ describe('runtime evidence expires when its configuration moves', () => {
     // `mcp__<uuid>__<tool>`, a spelling that contains no service name. A
     // fingerprint keyed on display names alone would let an edit to exactly
     // the rules that match what the session can call stale nothing.
-    const { fingerprintFor } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     const id = '0badf00d-0000-4000-8000-000000000000';
@@ -304,7 +304,7 @@ describe('runtime evidence expires when its configuration moves', () => {
   });
 
   it('a service governed by nothing is marked ungoverned, not silently fresh', async () => {
-    const { fingerprintFor, isUngoverned } = await import('../../../scripts/gen-tool-authority.mjs');
+    const { fingerprintFor, isUngoverned } = await import('../../../scripts/gen/gen-tool-authority.mjs');
     const mcp = JSON.parse(readFileSync(resolve(REPO, '.mcp.json'), 'utf-8'));
     const settings = JSON.parse(readFileSync(resolve(REPO, '.claude/settings.json'), 'utf-8'));
     expect(isUngoverned(fingerprintFor('GitHub', { settings, mcp }))).toBe(true);
