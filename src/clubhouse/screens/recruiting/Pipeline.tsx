@@ -43,7 +43,7 @@ export function Pipeline({
             </span>
           </span>
           {stage && onShowAll && (
-            <button type="button" className="ch-rec-pipe__all" onClick={onShowAll}>
+            <button data-ctl="CTL-P014-011" type="button" className="ch-rec-pipe__all" onClick={onShowAll}>
               Show all <span className="ch-num">{total}</span>
               <Icon icon={ChevronDown} size={14} />
             </button>
@@ -58,7 +58,7 @@ export function Pipeline({
           const on = stage === s.value;
           const n = counts[s.value];
           return (
-            <button
+            <button data-ctl="CTL-P014-012"
               key={s.value}
               type="button"
               // W41: a stage at 0 draws the quiet coin (recruiting.css), whatever its stage's tone.
