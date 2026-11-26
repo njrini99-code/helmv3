@@ -33,7 +33,7 @@ describe('computeBreadcrumbs', () => {
       { label: 'Bridge', href: '/admin' },
       { label: 'Thread' },
     ]);
-    expect(computeBreadcrumbs('/admin')).toEqual([
+    expect(computeBreadcrumbs('/admin/pulse')).toEqual([
       { label: 'Bridge', href: '/admin' },
       { label: 'Pulse', href: undefined },
     ]);

@@ -25,7 +25,7 @@ describe('ADMIN_NAV', () => {
       '/admin/spaces/reliability',
       '/admin/spaces/ship',
       '/admin/spaces/desk',
-      '/admin',
+      '/admin/pulse',
       '/admin/clubhouse',
       '/admin/clubhouse/controls',
       '/admin/clubhouse/actions',
@@ -80,7 +80,7 @@ describe('ADMIN_NAV', () => {
     // The pre-Clubhouse map, verbatim. A regrouping that moved one of these
     // would silently retrain an operator's hands.
     const before: Record<string, string> = {
-      '1': '/admin', '3': '/admin/errors', '0': '/admin/health', '8': '/admin/jobs', X: '/admin/database',
+      '1': '/admin/pulse', '3': '/admin/errors', '0': '/admin/health', '8': '/admin/jobs', X: '/admin/database',
       F: '/admin/traces', T: '/admin/teams', '7': '/admin/users', '2': '/admin/activity', U: '/admin/utilization',
       '5': '/admin/golf', '6': '/admin/baseball', L: '/admin/lifting', '9': '/admin/deploys', K: '/admin/releases',
       '4': '/admin/auth', W: '/admin/work', Z: '/admin/engineering', B: '/admin/ben-leah',
@@ -89,7 +89,7 @@ describe('ADMIN_NAV', () => {
   });
 
   it('the Clubhouse screens take letters no live or retired shortcut uses', () => {
-    const clubhouse = ADMIN_NAV.filter((e) => e.section === 'Clubhouse' && e.href !== '/admin');
+    const clubhouse = ADMIN_NAV.filter((e) => e.section === 'Clubhouse' && e.href !== '/admin/pulse');
     for (const entry of clubhouse) {
       // A Clubhouse screen with no free letter has no key at all, never a borrowed one.
       if (entry.key === undefined) continue;
@@ -161,7 +161,9 @@ describe('navEntryForPath (rail highlight and breadcrumbs)', () => {
   });
 
   it('matches on a segment boundary, and /admin owns only itself', () => {
-    expect(navEntryForPath('/admin')?.label).toBe('Pulse');
+    expect(navEntryForPath('/admin/pulse')?.label).toBe('Pulse');
+    // /admin itself only redirects to Today: no tab owns it.
+    expect(navEntryForPath('/admin')).toBeNull();
     expect(navEntryForPath('/admin/users/abc')?.href).toBe('/admin/users');
     expect(navEntryForPath('/admin/users-archive')).toBeNull();
     expect(navEntryForPath('/admin/thread/user/1')).toBeNull();
@@ -188,8 +190,8 @@ describe('ADMIN_MORE_VIEWS (owner D5: self-heal views under More)', () => {
 });
 
 describe('BRIDGE_BOTTOM_NAV_HREFS', () => {
-  it('declares the daily-loop four in tab order (Synthesis Decision 6)', () => {
-    expect(BRIDGE_BOTTOM_NAV_HREFS).toEqual(['/admin', '/admin/errors', '/admin/health', '/admin/users']);
+  it('puts the spaces on the phone, in tab order (owner, 2026-11-26)', () => {
+    expect(BRIDGE_BOTTOM_NAV_HREFS).toEqual(['/admin/spaces/today', '/admin/spaces/people', '/admin/spaces/reliability', '/admin/spaces/product']);
   });
 
   it('every bottom-nav href is a real registered ADMIN_NAV tab', () => {
@@ -203,11 +205,9 @@ describe('BRIDGE_BOTTOM_NAV_HREFS', () => {
     for (const href of BRIDGE_BOTTOM_NAV_HREFS) {
       expect(BRIDGE_BOTTOM_NAV_LABELS[href]).toBeTruthy();
     }
-    // "Users & Teams" (the rail label) is deliberately shortened for the tab column.
-    expect(BRIDGE_BOTTOM_NAV_LABELS['/admin/users']).toBe('Users');
   });
 
   it('the bottom bar and the rail name the same place the same way', () => {
-    expect(BRIDGE_BOTTOM_NAV_LABELS['/admin']).toBe(ADMIN_NAV.find((e) => e.href === '/admin')!.label);
+    for (const href of BRIDGE_BOTTOM_NAV_HREFS) expect(BRIDGE_BOTTOM_NAV_LABELS[href]).toBe(ADMIN_NAV.find((e) => e.href === href)!.label);
   });
 });

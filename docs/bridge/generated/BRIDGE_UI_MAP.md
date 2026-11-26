@@ -6,7 +6,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 
 | Screen | Name | Route | Codes |
 | --- | --- | --- | --- |
-| B01 | Pulse | /admin | 15 |
+| B01 | Pulse | /admin/pulse | 15 |
 | B02 | Pages | /admin/clubhouse | 14 |
 | B03 | Controls | /admin/clubhouse/controls | 11 |
 | B04 | Actions | /admin/clubhouse/actions | 12 |

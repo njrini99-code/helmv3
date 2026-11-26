@@ -421,6 +421,11 @@
         "category": "routes"
       },
       {
+        "id": "routes:src/app/admin/pulse/**",
+        "pattern": "src/app/admin/pulse/**",
+        "category": "routes"
+      },
+      {
         "id": "routes:src/app/admin/releases/**",
         "pattern": "src/app/admin/releases/**",
         "category": "routes"
@@ -8519,6 +8524,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/lifting/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "routes:src/app/admin/pulse/**",
+      "kind": "feature_route",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/pulse/**"
         }
       ]
     },
