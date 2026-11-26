@@ -7,12 +7,20 @@ run by path.
 
 ## Layout
 
-Scripts live in purpose folders. Gates, ratchets, database tooling and the
-dev, worktree and release scripts stay at the top level; everything one-off
-or domain-specific is in a folder.
+Scripts live in purpose folders. Only the entry points people and docs call
+by path stay at the top level: dev, doctor, the Claude launcher, worktree
+lifecycle, hooks setup, `check-changed`, the gates and Review Gate previews,
+`regen-docs`/`regen-resolve`, `release-status`, `repo-guards`, `pr-land`,
+`serialize`, `run-bounded`, the Vercel build hook and service-worker stamp,
+plus a few unsorted helpers (`native-canvas.mjs`, `ios-dev.sh`,
+`e2e-supabase-admin.ts`, `setup-admin.ts`). Everything else is in a folder.
 
 | Folder | What is in it |
 | --- | --- |
+| `checks/` | Repo and code gates: cycles, doc path and schema drift, env and flags, registry globs, row caps, vercelignore, settings ownership, the control-plane verifier and weekly report, orphan mounts, the CI lint gate, the mutation gate |
+| `ratchets/` | Count ratchets that may only fall: `any`, ESLint, Supabase lint, markdown, SQL and test location |
+| `audits/` | ESLint-backed census audits: fail-open, healthy-on-error, paginated reads, Supabase chunking and unchecked errors |
+| `gen/` | Generators for the enforcement inventory and the tool-authority matrix |
 | `seed/` | BaseballHelm and golf demo seeders, the golf demo refresh, and the demo-coverage verifiers |
 | `crm/` | CRM outreach, email, Resend and Stripe one-offs (coach batches, sequences, send priority, CDN warm-up) |
 | `repair/` | Data backfills and recomputes, and the one-shot incident archiver |
@@ -21,7 +29,7 @@ or domain-specific is in a folder.
 | `observability/` | Database observability certification, coverage and replay, flight-recorder audit, diagnostics health, the local trace collector |
 | `ui-intelligence/` | UI smoke, App Store screenshots, desktop screenshots and the UI atlas |
 | `clubhouse/` | Clubhouse checks, capture and quality tooling |
-| `db/` | Migration, schema and advisor tooling |
+| `db/` | Anything whose input is the database, the migrations, the ledger or the generated types: migration apply and checks, `db:types` and its drift check, pgTAP, `schema`, `run-sql`, the stats-consistency guard, advisor tooling |
 | `knowledge/` | Feature registry and knowledge-base checks and generators |
 | `github/` | CI helpers: PR status, drift gate, repo settings |
 | `golf/` | The coach welcome email send |
