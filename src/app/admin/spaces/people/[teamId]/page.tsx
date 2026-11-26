@@ -496,7 +496,7 @@ function ErrorsTab({ data }: { data: TeamPeopleResult }) {
   if (codes.state === 'error') {
     return (
       <div style={pad}>
-        <ReadFailed br={BR.team.failed} what="Clubhouse sessions" why={codes.error} action="admin.people-space.readTeamPeople" />
+        <ReadFailed br={BR.team.failed} what="Clubhouse sessions" why={codes.error} />
       </div>
     );
   }

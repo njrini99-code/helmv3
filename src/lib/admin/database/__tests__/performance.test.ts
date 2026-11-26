@@ -32,6 +32,12 @@ describe('fetchQueryPerformance', () => {
     expect(result.status).toBe('unconfigured');
   });
 
+  it('a missing column on the applied function is a failure, never "not applied yet"', async () => {
+    mocks.rpc.mockResolvedValue({ data: null, error: { code: '42703', message: 'column d.queryid does not exist' } });
+    const result = await fetchQueryPerformance();
+    expect(result.status).toBe('error');
+  });
+
   it('maps latest and recent_regressions and computes the workload split by source_class', async () => {
     mocks.rpc.mockResolvedValue({
       data: {

@@ -122,6 +122,17 @@ export function describeServerCode(code: string | null | undefined): (ServerCode
   return { label: `Code ${code}`, owner: 'unknown', meaning: `The server answered ${code}, which has no plain-words entry yet.`, steps: ['Look the code up in the Postgres or PostgREST error list, then add it to src/lib/admin/server-codes.ts.'], match: 'none', source };
 }
 
+/**
+ * The narrow set a reader may treat as "not applied yet" (show as unconfigured, not failed): the function, table or
+ * schema itself is absent. A missing column (42703) or a stale embed on an object that exists is a real breakage and
+ * stays a failure there, so it is not in this set.
+ */
+export const NOT_APPLIED_CODES: ReadonlySet<string> = new Set(['PGRST202', '42883', '42P01', '3F000']);
+
+export function isNotAppliedCode(code: string | null | undefined): boolean {
+  return !!code && NOT_APPLIED_CODES.has(code);
+}
+
 /** True when the code means the schema the code expects is missing (a migration not applied, or held). */
 export function isMigrationMissingCode(code: string | null | undefined): boolean {
   return !!code && MIGRATION_MISSING_CODES.has(code);

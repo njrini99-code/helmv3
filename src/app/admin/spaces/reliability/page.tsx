@@ -18,6 +18,7 @@ import {
   feedReport,
   filterFeed,
   fixStatus,
+  hourlyCodeOf,
   itemExplanation,
   itemHeadlineQuoted,
   hourlyKeyOf,
@@ -213,7 +214,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
       code,
       expected,
       watched: Boolean(watching),
-      isNew: selected.state === 'new' || (release !== null && selected.release === release && Boolean(selected.catalogCode && fresh.has(selected.catalogCode))),
+      isNew: selected.state === 'new' || (release !== null && selected.release === release && Boolean(hourlyCodeOf(selected) && fresh.has(hourlyCodeOf(selected)!))),
       errorLog: errorLog.state === 'ok' ? { state: 'ok', rows: errorLog.data } : { state: errorLog.state === 'no-signal' ? 'no-signal' : 'error' },
       r02People: RULE_LINES.newAfterReleasePeople,
     });
@@ -233,7 +234,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
         sameServer={selected.serverCode ? { same: sameCode.filter((i) => i.serverCode === selected!.serverCode).length, of: sameCode.length } : null}
         notes={{ state: notesState, expected, watching }}
         outsideWindow={outsideWindow}
-        fix={fixStatus(baselineComplete ? releaseRows.data : null, selected.catalogCode, release)}
+        fix={fixStatus(baselineComplete ? releaseRows.data : null, hourlyCodeOf(selected), release, { release: selected.release, at: selected.at })}
         noteControls={{
           watch: <WatchControl id={noteId} watching={watching} state={notesState} why={why} />,
           expected: <ExpectedNote id={noteId} note={expected} by={null} state={notesState} why={why} />,

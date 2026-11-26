@@ -18,15 +18,14 @@ import 'server-only';
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import { failed, ok, unconfigured, type AdminFetchResult } from '@/lib/admin/fetch-result';
-import { isMigrationMissingCode } from '@/lib/admin/server-codes';
+import { isNotAppliedCode } from '@/lib/admin/server-codes';
 
 type MaybePostgrestError = { code?: string | null; message?: string | null } | null;
 
-
 function isMigrationNotAppliedError(error: MaybePostgrestError): boolean {
   if (!error) return false;
-  // One list with the Bridge's explanations (server-codes.ts), so the two cannot drift.
-  if (isMigrationMissingCode(error.code)) return true;
+  // The narrow "object absent" set (server-codes.ts): a missing column on an applied function is a failure, not HELD.
+  if (isNotAppliedCode(error.code)) return true;
   const message = (error.message ?? '').toLowerCase();
   return (
     message.includes('could not find the function') ||

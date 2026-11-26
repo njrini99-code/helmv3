@@ -12,6 +12,7 @@ import {
   itemHeadline,
   feedReport,
   fixStatus,
+  hourlyCodeOf,
   itemState,
   newCodes,
   ordinal,
@@ -266,6 +267,15 @@ describe('fixStatus (from the 8-day hourly history, never a stored flag)', () =>
     expect(f).toMatchObject({ state: 'not-seen-in-live', tone: 'good' });
     expect(f.words).toContain('last failed in old2 (2026-11-22)');
     expect(f.words).toContain('only once the live release has had real use');
+  });
+  it('the failure on screen counts: a live-release failure is never "not seen in live" or "no history"', () => {
+    expect(fixStatus([], 'CH-9999', 'live', { release: 'live', at: '2026-11-26T10:00:00.000Z' })).toMatchObject({ state: 'new-in-live', tone: 'bad' });
+    expect(fixStatus(rows, 'CH-7004', 'live', { release: 'live', at: '2026-11-26T10:00:00.000Z' })).toMatchObject({ state: 'still-failing', tone: 'bad' });
+    expect(fixStatus(rows, 'CH-7004', 'live', { release: 'old2', at: '2026-11-22T09:00:00.000Z' }).state).toBe('not-seen-in-live');
+  });
+  it('keys on the code the hourly store counts under: the sent code, else the catalog code', () => {
+    expect(hourlyCodeOf({ code: 'CH-1000', catalogCode: 'CH-7004' })).toBe('CH-1000');
+    expect(hourlyCodeOf({ code: null, catalogCode: 'CH-7004' })).toBe('CH-7004');
   });
   it('no rows for the code is no history, not fixed', () => {
     expect(fixStatus(rows, 'CH-9999', 'live').state).toBe('no-history');

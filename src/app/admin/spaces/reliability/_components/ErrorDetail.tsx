@@ -47,6 +47,13 @@ export interface DetailProps {
  * What happened, the likely cause and how we know it, what to do, and whether it still fails. Above the tabs, so the
  * first thing on the panel is the explanation, not the plumbing.
  */
+/** With no Bridge ID the Fix pack button is disabled, so the steps must not send the reader to it. */
+function stepsFor(steps: readonly string[], bridgeId: number | null): readonly string[] {
+  if (bridgeId !== null) return steps;
+  const kept = steps.filter((s) => !s.startsWith('Open the Fix pack'));
+  return kept.length < steps.length ? [...kept, 'This failure has no Bridge ID, so there is no Fix pack: search the code for its page and action instead.'] : steps;
+}
+
 function Explain({ item, fix }: { item: FeedItem; fix: FixStatus }) {
   const e = itemExplanation(item);
   const quoted = itemHeadlineQuoted(item);
@@ -67,7 +74,7 @@ function Explain({ item, fix }: { item: FeedItem; fix: FixStatus }) {
       <p className="rl-explain-why">{e.why}</p>
       <div className="bs-eyebrow">What to do</div>
       <ol className="rl-steps">
-        {e.steps.map((s) => (
+        {stepsFor(e.steps, item.bridgeId).map((s) => (
           <li key={s}>{s}</li>
         ))}
       </ol>

@@ -266,12 +266,27 @@ export function newCodes(rows: ReadonlyArray<{ code: string; release: string }>,
 }
 
 /** One state per item. Precedence: Expected (the owner said so), then Watching, then New in this release. */
-export function itemState(catalogCode: string | null, notes: Pick<NotesIndex, 'expected' | 'watched'>, fresh: ReadonlySet<string>, sessionRelease: string | null, release: string | null): FeedState {
+export function itemState(
+  catalogCode: string | null,
+  notes: Pick<NotesIndex, 'expected' | 'watched'>,
+  fresh: ReadonlySet<string>,
+  sessionRelease: string | null,
+  release: string | null,
+  hourlyCode: string | null = catalogCode,
+): FeedState {
   if (!catalogCode) return null;
   if (notes.expected.has(catalogCode)) return 'expected';
   if (notes.watched.has(catalogCode)) return 'watching';
-  if (release && sessionRelease === release && fresh.has(catalogCode)) return 'new';
+  if (release && sessionRelease === release && hourlyCode && fresh.has(hourlyCode)) return 'new';
   return null;
+}
+
+/**
+ * The code a failure is counted under in `clubhouse_signal_hourly` (ingest.ts `codeFor`): the code the event sent,
+ * else the resolved row's CH code or Bridge ID. The notes key on `catalogCode`; release history keys on this.
+ */
+export function hourlyCodeOf(i: Pick<FeedItem, 'code' | 'catalogCode'>): string | null {
+  return i.code ?? i.catalogCode;
 }
 
 /** Who counts as "the same person" for an ordinal: the user, else (signed out) the session. */
@@ -334,7 +349,7 @@ export function buildFeed(i: BuildFeedInput): FeedItem[] {
         durationMs: e.duration_ms,
         trail: e.trail,
         drift: e.drift ?? [],
-        state: itemState(catalogCode, i.notes, i.fresh, s?.release ?? null, i.release),
+        state: itemState(catalogCode, i.notes, i.fresh, s?.release ?? null, i.release, e.code ?? catalogCode),
         nth: 0,
       };
     });
@@ -670,10 +685,13 @@ export interface FixStatus {
  * "Not seen in the live release" is not "fixed": it may just have had no traffic yet, and the words say so.
  */
 export function fixStatus(
-  rows: ReadonlyArray<{ code: string; release: string; at: string }> | null,
+  history: ReadonlyArray<{ code: string; release: string; at: string }> | null,
   code: string | null,
   live: string | null,
+  /** The failure on screen is evidence too: it can never read as "not seen in live" or "no history". */
+  self?: { release: string | null; at: string },
 ): FixStatus {
+  const rows = history && code && self?.release ? [...history, { code, release: self.release, at: self.at }] : history;
   if (!rows) return { state: 'unknown', words: 'Whether it still fails is unknown: the 8-day release history could not be read whole.', tone: 'muted' };
   if (!code) return { state: 'unknown', words: 'Whether it still fails is unknown: the failure carried no code to follow.', tone: 'muted' };
   if (!live) return { state: 'unknown', words: 'Whether it still fails is unknown: the live release is not known here.', tone: 'muted' };

@@ -119,4 +119,8 @@ xx90 to xx93 stay the four states (loading, empty, failed, no signal yet).
 - **Read states** (`src/app/admin/spaces/_ui/states.tsx`): `ReadFailed` ("<What> could not be read." + "Nothing here is
   an all clear."), `SignalNotThere`, `Incomplete` ("Part of this page could not be read": numbers may be low, never a
   zero) and `incompleteLine` for reports. `states.test.ts` bans the old variants across the spaces.
-- `MIGRATION_MISSING_CODES` is shared with the query-performance reader so "migration not applied" means one thing.
+- Two code lists in `server-codes.ts`: the wide `MIGRATION_MISSING_CODES` for explanations, and the narrow
+  `NOT_APPLIED_CODES` (function, table or schema absent) that the query-performance reader treats as "not applied yet".
+  A missing column on an applied function stays a failure there.
+- "Still failing?" keys on the code the hourly store counts under (`hourlyCodeOf`: the sent code, else the catalog
+  code), and the failure on screen is folded in, so a live-release failure never reads as fixed.
