@@ -379,3 +379,18 @@ CREATE POLICY "users_insert_own" ON "public"."users" FOR INSERT TO "authenticate
 CREATE POLICY "users_select_own" ON "public"."users" FOR SELECT USING ((( SELECT "auth"."uid"() AS "uid") = "id"));
 
 CREATE POLICY "users_update_own" ON "public"."users" FOR UPDATE USING ((( SELECT "auth"."uid"() AS "uid") = "id"));
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+CREATE POLICY "bridge_notes_super_admin_read" ON "public"."bridge_notes" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_super_admin"() AS "is_super_admin"));
+
+CREATE POLICY "clubhouse_drift_super_admin_read" ON "public"."clubhouse_drift" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_super_admin"() AS "is_super_admin"));
+
+CREATE POLICY "clubhouse_session_events_super_admin_read" ON "public"."clubhouse_session_events" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_super_admin"() AS "is_super_admin"));
+
+CREATE POLICY "clubhouse_sessions_super_admin_read" ON "public"."clubhouse_sessions" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_super_admin"() AS "is_super_admin"));
+
+CREATE POLICY "clubhouse_signal_hourly_super_admin_read" ON "public"."clubhouse_signal_hourly" FOR SELECT TO "authenticated" USING (( SELECT "public"."is_super_admin"() AS "is_super_admin"));

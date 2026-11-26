@@ -318,3 +318,32 @@ ALTER TABLE ONLY "public"."users"
 
 ALTER TABLE ONLY "helm_private"."golf_demo_editors"
     ADD CONSTRAINT "golf_demo_editors_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+ALTER TABLE ONLY "public"."bridge_notes"
+    ADD CONSTRAINT "bridge_notes_pkey" PRIMARY KEY ("id");
+
+ALTER TABLE ONLY "public"."clubhouse_drift"
+    ADD CONSTRAINT "clubhouse_drift_pkey" PRIMARY KEY ("kind", "code", "release");
+
+ALTER TABLE ONLY "public"."clubhouse_session_events"
+    ADD CONSTRAINT "clubhouse_session_events_pkey" PRIMARY KEY ("session_id", "seq");
+
+ALTER TABLE ONLY "public"."clubhouse_sessions"
+    ADD CONSTRAINT "clubhouse_sessions_pkey" PRIMARY KEY ("session_id");
+
+ALTER TABLE ONLY "public"."clubhouse_signal_hourly"
+    ADD CONSTRAINT "clubhouse_signal_hourly_pkey" PRIMARY KEY ("bucket_hour", "code", "kind", "outcome", "act", "page_id", "role", "platform", "release");
+
+ALTER TABLE ONLY "public"."bridge_notes"
+    ADD CONSTRAINT "bridge_notes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE SET NULL;
+
+ALTER TABLE ONLY "public"."clubhouse_session_events"
+    ADD CONSTRAINT "clubhouse_session_events_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."clubhouse_sessions"("session_id") ON DELETE CASCADE;
+
+ALTER TABLE ONLY "public"."clubhouse_sessions"
+    ADD CONSTRAINT "clubhouse_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;

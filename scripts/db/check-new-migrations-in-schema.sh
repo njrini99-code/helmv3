@@ -44,6 +44,18 @@ echo "New migrations in this PR:"
 echo "$new_migrations"
 echo ""
 
+# stdin -> one quoted, lowercased "schema"."name" per line, sorted, unique.
+qualified_names() {
+  local text
+  text="$(tr '[:upper:]' '[:lower:]')"
+  {
+    printf '%s\n' "$text" | grep -oE '"[a-z_][a-z0-9_]*"\."[a-z_][a-z0-9_]*"' || true
+    printf '%s\n' "$text" \
+      | grep -oE '(^|[^a-z0-9_."])(public|helm_private)\.[a-z_][a-z0-9_]*' \
+      | sed -E 's/^[^a-z]*(public|helm_private)\.([a-z0-9_]+)$/"\1"."\2"/' || true
+  } | sort -u
+}
+
 fail=0
 while IFS= read -r f; do
   [ -e "$f" ] || continue
@@ -58,7 +70,12 @@ while IFS= read -r f; do
   # Extract schema-qualified object names this migration creates or alters.
   # Conservative on purpose: false negatives (missing a real name) are safer
   # here than false positives that would make every PR fail on noise.
-  names="$(grep -EioE '"[a-z_][a-z0-9_]*"\."[a-z_][a-z0-9_]*"' "$f" 2>/dev/null | tr 'A-Z' 'a-z' | sort -u || true)"
+  # Both spellings count: quoted ("public"."x", as pg_dump writes) and bare
+  # lowercase public.x / helm_private.x (as most migrations are written). A
+  # bare name is rewritten to the quoted form, which is how supabase/schemas/**
+  # spells it. Only those two schemas are read bare, so table aliases
+  # (h.code), excluded.x and file paths do not count as names.
+  names="$(qualified_names < "$f")"
   if [ -z "$names" ]; then
     echo "SKIP: $f — no schema-qualified object names found to check (nothing to verify statically)"
     continue
@@ -76,7 +93,7 @@ while IFS= read -r f; do
     # Only fail if EVERY reference to a name is missing everywhere in the
     # migration's own object set touched by CREATE/ALTER — a name appearing
     # only in a comment or a read-only query is not a schema change.
-    creates="$(grep -EioE '(CREATE|ALTER)[[:space:]]+(TABLE|POLICY|FUNCTION|OR REPLACE FUNCTION|TRIGGER|VIEW|MATERIALIZED VIEW|INDEX|TYPE)[^;]*"[a-z_][a-z0-9_]*"\."[a-z_][a-z0-9_]*"' "$f" 2>/dev/null | grep -EoE '"[a-z_][a-z0-9_]*"\."[a-z_][a-z0-9_]*"' | tr 'A-Z' 'a-z' | sort -u || true)"
+    creates="$(grep -EioE '(CREATE|ALTER)[[:space:]]+(TABLE|POLICY|FUNCTION|OR REPLACE FUNCTION|TRIGGER|VIEW|MATERIALIZED VIEW|INDEX|TYPE)[^;]*("[a-z_][a-z0-9_]*"\."[a-z_][a-z0-9_]*"|(public|helm_private)\.[a-z_][a-z0-9_]*)' "$f" 2>/dev/null | qualified_names || true)"
     real_missing=""
     while IFS= read -r m; do
       [ -z "$m" ] && continue

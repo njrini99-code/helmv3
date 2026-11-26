@@ -91,7 +91,18 @@ CREATE TABLE IF NOT EXISTS "public"."admin_events" (
     "team_id" "uuid",
     "fingerprint" "text",
     "source" "text",
-    "feature" "text"
+    "feature" "text",
+    -- Clubhouse Bridge columns: held migration 20261124090000, WRITTEN — HOLD —
+    -- NOT APPLIED in production (pg_dump of a scratch Postgres 16, 2026-11-25).
+    "ch_code" "text",
+    "bridge_id" integer,
+    "page_id" "text",
+    "action_id" "text",
+    "control_id" "text",
+    "release" "text",
+    "platform" "text",
+    "session_id" "text",
+    "server_code" "text"
 );
 
 ALTER TABLE "public"."admin_events" OWNER TO "postgres";
@@ -839,3 +850,110 @@ CREATE TABLE IF NOT EXISTS "helm_private"."golf_demo_editors" (
 );
 
 ALTER TABLE "helm_private"."golf_demo_editors" OWNER TO "postgres";
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+CREATE TABLE IF NOT EXISTS "public"."bridge_notes" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "kind" "text" NOT NULL,
+    "code" "text",
+    "bridge_id" integer,
+    "page_id" "text",
+    "body" "text" DEFAULT ''::"text" NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "resolved_at" timestamp with time zone,
+    CONSTRAINT "bridge_notes_body_check" CHECK (("char_length"("body") <= 4000)),
+    CONSTRAINT "bridge_notes_kind_check" CHECK (("kind" = ANY (ARRAY['expected'::"text", 'watch'::"text", 'pack'::"text", 'note'::"text"])))
+);
+
+ALTER TABLE "public"."bridge_notes" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."clubhouse_drift" (
+    "kind" "text" NOT NULL,
+    "code" "text" NOT NULL,
+    "release" "text" NOT NULL,
+    "drift_count" bigint DEFAULT 0 NOT NULL,
+    "first_seen" timestamp with time zone NOT NULL,
+    "last_seen" timestamp with time zone NOT NULL,
+    CONSTRAINT "clubhouse_drift_drift_count_check" CHECK (("drift_count" >= 0)),
+    CONSTRAINT "clubhouse_drift_kind_check" CHECK (("kind" = ANY (ARRAY['unknown-code'::"text", 'deprecated-fired'::"text", 'reserved-fired'::"text", 'wrong-page'::"text", 'wrong-outcome'::"text", 'silent-action'::"text"])))
+);
+
+ALTER TABLE "public"."clubhouse_drift" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."clubhouse_session_events" (
+    "session_id" "text" NOT NULL,
+    "seq" integer NOT NULL,
+    "sent_at" timestamp with time zone NOT NULL,
+    "kind" "text" NOT NULL,
+    "outcome" "text",
+    "code" "text",
+    "bridge_id" integer,
+    "page_id" "text",
+    "act" "text",
+    "action_id" "text",
+    "control_id" "text",
+    "duration_ms" integer,
+    "server_code" "text",
+    "message" "text",
+    "trail" "text"[],
+    "drift" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "received_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "clubhouse_session_events_message_check" CHECK ((("message" IS NULL) OR ("char_length"("message") <= 2000))),
+    CONSTRAINT "clubhouse_session_events_seq_check" CHECK (("seq" >= 0))
+);
+
+ALTER TABLE "public"."clubhouse_session_events" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."clubhouse_sessions" (
+    "session_id" "text" NOT NULL,
+    "user_id" "uuid",
+    "role" "text" NOT NULL,
+    "team_id" "uuid",
+    "platform" "text" NOT NULL,
+    "release" "text" NOT NULL,
+    "started_at" timestamp with time zone NOT NULL,
+    "last_at" timestamp with time zone NOT NULL,
+    "ended_at" timestamp with time zone,
+    "pages" "text"[] DEFAULT '{}'::"text"[] NOT NULL,
+    "signal_count" integer DEFAULT 0 NOT NULL,
+    "failure_count" integer DEFAULT 0 NOT NULL,
+    "replay_id" "text",
+    CONSTRAINT "clubhouse_sessions_platform_check" CHECK (("platform" = ANY (ARRAY['ios-app'::"text", 'ios-safari'::"text", 'desktop'::"text", 'other'::"text"]))),
+    CONSTRAINT "clubhouse_sessions_replay_id_check" CHECK ((("replay_id" IS NULL) OR ("replay_id" ~ '^[0-9a-f]{32}$'::"text"))),
+    CONSTRAINT "clubhouse_sessions_role_check" CHECK (("role" = ANY (ARRAY['coach'::"text", 'player'::"text", 'signed-out'::"text"]))),
+    CONSTRAINT "clubhouse_sessions_session_id_check" CHECK (("session_id" ~ '^[A-Za-z0-9_-]{8,64}$'::"text"))
+);
+
+ALTER TABLE "public"."clubhouse_sessions" OWNER TO "postgres";
+
+CREATE TABLE IF NOT EXISTS "public"."clubhouse_signal_hourly" (
+    "bucket_hour" timestamp with time zone NOT NULL,
+    "code" "text" NOT NULL,
+    "kind" "text" NOT NULL,
+    "outcome" "text" DEFAULT ''::"text" NOT NULL,
+    "act" "text" DEFAULT ''::"text" NOT NULL,
+    "role" "text" NOT NULL,
+    "platform" "text" NOT NULL,
+    "release" "text" NOT NULL,
+    "bridge_id" integer,
+    "page_id" "text" DEFAULT ''::"text" NOT NULL,
+    "signal_count" bigint DEFAULT 0 NOT NULL,
+    "user_ids" "uuid"[] DEFAULT '{}'::"uuid"[] NOT NULL,
+    "duration_buckets" integer[] DEFAULT '{}'::integer[] NOT NULL,
+    "p50_ms" integer,
+    "p95_ms" integer,
+    "p99_ms" integer,
+    "first_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "last_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "clubhouse_signal_hourly_kind_check" CHECK (("kind" = ANY (ARRAY['state'::"text", 'toast'::"text", 'action'::"text", 'crash'::"text", 'view'::"text", 'vital'::"text", 'frustration'::"text", 'tap'::"text"]))),
+    CONSTRAINT "clubhouse_signal_hourly_platform_check" CHECK (("platform" = ANY (ARRAY['ios-app'::"text", 'ios-safari'::"text", 'desktop'::"text", 'other'::"text"]))),
+    CONSTRAINT "clubhouse_signal_hourly_role_check" CHECK (("role" = ANY (ARRAY['coach'::"text", 'player'::"text", 'signed-out'::"text"]))),
+    CONSTRAINT "clubhouse_signal_hourly_signal_count_check" CHECK (("signal_count" >= 0))
+);
+
+ALTER TABLE "public"."clubhouse_signal_hourly" OWNER TO "postgres";
