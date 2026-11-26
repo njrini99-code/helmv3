@@ -37,7 +37,7 @@
 //                                     about when the id rotates.
 //
 // Wired into `npm run repo:doctor` (scripts/repo-doctor/cli.mjs MODULES).
-// Runs standalone too: `node scripts/check-settings-ownership.mjs`.
+// Runs standalone too: `node scripts/checks/check-settings-ownership.mjs`.
 //
 // Every branch that cannot establish ground truth (an unreadable file, no
 // `claude` CLI, no plugin manifest) reports WARN or UNKNOWN — never FAIL.
@@ -49,7 +49,7 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { check, Status } from './repo-doctor/result.mjs';
+import { check, Status } from '../repo-doctor/result.mjs';
 
 export const meta = { id: 'settings-ownership', title: 'Settings ownership (user vs. project scope)' };
 

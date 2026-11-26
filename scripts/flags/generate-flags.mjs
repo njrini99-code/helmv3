@@ -5,7 +5,7 @@
  *
  * Refuses to write (or, in `--check` mode, reports drift for) a registry
  * containing a NEVER-GATE violation or a schema error — the generator is
- * where those rules are actually enforced; `scripts/check-feature-flags.mjs`
+ * where those rules are actually enforced; `scripts/checks/check-feature-flags.mjs`
  * re-derives the same violations independently from the YAML so a
  * hand-edited generated file cannot bypass them.
  *
@@ -32,7 +32,7 @@ function main() {
 
   // Only NEVER-GATE + hard schema errors block generation — expiry
   // governance (expired-active, missing owner/cleanup_plan, temporary
-  // migration past due) is `scripts/check-feature-flags.mjs`'s job, so a
+  // migration past due) is `scripts/checks/check-feature-flags.mjs`'s job, so a
   // flag that is merely due for cleanup does not also block the build.
   const blocking = new Set(['never_gate', 'schema', 'invalid_type', 'invalid_status', 'non_boolean_environment', 'missing_kill_switch_behavior', 'duplicate_feature_id']);
   const issues = validateFlags(flags).filter((i) => blocking.has(i.rule));

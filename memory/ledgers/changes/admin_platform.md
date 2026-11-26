@@ -111,7 +111,7 @@ master brief lives on a sibling control-plane branch, not yet merged).
 ## 2026-09-03 — Feature-flag registry, never-gate rules, and the expiry CI gate (Phase F.4.2)
 
 New, self-contained module — `config/feature-flags.yml` +
-`src/lib/flags/**` + `scripts/flags/**` + `scripts/check-feature-flags.mjs`
+`src/lib/flags/**` + `scripts/flags/**` + `scripts/checks/check-feature-flags.mjs`
 — per Phase F.4.2 of the 2026-09-03 control-plane implementation plan
 (a docs-only worktree deliverable, not yet committed to `main` as of this
 entry — see the Bridge-track handoff brief for context) and owner decision
@@ -134,7 +134,7 @@ rollout is booleans only.
 - **The NEVER-GATE list.** A flag may never gate auth, RLS, tenancy,
   membership, or required persistence — enforced twice, independently: the
   generator refuses to write `registry.generated.ts` on a violation
-  (`scripts/flags/lib.mjs#validateFlag`), and `scripts/check-feature-flags.mjs`
+  (`scripts/flags/lib.mjs#validateFlag`), and `scripts/checks/check-feature-flags.mjs`
   re-derives the same violation straight from the YAML, so a hand-edited
   generated file cannot bypass the rule (matches `.claude/rules/shipping.md`
   §1's "verify the generator, not the stamp").
@@ -169,7 +169,7 @@ rollout is booleans only.
   flags:check` clean against the seeded registry; `npm run typecheck` /
   `npm run lint --max-warnings 0` clean; `npm run knowledge:globs` clean
   (new `config/feature-flags.yml` / `src/lib/flags/**` / `scripts/flags/**`
-  / `scripts/check-feature-flags.mjs` globs added to `admin_platform` in
+  / `scripts/checks/check-feature-flags.mjs` globs added to `admin_platform` in
   `memory/registry.yml`); `npm run docs:check` (all five) clean;
   `actionlint .github/workflows/ci.yml` clean.
 
@@ -639,7 +639,7 @@ since both change behaviour the first pass shipped.
   fingerprinted `bridge_write_failed` Sentry message instead of a bare
   `console.error`; `logRoundSubmitted`/`logAIGeneration` tag sport+feature.
 - **Credential shapes** in one `.mjs` (`src/lib/admin/credential-shape.mjs`)
-  shared by `scripts/check-helm-bridge-env.mjs`, `sentry-api.ts`,
+  shared by `scripts/checks/check-helm-bridge-env.mjs`, `sentry-api.ts`,
   `vercel-api.ts`, `inngest/credentials.ts`. The script now fails on the
   eight 11-character placeholders it used to pass; `--drift` treats a
   placeholder as provisioned-and-wrong; DSN shape is advisory.
@@ -971,7 +971,7 @@ since both change behaviour the first pass shipped.
     invokes — see vitest.config.ts's own comment on that — so neither was
     breaking CI, but both stayed accurate).
   - `.duplicate-exports-baseline.json` — regenerated via
-    `node scripts/check-duplicate-exports.mjs --update`: 32 → 27 known
+    `node scripts/checks/check-duplicate-exports.mjs --update`: 32 → 27 known
     duplicates. Deleting the legacy copies resolved `ActivityFeed`,
     `LiveActivityFeed`, and `generateAlerts` (the surviving copy is now the
     only export of that name) and fully removed the `isStuckRound` pair (both
@@ -1200,7 +1200,7 @@ since both change behaviour the first pass shipped.
   exact-count probe was unavailable to contradict it. That is the
   `unknown -> healthy` shape the OS forbids, inside the panel whose whole
   job is saying how much it actually checked.
-- Found by `scripts/check-row-cap-limits.mjs` (the gate added earlier in this
+- Found by `scripts/checks/check-row-cap-limits.mjs` (the gate added earlier in this
   same PR), not by review — the adversarial review pass caught the identical
   defect in a sibling surface and missed this one.
 
@@ -1665,19 +1665,19 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   precedent as the self-heal REPAIR-stage runner entry above this one).
   (2) `.circleci/config.yml`'s `stryker-coachhelm` job ran
   `npx stryker run || true`, masking every exit code including a crash —
-  fixed with `scripts/mutation-gate.mjs`, which reads Stryker's own JSON
+  fixed with `scripts/checks/mutation-gate.mjs`, which reads Stryker's own JSON
   report, computes the mutation score from mutant status counts, and fails
   the job below a committed floor (`config/mutation-gate.json`, marked
   PROVISIONAL — no real weekly score is recorded anywhere in this repo).
 - **Why (2) is NOT added to this feature's `memory/registry.yml` glob**:
   the mutation gate governs `src/lib/coachhelm/v2/` test quality, not the
   Bridge/admin surface — `knowledge:map --files .circleci/config.yml
-  scripts/mutation-gate.mjs` returns `impactedFeatures: []` and stays that
+  scripts/checks/mutation-gate.mjs` returns `impactedFeatures: []` and stays that
   way after this change; forcing it under `admin_platform` would be a wrong
   mapping, not a closed gap, so it is recorded here only for the adjacent
   provenance (same PR, same Phase K plan section) — it has no feature-doc
   entry anywhere in this repo, by design, and the next session that touches
-  Stryker/mutation testing should read `scripts/mutation-gate.mjs`'s own
+  Stryker/mutation testing should read `scripts/checks/mutation-gate.mjs`'s own
   header comment, not a feature doc, for its contract.
 - **Why the ratchet-baseline pattern this repo uses everywhere else
   (`.lint-baseline.json` etc.) does NOT apply to the mutation floor**: those
@@ -1700,7 +1700,7 @@ owed ~10 lint-ratchet warnings under src/app/admin. Measured: 0 bg-white,
   classifier's `FINDINGS`/`ZERO_FINDINGS_VERIFIED`/`NO_SIGNAL` paths against
   real disposable git-repo fixtures (not mocks — several classifiers shell
   out to real `git ls-files`/`git grep`/`git log`). `npm run test:mutation-gate`
-  (`node --test scripts/mutation-gate.test.mjs`) — 13/13 pass, covering the
+  (`node --test scripts/__tests__/mutation-gate.test.mjs`) — 13/13 pass, covering the
   score formula, the floor boundary, and every UNKNOWN path (missing
   report, unparseable JSON, missing floor, zero valid mutants). `npm run
   janitor` run for real against this worktree: 12/12 classes returned a
@@ -2258,7 +2258,7 @@ section for the full per-module description; not restated here.
   `admin_platform.code.components` — `knowledge:map` resolved it to
   `impactedFeatures: []` before this change (the existing
   `src/app/admin/**`/`src/lib/admin/**` globs already covered the read
-  models and pages). `node scripts/check-registry-globs.mjs` passes (0
+  models and pages). `node scripts/checks/check-registry-globs.mjs` passes (0
   dead entries) after the addition.
 - **`ADMIN_NAV`** (`src/app/admin/_components/admin-nav.ts`): 5 new entries
   under Platform (`/admin/lenses/{golf,baseball,lifting,teams,users}`),

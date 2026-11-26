@@ -126,11 +126,11 @@ jobs:
       - checkout
       - install-node-deps
       - run:
-          # scripts/mutation-gate.mjs has no non-builtin deps, so this runs
+          # scripts/checks/mutation-gate.mjs has no non-builtin deps, so this runs
           # against the checkout as-is, BEFORE Stryker installs or runs —
           # a broken gate should fail fast with a clear message, not mid-run
-          # 30 minutes into a mutation pass. See scripts/mutation-gate.test.mjs.
-          name: Mutation gate unit tests (scripts/mutation-gate.mjs)
+          # 30 minutes into a mutation pass. See scripts/__tests__/mutation-gate.test.mjs.
+          name: Mutation gate unit tests (scripts/checks/mutation-gate.mjs)
           command: npm run test:mutation-gate
       - run:
           name: Install Stryker
@@ -157,12 +157,12 @@ jobs:
             }
             EOF
             # Used to be `npx stryker run || true`, which swallowed EVERY exit
-            # code including a crash — see scripts/mutation-gate.mjs's header
+            # code including a crash — see scripts/checks/mutation-gate.mjs's header
             # comment for the incident and why the fix is not simply dropping
             # `|| true`. No `thresholds.break` is set here deliberately: that
             # would make Stryker's OWN process exit code the enforcement point,
             # duplicating (and risking silently diverging from) the score
-            # computed by scripts/mutation-gate.mjs below. One gate, one place.
+            # computed by scripts/checks/mutation-gate.mjs below. One gate, one place.
             #
             # Distinguish Stryker itself failing to run (config/compile/runtime
             # crash — always a hard failure, same principle as the knip job
@@ -178,7 +178,7 @@ jobs:
             fi
       - run:
           name: Mutation score gate (config/mutation-gate.json)
-          command: node scripts/mutation-gate.mjs reports/mutation/mutation.json config/mutation-gate.json
+          command: node scripts/checks/mutation-gate.mjs reports/mutation/mutation.json config/mutation-gate.json
       - store_artifacts:
           path: reports/mutation/
           destination: stryker

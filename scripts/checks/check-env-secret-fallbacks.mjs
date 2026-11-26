@@ -31,7 +31,7 @@
  *   - NEXT_PUBLIC_* is exempt: those are compiled into the client bundle and
  *     are public by definition, so a literal default is not a leak.
  *
- * Usage:  node scripts/check-env-secret-fallbacks.mjs [--json]
+ * Usage:  node scripts/checks/check-env-secret-fallbacks.mjs [--json]
  * Exit 1 with the offending sites, 0 when clean.
  */
 import { readFileSync } from 'node:fs';

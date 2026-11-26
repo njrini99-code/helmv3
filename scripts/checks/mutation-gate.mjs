@@ -32,7 +32,7 @@
  * described here rather than cited by a path that would not resolve).
  * Tighten it by hand the first time a real weekly job log reports a score.
  *
- * EXIT SEMANTICS (matches scripts/control-plane-verify.mjs's convention)
+ * EXIT SEMANTICS (matches scripts/checks/control-plane-verify.mjs's convention)
  *
  *   0  PASS      score computed and >= floor
  *   1  FAIL      score computed and < floor — a real regression/collapse
@@ -40,7 +40,7 @@
  *                mutants to score — never treated as a pass
  *
  * Usage:
- *   node scripts/mutation-gate.mjs [reportPath] [configPath]
+ *   node scripts/checks/mutation-gate.mjs [reportPath] [configPath]
  *   (defaults: reports/mutation/mutation.json, config/mutation-gate.json)
  */
 import { readFileSync, existsSync } from 'node:fs';
@@ -48,7 +48,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(HERE, '..');
+const ROOT = resolve(HERE, '..', '..');
 
 export const PASS = 'PASS';
 export const FAIL = 'FAIL';

@@ -8,11 +8,11 @@ audit script. A count may only go down. They moved here from the repo root on
 | Baseline | Script that reads it |
 | --- | --- |
 | `.any-ratchet-baseline.json` | `scripts/any-ratchet.mjs` |
-| `.cycles-baseline.json` | `scripts/check-cycles.mjs` |
+| `.cycles-baseline.json` | `scripts/checks/check-cycles.mjs` |
 | `.dead-refs-baseline.json` | `scripts/knowledge/document-inventory.mjs` |
-| `.doc-path-baseline.json` | `scripts/check-doc-path-drift.mjs` |
-| `.doc-schema-baseline.json` | `scripts/check-doc-schema-drift.mjs` |
-| `.duplicate-exports-baseline.json` | `scripts/check-duplicate-exports.mjs` |
+| `.doc-path-baseline.json` | `scripts/checks/check-doc-path-drift.mjs` |
+| `.doc-schema-baseline.json` | `scripts/checks/check-doc-schema-drift.mjs` |
+| `.duplicate-exports-baseline.json` | `scripts/checks/check-duplicate-exports.mjs` |
 | `.fail-open-baseline.json` | `scripts/fail-open-audit.mjs` |
 | `.healthy-on-error-baseline.json` | `scripts/healthy-on-error-audit.mjs` |
 | `.lint-baseline.json` | `scripts/lint-ratchet.mjs` |
@@ -20,7 +20,7 @@ audit script. A count may only go down. They moved here from the repo root on
 | `.migration-drift-baseline.json` | `scripts/db/migration-ledger-drift.mjs` |
 | `.migration-headers-baseline.json` | `scripts/db/check-migration-headers.mjs` |
 | `.paginated-read-baseline.json` | `scripts/paginated-read-audit.mjs` |
-| `.registry-globs-baseline.json` | `scripts/check-registry-globs.mjs` |
+| `.registry-globs-baseline.json` | `scripts/checks/check-registry-globs.mjs` |
 | `.sqlfluff-baseline.json` | `scripts/sql-lint-ratchet.mjs` |
 | `.supabase-chunk-baseline.json` | `scripts/supabase-chunk-audit.mjs` |
 | `.supabase-error-baseline.json` | `scripts/supabase-error-audit.mjs` |

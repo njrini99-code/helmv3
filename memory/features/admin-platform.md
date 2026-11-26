@@ -211,7 +211,7 @@ them would have broken those routes, not the dead one.
   APIs, stale TODOs, oversized modules, unused tests, mock inflation,
   duplicate telemetry, missing feature mappings, abandoned experiments)
   using only signals this repo already produces — `config/baselines/.duplicate-exports-baseline.json`,
-  `config/baselines/.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,
+  `config/baselines/.doc-path-baseline.json`, `scripts/checks/find-orphan-mounts.mjs`,
   `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),
   `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every
   classifier returns one of three verdicts, `FINDINGS` /
@@ -606,7 +606,7 @@ them would have broken those routes, not the dead one.
 - **Credential values are validated by SHAPE, in one module.** Every one of
   the eight Bridge values in the local `.env.local` was exactly 11 characters,
   which cleared the old `length >= 10` floor in both
-  `scripts/check-helm-bridge-env.mjs` (printed PASS) and the runtime readers'
+  `scripts/checks/check-helm-bridge-env.mjs` (printed PASS) and the runtime readers'
   identical `usableSecret()` (treated Sentry as configured, so every local
   read failed soft and silently). `src/lib/admin/credential-shape.mjs` is the
   single implementation — `.mjs` so the plain-node script and the TS readers

@@ -753,7 +753,7 @@ rather than asserted either way.
 ### What CI does and does not do for this pipeline
 
 `.github/workflows/ci.yml`'s only Sentry-related step is "Bridge env drift"
-(`:313-322`), which runs `node scripts/check-helm-bridge-env.mjs --drift`
+(`:313-322`), which runs `node scripts/checks/check-helm-bridge-env.mjs --drift`
 against `SENTRY_READ_TOKEN`, `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`,
 `SENTRY_PROJECT` (plus Vercel/internal-log-key vars) — **this is a
 config-drift checker for the `/admin/errors` READ panel's credentials

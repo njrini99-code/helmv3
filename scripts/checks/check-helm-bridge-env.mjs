@@ -3,11 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import dotenv from 'dotenv';
-import { classifyCredential, SHAPE_HINTS } from '../src/lib/admin/credential-shape.mjs';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { classifyCredential, SHAPE_HINTS } from '../../src/lib/admin/credential-shape.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/check-helm-bridge-env.mjs',
+  name: 'scripts/checks/check-helm-bridge-env.mjs',
   summary:
     "Checks that the Helm Bridge environment variables are consistent between the app, .env.example and the workflows. Read-only.",
   secrets: 'SENTRY_AUTH_TOKEN',
@@ -42,11 +42,11 @@ for (const file of ENV_FILES) {
  * consumes the value cannot disagree about what "usable" means. Each check
  * names the SHAPE it expected; it never prints the value.
  *
- * @param {import('../src/lib/admin/credential-shape.mjs').CredentialKind} kind
+ * @param {import('../../src/lib/admin/credential-shape.mjs').CredentialKind} kind
  * @param {string[]} names  env var names, first usable wins
  */
 function check(kind, names) {
-  /** @type {import('../src/lib/admin/credential-shape.mjs').CredentialVerdict} */
+  /** @type {import('../../src/lib/admin/credential-shape.mjs').CredentialVerdict} */
   let worst = 'missing';
   for (const name of names) {
     const verdict = classifyCredential(kind, process.env[name]);

@@ -18,7 +18,8 @@ function fixture() {
   mkdirSync(join(root, 'src'));
   mkdirSync(join(root, 'config/baselines'), { recursive: true });
   writeFileSync(join(root, 'src/example.ts'), 'export const example = 1;\n');
-  for (const name of ['lint-ci.mjs', 'lint-ratchet.mjs', 'supabase-error-audit.mjs', 'fail-open-audit.mjs', 'paginated-read-audit.mjs', 'lib/lint-results.mjs']) {
+  for (const name of ['checks/lint-ci.mjs', 'lint-ratchet.mjs', 'supabase-error-audit.mjs', 'fail-open-audit.mjs', 'paginated-read-audit.mjs', 'lib/lint-results.mjs']) {
+    mkdirSync(dirname(join(root, 'scripts', name)), { recursive: true });
     copyFileSync(join(repo, 'scripts', name), join(root, 'scripts', name));
   }
   const env = { ...process.env, HELM_ESLINT_REPORT: join(root, 'report.json'), HELM_ESLINT_REPORT_ID: 'run-1' };
@@ -74,7 +75,7 @@ describe('one ESLint scan', () => {
       return JSON.stringify([f.file('src/example.ts', regular)]);
     });
     expect(calls).toBe(2);
-    expect(f.run('lint-ci.mjs').status).toBe(1);
+    expect(f.run('checks/lint-ci.mjs').status).toBe(1);
     writeFileSync(join(f.root, 'config/baselines/.lint-baseline.json'), '{}');
     expect(f.run('lint-ratchet.mjs').status).toBe(1);
     expect(loadResults(f.root, [], f.env)[0].messages).toEqual([]);
@@ -87,7 +88,7 @@ describe('one ESLint scan', () => {
       throw Object.assign(new Error('tool failed'), { status, stdout: JSON.stringify([f.file('src/example.ts'), f.file('scripts/example.mjs')]) });
     })).toThrow('tool failed');
     expect(existsSync(f.env.HELM_ESLINT_REPORT)).toBe(false);
-    expect(f.run('lint-ci.mjs').status).toBe(1);
+    expect(f.run('checks/lint-ci.mjs').status).toBe(1);
   });
 
   it.each(['', 'not json', '[]', '{}'])('rejects invalid/empty producer output %j', (raw) => {
@@ -123,10 +124,10 @@ describe('existing gate semantics', () => {
     const results = [f.file('src/example.ts', AUDIT_RULES.map((rule) => diagnostic(rule))), f.file('scripts/example.mjs', [diagnostic('regular', 2)]), f.file('src/example.js', [diagnostic('regular')])];
     expect(standardDiagnostics(f.root, results)).toEqual([]);
     f.report(results);
-    expect(f.run('lint-ci.mjs').status).toBe(0);
+    expect(f.run('checks/lint-ci.mjs').status).toBe(0);
     for (const severity of [1, 2]) {
       f.report([...results, f.file('src/failure.tsx', [diagnostic('regular', severity)])]);
-      expect(f.run('lint-ci.mjs').status).toBe(1);
+      expect(f.run('checks/lint-ci.mjs').status).toBe(1);
     }
   });
 

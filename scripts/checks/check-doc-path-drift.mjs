@@ -40,8 +40,8 @@
  * you are already working on, or delete the stale line.
  *
  * Usage:
- *   node scripts/check-doc-path-drift.mjs            # check
- *   node scripts/check-doc-path-drift.mjs --update   # rewrite the baseline
+ *   node scripts/checks/check-doc-path-drift.mjs            # check
+ *   node scripts/checks/check-doc-path-drift.mjs --update   # rewrite the baseline
  *
  * Pure stdlib.
  */
@@ -117,7 +117,7 @@ const flat = Object.entries(broken).flatMap(([f, ps]) => ps.map((p) => `${f} :: 
 if (process.argv.includes('--update')) {
   writeFileSync(BASELINE, `${JSON.stringify({
     $comment: 'Paths named in the navigation docs that do not resolve. May only go DOWN. ' +
-              'Do NOT bulk-repoint by basename — see scripts/check-doc-path-drift.mjs.',
+              'Do NOT bulk-repoint by basename — see scripts/checks/check-doc-path-drift.mjs.',
     total: flat.length, entries: flat,
   }, null, 2)}\n`);
   console.log(`Baseline written: ${flat.length} unresolved paths.`);
@@ -149,7 +149,7 @@ if (fixed.length) {
   failed = true;
   console.error(`\n❌ ${fixed.length} baseline path(s) now resolve — tighten the ratchet:\n`);
   for (const e of fixed) console.error(`   ${e}`);
-  console.error(`\n   Run: node scripts/check-doc-path-drift.mjs --update`);
+  console.error(`\n   Run: node scripts/checks/check-doc-path-drift.mjs --update`);
 }
 if (failed) process.exit(1);
 console.log(flat.length === 0

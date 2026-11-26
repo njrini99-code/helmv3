@@ -6,7 +6,7 @@
  * (`src/lib/flags/registry.generated.ts` via `npm run flags:generate`).
  * `scripts/flags/lib.mjs` is the plain-JS mirror of the validation rules
  * below (Node scripts do not run through `tsc`), so a change to what counts
- * as valid here must be mirrored there — `scripts/check-feature-flags.mjs`
+ * as valid here must be mirrored there — `scripts/checks/check-feature-flags.mjs`
  * re-derives violations independently of the generator on purpose (see
  * FEATURE_FLAGS.md "why two checkers").
  */

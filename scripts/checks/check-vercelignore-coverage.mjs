@@ -31,8 +31,8 @@
  * the file says what the manifest requires, which is the half that rots.
  *
  * Usage:
- *   node scripts/check-vercelignore-coverage.mjs            exit 1 on any uncovered path
- *   node scripts/check-vercelignore-coverage.mjs --json
+ *   node scripts/checks/check-vercelignore-coverage.mjs            exit 1 on any uncovered path
+ *   node scripts/checks/check-vercelignore-coverage.mjs --json
  *
  * Exit: 0 all covered · 1 uncovered paths · 2 could not check (missing file)
  */
@@ -150,7 +150,7 @@ export function requiredFromManifest(manifestText) {
   return out;
 }
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 function main() {
   const json = process.argv.includes('--json');

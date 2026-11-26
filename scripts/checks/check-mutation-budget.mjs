@@ -21,7 +21,7 @@ import {
   classifyWorkspaceKind,
   mutationBudgetDecision,
   DEFAULT_MUTATION_BUDGET,
-} from './lib/worktree-lifecycle.mjs';
+} from '../lib/worktree-lifecycle.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -35,7 +35,7 @@ function git(args, cwd) {
 
 /** Same rule as the lifecycle reporter: act on the repo the caller stands in. */
 function resolveRepo() {
-  return git(['rev-parse', '--show-toplevel'], process.cwd()) ?? resolve(HERE, '..');
+  return git(['rev-parse', '--show-toplevel'], process.cwd()) ?? resolve(HERE, '..', '..');
 }
 
 export function inspectWorkspaces(repo, canonicalRoot) {

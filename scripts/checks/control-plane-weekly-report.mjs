@@ -17,7 +17,7 @@
  *                                     branch's history (review-gate.yml's
  *                                     per-PR gitleaks step only ever sees
  *                                     one branch's diff)
- *   4. control-plane-verify-static    `node scripts/control-plane-verify.mjs
+ *   4. control-plane-verify-static    `node scripts/checks/control-plane-verify.mjs
  *                                     --static` exits 0
  *
  * ONE SOFT LISTING, printed but never a reason to fail: remote branches with
@@ -43,7 +43,7 @@ import { fileURLToPath } from 'node:url';
 import YAML from 'yaml';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(HERE, '..');
+const ROOT = resolve(HERE, '..', '..');
 const GH = process.env.HELM_CP_GH || 'gh';
 const GITLEAKS_BIN = process.env.HELM_CP_GITLEAKS || 'gitleaks';
 const BRANCH_LIST_CAP = 500;
@@ -182,7 +182,7 @@ function checkGitleaks(add) {
 }
 
 function checkControlPlaneVerify(add) {
-  const r = sh('node', ['scripts/control-plane-verify.mjs', '--static']);
+  const r = sh('node', ['scripts/checks/control-plane-verify.mjs', '--static']);
   const failLines = (r.stdout ?? '').split('\n').filter((l) => /FAIL |DRIFT|STALE|BLOCKED/.test(l)).map((l) => l.trim());
   add('control-plane-verify-static', r.status === 0, r.status === 0 ? 'clean' : (failLines.join('; ') || `exit ${r.status}`));
 }

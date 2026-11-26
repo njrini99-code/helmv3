@@ -8,7 +8,7 @@ const MAX_FINDINGS = 8;
 
 /**
  * Reuses `config/baselines/.duplicate-exports-baseline.json` (the live ratchet baseline for
- * `npm run lint:duplicate-exports` / `scripts/check-duplicate-exports.mjs`)
+ * `npm run lint:duplicate-exports` / `scripts/checks/check-duplicate-exports.mjs`)
  * rather than re-implementing duplicate-export detection. Scope note: that
  * baseline only covers `src/app/**` (its own $comment says so), so a
  * ZERO_FINDINGS_VERIFIED verdict here is scoped to that subtree, not the

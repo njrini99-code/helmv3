@@ -47,7 +47,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..');
+const ROOT = resolve(__dirname, '..', '..');
 const BASELINE_PATH = resolve(ROOT, 'config/baselines/.cycles-baseline.json');
 const MADGERC_PATH = resolve(ROOT, '.madgerc');
 

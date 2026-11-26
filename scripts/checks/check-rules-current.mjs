@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// scripts/check-rules-current.mjs
+// scripts/checks/check-rules-current.mjs
 //
 // Rules files (AGENTS.md, CLAUDE.md, .claude/rules/*.md) must state current
 // behavior only. History — "this used to say X", a verified/re-checked date,
@@ -14,7 +14,7 @@
 //
 // Wire-up: `npm run docs:rules-current`, a step of `docs:check`.
 //
-// Usage: node scripts/check-rules-current.mjs
+// Usage: node scripts/checks/check-rules-current.mjs
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';

@@ -1,7 +1,7 @@
-// node:test suite for scripts/mutation-gate.mjs.
+// node:test suite for scripts/checks/mutation-gate.mjs.
 //
 // Runs standalone, no vitest/CI wiring dependency:
-//   node --test scripts/mutation-gate.test.mjs
+//   node --test scripts/__tests__/mutation-gate.test.mjs
 // (also wired as `npm run test:mutation-gate` and as a CircleCI step in the
 // stryker-coachhelm job, run BEFORE the real Stryker invocation — a broken
 // gate should fail fast with a clear message rather than mid-run.)
@@ -14,7 +14,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { computeMutationScore, runGate, PASS, FAIL, UNKNOWN } from './mutation-gate.mjs';
+import { computeMutationScore, runGate, PASS, FAIL, UNKNOWN } from '../checks/mutation-gate.mjs';
 
 function withTmpDir(fn) {
   const dir = mkdtempSync(join(tmpdir(), 'mutation-gate-test-'));
@@ -173,7 +173,7 @@ test('runGate: score exactly at the floor is a PASS (>=, not >)', () => {
 test('the committed config/mutation-gate.json has a numeric floor between 0 and 100', async () => {
   const { readFileSync } = await import('node:fs');
   const { fileURLToPath } = await import('node:url');
-  const path = fileURLToPath(new URL('../config/mutation-gate.json', import.meta.url));
+  const path = fileURLToPath(new URL('../../config/mutation-gate.json', import.meta.url));
   const config = JSON.parse(readFileSync(path, 'utf-8'));
   assert.equal(typeof config.floor, 'number');
   assert.ok(config.floor > 0 && config.floor < 100, `floor ${config.floor} should be a real percentage`);

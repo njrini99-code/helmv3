@@ -43,8 +43,8 @@
  * baseline also fails, so the number cannot silently drift back up.
  *
  * Usage:
- *   node scripts/check-doc-schema-drift.mjs            # check (CI + docs:check)
- *   node scripts/check-doc-schema-drift.mjs --update   # rewrite the baseline
+ *   node scripts/checks/check-doc-schema-drift.mjs            # check (CI + docs:check)
+ *   node scripts/checks/check-doc-schema-drift.mjs --update   # rewrite the baseline
  *
  * Pure stdlib. No child_process, no network, no deps.
  */
@@ -339,7 +339,7 @@ async function main() {
           $comment:
             'Identifiers named in the knowledge base that do not exist in ' +
             'src/lib/types/database.ts. This number may only go DOWN. See ' +
-            'scripts/check-doc-schema-drift.mjs for why this file exists.',
+            'scripts/checks/check-doc-schema-drift.mjs for why this file exists.',
           total: unknown.length,
           identifiers: unknown,
           byFile: Object.fromEntries(
@@ -413,7 +413,7 @@ async function main() {
     );
     for (const n of fixed) console.error(`   ${n}`);
     console.error(
-      `\n   Run: node scripts/check-doc-schema-drift.mjs --update && git add config/baselines/.doc-schema-baseline.json`
+      `\n   Run: node scripts/checks/check-doc-schema-drift.mjs --update && git add config/baselines/.doc-schema-baseline.json`
     );
   }
 

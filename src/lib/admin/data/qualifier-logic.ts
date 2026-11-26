@@ -37,7 +37,7 @@ import {
  * `fetched.length >= 20_000` can never be true when the server stops at
  * 1,000, so a read that WAS clipped reported `truncated: false` whenever the
  * exact-count probe was unavailable to contradict it. Enforced repo-wide by
- * `scripts/check-row-cap-limits.mjs`, which is what caught this.
+ * `scripts/checks/check-row-cap-limits.mjs`, which is what caught this.
  */
 const PAGE_SIZE = 1_000;
 

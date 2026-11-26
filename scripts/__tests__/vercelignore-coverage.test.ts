@@ -13,7 +13,7 @@ import {
   isCovered,
   parseIgnore,
   requiredFromManifest,
-} from '../check-vercelignore-coverage.mjs';
+} from '../checks/check-vercelignore-coverage.mjs';
 
 const REPO = resolve(__dirname, '../..');
 

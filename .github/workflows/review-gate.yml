@@ -438,7 +438,7 @@ jobs:
       - name: env-secrets
         id: env_secrets
         continue-on-error: true
-        run: node scripts/check-env-secret-fallbacks.mjs
+        run: node scripts/checks/check-env-secret-fallbacks.mjs
 
       # `steps` (the context) holds every step above that carries an `id`, with
       # the outcome BEFORE continue-on-error rewrote it. Anything other than

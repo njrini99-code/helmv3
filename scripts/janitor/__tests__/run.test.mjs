@@ -34,11 +34,11 @@ features:
   'src/lib/thing.test.ts': "vi.mock('./a');\ntest('x', () => {});\n",
   'config/baselines/.duplicate-exports-baseline.json': JSON.stringify({ total: 0, entries: [] }),
   'config/baselines/.doc-path-baseline.json': JSON.stringify({ total: 0, entries: [] }),
-  // A trivial stand-in for the real scripts/find-orphan-mounts.mjs so
+  // A trivial stand-in for the real scripts/checks/find-orphan-mounts.mjs so
   // orphan-routes.mjs exercises its real success path here, not just its
   // NO_SIGNAL "script missing" path (already covered directly in
   // classifiers-fs.test.mjs).
-  'scripts/find-orphan-mounts.mjs':
+  'scripts/checks/find-orphan-mounts.mjs':
     "console.log('route roots walked          : 1');\nconsole.log('files reachable from a root : 1');\nconsole.log('UNREACHABLE component files : 0');\n",
 };
 

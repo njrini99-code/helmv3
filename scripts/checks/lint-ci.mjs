@@ -2,9 +2,9 @@
 /** One CI scan, followed by the same hard zero-warning source lint gate. */
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadResults, produceReport, standardDiagnostics } from './lib/lint-results.mjs';
+import { loadResults, produceReport, standardDiagnostics } from '../lib/lint-results.mjs';
 
-const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 try {
   if (process.argv.includes('--scan')) {
     produceReport(root);

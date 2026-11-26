@@ -16,8 +16,8 @@
  * until the dedupe pass resolves them; the count may only go DOWN.
  *
  * Usage:
- *   node scripts/check-duplicate-exports.mjs            # check
- *   node scripts/check-duplicate-exports.mjs --update   # rewrite the baseline
+ *   node scripts/checks/check-duplicate-exports.mjs            # check
+ *   node scripts/checks/check-duplicate-exports.mjs --update   # rewrite the baseline
  *
  * Pure stdlib.
  */
@@ -97,7 +97,7 @@ if (fresh.length) {
 if (dups.length < known.size) {
   console.log(
     `duplicate-exports: dropped (${known.size} → ${dups.length}) — run ` +
-    'node scripts/check-duplicate-exports.mjs --update to lock in the gains',
+    'node scripts/checks/check-duplicate-exports.mjs --update to lock in the gains',
   );
 }
 console.log(`✅ No new duplicate exports. ${dups.length} known remain — ratchet them down.`);

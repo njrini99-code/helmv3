@@ -22,16 +22,16 @@
  * do that, and a sibling scan reported 13 phantom cron-auth gaps by matching
  * CRON_SECRET in doc comments.
  *
- * Usage:  node scripts/check-row-cap-limits.mjs [--json]
+ * Usage:  node scripts/checks/check-row-cap-limits.mjs [--json]
  * Exit 1 with the offending sites, 0 when clean.
  */
 import { readFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { helpOnly } from './lib/cli-guard.mjs';
+import { helpOnly } from '../lib/cli-guard.mjs';
 
 helpOnly({
-  name: 'scripts/check-row-cap-limits.mjs',
+  name: 'scripts/checks/check-row-cap-limits.mjs',
   summary:
     "Fails when a query uses .limit(N) with N above PostgREST's 1,000-row cap, including through a named constant. Read-only.",
   secrets: 'CRON_SECRET',

@@ -18,12 +18,12 @@
  * not run is not a check that passed).
  */
 
-import { readFlagsFile, validateFlags } from './flags/lib.mjs';
+import { readFlagsFile, validateFlags } from '../flags/lib.mjs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, '..');
+const ROOT = resolve(__dirname, '..', '..');
 const YAML_PATH = resolve(ROOT, 'config', 'feature-flags.yml');
 
 const GOVERNANCE_RULES = new Set([

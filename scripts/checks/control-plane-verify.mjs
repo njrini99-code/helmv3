@@ -39,7 +39,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 // The worktree-policy vocabulary has ONE definition. A second literal here is
 // how the two halves of a rule drift apart.
-import { WORKTREE_POLICIES } from './lib/worktree-lifecycle.mjs';
+import { WORKTREE_POLICIES } from '../lib/worktree-lifecycle.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -53,7 +53,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  * regenerates or mutates anything, so pointing it somewhere else can produce a
  * wrong ANSWER but never a wrong ACTION.
  */
-const ROOT = resolve(process.env.HELM_CONTROL_PLANE_ROOT || resolve(HERE, '..'));
+const ROOT = resolve(process.env.HELM_CONTROL_PLANE_ROOT || resolve(HERE, '..', '..'));
 
 export const PASS = 'PASS';
 export const FAIL = 'FAIL';
@@ -689,7 +689,7 @@ function checkLifecycleRuntime() {
   add('lifecycle', 'no-retirable-branches-waiting', retirable.length ? FAIL : PASS,
     retirable.length ? `${retirable.length} branch(es) provably merged and deletable: ${retirable.map((x) => x.branch).join(', ')}` : 'no safe GC pending');
 
-  const budgetRes = sh('node', ['scripts/check-mutation-budget.mjs', '--json']);
+  const budgetRes = sh('node', ['scripts/checks/check-mutation-budget.mjs', '--json']);
   let bd = null;
   try {
     bd = JSON.parse(budgetRes.stdout);
@@ -717,7 +717,7 @@ function checkObservationFreshness() {
   const mcp = readJson(resolve(ROOT, '.mcp.json')) ?? {};
   const obs = readJson(resolve(ROOT, 'config/control-plane-observations.json'));
   if (!settings || !obs) return add('tools', 'observation-freshness', UNKNOWN, 'settings or observations unreadable');
-  return import('./gen-tool-authority.mjs').then(({ fingerprintFor }) => {
+  return import('../gen-tool-authority.mjs').then(({ fingerprintFor }) => {
     const stale = (obs.observations ?? []).filter(
       (o) => o.configuration_fingerprint !== fingerprintFor(o.service, { settings, mcp }),
     );

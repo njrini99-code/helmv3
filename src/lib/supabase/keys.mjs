@@ -16,7 +16,7 @@
  * back to the legacy one, which is what this module centralizes.
  *
  * This is a `.mjs` on purpose, same reasoning as
- * `src/lib/admin/credential-shape.mjs`: `scripts/check-required-env.mjs`
+ * `src/lib/admin/credential-shape.mjs`: `scripts/checks/check-required-env.mjs`
  * runs under plain `node` at build time and cannot import TypeScript, and
  * every TS reader in this repo can import a `.mjs` via `allowJs`
  * (precedent: `src/lib/admin/sentry-api.ts` / `vercel-api.ts` import

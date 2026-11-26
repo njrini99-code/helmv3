@@ -32,8 +32,8 @@
  * regardless of the baseline.
  *
  * Usage:
- *   node scripts/check-registry-globs.mjs            # check
- *   node scripts/check-registry-globs.mjs --update   # rewrite the baseline
+ *   node scripts/checks/check-registry-globs.mjs            # check
+ *   node scripts/checks/check-registry-globs.mjs --update   # rewrite the baseline
  *
  * Deps: js-yaml (already a repo dependency; every other knowledge/*.mjs
  * checker uses it to parse this same file).
@@ -218,7 +218,7 @@ for (const s of sections) {
   } else if (s.current.length < s.baseTotal) {
     console.log(
       `registry-globs: ${s.label}ies dropped (${s.baseTotal} → ${s.current.length}) — run ` +
-      'node scripts/check-registry-globs.mjs --update to lock in the gains',
+      'node scripts/checks/check-registry-globs.mjs --update to lock in the gains',
     );
   }
 }

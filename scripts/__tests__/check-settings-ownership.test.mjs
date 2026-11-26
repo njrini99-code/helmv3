@@ -16,7 +16,7 @@ import {
   findUninstalledPluginRules,
   findUnrecordedConnectorIds,
   run,
-} from '../check-settings-ownership.mjs';
+} from '../checks/check-settings-ownership.mjs';
 import { Status } from '../repo-doctor/result.mjs';
 
 describe('findUserScopeLeaks', () => {

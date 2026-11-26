@@ -554,7 +554,7 @@ conventions followed. No destructive migration is planned anywhere in this docum
   then `npm run docs:check`. The `check-schema-invariants.sh` false positive at `scheduling.ts:37` is a separate
   fix and is not addressed by this plan.
 - `docs:path-drift` scans `memory/`, `.claude/rules/`, `CLAUDE.md`, `AGENTS.md`, and `docs/REPO_MAP.md` only
-  (`scripts/check-doc-path-drift.mjs:52-53`), so the **NEW** paths in this file do not trip it. Anyone copying
+  (`scripts/checks/check-doc-path-drift.mjs:52-53`), so the **NEW** paths in this file do not trip it. Anyone copying
   these paths into `memory/features/calendar-events.md` must do so only after the files exist.
 - `memory/features/calendar-events.md` is updated per wave by the coordinator with shipped behaviour only; this
   plan never masquerades as shipped behaviour.
