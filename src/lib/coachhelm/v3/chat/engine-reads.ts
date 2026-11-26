@@ -8,6 +8,7 @@ import { storedInsightText } from './stored-text';
 import { nowIso, readFigure, unavailableEnvelope, type ToolEnvelope } from './provenance';
 import { attendanceByEvent, classConflicts } from './ask-reads';
 import { inSeasonAverage, loadCountedRounds, seasonStartDate } from './season-rule';
+import { fetchAllRowsResult } from '@/lib/supabase/fetch-all-rows';
 
 type Sb = SupabaseClient<Database>;
 
@@ -64,7 +65,12 @@ export async function getCourse(sb: Sb, ctx: CoachChatContext, input: { course_i
   const rounds = await sb.from('golf_rounds').select('id').eq('team_id', ctx.team_id).eq('course_id', input.course_id).eq('status', 'completed').eq('is_test', false).limit(200);
   if (rounds.error) return unavailableEnvelope('Could not read that course.', 'The rounds query failed.');
   const ids = (rounds.data ?? []).map((r) => r.id);
-  const scored = ids.length ? await sb.from('golf_holes').select('hole_number, par, score').in('round_id', ids) : { data: [], error: null };
+  // Up to 200 rounds of 18 holes is 3,600 rows, past PostgREST's 1,000 a request: page it, on the primary key so pages
+  // don't drift. The ids stay one `.in()` (200 is ID_CHUNK_SIZE, the rounds read's own limit).
+  const scored = ids.length
+    ? await fetchAllRowsResult((from, to) => sb.from('golf_holes').select('id, hole_number, par, score').in('round_id', ids).order('id', { ascending: true }).range(from, to))
+    : { data: [], error: null };
+  if (scored.error) return unavailableEnvelope('Could not read that course.', 'The hole scores query failed.');
   const by = new Map<number, { sum: number; n: number }>();
   for (const h of scored.data ?? []) {
     if (h.score == null) continue;

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { posterWash } from '../screens/auth/SceneMount';
-import { isDarkSky, paperTint } from '../screens/auth/scene-sky';
-import { clearSkyBoot, SKY_BOOT, SKY_OFFSET_KEY, skyBoot } from '../screens/auth/SkyScript';
+import { isDarkSky, paperTint, SKY_KEYS } from '../screens/auth/scene-sky';
+import { clearSkyBoot, scriptJson, SKY_BOOT, SKY_OFFSET_KEY, skyBoot } from '../screens/auth/SkyScript';
 
 /**
  * The sign in painted day and then switched to night (owner, 2026-10-15): the server has no clock, so SkyScript
@@ -90,5 +90,21 @@ describe("SkyScript, front door: the sign in never opens on the dashboard's skel
     clearSkyBoot();
     expect(root.hasAttribute('data-ch-au-boot')).toBe(false);
     expect(cover()).toBeNull();
+  });
+});
+
+describe('SkyScript: the data it writes into the script cannot end the script', () => {
+  it('escapes what would close the tag or end a line, and reads back to the same value', () => {
+    const hostile = ['</script><script>alert(1)</script>', '<!--', 'a\u2028b\u2029c', '\\"quoted\\"', 7.5];
+    const out = scriptJson(hostile);
+    expect(out).not.toMatch(/<|>|\/|\u2028|\u2029/);
+    expect(JSON.parse(out)).toEqual(hostile);
+    expect(new Function(`return ${out};`)()).toEqual(hostile);
+  });
+
+  it('writes the sky keyframes exactly as before, so the boot script is unchanged', () => {
+    const keys = JSON.stringify(SKY_KEYS.map((k) => [k.h, k.top, k.amb, k.ambA, k.stars]));
+    expect(SKY_BOOT).toContain(`var K=${keys},`);
+    expect(SKY_BOOT).not.toMatch(/<\/script/i);
   });
 });

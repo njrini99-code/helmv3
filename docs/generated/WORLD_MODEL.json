@@ -22042,6 +22042,11 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/coachhelm/v3/chat/engine-reads.ts",
+          "anchor": "src/lib/supabase/fetch-all-rows"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/coachhelm/v3/chat/engine/store.ts",
           "anchor": "src/lib/supabase/untyped"
         },

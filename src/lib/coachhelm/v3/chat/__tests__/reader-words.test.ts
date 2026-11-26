@@ -134,6 +134,14 @@ describe('a read in words', () => {
     expect(putts[0]).toBe('Eli Brandt, putts per round: 30.4, over 9 rounds');
   });
 
+  it('names a yardstick only for a strokes-gained label, held to the start of the label or the words themselves', () => {
+    const said = (metric_label: string) => inWords(envelope({ measurements: [figure({ metric_id: 'custom_index', metric_label, unit: 'count', value: 1.2 })] }), 'against the Tour benchmark')[0] ?? '';
+    expect(said('SG approach')).toContain('against the Tour benchmark');
+    expect(said('Total strokes gained')).toContain('against the Tour benchmark');
+    expect(said('Team SG index')).not.toContain('against the Tour benchmark');
+    expect(said('SGX index')).not.toContain('against the Tour benchmark');
+  });
+
   it('turns field names and the app’s own codes into words and keeps an id exact, in brackets', () => {
     const lines = inWords(envelope({ detail: { rounds_total: 3, per_player: [{ player_id: ELI, player: 'Eli Brandt', metric_id: 'scoring_average', target_metric: 'sg_putting', avg_score: 73.4, avg_to_par: 1.4, gir_pct: 61.1, status: 'in_progress', to_par: -2, checked_in: false, my_rsvp: null }], drills: [{ ref: `team:${DRILL}`, title: 'Gate drill', minutes: 15 }] } }));
     expect(lines).toEqual([

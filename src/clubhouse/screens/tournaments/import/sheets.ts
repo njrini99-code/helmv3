@@ -152,14 +152,39 @@ export function decodeEntities(s: string): string {
   });
 }
 
-/** Strips until nothing changes, so a tag split around another ("<scr<b>ipt>") can't reassemble, then drops any bracket left. */
+/**
+ * A cell's markup as text, in one pass and never by deleting patterns (which a tag split around another, "<scr<b>ipt>",
+ * can reassemble). A tag runs from `<` to the next `>`; a `<` with another `<` (or nothing) before its `>` is a stray
+ * bracket. A `<br>` reads as a space, a `<script>` or `<style>` takes its body with it, and no bracket survives.
+ */
 function stripTags(html: string): string {
-  let s = html.replace(/<br\s*\/?>/gi, ' ');
-  for (let prev = ''; prev !== s; ) {
-    prev = s;
-    s = s.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '').replace(/<[^<>]*>/g, '');
+  const lower = html.toLowerCase();
+  let out = '';
+  let i = 0;
+  while (i < html.length) {
+    const ch = html[i]!;
+    if (ch !== '<') {
+      if (ch !== '>') out += ch;
+      i += 1;
+      continue;
+    }
+    const close = html.indexOf('>', i + 1);
+    const reopen = html.indexOf('<', i + 1);
+    if (close === -1 || (reopen !== -1 && reopen < close)) {
+      i += 1; // a stray `<`
+      continue;
+    }
+    const name = /^\/?([a-z][a-z0-9]*)/.exec(lower.slice(i + 1, close))?.[1] ?? '';
+    const isClose = lower[i + 1] === '/';
+    i = close + 1;
+    if (name === 'br') out += ' ';
+    else if (!isClose && (name === 'script' || name === 'style')) {
+      const end = lower.indexOf(`</${name}`, i);
+      const endClose = end === -1 ? -1 : html.indexOf('>', end);
+      if (endClose !== -1) i = endClose + 1;
+    }
   }
-  return s.replace(/[<>]/g, '');
+  return out;
 }
 
 /** A cell's text. It is only ever shown as text (React escapes it) and written to a spreadsheet; never as HTML. */

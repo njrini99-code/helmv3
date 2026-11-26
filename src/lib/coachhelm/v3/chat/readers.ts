@@ -39,7 +39,9 @@ const METRIC_ID: Record<string, string> = {
 const slug = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
 export const metricIdOf = (label: string): string => METRIC_ID[label] ?? slug(label);
 
-const unitOf = (row: Pick<StatsComparisonRow, 'unit' | 'label'>): Measurement['unit'] => (row.unit === '%' ? 'percent' : row.unit === ' ft' ? 'feet' : /^SG |gap|hole$/i.test(row.label) ? 'strokes' : /scoring/i.test(row.label) ? 'score' : 'count');
+/** A strokes figure: a label that starts "SG ", names a gap, or ends in "hole" (strokes per hole). Three tests, so no anchor reads across the others. */
+const inStrokes = (label: string): boolean => /^SG /i.test(label) || /gap/i.test(label) || /hole$/i.test(label);
+export const unitOf = (row: Pick<StatsComparisonRow, 'unit' | 'label'>): Measurement['unit'] => (row.unit === '%' ? 'percent' : row.unit === ' ft' ? 'feet' : inStrokes(row.label) ? 'strokes' : /scoring/i.test(row.label) ? 'score' : 'count');
 
 /** The dates the window's rounds run between, from the rounds the page lists. */
 function windowDates(page: PlayerStatsScreen): { start: string | null; end: string | null } {
