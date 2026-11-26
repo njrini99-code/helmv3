@@ -488,6 +488,85 @@ export function controlLabel(control: GraphControl): string {
   return control.label ?? (control.labelTemplate ? `${control.labelTemplate} (built at run time)` : '(no label)');
 }
 
+const SLOT_WORDS: Readonly<Record<string, string>> = { children: 'its text', content: 'its content', label: 'label' };
+
+/**
+ * A run-time label template in words, for people. Innermost braces first: a slot (`{title}`) reads `‹title›`; a choice
+ * (`{Trying again…|Try again}`) reads as its last option, the one shown at rest; an optional part (`{{hint}|}`, a
+ * choice with an empty option) is dropped. "{label} {{hint}|}" → "‹label›", "{Back to {place}|Back to Home}" →
+ * "Back to Home", "Cancel {title}" → "Cancel ‹title›". Agent packs keep the raw template (`controlLabel`).
+ */
+export function readableTemplate(template: string): string {
+  let t = template;
+  for (let i = 0; i < 20 && /\{[^{}]*\}/.test(t); i++) {
+    t = t.replace(/\{([^{}]*)\}/g, (_m, inner: string) => {
+      if (inner.includes('|')) {
+        const options = inner.split('|');
+        if (options.some((o) => o.trim() === '')) return '';
+        return options[options.length - 1]!.trim();
+      }
+      if (/^[A-Za-z_][\w.]*$/.test(inner)) {
+        const words = SLOT_WORDS[inner] ?? inner.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/[_.]/g, ' ').toLowerCase();
+        return `‹${words}›`;
+      }
+      return inner;
+    });
+  }
+  return t.replace(/\s+/g, ' ').trim() || '‹set at run time›';
+}
+
+/** A control's label for a person: as drawn, or its template in words; `runTime` says which. */
+export function controlLabelForPeople(control: GraphControl): { text: string; runTime: boolean } {
+  if (control.label) return { text: control.label, runTime: false };
+  if (control.labelTemplate) return { text: readableTemplate(control.labelTemplate), runTime: true };
+  return { text: 'No label', runTime: false };
+}
+
+/** A control's description with any quoted template in words: '"{label} {{hint}|}" input' → '“‹label›” input'. */
+export function controlDescriptionForPeople(description: string | null | undefined): string | null {
+  if (!description) return null;
+  return description
+    .replace(/"([^"]*\{[^"]*)"/g, (_m, t: string) => `“${readableTemplate(t)}”`)
+    // An inline handler recorded as code ("runs undoPlanFormat({id:…}).then(…)") reads as its function's name.
+    .replace(/\bruns ([A-Za-z_$][\w.$]*)\(.*$/s, 'runs $1')
+    // A link's address built at run time: "/plan/{id}" reads "/plan/‹id›".
+    .replace(/\{([A-Za-z_][\w.]*)\}/g, (_m, slot: string) => `‹${slot.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase()}›`);
+}
+
+/**
+ * One control as a list row reads it: a headline (the label, or the element's kind when the whole label is set at run
+ * time), whether it is set at run time, and what it does without repeating the label ('"Cancel" button: runs onClose'
+ * → 'Button · runs onClose').
+ */
+export function controlSummaryForPeople(control: GraphControl): { headline: string; runTime: boolean; detail: string | null } {
+  const label = controlLabelForPeople(control);
+  const described = controlDescriptionForPeople(control.description);
+  const lead = described ? /^\s*["“][^"”]*["”]\s+([A-Za-z][\w -]{0,30}?):\s*(.*)$/s.exec(described) : null;
+  const kind = lead?.[1] ? lead[1].charAt(0).toUpperCase() + lead[1].slice(1) : null;
+  const rest = lead ? lead[2]!.trim() : described;
+  const onlySlots = label.runTime && /^(‹[^›]*›\s*)+$/.test(label.text);
+  const headline = onlySlots && kind ? kind : label.text;
+  const joined = [onlySlots ? null : kind, rest || null].filter(Boolean).join(' · ');
+  const detail = joined ? joined.charAt(0).toUpperCase() + joined.slice(1) : null;
+  return { headline, runTime: label.runTime, detail };
+}
+
+const CONTROL_ROLE_WORDS: Readonly<Record<string, string>> = {
+  both: 'Coach and player',
+  coach: 'Coach',
+  player: 'Player',
+  visitor: 'Signed out',
+  'player+visitor': 'Player or signed out',
+};
+const VIEWPORT_WORDS: Readonly<Record<string, string>> = { phone: 'phone only', desk: 'desk only', desktop: 'desk only' };
+
+/** "Coach and player", "Coach · phone only": who sees a control and where, in words (never "both · both"). */
+export function audienceWords(role: string | null | undefined, viewport: string | null | undefined): string | null {
+  const who = role ? (CONTROL_ROLE_WORDS[role] ?? role) : null;
+  const where = viewport ? (VIEWPORT_WORDS[viewport] ?? null) : null;
+  return [who, where].filter(Boolean).join(' · ') || null;
+}
+
 /** Controls whose press runs any of these actions: "the controls that start those actions" (B05). */
 export function controlsStarting(graph: BridgeGraph, actionIds: readonly string[]): string[] {
   const wanted = new Set(actionIds);

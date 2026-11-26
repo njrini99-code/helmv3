@@ -30,8 +30,13 @@ import {
   stateMatrix,
   withScope,
   CODE_PAGE_SIZE,
+  audienceWords,
+  controlDescriptionForPeople,
+  controlLabelForPeople,
+  readableTemplate,
 } from '../screens';
 import { fixtureGraph } from './fixtures';
+import graphJson from '../../../../../docs/clubhouse/generated/bridge-graph.json';
 
 /** The fixture graph plus the pieces B02-B12 read: gates, controls, a finding, a deprecated outcome. */
 function graph(): BridgeGraph {
@@ -276,5 +281,35 @@ describe('controls from the ledger (bridge-graph.mjs shape)', () => {
       expect(id).toMatch(/^CTL-P\d{3}-\d{3,}$/);
       expect(c.label || c.labelTemplate, id).toBeTruthy();
     }
+  });
+});
+
+describe('run-time labels in words (controlLabelForPeople, readableTemplate)', () => {
+  it('reads slots, choices and optional parts the way a person sees them', () => {
+    expect(readableTemplate('{label} {{hint}|}')).toBe('‹label›');
+    expect(readableTemplate('{children}')).toBe('‹its text›');
+    expect(readableTemplate('Cancel {title}')).toBe('Cancel ‹title›');
+    expect(readableTemplate('{actionLabel}')).toBe('‹action label›');
+    expect(readableTemplate('{Trying again…|Try again}')).toBe('Try again');
+    expect(readableTemplate('{Trying again…|{Reload|Try again}}')).toBe('Try again');
+    expect(readableTemplate('{Back to {place}|Back to Home}')).toBe('Back to Home');
+    expect(readableTemplate('{title} {{subtitle}|} Done')).toBe('‹title› Done');
+  });
+  it('leaves no brace in any label or description of the real Bridge map', () => {
+    const real = (graphJson as unknown as BridgeGraph).controls;
+    const bad: string[] = [];
+    for (const [id, c] of Object.entries(real)) {
+      const label = controlLabelForPeople(c);
+      if (/[{}|]/.test(label.text)) bad.push(`${id} label: ${label.text}`);
+      const d = controlDescriptionForPeople(c.description);
+      if (d && /[{}]/.test(d)) bad.push(`${id} description: ${d}`);
+    }
+    expect(bad.slice(0, 5)).toEqual([]);
+  });
+  it('says who sees a control in words, never "both · both"', () => {
+    expect(audienceWords('both', 'both')).toBe('Coach and player');
+    expect(audienceWords('coach', 'phone')).toBe('Coach · phone only');
+    expect(audienceWords('player+visitor', 'all')).toBe('Player or signed out');
+    expect(audienceWords(null, null)).toBeNull();
   });
 });
