@@ -44,6 +44,21 @@ describe('buildIngest', () => {
     expect(row.buckets[6]).toBe(1);
   });
 
+  it('buckets a view that carries its switch time, and counts an untimed view without it (Bridge Speed)', () => {
+    const plan = build({
+      signals: [
+        signal({ seq: 1, kind: 'view', outcome: undefined, code: undefined, page: 'P007', durationMs: 240 }),
+        signal({ seq: 2, kind: 'view', outcome: undefined, code: undefined, page: 'P007' }),
+      ],
+    });
+    const rows = plan.sessions[0]!.hourly;
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ kind: 'view', outcome: '', act: '', page_id: 'P007', role: 'coach', platform: 'ios-safari', count: 2 });
+    expect(rows[0]!.buckets).toHaveLength(DURATION_EDGES_MS.length);
+    expect(rows[0]!.buckets[durationBucket(240)]).toBe(1);
+    expect(rows[0]!.buckets.reduce((a, b) => a + b, 0)).toBe(1);
+  });
+
   it('keeps an envelope with no duration out of the histogram', () => {
     const plan = build({ signals: [signal({ kind: 'state', outcome: undefined, code: 'CH-1903', page: 'P007' })] });
     expect(plan.sessions[0]!.hourly[0]!.buckets).toEqual([]);
