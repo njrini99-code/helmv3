@@ -63,6 +63,7 @@ const VISIBLE_COLUMNS = 'id, player_id, category, insight_type, title, content, 
 export async function loadVisible(supabase: Supabase, playerIds: string[]): Promise<{ rows: RankableEvidenceInsight[]; error: boolean }> {
   const res = await fetchAllRowsResult<RawInsightRowForRanking>(
     (from, to) =>
+      // chunk-audit-bounded: one player or one team's roster (callers: coachhelm-player/-dive/-standing pass [playerId], coachhelm-team passes the roster)
       applyInsightVisibility(supabase.from('golf_coach_insights').select(VISIBLE_COLUMNS).in('player_id', playerIds).not('evidence', 'is', null))
         .order('id', { ascending: true })
         .range(from, to),
@@ -159,6 +160,7 @@ export async function newestRounds(supabase: Supabase, playerIds: string[], sinc
       supabase
         .from('golf_rounds')
         .select('id, player_id, round_date, total_score, front_nine, back_nine, holes_played, total_putts')
+        // chunk-audit-bounded: one player or one team's roster (same callers as loadVisible)
         .in('player_id', playerIds)
         .eq('is_test', false)
         .eq('status', 'completed')
@@ -321,6 +323,7 @@ export async function loadProposals(supabase: Supabase, playerId: string, teamId
 async function coachUserIds(supabase: Supabase, coachIds: string[]): Promise<Map<string, { userId: string; name: string | null }> | null> {
   const ids = [...new Set(coachIds)];
   if (!ids.length) return new Map();
+  // chunk-audit-bounded: coaches who proposed in one team's feed
   const res = await supabase.from('golf_coaches').select('id, user_id, full_name').in('id', ids);
   if (res.error) {
     log('proposalCoaches', res.error);
@@ -523,6 +526,7 @@ export async function loadCoachCoachHelm(input: { coachId: string; teamId: strin
   }
   const memberIds = (members.data ?? []).map((m) => m.player_id);
   const people = memberIds.length
+    // chunk-audit-bounded: one team's active roster (golf_team_members by team_id)
     ? await supabase.from('golf_players').select('id, first_name, last_name').in('id', memberIds)
     : { data: [] as Array<{ id: string; first_name: string | null; last_name: string | null }>, error: null };
   if (people.error) {

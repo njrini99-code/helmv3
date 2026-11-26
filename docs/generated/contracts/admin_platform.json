@@ -6,7 +6,7 @@
     "via": "direct",
     "note": null
   },
-  "anchor_sha": "6844a87ed0b2",
+  "anchor_sha": "ff100c405143",
   "current_contract": [
     {
       "id": "c1-status",
@@ -15,7 +15,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1576,
+        "line": 1566,
         "heading": "admin_platform"
       },
       "date": null,
@@ -34,7 +34,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1577,
+        "line": 1567,
         "heading": "admin_platform"
       },
       "date": null,
@@ -53,7 +53,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1580,
+        "line": 1570,
         "heading": "admin_platform"
       },
       "date": null,
@@ -72,7 +72,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1614,
+        "line": 1601,
         "heading": "code.routes"
       },
       "date": null,
@@ -93,7 +93,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1615,
+        "line": 1602,
         "heading": "code.routes"
       },
       "date": null,
@@ -114,7 +114,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1621,
+        "line": 1608,
         "heading": "code.routes"
       },
       "date": null,
@@ -135,7 +135,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1622,
+        "line": 1609,
         "heading": "code.routes"
       },
       "date": null,
@@ -156,7 +156,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1623,
+        "line": 1610,
         "heading": "code.routes"
       },
       "date": null,
@@ -177,7 +177,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1624,
+        "line": 1611,
         "heading": "code.routes"
       },
       "date": null,
@@ -198,7 +198,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1625,
+        "line": 1612,
         "heading": "code.routes"
       },
       "date": null,
@@ -219,7 +219,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1626,
+        "line": 1613,
         "heading": "code.routes"
       },
       "date": null,
@@ -240,7 +240,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1627,
+        "line": 1614,
         "heading": "code.routes"
       },
       "date": null,
@@ -261,7 +261,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1628,
+        "line": 1615,
         "heading": "code.routes"
       },
       "date": null,
@@ -282,7 +282,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1629,
+        "line": 1616,
         "heading": "code.routes"
       },
       "date": null,
@@ -303,7 +303,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1630,
+        "line": 1617,
         "heading": "code.routes"
       },
       "date": null,
@@ -324,7 +324,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1631,
+        "line": 1618,
         "heading": "code.routes"
       },
       "date": null,
@@ -345,7 +345,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1632,
+        "line": 1619,
         "heading": "code.routes"
       },
       "date": null,
@@ -366,7 +366,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1633,
+        "line": 1620,
         "heading": "code.routes"
       },
       "date": null,
@@ -387,7 +387,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1634,
+        "line": 1621,
         "heading": "code.routes"
       },
       "date": null,
@@ -408,7 +408,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1635,
+        "line": 1622,
         "heading": "code.routes"
       },
       "date": null,
@@ -429,7 +429,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1636,
+        "line": 1623,
         "heading": "code.routes"
       },
       "date": null,
@@ -450,7 +450,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1637,
+        "line": 1624,
         "heading": "code.routes"
       },
       "date": null,
@@ -471,7 +471,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1639,
+        "line": 1626,
         "heading": "code.components"
       },
       "date": null,
@@ -492,7 +492,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1646,
+        "line": 1633,
         "heading": "code.components"
       },
       "date": null,
@@ -513,7 +513,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1647,
+        "line": 1634,
         "heading": "code.components"
       },
       "date": null,
@@ -534,7 +534,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1655,
+        "line": 1642,
         "heading": "code.components"
       },
       "date": null,
@@ -555,7 +555,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1660,
+        "line": 1647,
         "heading": "code.components"
       },
       "date": null,
@@ -576,7 +576,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1662,
+        "line": 1649,
         "heading": "code.api"
       },
       "date": null,
@@ -597,7 +597,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1666,
+        "line": 1653,
         "heading": "code.api"
       },
       "date": null,
@@ -618,7 +618,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1667,
+        "line": 1654,
         "heading": "code.api"
       },
       "date": null,
@@ -639,7 +639,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1671,
+        "line": 1658,
         "heading": "code.api"
       },
       "date": null,
@@ -660,7 +660,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1672,
+        "line": 1659,
         "heading": "code.api"
       },
       "date": null,
@@ -681,7 +681,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1673,
+        "line": 1660,
         "heading": "code.api"
       },
       "date": null,
@@ -702,7 +702,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1675,
+        "line": 1662,
         "heading": "code.actions"
       },
       "date": null,
@@ -723,7 +723,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1676,
+        "line": 1663,
         "heading": "code.actions"
       },
       "date": null,
@@ -744,7 +744,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1677,
+        "line": 1664,
         "heading": "code.actions"
       },
       "date": null,
@@ -765,7 +765,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1678,
+        "line": 1665,
         "heading": "code.actions"
       },
       "date": null,
@@ -786,7 +786,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1684,
+        "line": 1671,
         "heading": "code.actions"
       },
       "date": null,
@@ -807,7 +807,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1685,
+        "line": 1672,
         "heading": "code.actions"
       },
       "date": null,
@@ -828,7 +828,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1686,
+        "line": 1673,
         "heading": "code.actions"
       },
       "date": null,
@@ -849,7 +849,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1687,
+        "line": 1674,
         "heading": "code.actions"
       },
       "date": null,
@@ -870,7 +870,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1689,
+        "line": 1676,
         "heading": "code.services"
       },
       "date": null,
@@ -891,7 +891,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1690,
+        "line": 1677,
         "heading": "code.services"
       },
       "date": null,
@@ -912,7 +912,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1701,
+        "line": 1688,
         "heading": "code.services"
       },
       "date": null,
@@ -933,7 +933,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1702,
+        "line": 1689,
         "heading": "code.services"
       },
       "date": null,
@@ -954,7 +954,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1710,
+        "line": 1697,
         "heading": "code.services"
       },
       "date": null,
@@ -975,7 +975,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1727,
+        "line": 1714,
         "heading": "code.services"
       },
       "date": null,
@@ -996,7 +996,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1728,
+        "line": 1715,
         "heading": "code.services"
       },
       "date": null,
@@ -1017,7 +1017,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1729,
+        "line": 1716,
         "heading": "code.services"
       },
       "date": null,
@@ -1038,7 +1038,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1730,
+        "line": 1717,
         "heading": "code.services"
       },
       "date": null,
@@ -1059,7 +1059,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1742,
+        "line": 1729,
         "heading": "code.services"
       },
       "date": null,
@@ -1080,7 +1080,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1752,
+        "line": 1739,
         "heading": "code.db"
       },
       "date": null,
@@ -1101,7 +1101,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1753,
+        "line": 1740,
         "heading": "code.db"
       },
       "date": null,
@@ -1122,7 +1122,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1754,
+        "line": 1741,
         "heading": "code.db"
       },
       "date": null,
@@ -1143,7 +1143,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1755,
+        "line": 1742,
         "heading": "code.db"
       },
       "date": null,
@@ -1164,7 +1164,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1759,
+        "line": 1746,
         "heading": "code.db"
       },
       "date": null,
@@ -1185,7 +1185,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1760,
+        "line": 1747,
         "heading": "code.db"
       },
       "date": null,
@@ -1206,7 +1206,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1761,
+        "line": 1748,
         "heading": "code.db"
       },
       "date": null,
@@ -1227,7 +1227,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1762,
+        "line": 1749,
         "heading": "code.db"
       },
       "date": null,
@@ -1248,7 +1248,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1764,
+        "line": 1751,
         "heading": "code.tests"
       },
       "date": null,
@@ -1269,7 +1269,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1765,
+        "line": 1752,
         "heading": "code.tests"
       },
       "date": null,
@@ -1290,7 +1290,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1776,
+        "line": 1763,
         "heading": "code.tests"
       },
       "date": null,
@@ -1311,7 +1311,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1789,
+        "line": 1775,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1330,7 +1330,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1790,
+        "line": 1776,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1349,7 +1349,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1791,
+        "line": 1777,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1368,7 +1368,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1777,
+        "line": 1764,
         "heading": "admin_platform"
       },
       "date": null,
@@ -1891,7 +1891,7 @@
     {
       "id": "c87-other",
       "kind": "other",
-      "text": "- **`posture.ts`** — `derivePostureSentence`: the one scannable line,\n  clauses joined by \" · \" (posture, release state, top incident, self-heal\n  acting, evidence blindness, decisions waiting). `tone` degrades to\n  `'unknown'` on a blind/unreadable source and can never resolve `'healthy'`\n  from an incomplete read — pinned by an all-unknown fixture.\n- **`orbit.ts`** — `buildSystemOrbit`: the fixed 8-node System Orbit (Users,\n  Next/Vercel, Auth, Supabase, AI, Postgres, Jobs, Realtime), mapped from\n  `IncidentBoard.freshness` (per-source health, the same evidence the Truth\n  Strip renders) and `UnifiedIncident[]` (feature/errorCode-matched per\n  node). **Realtime always renders `'unknown'`** — no `IncidentSourceName`\n  covers it anywhere in this repo, so the node has no evidence to report,\n  deliberately kept rather than hidden as the visual vocabulary's (brief §4)\n  dashed-ring/hatched-fill case in the flesh.\n- **`selfheal-circuit.ts`** — `buildCircuitSummary`: Diagnose -> Repair ->\n  Close, the three stages `SELFHEAL_STAGES` actually automates today — NOT\n  the brief's idealized six-stage Collect/Diagnose/Repair/Review/Deploy/\n  Traffic/Close circuit, which would require inventing three stages this\n  repo does not run. Adds one thing `FlowSummary`/`SelfHealStageDetail`\n  don't already expose: which incident is waiting longest at each stage\n  (`deriveIncidentFlow` re-run per incident, matched against each stage).\n- **`release-wake.ts`** — `buildReleaseWake`: wires the Phase 0\n  `classifyReleaseWatch`/`classifyReleaseRelationship` classifiers against\n  real evidence (`getProductionDeployAt`, `board.incidents`). Every\n  corroborating signal `classifyReleaseRelationship` accepts beyond raw\n  timing (occurrence trend, changed-code, cohort, replay) is passed as\n  unknown/null — this repo tracks none of them yet — which the classifier\n  itself degrades to a temporal-only verdict (\"Proximity is not\n  causation\"), never a fabricated `NEW AFTER RELEASE`. The `latency` and\n  `invariants` lanes render `unknown: true` with a stated reason (Query\n  Pulse §37 and Invariant Lattice §16 have no read model anywhere in this\n  repo yet) rather than a fabricated zero.\n- **`decisions.ts` / `held-migrations.ts`** — `buildDecisionInbox`: sourced\n  from `selectAttention`'s `'needs-evidence'` rows (brief §6's \"repair with\n  insufficient evidence\") and `supabase/migrations/HELD.md`'s open `HOLD`\n  rows (a genuinely undecided \"destructive/security schema choice\", brief\n  §6). `config/open-pr-dispositions.json` was evaluated and NOT used — its\n  three rows are worktree-lifecycle metadata, not a production decision.\n  `held-migrations.ts`'s `fetchHeldMigrations` reads the file via `fs` at\n  request time; this repo has no `outputFileTracingIncludes` entry for it in\n  `next.config.mjs`, so whether that read survives a real Vercel serverless\n  bundle is UNVERIFIED (no `npm run build` was run to check — out of this\n  task's gate scope). Any read failure returns `null`, which\n  `buildDecisionInbox` already treats as `readable: false`, never a\n  silently-empty, falsely-calm inbox.\n- **UI**: `CommandDeck.tsx` gathers every upstream read ONCE via\n  `Promise.all` (all six sources are already fail-soft — none throw, each\n  degrades to an honest `'unknown'`/`null`/blind value on its own) rather\n  than one fetch per sub-panel, both to avoid a second live GitHub-API round\n  trip beyond the one `MissionTruthStrip` already makes\n  (`fetchDeployFreshness`/`fetchBriefing` are not React `cache()`-memoised)\n  and because every visual here reads from the SAME shared fetch — splitting\n  into per-panel Suspense boundaries would buy no independent streaming.\n  Wrapped in ONE `PanelBoundary` from `page.tsx`, matching how\n  `MissionTruthStrip` is wrapped.\n- **Known gap, not fixed here**: `AttentionRow.headline` (`attention.ts`,\n  outside this task's ownership) still reads `incident.description`, not\n  Phase 0's `IncidentPresentation.title` — so the posture sentence and\n  Attention Stack surface the same headline `/admin/errors` already does\n  today, not yet the deterministic plain-English title brief §7 describes.\n  Wiring `IncidentPresentation` into `attention.ts` is Phase 1's (\"Incidents\n  + release tracking\") territory.\n- **`premium/*` primitives, merged in**: `bridge-premium-p1`'s\n  `src/components/admin/premium/*` (posture pill / evidence chips /\n  confidence meter / unknown treatment / episode strip / release-relationship\n  label) had not pushed when this Command Deck's read models landed, but\n  pushed before its UI layer was finished — merged in\n  (`git merge --no-edit origin/agent/bridge-premium-p1`, clean, no\n  conflicts) and wired in two places rather than left as local duplicates:\n  `PostureSentence.tsx`'s tone chip now renders `PosturePill` (tone mapped\n  via `POSTURE_TONE_STATE_TONE` in `command-deck/types.ts`, since this\n  module's `PostureTone` is coarser than `PosturePill`'s own\n  `StateTone | 'unknown'`), and `ReleaseWakeRibbon.tsx`'s watch-state chip\n  now renders `ReleaseWatchPosturePill` directly (it already maps every\n  `ReleaseWatchState` to a tone/label/reason exactly matching what this file\n  had hand-rolled). `command-deck/tone.ts` keeps only the `StateTone`-keyed\n  rail/ink map `AttentionStack.tsx` still uses for its row rail — no\n  `premium/*` primitive covers that exact list-row shape, so this is the\n  fourth copy of the same small pairing `AttentionQueue.tsx`/`TruthStrip.tsx`/\n  `ChangeTimeline.tsx` each already keep, not a new one.\n- **Tests**: 54 vitest cases across 11 files (own suite) plus\n  `bridge-premium-p1`'s 38 (`src/components/admin/premium/**`,\n  `src/lib/admin/incidents/__tests__/{genome,release-watch}.test.ts`) — all\n  92 green together after the merge. Own suite: five fixtures per read model\n  (healthy / blind source / regression / decision waiting / all-unknown)\n  plus render tests (`@testing-library/react`) for every component. No\n  dedicated `CommandDeck.tsx` integration test (would need mocking six\n  modules with no established precedent in this repo for testing an async\n  Server Component this way) — its wiring is exercised by `npm run\n  typecheck` plus each constituent read model's/component's own tests.",
+      "text": "- **`posture.ts`** — `derivePostureSentence`: the one scannable line,\n  clauses joined by \" · \" (posture, release state, top incident, self-heal\n  acting, evidence blindness, decisions waiting). `tone` degrades to\n  `'unknown'` on a blind/unreadable source and can never resolve `'healthy'`\n  from an incomplete read — pinned by an all-unknown fixture.\n- **`orbit.ts`** — `buildSystemOrbit`: the fixed 8-node System Orbit (Users,\n  Next/Vercel, Auth, Supabase, AI, Postgres, Jobs, Realtime), mapped from\n  `IncidentBoard.freshness` (per-source health, the same evidence the Truth\n  Strip renders) and `UnifiedIncident[]` (feature/errorCode-matched per\n  node). **Realtime always renders `'unknown'`** — no `IncidentSourceName`\n  covers it anywhere in this repo, so the node has no evidence to report,\n  deliberately kept rather than hidden as the visual vocabulary's (brief §4)\n  dashed-ring/hatched-fill case in the flesh.\n- **`selfheal-circuit.ts`** — `buildCircuitSummary`: Diagnose -> Repair ->\n  Close, the three stages `SELFHEAL_STAGES` actually automates today — NOT\n  the brief's idealized six-stage Collect/Diagnose/Repair/Review/Deploy/\n  Traffic/Close circuit, which would require inventing three stages this\n  repo does not run. Adds one thing `FlowSummary`/`SelfHealStageDetail`\n  don't already expose: which incident is waiting longest at each stage\n  (`deriveIncidentFlow` re-run per incident, matched against each stage).\n- **`release-wake.ts`** — `buildReleaseWake`: wires the Phase 0\n  `classifyReleaseWatch`/`classifyReleaseRelationship` classifiers against\n  real evidence (`getProductionDeployAt`, `board.incidents`). Every\n  corroborating signal `classifyReleaseRelationship` accepts beyond raw\n  timing (occurrence trend, changed-code, cohort, replay) is passed as\n  unknown/null — this repo tracks none of them yet — which the classifier\n  itself degrades to a temporal-only verdict (\"Proximity is not\n  causation\"), never a fabricated `NEW AFTER RELEASE`. The `latency` and\n  `invariants` lanes render `unknown: true` with a stated reason (Query\n  Pulse §37 and Invariant Lattice §16 have no read model anywhere in this\n  repo yet) rather than a fabricated zero.\n- **`decisions.ts` / `held-migrations.ts`** — `buildDecisionInbox`: sourced\n  from `selectAttention`'s `'needs-evidence'` rows (brief §6's \"repair with\n  insufficient evidence\") and `supabase/migrations/HELD.md`'s open `HOLD`\n  rows (a genuinely undecided \"destructive/security schema choice\", brief\n  §6). `config/open-pr-dispositions.json` was evaluated and NOT used — its\n  three rows are worktree-lifecycle metadata, not a production decision.\n  `held-migrations.ts`'s `fetchHeldMigrations` reads the file via `fs` at\n  request time; this repo has no `outputFileTracingIncludes` entry for it in\n  `next.config.mjs`, so whether that read survives a real Vercel serverless\n  bundle is UNVERIFIED (no `npm run build` was run to check — out of this\n  task's gate scope). Any read failure returns `null`, which\n  `buildDecisionInbox` already treats as `readable: false`, never a\n  silently-empty, falsely-calm inbox.\n- **UI**: `CommandDeck.tsx` gathers every upstream read ONCE via\n  `Promise.all` (all six sources are already fail-soft — none throw, each\n  degrades to an honest `'unknown'`/`null`/blind value on its own) rather\n  than one fetch per sub-panel, both to avoid a second live GitHub-API round\n  trip beyond the one `MissionTruthStrip` already makes\n  (`fetchDeployFreshness`/`fetchBriefing` are not React `cache()`-memoised)\n  and because every visual here reads from the SAME shared fetch — splitting\n  into per-panel Suspense boundaries would buy no independent streaming.\n  Wrapped in ONE `PanelBoundary` from `page.tsx`, matching how\n  `MissionTruthStrip` is wrapped.\n- **Known gap, not fixed here**: `AttentionRow.headline` (`attention.ts`,\n  outside this task's ownership) still reads `incident.description`, not\n  Phase 0's `IncidentPresentation.title` — so the posture sentence and\n  Attention Stack surface the same headline `/admin/errors` already does\n  today, not yet the deterministic plain-English title brief §7 describes.\n  Wiring `IncidentPresentation` into `attention.ts` is Phase 1's (\"Incidents\n  + release tracking\") territory.\n- **`premium/*` primitives, merged in**: `bridge-premium-p1`'s\n  `src/components/admin/premium/*` (posture pill / evidence chips /\n  confidence meter / unknown treatment / episode strip / release-relationship\n  label) had not pushed when this Command Deck's read models landed, but\n  pushed before its UI layer was finished — merged in\n  (`git merge --no-edit origin/agent/bridge-premium-p1`, clean, no\n  conflicts) and wired in two places rather than left as local duplicates:\n  `PostureSentence.tsx`'s tone chip now renders `PosturePill` (tone mapped\n  via `POSTURE_TONE_STATE_TONE` in `command-deck/types.ts`, since this\n  module's `PostureTone` is coarser than `PosturePill`'s own\n  `StateTone | 'unknown'`), and `ReleaseWakeRibbon.tsx`'s watch-state chip\n  now renders `ReleaseWatchPosturePill` directly (it already maps every\n  `ReleaseWatchState` to a tone/label/reason exactly matching what this file\n  had hand-rolled). `command-deck/tone.ts` keeps only the `StateTone`-keyed\n  rail/ink map `AttentionStack.tsx` still uses for its row rail — no\n  `premium/*` primitive covers that exact list-row shape, so this is the\n  fourth copy of the same small pairing\n  `AttentionQueue.tsx`/`TruthStrip.tsx` (deleted 2026-11-25)/`ChangeTimeline.tsx`\n  each kept, not a new one.\n- **Tests**: 54 vitest cases across 11 files (own suite) plus\n  `bridge-premium-p1`'s 38 (`src/components/admin/premium/**`,\n  `src/lib/admin/incidents/__tests__/{genome,release-watch}.test.ts`) — all\n  92 green together after the merge. Own suite: five fixtures per read model\n  (healthy / blind source / regression / decision waiting / all-unknown)\n  plus render tests (`@testing-library/react`) for every component. No\n  dedicated `CommandDeck.tsx` integration test (would need mocking six\n  modules with no established precedent in this repo for testing an async\n  Server Component this way) — its wiring is exercised by `npm run\n  typecheck` plus each constituent read model's/component's own tests.",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
@@ -1920,7 +1920,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1030,
+        "line": 1031,
         "heading": "Phase 1 wiring — incident cards, Incident Genome, Release Watch, Evidence Inspector (2026-09-03)"
       },
       "date": null,
@@ -1941,7 +1941,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1035,
+        "line": 1036,
         "heading": "Phase 1 wiring — incident cards, Incident Genome, Release Watch, Evidence Inspector (2026-09-03)"
       },
       "date": null,
@@ -1962,7 +1962,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1108,
+        "line": 1109,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -1981,7 +1981,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1117,
+        "line": 1118,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2004,7 +2004,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1124,
+        "line": 1125,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2023,7 +2023,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1129,
+        "line": 1130,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2044,7 +2044,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1133,
+        "line": 1134,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2063,7 +2063,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1144,
+        "line": 1145,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2082,7 +2082,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1148,
+        "line": 1149,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2099,11 +2099,11 @@
     {
       "id": "c97-other",
       "kind": "other",
-      "text": "**Two surfaces were deleted rather than folded**, both verified against\nproduction first: `/admin/billing` (zero `STRIPE_*` variables across 68\nproduction env vars, so it could only render its own \"not available\" notice)\nand the Deploys Traffic panel (the Vercel Web Analytics API answers `404\nnot_found` for this project). `CreateInvoiceForm`, `src/lib/stripe/**` and\n`fetchVercelWebInsights()` are all untouched — each is a one-commit restore.",
+      "text": "**Two surfaces were deleted rather than folded**, both verified against\nproduction first: `/admin/billing` (zero `STRIPE_*` variables across 68\nproduction env vars, so it could only render its own \"not available\" notice)\nand the Deploys Traffic panel (the Vercel Web Analytics API answers `404\nnot_found` for this project). `src/lib/stripe/**` and\n`fetchVercelWebInsights()` are untouched — each is a one-commit restore.\n`CreateInvoiceForm` was deleted 2026-11-25 as unused (it is in git history).",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1152,
+        "line": 1153,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2124,7 +2124,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1159,
+        "line": 1161,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2143,7 +2143,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1163,
+        "line": 1165,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2170,7 +2170,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1175,
+        "line": 1177,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2191,7 +2191,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1194,
+        "line": 1196,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2216,7 +2216,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1210,
+        "line": 1212,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2240,7 +2240,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1250,
+        "line": 1252,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2261,7 +2261,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1259,
+        "line": 1261,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2283,7 +2283,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1268,
+        "line": 1270,
         "heading": "Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2306,7 +2306,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1279,
+        "line": 1281,
         "heading": "Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2330,7 +2330,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1354,
+        "line": 1356,
         "heading": "Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2353,7 +2353,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1366,
+        "line": 1368,
         "heading": "Phase 6 polish (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2375,7 +2375,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1375,
+        "line": 1377,
         "heading": "Phase 6 polish (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2394,7 +2394,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1378,
+        "line": 1380,
         "heading": "Phase 6 polish (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2427,7 +2427,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1497,
+        "line": 1499,
         "heading": "Known Risk Areas"
       },
       "date": null,
@@ -2458,7 +2458,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1595,
+        "line": 1597,
         "heading": "Tests To Prefer"
       },
       "date": null,
@@ -2508,21 +2508,18 @@
     {
       "id": "c113-other",
       "kind": "other",
-      "text": "- `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`\n- `docs/BI_DASHBOARD_ARCHITECTURE.md`\n- `docs/observability/OBSERVABILITY.md`\n- `docs/SECURITY_AUDIT.md`\n- `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —\n  the Bridge Premium Observability brief the \"Phase 0 truth models\" and\n  \"Phase 5 Engineering OS\" sections above implement. Verified resolvable in\n  this checkout 2026-09-03 — the \"Phase 0\" section's claim above that it\n  \"does not resolve in this checkout yet\" is now stale; corrected here\n  rather than edited in place, per `.claude/rules/shipping.md` §1 (leave\n  the original reasoning legible, don't silently rewrite history).\n- `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §J.4.5 —\n  the \"do not build a second Decision Inbox\" finding the Phase 5 section's\n  Decision Inbox module is scoped against.\n- `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` —\n  `AGENT_FLIGHT_RECORDER_STORAGE`, the owner decision the Phase 5 section's\n  migration implements.\n- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's\n  re-measured production baseline for the Supabase/Postgres observability\n  program (the master brief itself lands separately, on the sibling\n  control-plane branch).\n- `memory/features/admin-incidents.md`\n- `memory/features/admin-reliability-collector.md`\n- `memory/features/admin-selfheal.md`\n- The Bridge Premium Observability brief the \"Phase 0 truth models\" section\n  above implements — see that section for its worktree location as of\n  2026-09-03; not linked here as a repo path because it does not resolve in\n  this checkout yet (`docs:path-drift` would flag it).",
+      "text": "- `docs/observability/OBSERVABILITY.md`\n- `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —\n  the Bridge Premium Observability brief the \"Phase 0 truth models\" and\n  \"Phase 5 Engineering OS\" sections above implement. Verified resolvable in\n  this checkout 2026-09-03 — the \"Phase 0\" section's claim above that it\n  \"does not resolve in this checkout yet\" is now stale; corrected here\n  rather than edited in place, per `.claude/rules/shipping.md` §1 (leave\n  the original reasoning legible, don't silently rewrite history).\n- `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §J.4.5 —\n  the \"do not build a second Decision Inbox\" finding the Phase 5 section's\n  Decision Inbox module is scoped against.\n- `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` —\n  `AGENT_FLIGHT_RECORDER_STORAGE`, the owner decision the Phase 5 section's\n  migration implements.\n- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's\n  re-measured production baseline for the Supabase/Postgres observability\n  program (the master brief itself lands separately, on the sibling\n  control-plane branch).\n- `memory/features/admin-incidents.md`\n- `memory/features/admin-reliability-collector.md`\n- `memory/features/admin-selfheal.md`\n- The Bridge Premium Observability brief the \"Phase 0 truth models\" section\n  above implements — see that section for its worktree location as of\n  2026-09-03; not linked here as a repo path because it does not resolve in\n  this checkout yet (`docs:path-drift` would flag it).",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1685,
+        "line": 1687,
         "heading": "Related Docs"
       },
       "date": null,
       "sha": null,
       "refs": {
         "paths": [
-          "docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md",
-          "docs/BI_DASHBOARD_ARCHITECTURE.md",
           "docs/observability/OBSERVABILITY.md",
-          "docs/SECURITY_AUDIT.md",
           "docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md",
           "docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md",
           "memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md",
@@ -2543,7 +2540,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1714,
+        "line": 1713,
         "heading": "Related Docs"
       },
       "date": null,
@@ -6268,7 +6265,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_TRACKED_FILES",
         "confidence": "mechanical",
-        "evidence": "scripts/lib/selfheal-repair-runner.mjs, src/test/scripts/run-selfheal-repair.test.ts, src/test/scripts/selfheal-repair-launchd.test.ts — matches 0 files in `git ls-files` as of 6844a87ed0b2"
+        "evidence": "scripts/lib/selfheal-repair-runner.mjs, src/test/scripts/run-selfheal-repair.test.ts, src/test/scripts/selfheal-repair-launchd.test.ts — matches 0 files in `git ls-files` as of ff100c405143"
       }
     },
     {

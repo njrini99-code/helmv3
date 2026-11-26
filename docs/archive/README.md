@@ -7,7 +7,7 @@ archives were removed to the git tag `docs-attic-2026-09`.
 
 | Folder | What it is |
 | --- | --- |
-| `audits-2026-08/` | Aug to Sep 2026 audit snapshots, data and iOS evidence (was `docs/audits/`; two registry-routed audits stayed there). |
+| `audits-2026-08/` | Aug to Sep 2026 audit snapshots, data and iOS evidence (was `docs/audits/`; one registry-routed audit stayed there, and the BaseballHelm spec moved to `docs/baseball/`). |
 | `baseball/` | The BaseballHelm execution plan. |
 | `clubhouse-audit-2026-10-29-720962bc4/` | The 2026-10-29 Clubhouse audit hand-back. |
 | `messages-v2-audit-2026-09/` | The 2026-09-07 Messages v2 audit (was the tracked part of `audit/`). |
@@ -18,4 +18,4 @@ archives were removed to the git tag `docs-attic-2026-09`.
 | `superpowers-plans/` | Bridge wave plans and design contracts (was `docs/superpowers/plans/`). |
 | `supabase-investigations-2026-09/` | One-off read-only SQL investigations (was `supabase/investigations/`). |
 | `ui-audits-2026-08/` | Aug to Sep 2026 golf UI audits (was `docs/ui-audits/`). |
-| `v3/` | The v3 testing standards (was the top of `docs/`; the rest of the v3 set is still routed by the registry). |
+| `v3/` | The v3 testing standards, decisions and page and feature audits (was the top of `docs/`; the master plan, wave sequence, RLS template and domain research stayed). |

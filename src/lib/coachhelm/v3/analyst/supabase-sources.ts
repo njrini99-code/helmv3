@@ -27,7 +27,7 @@ const SHOT_COLUMNS =
   'id, round_id, hole_id, hole_number, shot_number, shot_type, club_type, is_penalty, miss_direction, lie_before, distance_to_hole_before, distance_unit_before, distance_to_hole_after, distance_unit_after, result, lie_after, putt_made, putt_distance_feet';
 
 /** Every row of a chunked, paged read; throws with the table's name when a page fails. */
-async function readAll<T>(what: string, ids: readonly string[], page: (ids: string[], from: number, to: number) => Page<T>): Promise<T[]> {
+async function readAll<T>(what: string, ids: readonly string[], page: (idChunk: string[], from: number, to: number) => Page<T>): Promise<T[]> {
   const rows: T[] = [];
   for (const chunk of chunkIds(ids)) {
     const res = await fetchAllRowsResult<T>((from, to) => page(chunk, from, to));
@@ -59,11 +59,11 @@ export function supabaseAnalystSources(sb: Client): AnalystSources {
 
     rounds(playerIds, since) {
       // The same rows src/clubhouse/data/season.ts loadSeasonRounds asks for.
-      return readAll<RoundRow>('golf_rounds', playerIds, (ids, from, to) =>
+      return readAll<RoundRow>('golf_rounds', playerIds, (idChunk, from, to) =>
         sb
           .from('golf_rounds')
           .select(ROUND_COLUMNS)
-          .in('player_id', ids)
+          .in('player_id', idChunk)
           .eq('is_test', false)
           .eq('status', 'completed')
           .not('total_score', 'is', null)
@@ -75,20 +75,20 @@ export function supabaseAnalystSources(sb: Client): AnalystSources {
     },
 
     roundCache(roundIds) {
-      return readAll<RoundCacheRow>('golf_round_stats_cache', roundIds, (ids, from, to) =>
-        sb.from('golf_round_stats_cache').select(CACHE_COLUMNS).in('round_id', ids).order('id', { ascending: true }).range(from, to) as unknown as Page<RoundCacheRow>,
+      return readAll<RoundCacheRow>('golf_round_stats_cache', roundIds, (idChunk, from, to) =>
+        sb.from('golf_round_stats_cache').select(CACHE_COLUMNS).in('round_id', idChunk).order('id', { ascending: true }).range(from, to) as unknown as Page<RoundCacheRow>,
       );
     },
 
     holes(roundIds) {
-      return readAll<HoleRow>('golf_holes', roundIds, (ids, from, to) =>
-        sb.from('golf_holes').select(HOLE_COLUMNS).in('round_id', ids).order('id', { ascending: true }).range(from, to) as unknown as Page<HoleRow>,
+      return readAll<HoleRow>('golf_holes', roundIds, (idChunk, from, to) =>
+        sb.from('golf_holes').select(HOLE_COLUMNS).in('round_id', idChunk).order('id', { ascending: true }).range(from, to) as unknown as Page<HoleRow>,
       );
     },
 
     shots(roundIds) {
-      return readAll<ShotRow>('golf_shots', roundIds, (ids, from, to) =>
-        sb.from('golf_shots').select(SHOT_COLUMNS).in('round_id', ids).order('id', { ascending: true }).range(from, to) as unknown as Page<ShotRow>,
+      return readAll<ShotRow>('golf_shots', roundIds, (idChunk, from, to) =>
+        sb.from('golf_shots').select(SHOT_COLUMNS).in('round_id', idChunk).order('id', { ascending: true }).range(from, to) as unknown as Page<ShotRow>,
       );
     },
 

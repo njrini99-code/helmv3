@@ -14,9 +14,23 @@ changes, backfills) on the local Docker stack, apply, then verify.
    and a `-- VERIFY:` block (`SELECT`s that must each return >= 1 row
    post-apply; continuation lines are joined until a `;`, so one query may
    span several lines, and a line starting a new top-level `select` or
-   `with <name> as` ends the query before it, terminated or not). See `docs/operations/DECLARATIVE_SCHEMA.md` for the schema
-   file this migration should also update if one exists for the object
-   changed.
+   `with <name> as` ends the query before it, terminated or not). **Every
+   line of a VERIFY query starts with `-- VERIFY:`**, continuation lines
+   included: a plain `-- ` continuation (what a comment reflow to
+   sqlfluff's 80-column LT05 limit produces) is dropped, the query runs cut
+   off, and `npm run check:migration-headers` fails. Keep each query on one
+   line where it fits (end a long one with `-- noqa: LT05`), or continue it
+   on prefixed lines. The rollback marker is likewise the exact
+   `-- ROLLBACK:` (with the colon); a pointer to `supabase/rollbacks/` goes on
+   that line. Example of a two-line query:
+
+   ```sql
+   -- VERIFY: select 1 where to_regclass('public.golf_example') is not null
+   -- VERIFY:   and to_regclass('public.golf_example_items') is not null;
+   ```
+
+   See `docs/operations/DECLARATIVE_SCHEMA.md` for the schema file this
+   migration should also update if one exists for the object changed.
 2. **pgTAP** — add/extend a test under `supabase/tests/rls/`; `npm run
    test:rls` runs it against the local stack (`npm run db:local` first).
 3. **`scripts/db/check-migration-headers.mjs`** (`npm run

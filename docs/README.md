@@ -100,7 +100,7 @@ After the "Start here" list above, read these for a specific doc cluster (in rou
   **`memory/context/baseballhelm-features.md`**; the golf equivalent
   (`memory/context/golfhelm-features.md`) is historical as of 2026-08-30 and
   is routed from nowhere.
-- **`docs/audits/BASEBALLHELM_CANONICAL_SPEC.md`** — source of truth for what BaseballHelm
+- **`docs/baseball/BASEBALLHELM_CANONICAL_SPEC.md`** — source of truth for what BaseballHelm
   should be.
 - **`memory/incidents/`** — confirmed product defects, one file per incident, per
   feature. This entry used to point at `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/HELMV3_ISSUE_LEDGER_2026-06-30.md`
@@ -150,8 +150,7 @@ What remains loose, and why:
 | File(s) | Why it stays |
 |---|---|
 | `REPO_MAP.md`, `CI_RUNBOOK.md`, `OBSERVABILITY.md`, `README.md` | Routed to from `CLAUDE.md` / `AGENTS.md` / `.claude/rules/` |
-| `v3-*.md` (9 files) | Referenced from `memory/registry.yml` — registry paths never move |
-| `SECURITY_AUDIT.md`, `BASEBALL_RLS_SECURITY_AUDIT.md`, `PRIVACY_AUDIT.md`-class | Cited from rules or audit docs as standing references |
+| `v3-master-plan.md`, `v3-wave-sequence.md`, `v3-rls-template.md`, `v3-research-golf-domain.md` | Cited by line from `docs/business/`, routed from `memory/registry.yml`, or compiled into code (see `docs/archive/v3/README.md`) |
 | the rest | Each is linked from a living doc or the registry |
 
 **Before adding a file here:** put it in a cluster directory instead. A loose

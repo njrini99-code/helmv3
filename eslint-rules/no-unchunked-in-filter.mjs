@@ -24,6 +24,15 @@
  *   - `.in(` calls where the second argument is itself a member/call
  *     expression already returning a bounded slice (e.g. `chunk`, `page`)
  *     — heuristically, any argument name containing "chunk" or "page"
+ *   - an array literal whose every element is a literal (a fixed enum filter
+ *     such as `['proposed', 'active', 'in_progress', 'paused']`), and an
+ *     identifier bound by `const` to such a literal (`FAILURE_SEVERITIES`,
+ *     optionally `as const`): its size is fixed in the source; an imported
+ *     SCREAMING_CASE constant (`INCIDENT_SEVERITIES`) is trusted by name
+ *   - an identifier that IS a chunkIds slice: the parameter of a callback
+ *     passed to `chunkIds(...).map/flatMap/forEach` or straight to a helper
+ *     whose name says it chunks (`chunkedIn((ids) => …)`), or the loop
+ *     variable of `for (const ids of chunkIds(...))`
  */
 
 function mentionsChunkHelper(node) {
@@ -41,6 +50,72 @@ function mentionsChunkHelper(node) {
   }
   if (node.type === 'MemberExpression') {
     return mentionsChunkHelper(node.object) || mentionsChunkHelper(node.property);
+  }
+  return false;
+}
+
+function unwrapTs(node) {
+  let n = node;
+  while (n && (n.type === 'TSAsExpression' || n.type === 'TSSatisfiesExpression' || n.type === 'TSTypeAssertion' || n.type === 'TSNonNullExpression')) {
+    n = n.expression;
+  }
+  return n;
+}
+
+/** An array literal whose size is fixed in the source: every element a literal. */
+function isLiteralArray(node) {
+  const n = unwrapTs(node);
+  return (
+    n?.type === 'ArrayExpression' &&
+    n.elements.length > 0 &&
+    n.elements.every(
+      (el) => el && (el.type === 'Literal' || (el.type === 'TemplateLiteral' && el.expressions.length === 0)),
+    )
+  );
+}
+
+const ITERATORS = new Set(['map', 'flatMap', 'forEach']);
+
+/**
+ * Is `fn` a callback that receives one chunk? Either the callback of an
+ * iterator over a chunk helper's result (`chunkIds(x).map((ids) => …)`), or a
+ * callback handed straight to a chunking helper (`chunkedIn((ids) => …)`).
+ */
+function isChunkIteratorCallback(fn) {
+  const call = fn?.parent;
+  if (call?.type !== 'CallExpression' || !call.arguments.includes(fn)) return false;
+  const callee = call.callee;
+  if (callee?.type === 'Identifier') return /chunk/i.test(callee.name);
+  if (callee?.type !== 'MemberExpression' || callee.property?.type !== 'Identifier') return false;
+  if (ITERATORS.has(callee.property.name)) return call.arguments[0] === fn && mentionsChunkHelper(callee.object);
+  return /chunk/i.test(callee.property.name);
+}
+
+/** True when the identifier provably holds a bounded list (see "DOES NOT FLAG" above). */
+function isBoundedBinding(context, identifier) {
+  let scope = context.sourceCode.getScope(identifier);
+  let variable = null;
+  while (scope && !variable) {
+    variable = scope.set.get(identifier.name) ?? null;
+    scope = scope.upper;
+  }
+  const def = variable?.defs?.[0];
+  if (!def || variable.defs.length !== 1) return false;
+
+  // An imported SCREAMING_CASE constant (`INCIDENT_SEVERITIES` from
+  // src/lib/admin/severity.ts) is a fixed config list by convention; the rule
+  // cannot follow the import, so it trusts the name, as it does `chunk`/`page`.
+  if (def.type === 'ImportBinding' && /^[A-Z][A-Z0-9]*(_[A-Z0-9]+)+$/.test(identifier.name)) return true;
+
+  if (def.type === 'Variable') {
+    const decl = def.parent; // VariableDeclaration
+    if (decl?.kind === 'const' && def.node.id?.type === 'Identifier' && isLiteralArray(def.node.init)) return true;
+    const loop = decl?.parent;
+    if (loop?.type === 'ForOfStatement' && loop.left === decl && mentionsChunkHelper(loop.right)) return true;
+    return false;
+  }
+  if (def.type === 'Parameter' && def.name?.parent === def.node) {
+    return isChunkIteratorCallback(def.node);
   }
   return false;
 }
@@ -74,6 +149,7 @@ export default {
         // suggests it is already a bounded slice.
         if (arg.type === 'Identifier') {
           if (/chunk|page/i.test(arg.name)) return;
+          if (isBoundedBinding(context, arg)) return;
           context.report({ node: arg, messageId: 'unchunked' });
           return;
         }
@@ -82,6 +158,7 @@ export default {
           // A short literal of constants (status enums, fixed filters) is not
           // the failure mode this rule exists for.
           if (arg.elements.length <= 3) return;
+          if (isLiteralArray(arg)) return;
           context.report({ node: arg, messageId: 'unchunked' });
           return;
         }

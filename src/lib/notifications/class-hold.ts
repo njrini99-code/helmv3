@@ -141,6 +141,7 @@ async function holdOrPassUnguarded(
   }
   if (result.error) {
     warnFailOpen(result.error.code ?? 'put failed');
+    // eslint-disable-next-line helm/no-healthy-value-on-error -- deliberate fail-open (see the file header): a failed put sends the push now rather than holding it into silence, and warnFailOpen has already reported the failure.
     return 'pass';
   }
 
