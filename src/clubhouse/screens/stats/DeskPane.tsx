@@ -75,7 +75,7 @@ export function DeskDetail({
 
   return (
     <section ref={root} className="ch-shs-screen ch-shs-dfull" aria-labelledby="ch-shs-dfull-t" data-ch-shs-detail={hash}>
-      <BackLink className="ch-shs-dfull__back" onClick={onBack}>
+      <BackLink data-ctl="CTL-P004-002" className="ch-shs-dfull__back" onClick={onBack}>
         {back}
       </BackLink>
       <h2 id="ch-shs-dfull-t" className="ch-shs-dfull__t">

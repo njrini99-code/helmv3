@@ -382,72 +382,72 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/routes/stats.tsx`
 
-- 85 `Button` "Back to roster" (button, href)
+- CTL-P004-001 85 `Button` "Back to roster" (button, href)
 
 ### `src/clubhouse/screens/stats/DeskPane.tsx`
 
-- 78 `BackLink` "{back}" (link, onClick)
+- CTL-P004-002 78 `BackLink` "{back}" (link, onClick)
 
 ### `src/clubhouse/screens/stats/ScoringFeatureChart.tsx`
 
-- 173 `div` "Scores for {n} {pluralWord}, from {round} on {lab…" (onPointerDown)
+- CTL-P004-003 173 `div` "Scores for {n} {pluralWord}, from {r…" (onPointerDown)
 
 ### `src/clubhouse/screens/stats/ShsBlocks.tsx`
 
-- 27 `button` "How this is measured" (button, onClick)
+- CTL-P004-004 27 `button` "How this is measured" (button, onClick)
 
 ### `src/clubhouse/screens/stats/StatsFilter.tsx`
 
-- 106 `button` "Filter {{length}|}" (button, onClick)
-- 115 `button` "Remove filter: {label}" (button, onClick)
-- 132 `button` "Clear filters" (button, onClick)
-- 200 `Button` "Clear filters" (button, onClick)
-- 215 `Button` "Clear filters" (button, onClick)
-- 313 `Button` "Clear" (button, onClick)
-- 326 `Button` "Done" (button, onClick)
-- 336 `button` "All" (button, onClick)
-- 340 `button` "{KIND_LABEL}" (button, onClick)
-- 351 `button` "{label}" (button, onClick)
-- 433 `button` "{label}" (button, onClick)
+- CTL-P004-005 106 `button` "Filter {{length}|}" (button, onClick)
+- CTL-P004-006 115 `button` "Remove filter: {label}" (button, onClick)
+- CTL-P004-007 132 `button` "Clear filters" (button, onClick)
+- CTL-P004-008 200 `Button` "Clear filters" (button, onClick)
+- CTL-P004-009 215 `Button` "Clear filters" (button, onClick)
+- CTL-P004-010 313 `Button` "Clear" (button, onClick)
+- CTL-P004-011 326 `Button` "Done" (button, onClick)
+- CTL-P004-012 336 `button` "All" (button, onClick)
+- CTL-P004-013 340 `button` "{KIND_LABEL}" (button, onClick)
+- CTL-P004-014 351 `button` "{label}" (button, onClick)
+- CTL-P004-015 433 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/screens/stats/StatsTeam.tsx`
 
-- 124 `HowStatsCountLink` "(no label)" (link)
-- 306 `Link` "{name} {meta}" (link, href)
+- CTL-P004-016 124 `HowStatsCountLink` "How stats are counted (ledger)" (link)
+- CTL-P004-017 306 `Link` "{name} {meta}" (link, href)
 
 ### `src/clubhouse/screens/stats/StatsTeamFirstRun.tsx`
 
-- 27 `Button` "{Invite players|View roster}" (button, href) CH-4310
+- CTL-P004-018 27 `Button` "{Invite players|View roster}" (button, href) CH-4310
 
 ### `src/clubhouse/screens/stats/StatsTeamIslands.tsx`
 
-- 194 `Button` "Export" (button, onClick)
-- 207 `Button` "Show the season" (button, onClick)
-- 714 `button` "{first} {{fmtEnd}|}" (button, onClick)
-- 838 `button` "{leg} {{formatSigned}|} {chWords}" (button, onClick)
-- 969 `Link` "{name}" (link, href)
-- 984 `Link` "{name}, {toLowerCase} {formatSigned}: open game det…" (link, href)
+- CTL-P004-019 194 `Button` "Export" (button, onClick)
+- CTL-P004-020 207 `Button` "Show the season" (button, onClick)
+- CTL-P004-021 714 `button` "{first} {{fmtEnd}|}" (button, onClick)
+- CTL-P004-022 838 `button` "{leg} {{formatSigned}|} {chWord…" (button, onClick)
+- CTL-P004-023 969 `Link` "{name}" (link, href)
+- CTL-P004-024 984 `Link` "{name}, {toLowerCase} {formatSigned}: …" (link, href)
 
 ### `src/clubhouse/screens/stats/StatsTeamPhone.tsx`
 
-- 401 `button` "{label}, {no data|formatSigned}" (button, onClick, role=tab)
-- 478 `Link` "{name} {rounds} {pluralWord} {|{formatFixed}} {Earl…" (link, href)
+- CTL-P004-025 401 `button` "{label}, {no data|for…" (button, onClick, role=tab)
+- CTL-P004-026 478 `Link` "{name} {rounds} {pluralWord} {|{format…" (link, href)
 
 ### `src/clubhouse/screens/stats/StatsTeamPhoneShs.tsx`
 
-- 317 `Button` "Try again" (button, onClick) CH-4201
-- 507 `HowStatsCountLink` "(no label)" (link)
-- 611 `button` "{label}: {formatSigned} a round" (button, onClick)
+- CTL-P004-027 317 `Button` "Try again" (button, onClick) CH-4201
+- CTL-P004-028 507 `HowStatsCountLink` "How stats are counted (ledger)" (link)
+- CTL-P004-029 611 `button` "{label}: {formatSigned} a round" (button, onClick)
 
 ### `src/clubhouse/screens/stats/SummaryCard.tsx`
 
-- 92 `section` "{title} {{meta}|} {children}" (onClick)
-- 99 `button` "{ariaLabel}" (button, onClick)
-- 108 `button` "Open {toLowerCase} details" (button, onClick)
+- CTL-P004-030 92 `section` "{title} {{meta}|} {children}" (onClick)
+- CTL-P004-031 99 `button` "{ariaLabel}" (button, onClick)
+- CTL-P004-032 108 `button` "Open {toLowerCase} details" (button, onClick)
 
 ### `src/clubhouse/screens/stats/TeamRank.tsx`
 
-- 131 `Link` "Open player" (link, href)
+- CTL-P004-033 131 `Link` "Open player" (link, href)
 
 ## P005 Stats (player)
 
