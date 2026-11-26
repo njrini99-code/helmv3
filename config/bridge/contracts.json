@@ -134,6 +134,13 @@
       "does": "A rule hit (R-01 to R-12); the same list the digest sends"
     },
     {
+      "code": "BR-0111",
+      "screen": "B01",
+      "key": "pulse.watchedRow",
+      "label": "Watched code row",
+      "does": "A code watched from its dossier (BR-0507), with its failures in the window; opens the dossier"
+    },
+    {
       "code": "BR-0190",
       "screen": "B01",
       "key": "pulse.loading",

@@ -17,6 +17,12 @@ describe('parseErrorsFilters', () => {
     // what was analysed and what was visible. 72 also survives a weekend.
     expect(parseErrorsFilters({})).toEqual({ windowHours: 72 });
   });
+  it('takes a Clubhouse CH code (the Bridge B04 failure reason link) and drops anything else', () => {
+    expect(parseErrorsFilters({ ch: 'ch-7004' }).ch).toBe('CH-7004');
+    expect(parseErrorsFilters({ ch: "CH-7004' or 1=1" }).ch).toBeUndefined();
+    expect(parseErrorsFilters({ ch: '7004' }).ch).toBeUndefined();
+    expect(describeErrorsFilters({ windowHours: 72, ch: 'CH-7004' })).toContain('ch=CH-7004 (app events only)');
+  });
   it('parses valid sport/severity/source/window from the URL', () => {
     expect(
       parseErrorsFilters({ sport: 'golf', severity: 'critical', source: 'rls_denial', window: '168' }),

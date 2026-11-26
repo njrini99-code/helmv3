@@ -87,6 +87,30 @@ export function PulseBody({
         </ul>
       </Section>
 
+      {model.watched.length ? (
+        <Section title="Watched" description="Codes you watch from their dossier (BR-0507): failures and people in the window. A quiet one shows at zero.">
+          <ul className="divide-y divide-border-subtle">
+            {model.watched.map((w) => (
+              <li key={w.code}>
+                <Link
+                  href={withLive(clubhouseHref.code(w.bridgeId ?? graph.chIndex[w.code] ?? w.code), scope, live)}
+                  data-br={BR.pulse.watchedRow}
+                  className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 px-1 py-2.5 hover:bg-surface-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+                >
+                  <span className="min-w-0 break-words font-fw-mono text-caption text-text-primary">
+                    {w.code}
+                    {w.page ? <span className="text-text-tertiary"> · {w.page}</span> : null}
+                  </span>
+                  <span className={cn('font-fw-mono text-caption tabular-nums', w.failures ? 'font-semibold text-fw-danger-ink' : 'text-text-secondary')}>
+                    {w.failures} failure{w.failures === 1 ? '' : 's'} · {w.users} {w.users === 1 ? 'person' : 'people'}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
       <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         <Section title="Rising" description="Spikes (R-01) and codes new in this release (R-02).">
           <AlertList

@@ -1177,6 +1177,24 @@ built in their own worktrees, in parallel with PR 1, against a seeded fixture.
   20261124090000.
 - Decided: the cross-sport overview stays below Pulse on `/admin` (§11).
 
+**Bridge notes (branch `agent/bridge-notes`, 2026-11-26), after migration
+20261124090000 was applied:**
+
+- Done: Mark expected… (BR-0506; R-01 and R-02 skip the code) and Watch
+  (BR-0507; pinned to Pulse as BR-0111 and to the digest) on the code dossier,
+  with "marked expected" as a B05 column and filter. The B13 queue: Mark sent
+  (BR-1304), Verify after release (BR-1305, opens B10 at the release that
+  decides it) and Archive (BR-1306), with new, sent, waiting, fixed and
+  regressed worked out from the hourly counters, never stored (the table has no
+  status column, and no new migration was needed). B04's failure reasons
+  (BR-0405) open Incidents filtered by `admin_events.ch_code`.
+- Decided: a person's or a team's pack is not kept on the queue, since
+  `bridge_notes` is kept forever and the key holds their id (D7).
+- Not built: the B15 toasts (-20 to -26); each action redirects back to its
+  screen, which shows the new state.
+- Still waiting on the owner: the `clubhouse_signals` flag. Until it is on,
+  fixed or regressed stays "waiting for a release" and the counts are empty.
+
 ---
 
 ## 13. How we'll know it worked

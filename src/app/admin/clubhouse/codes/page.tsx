@@ -24,6 +24,7 @@ import { ClubhouseFrame, GraphUnavailable, NoSignal, NoSignalCell } from '../_co
 import { CategoryLegend, CategoryTag, IdChip, PageChip, StatusTag } from '../_components/chips';
 import { GRAPH_SOURCE, readClubhouse } from '../_components/load';
 import { NativeSelect } from '@/components/ui/native-select';
+import { readNotes } from '@/lib/admin/clubhouse/live';
 import { Input } from '@/components/ui/input';
 
 export const metadata: Metadata = { title: 'Codes' };
@@ -47,8 +48,11 @@ export default async function ClubhouseCodesPage({
   const { graph, scope, pages } = read;
 
   const filter = parseCodeFilter(sp, scope);
-  const { rows, total, pages: pageCount, p } = codeRows(graph, filter);
-  const filtered = Boolean(filter.q || filter.category || filter.status || filter.page);
+  // Codes marked expected on their dossier (bridge_notes): a column here and a filter (BR-0502).
+  const notes = await readNotes();
+  const expected = new Set(notes.data.expected.keys());
+  const { rows, total, pages: pageCount, p } = codeRows(graph, filter, expected);
+  const filtered = Boolean(filter.q || filter.category || filter.status || filter.page || filter.expected);
 
   const report = [
     `# Clubhouse codes (contract ${graph.contentHash})`,
@@ -56,8 +60,8 @@ export default async function ClubhouseCodesPage({
     `${total} match${total === 1 ? '' : 'es'}${filter.q ? ` for "${filter.q}"` : ''}; page ${p} of ${pageCount}.`,
     '',
     markdownTable(
-      ['Bridge ID', 'CH code', 'Page', 'Category', 'Name', 'Meaning', 'Status'],
-      rows.map((r) => [r.id, r.ch ?? '', r.page, categoryCode(r.category), r.name, r.meaning, r.status]),
+      ['Bridge ID', 'CH code', 'Page', 'Category', 'Name', 'Meaning', 'Status', 'Expected'],
+      rows.map((r) => [r.id, r.ch ?? '', r.page, categoryCode(r.category), r.name, r.meaning, r.status, r.ch && expected.has(r.ch) ? 'marked expected' : '']),
     ),
   ].join('\n');
 
@@ -71,7 +75,7 @@ export default async function ClubhouseCodesPage({
       noSignalCode={BR.codes.noSignal}
       copyCode={BR.codes.copy}
       report={report}
-      sources={[GRAPH_SOURCE, 'config/clubhouse/bridge-contracts.json and the catalogs (through the graph)']}
+      sources={[GRAPH_SOURCE, 'config/clubhouse/bridge-contracts.json and the catalogs (through the graph)', 'public.bridge_notes (marked expected)']}
     >
       <CodeSearch filter={filter} scope={scope} />
       <CategoryLegend />
@@ -94,8 +98,8 @@ export default async function ClubhouseCodesPage({
         </div>
       ) : (
         <>
-          <CodesTable rows={rows} scope={scope} />
-          <CodesCards rows={rows} scope={scope} />
+          <CodesTable rows={rows} scope={scope} expected={expected} />
+          <CodesCards rows={rows} scope={scope} expected={expected} />
           <Pager filter={filter} scope={scope} p={p} pages={pageCount} />
         </>
       )}
@@ -151,10 +155,20 @@ function CodeSearch({ filter, scope }: { filter: CodeFilter; scope: ClubhouseSco
           ))}
         </NativeSelect>
       </label>
+      <div className="min-w-0">
+        <label htmlFor="bridge-codes-exp" className="sr-only">
+          Marked expected
+        </label>
+        <NativeSelect id="bridge-codes-exp" name="exp" defaultValue={filter.expected ?? ''} data-br={BR.codes.filters} className={fieldClass}>
+          <option value="">Expected or not</option>
+          <option value="yes">Marked expected</option>
+          <option value="no">Not marked expected</option>
+        </NativeSelect>
+      </div>
       <Button type="submit" variant="primary" size="sm" className="[@media(pointer:coarse)]:h-11">
         Search
       </Button>
-      {filter.q || filter.category || filter.status ? (
+      {filter.q || filter.category || filter.status || filter.expected ? (
         <Link href={withScope(clubhouseHref.codes(), scope)} className="text-caption font-medium text-text-secondary hover:text-text-primary hover:underline">
           Clear
         </Link>
@@ -164,7 +178,7 @@ function CodeSearch({ filter, scope }: { filter: CodeFilter; scope: ClubhouseSco
 }
 
 function filterParams(filter: CodeFilter, p: number) {
-  return { q: filter.q || null, cat: filter.category, status: filter.status, p: p > 1 ? p : null };
+  return { q: filter.q || null, cat: filter.category, status: filter.status, exp: filter.expected, p: p > 1 ? p : null };
 }
 
 function Pager({ filter, scope, p, pages }: { filter: CodeFilter; scope: ClubhouseScope; p: number; pages: number }) {
@@ -194,7 +208,11 @@ function Pager({ filter, scope, p, pages }: { filter: CodeFilter; scope: Clubhou
   );
 }
 
-function CodesTable({ rows, scope }: { rows: CodeRow[]; scope: ClubhouseScope }) {
+const MarkedExpected = () => (
+  <span className="mt-1 inline-block rounded-full border border-border-subtle bg-surface-sunken px-2 py-0.5 text-caption text-text-secondary">marked expected</span>
+);
+
+function CodesTable({ rows, scope, expected }: { rows: CodeRow[]; scope: ClubhouseScope; expected: ReadonlySet<string> }) {
   return (
     <div className="hidden overflow-x-auto rounded-fw-md border border-border-subtle bg-surface md:block">
       <table className="w-full min-w-[52rem] text-left text-body-sm">
@@ -224,7 +242,10 @@ function CodesTable({ rows, scope }: { rows: CodeRow[]; scope: ClubhouseScope })
                 <p className="text-text-primary">{r.meaning}</p>
                 {r.catalogRow?.theySee ? <p className="mt-0.5 text-caption text-text-secondary">They see: {r.catalogRow.theySee}</p> : null}
               </td>
-              <td className="px-3 py-2"><StatusTag status={r.status} /></td>
+              <td className="px-3 py-2">
+                <StatusTag status={r.status} />
+                {r.ch && expected.has(r.ch) ? <MarkedExpected /> : null}
+              </td>
               <td className="px-3 py-2 text-right"><NoSignalCell code={BR.codes.noSignal} /></td>
               <td className="px-3 py-2 text-right font-fw-mono tabular-nums text-text-secondary">{r.tests?.length ?? 0}</td>
             </tr>
@@ -235,7 +256,7 @@ function CodesTable({ rows, scope }: { rows: CodeRow[]; scope: ClubhouseScope })
   );
 }
 
-function CodesCards({ rows, scope }: { rows: CodeRow[]; scope: ClubhouseScope }) {
+function CodesCards({ rows, scope, expected }: { rows: CodeRow[]; scope: ClubhouseScope; expected: ReadonlySet<string> }) {
   return (
     <ul className="divide-y divide-border-subtle rounded-fw-md border border-border-subtle bg-surface md:hidden">
       {rows.map((r) => (
@@ -252,6 +273,7 @@ function CodesCards({ rows, scope }: { rows: CodeRow[]; scope: ClubhouseScope })
               </span>
               <span className="font-fw-mono text-caption text-text-tertiary">
                 {r.page} · {categoryCode(r.category)} · {r.status}
+                {r.ch && expected.has(r.ch) ? ' · expected' : ''}
               </span>
             </span>
             <span className="mt-0.5 block text-body-sm text-text-primary">{r.meaning}</span>

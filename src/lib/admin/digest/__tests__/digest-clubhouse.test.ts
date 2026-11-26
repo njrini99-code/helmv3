@@ -1,8 +1,9 @@
 /** The digest's Clubhouse section (Bridge plan §10), from the seeded live store. Digest only; no push (D10). */
 import { describe, it, expect } from 'vitest';
 import { buildDigestEmail, type DigestData } from '@/lib/admin/digest/build-digest';
-import { clubhouseDigest } from '@/lib/admin/clubhouse/pulse';
-import { categoryLookup, pipeStatus, runRules } from '@/lib/admin/clubhouse/live-model';
+import { clubhouseDigest, clubhouseDigestLines } from '@/lib/admin/clubhouse/pulse';
+import { indexNotes } from '@/lib/admin/clubhouse/notes';
+import { categoryLookup, isFailureRow, pipeStatus, runRules } from '@/lib/admin/clubhouse/live-model';
 import { fixtureGraph } from '@/lib/admin/clubhouse/__tests__/fixtures';
 import { LIVE_RELEASE, NOW, badDay } from '@/lib/admin/clubhouse/__tests__/fixtures-live';
 
@@ -43,9 +44,18 @@ describe('digest: Clubhouse section', () => {
     expect(c.untrusted).toBe(true);
     expect(c.alerts[0]?.rule).toBe('R-09');
   });
+  it('lists each watched code with its failures in the last day', () => {
+    const graph = fixtureGraph();
+    const day = badDay();
+    const code = day.dayRows.find(isFailureRow)!.code;
+    const notes = indexNotes([{ id: 'n1', kind: 'watch', code, bridge_id: null, page_id: null, body: '', created_at: '2026-11-20T00:00:00Z', created_by: null, resolved_at: null }]);
+    const c = clubhouseDigest({ state: 'ok', graph, dayRows: day.dayRows, alerts: [], pipe: pipeStatus({ flagOn: true, state: 'ok', lastEnvelopeAt: new Date(NOW - 60_000).toISOString(), now: NOW, activeHours: true }), release: LIVE_RELEASE, driftCount: 0, notes });
+    expect(c.watched.map((w) => w.code)).toEqual([code]);
+    expect(clubhouseDigestLines(c).join('\n')).toContain(`Watched: ${code}`);
+  });
   it('says "could not check" and "no signal yet" rather than a zero', () => {
     expect(buildDigestEmail(data).text).toContain('CLUBHOUSE\n  Could not check.');
-    const held = { state: 'no-signal' as const, pipe: 'pipe: no signal yet', untrusted: true, alerts: [], wall: [], topCodes: [], release: null, driftCount: 0 };
+    const held = { state: 'no-signal' as const, pipe: 'pipe: no signal yet', untrusted: true, alerts: [], wall: [], topCodes: [], release: null, driftCount: 0, watched: [] };
     expect(buildDigestEmail({ ...data, clubhouse: held }).text).toContain('No signal yet');
     expect(buildDigestEmail({ ...data, clubhouse: held }).html).toContain('Clubhouse');
   });

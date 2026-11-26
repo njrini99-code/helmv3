@@ -44,6 +44,11 @@ export interface IncidentFeedFilters {
   source?: string;
   feature?: FeatureKey;
   /**
+   * A Clubhouse CH code (admin_events.ch_code): the Bridge's B04 "Open in Incidents" per failure reason.
+   * Sentry issues carry no CH code, so a CH-narrowed feed lists app events only.
+   */
+  ch?: string;
+  /**
    * The product UI to narrow to (src/lib/admin/bridge-scope.ts). Bridge PAGES pass BRIDGE_UI_SCOPE; the machinery
    * (digest cron, self-heal, auto-resolve) leaves it out and reads the whole feed, exactly as before.
    */
@@ -259,6 +264,7 @@ export async function queryAppErrorEvents(
     if (filters.severity) query = query.eq('severity', filters.severity);
     if (filters.source) query = query.eq('source', filters.source);
     if (filters.feature) query = query.eq('feature', filters.feature);
+    if (filters.ch) query = query.eq('ch_code', filters.ch);
 
     return scopeAdminEvents(query, filters.scope);
   });
@@ -479,7 +485,8 @@ export async function fetchIncidentFeed(
   // triage queue / "Active groups" surfaces) — never to the raw `sentry`
   // AdminFetchResult returned below, which backs the Errors tab's
   // deliberately un-windowed "Sentry unresolved (org-wide)" panel.
-  const releaseFilteredSentry = filterSentryIssuesByDeploy(mergeSentrySource.data ?? [], deploy.deployAt);
+  // A CH-code view is app events only: no Sentry issue carries a CH code, so none can match it.
+  const releaseFilteredSentry = filters.ch ? [] : filterSentryIssuesByDeploy(mergeSentrySource.data ?? [], deploy.deployAt);
 
   // Runs AFTER queryAppErrorEvents because it is scoped to the fingerprints
   // that actually appear in this feed — a bounded IN(…) on an indexed column

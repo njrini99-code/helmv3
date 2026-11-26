@@ -1037,6 +1037,11 @@
         "category": "actions"
       },
       {
+        "id": "actions:src/app/admin/actions/bridge-notes.ts",
+        "pattern": "src/app/admin/actions/bridge-notes.ts",
+        "category": "actions"
+      },
+      {
         "id": "actions:src/app/admin/actions/golf-tracer.ts",
         "pattern": "src/app/admin/actions/golf-tracer.ts",
         "category": "actions"
@@ -2338,6 +2343,11 @@
       {
         "id": "tests:src/app/admin/actions/__tests__/analyze-error.test.ts",
         "pattern": "src/app/admin/actions/__tests__/analyze-error.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/app/admin/actions/__tests__/bridge-notes.test.ts",
+        "pattern": "src/app/admin/actions/__tests__/bridge-notes.test.ts",
         "category": "tests"
       },
       {
@@ -6467,6 +6477,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "actions:src/app/admin/actions/bridge-notes.ts",
+      "kind": "feature_action",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/actions/bridge-notes.ts"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "actions:src/app/admin/actions/golf-tracer.ts",
       "kind": "feature_action",
       "evidence": [
@@ -8688,6 +8710,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "src/app/admin/__tests__/**"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
+      "target": "tests:src/app/admin/actions/__tests__/bridge-notes.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/app/admin/actions/__tests__/bridge-notes.test.ts"
         }
       ]
     },

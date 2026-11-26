@@ -278,6 +278,19 @@ function involved(graph: BridgeGraph, target: PackTarget): { ids: BridgeId[]; ac
   return { ids: mine.slice(0, PAGE_PACK_ID_LIMIT).map((m) => m.id), actions, controls: [], truncated: Math.max(0, mine.length - PAGE_PACK_ID_LIMIT) };
 }
 
+/**
+ * The CH codes whose failures the queue watches for a sent pack (B13): the target's failure-category codes that have
+ * a CH code. A release, a person, a team or a finding has none of its own, so its pack is only "sent".
+ */
+export function packWatchCodes(graph: BridgeGraph, target: PackTarget): string[] {
+  return uniq(
+    involved(graph, target)
+      .ids.map((id) => graph.ids[String(id)])
+      .filter((e): e is NonNullable<typeof e> => !!e && FAILURE_CATEGORIES.has(e.category) && e.status !== 'deprecated')
+      .flatMap((e) => (e.ch ? [e.ch] : [])),
+  ).sort();
+}
+
 /** What a person or team pack calls its subject: a pseudonym unless names were asked for (D7). */
 export type PackPseudonymizer = (kind: 'person' | 'team', id: string) => string;
 

@@ -10,6 +10,7 @@ import { fixtureGraph } from '@/lib/admin/clubhouse/__tests__/fixtures';
 import { NOW, badDay, ev, session, LIVE_RELEASE, BASE_RELEASE, h } from '@/lib/admin/clubhouse/__tests__/fixtures-live';
 import { categoryLookup, pipeStatus, runRules, type LiveRead } from '@/lib/admin/clubhouse/live-model';
 import { pulseModel, pulseReport } from '@/lib/admin/clubhouse/pulse';
+import { indexNotes } from '@/lib/admin/clubhouse/notes';
 import { DEFAULT_SCOPE } from '@/lib/admin/clubhouse/screens';
 
 type Mode = 'ok' | 'no-signal';
@@ -135,6 +136,22 @@ describe('live screens over the seeded store', () => {
     const report = pulseReport(failed);
     expect(report).toContain('Evidence: 1 read failed');
     expect(report).not.toContain('Nothing high or critical.');
+  });
+  it('B01 Pulse pins each watched code (BR-0111) with its failures, a quiet one at zero, and the report lists them', () => {
+    const graph = fixtureGraph();
+    const day = badDay();
+    const failing = day.dayRows.find((r) => r.outcome === 'failure' || r.kind === 'failure')!;
+    const notes = indexNotes([
+      { id: 'w1', kind: 'watch', code: failing.code, bridge_id: graph.chIndex[failing.code] ?? null, page_id: failing.page_id, body: '', created_at: '2026-11-20T00:00:00Z', created_by: null, resolved_at: null },
+      { id: 'w2', kind: 'watch', code: 'CH-1903', bridge_id: 10703, page_id: 'P001', body: '', created_at: '2026-11-20T00:00:00Z', created_by: null, resolved_at: null },
+    ]);
+    const model = pulseModel({ graph, rows: day.dayRows, dayRows: day.dayRows, alerts: [], pipe: livePipe, release: LIVE_RELEASE, notes });
+    const { container } = render(<PulseBody model={model} graph={graph} scope={DEFAULT_SCOPE} live={{ w: '24h', pf: 'all' }} incidents={[]} />);
+    const rows = [...container.querySelectorAll(`a[data-br="${BR.pulse.watchedRow}"]`)];
+    expect(rows).toHaveLength(2);
+    expect(rows[1]?.getAttribute('href')).toBe('/admin/clubhouse/codes/10703');
+    expect(rows[1]?.textContent).toContain('0 failures');
+    expect(pulseReport(model)).toContain('## Watched');
   });
   it('the Pipe dot (BR-0106) in the truth line opens B11 at the pipe panel; every lens links its pipe there', () => {
     const graph = fixtureGraph();

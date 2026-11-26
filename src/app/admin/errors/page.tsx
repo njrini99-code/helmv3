@@ -295,6 +295,7 @@ function activeFilters(current: URLSearchParams, filters: ErrorsTabFilters): Act
   if (current.get('window')) active.push({ param: 'window', label: 'Window', value: WINDOW_OPTIONS.find((w) => Number(w.value) === filters.windowHours)?.label ?? `${filters.windowHours}h`, clearHref: clearParamHref(current, 'window') });
   if (filters.kind) active.push({ param: 'kind', label: 'Kind', value: filters.kind === 'all' ? 'Everything' : INCIDENT_CLASS_LABEL[filters.kind], clearHref: clearParamHref(current, 'kind') });
   if (filters.feature) active.push({ param: 'feature', label: 'Feature', value: FEATURE_LABELS[filters.feature] ?? filters.feature, clearHref: clearParamHref(current, 'feature') });
+  if (filters.ch) active.push({ param: 'ch', label: 'Clubhouse code', value: filters.ch, clearHref: clearParamHref(current, 'ch') });
   return active;
 }
 
