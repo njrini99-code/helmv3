@@ -242,7 +242,7 @@
 .bs .rl-speed-table .rl-c-page { min-width: 160px; }
 .bs .rl-speed-table .rl-c-meter { min-width: 200px; }
 .bs .rl-speed-table .rl-c-switch { white-space: nowrap; }
-@media (max-width: 899px) {
+@container (max-width: 1039px) {
   .bs .rl-speed-table .rl-c-page,
   .bs .rl-speed-table .rl-c-meter { min-width: 0; }
   .bs .rl-speed-table .rl-meter { min-width: 0; }

@@ -314,7 +314,7 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
   const people = sortPeople(data.people, sort);
   const golf = data.team.sport === 'golf';
   return (
-    <>
+    <div className="bs-stack-scope">
       <div className="bp-sort-phone">
         <span className="bs-eyebrow">Sort</span>
         <LinkTabs
@@ -434,7 +434,7 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
             : 'BaseballHelm sends no Clubhouse signals, so device and per-player games are not measured.'}
         </span>
       </div>
-    </>
+    </div>
   );
 }
 

@@ -289,6 +289,8 @@
   -webkit-overflow-scrolling: touch;
 }
 .bs-tabs::-webkit-scrollbar { display: none; }
+/* The control scrolls, so it clips: draw a tab's focus ring inside its own edge. */
+.bs-tabs .bs-tab:focus-visible { outline-offset: -2px; }
 /* A control row sitting directly in the page column keeps its own width instead of stretching across it. */
 .bs-main > .bs-tabs { align-self: flex-start; }
 .bs-tab {
@@ -377,10 +379,13 @@
  * `.bs-cell-label`, hidden while the table is a table. The card is a four-column grid: `.bs-cell-head` (the row's
  * name) and `.bs-cell-wide` span it, `.bs-cell-half` takes half, any other cell a quarter. The header row is hidden,
  * so a table that sorts by its headers needs a sort control above the cards.
+ * It answers to the width it actually has (a container query on `.bs-stack-scope`), not the window's: beside the
+ * admin sidebar a 1280 window leaves the table about 950px.
  */
+.bs-stack-scope { container-type: inline-size; }
 .bs-cell-label { display: none; }
 .bs-table .bs-num { text-align: right; }
-@media (max-width: 899px) {
+@container (max-width: 1039px) {
   .bs-table-stack,
   .bs-table-stack tbody { display: block; }
   .bs-table-stack thead { display: none; }
@@ -413,8 +418,12 @@
     color: var(--bs-ink-3);
   }
 }
-@media (min-width: 600px) and (max-width: 899px) {
-  .bs-table-stack tr { padding: 16px 22px; }
+/* Beside the sidebar or on a tablet: the name on top, then every value in one row of eight. */
+@container (min-width: 640px) and (max-width: 1039px) {
+  .bs-table-stack tr { grid-template-columns: repeat(8, minmax(0, 1fr)); padding: 14px 22px; }
+  .bs-table-stack .bs-cell-half { grid-column: span 1; }
+  .bs-table-stack .bs-cell-wide { grid-column: span 2; }
+  .bs-table-stack .bs-cell-head { grid-column: 1 / -1; }
 }
 
 /* The Fairway copy control, sized as the space's own 44px secondary action (via its className). */

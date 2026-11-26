@@ -180,7 +180,7 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
             title={`Every page · ${who}`}
             note={`Load = opening the page cold (LCP). Tap = the slowest response to a tap (INP). The line is where R-12 raises it on iPhone. Switch to first paint = from an in-app link or Back to the new page's first paint.`}
           >
-            <div className="bs-scroll-x">
+            <div className="bs-scroll-x bs-stack-scope">
               <table className="bs-table bs-table-stack rl-speed-table">
                 <thead>
                   <tr>

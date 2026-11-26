@@ -95,7 +95,8 @@
 .bp-num { text-align: right; }
 .bp-label { display: none; }
 
-@media (max-width: 960px) {
+/* The ranked list needs about 1050px as a grid; narrower (a phone, or beside the admin sidebar) it is a card a team. */
+@container (max-width: 1059px) {
   .bp-list-head { display: none; }
   .bp-team {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -116,6 +117,17 @@
   .bp-team > .bp-c-rounds { grid-area: rounds; text-align: left; }
   .bp-team > .bp-c-errors { grid-area: errors; justify-self: end; }
   .bp-label { display: inline; }
+}
+/* Beside the sidebar or on a tablet: two rows a team instead of four. */
+@container (min-width: 640px) and (max-width: 1059px) {
+  .bp-team {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name active seen state'
+      'name spark rounds errors';
+    padding: 14px 22px;
+  }
+  .bp-team > .bp-c-seen { justify-self: start; text-align: left; }
 }
 
 .bp-chip-sport {
@@ -198,7 +210,7 @@
 .bp-people .bp-pname { text-decoration: none; }
 /* Sorting for the stacked cards (the table's header row, with its sort links, is hidden below 900px). */
 .bp-sort-phone { display: none; padding: 0 22px 14px; }
-@media (max-width: 899px) {
+@container (max-width: 1039px) {
   .bp-sort-phone { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
   .bp-person { min-width: 0; }
   .bp-people .bp-pname { display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0 -10px; font-size: 16px; }

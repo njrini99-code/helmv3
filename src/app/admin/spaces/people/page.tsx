@@ -139,7 +139,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
             </SpaceState>
           </div>
         ) : (
-          <div>
+          <div className="bs-stack-scope">
             <div className="bp-list-head" aria-hidden="true">
               <span>#</span>
               <span>Team</span>
