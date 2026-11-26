@@ -289,7 +289,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
-    "@capacitor/cli": "^8.5.3",
+    "@capacitor/cli": "^8.6.3",
     "@eslint/js": "^10.0.1",
     "@lhci/cli": "^0.16.1",
     "@next/bundle-analyzer": "^16.4.3",
