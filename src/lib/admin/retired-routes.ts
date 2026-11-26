@@ -110,7 +110,7 @@ export const RETIRED_ADMIN_ROUTES: readonly RetiredRoute[] = [
   },
   {
     from: '/admin/billing',
-    to: '/admin',
+    to: '/admin/spaces/today',
     reason:
       'Production has no Stripe key — verified 2026-09-08: zero STRIPE_* variables across 68 production env vars — so isStripeConfigured() is false and this page could only ever render its own "Invoicing is not available yet" notice. A whole nav section for a surface that cannot act. src/lib/stripe/** is untouched. CreateInvoiceForm was deleted 2026-11-25 as unused (it is in git history), so restoring the page means restoring that form too if a key is ever configured.',
   },
@@ -136,7 +136,7 @@ export const RETIRED_SHORTCUTS: Readonly<Record<string, string>> = {
   R: '/admin/errors?view=sources',
   S: '/admin/errors?view=loop',
   O: '/admin/health?view=budgets',
-  V: '/admin',
+  V: '/admin/spaces/today',
 };
 
 /** The full destination for a retired route, including its `?view=`. */

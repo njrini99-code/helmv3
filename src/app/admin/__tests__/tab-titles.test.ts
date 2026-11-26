@@ -42,6 +42,6 @@ describe('admin tab titles', () => {
   });
 
   it('Pulse (the overview) spells the suffix out, since its own layout’s template does not reach it', () => {
-    expect(titleOf(join(root, 'src/app/admin/page.tsx'))).toBe('Pulse · Admin');
+    expect(titleOf(join(root, 'src/app/admin/pulse/page.tsx'))).toBe('Pulse · Admin');
   });
 });

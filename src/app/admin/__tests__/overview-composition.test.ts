@@ -29,7 +29,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-const PAGE_PATH = path.join(process.cwd(), 'src/app/admin/page.tsx');
+const PAGE_PATH = path.join(process.cwd(), 'src/app/admin/pulse/page.tsx');
 const DECK_PATH = path.join(process.cwd(), 'src/components/admin/command-deck/CommandDeck.tsx');
 
 const pageSource = fs.readFileSync(PAGE_PATH, 'utf8');

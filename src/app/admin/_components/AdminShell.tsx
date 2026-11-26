@@ -145,6 +145,7 @@ const NAV_ICON_BY_HREF = {
   // 2×2 grid glyph, and LayoutDashboard is a grid too — on a phone the first
   // and last tabs read as the same button.
   '/admin': House,
+  '/admin/pulse': House,
   // Spaces (plan 2026-11-26-bridge-spaces-build.md): one glyph each, none reused by a tab below.
   '/admin/spaces/today': Sunrise,
   '/admin/spaces/people': UsersRound,
@@ -587,11 +588,12 @@ export function AdminShell({
         label: BRIDGE_BOTTOM_NAV_LABELS[href],
         href,
         icon: NAV_ICON_BY_HREF[href],
-        activeMatch: (p: string) => (href === '/admin' ? p === '/admin' : p.startsWith(href)),
+        activeMatch: (p: string) => p === href || p.startsWith(`${href}/`),
+        // Open incidents ride on Reliability, red features on Product (the spaces that answer them).
         badge:
-          href === '/admin/errors' && errorCount !== null && errorCount > 0
+          href === '/admin/spaces/reliability' && errorCount !== null && errorCount > 0
             ? errorCount
-            : href === '/admin/health' && healthCount !== null && healthCount > 0
+            : href === '/admin/spaces/product' && healthCount !== null && healthCount > 0
               ? healthCount
               : undefined,
       })),

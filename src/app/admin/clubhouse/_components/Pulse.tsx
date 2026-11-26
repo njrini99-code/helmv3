@@ -69,7 +69,7 @@ export async function ClubhousePulse({ searchParams }: { searchParams?: SearchPa
       ]}
       actions={
         <Link
-          href={withLive('/admin', scope, live)}
+          href={withLive('/admin/pulse', scope, live)}
           prefetch={false}
           data-br={BR.pulse.refresh}
           className="inline-flex min-h-9 items-center gap-1.5 rounded-fw-sm border border-border-control px-3 text-caption font-medium text-text-secondary hover:border-border-strong hover:text-text-primary"
@@ -85,7 +85,7 @@ export async function ClubhousePulse({ searchParams }: { searchParams?: SearchPa
         </h2>
         <PipeBanner pipe={snapshot.pipe} code={snapshot.pipe.tone === 'no-signal' ? BR.pulse.noSignal : BR.pulse.pipeDot} href={clubhouseHref.pipe()} />
         {snapshot.state === 'error' ? (
-          <LiveFailed code={BR.pulse.failed} label="Clubhouse signals" error={snapshot.errors[0]} retryHref={withLive('/admin', scope, live)} />
+          <LiveFailed code={BR.pulse.failed} label="Clubhouse signals" error={snapshot.errors[0]} retryHref={withLive('/admin/pulse', scope, live)} />
         ) : null}
         {snapshot.state === 'no-signal' ? (
           <NoSignal code={BR.pulse.noSignal} what="The rules, the page wall, rising codes, slipping actions and the release delta" />

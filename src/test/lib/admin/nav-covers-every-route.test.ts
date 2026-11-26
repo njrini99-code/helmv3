@@ -23,6 +23,8 @@ import { ADMIN_NAV } from '@/app/admin/_components/admin-nav';
  * route is not.
  */
 const DETAIL_LEAVES = new Set([
+  // The front door only redirects to Today (/admin/spaces/today); Pulse moved to /admin/pulse (2026-11-26).
+  '/admin',
   '/admin/errors/[fingerprint]',
   '/admin/teams/[id]',
   '/admin/users/[id]',

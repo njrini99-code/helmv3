@@ -67,23 +67,23 @@ vi.mock('@/components/fairway', () => ({
 
 import { AdminShell } from '@/app/admin/_components/AdminShell';
 
-describe('AdminShell bottom-nav Health badge', () => {
-  it('renders no badge on Health when there are zero red features (honest-only)', () => {
+describe('AdminShell bottom-nav red-feature badge (Product tab)', () => {
+  it('renders no badge on Product when there are zero red features (honest-only)', () => {
     render(
       <AdminShell email="admin@helm.test" errorCount={0} healthCount={0}>
         <div>Bridge content</div>
       </AdminShell>,
     );
-    expect(screen.getByText('Health:none')).toBeInTheDocument();
+    expect(screen.getByText('Product:none')).toBeInTheDocument();
   });
 
-  it('renders the red-feature count on Health when > 0', () => {
+  it('renders the red-feature count on Product when > 0', () => {
     render(
       <AdminShell email="admin@helm.test" errorCount={0} healthCount={3}>
         <div>Bridge content</div>
       </AdminShell>,
     );
-    expect(screen.getByText('Health:3')).toBeInTheDocument();
+    expect(screen.getByText('Product:3')).toBeInTheDocument();
   });
 
   it('renders no badge — never a fake 0 — when the health count is unknown (degraded pipeline)', () => {
@@ -92,7 +92,7 @@ describe('AdminShell bottom-nav Health badge', () => {
         <div>Bridge content</div>
       </AdminShell>,
     );
-    expect(screen.getByText('Health:none')).toBeInTheDocument();
+    expect(screen.getByText('Product:none')).toBeInTheDocument();
   });
 
   // The incident badge's third state. `fetchBridgeErrorBadge` returns null
@@ -105,7 +105,7 @@ describe('AdminShell bottom-nav Health badge', () => {
           <div>Bridge content</div>
         </AdminShell>,
       );
-      expect(screen.getByText('Incidents:none')).toBeInTheDocument();
+      expect(screen.getByText('Reliability:none')).toBeInTheDocument();
       const chip = screen.getByTestId('bridge-incidents-unreadable');
       expect(chip).toHaveTextContent(/incidents unreadable/i);
       expect(chip).toHaveAttribute('role', 'status');
@@ -117,7 +117,7 @@ describe('AdminShell bottom-nav Health badge', () => {
           <div>Bridge content</div>
         </AdminShell>,
       );
-      expect(screen.getByText('Incidents:none')).toBeInTheDocument();
+      expect(screen.getByText('Reliability:none')).toBeInTheDocument();
       expect(screen.queryByTestId('bridge-incidents-unreadable')).toBeNull();
     });
 
@@ -127,22 +127,20 @@ describe('AdminShell bottom-nav Health badge', () => {
           <div>Bridge content</div>
         </AdminShell>,
       );
-      expect(screen.getByText('Incidents:4')).toBeInTheDocument();
+      expect(screen.getByText('Reliability:4')).toBeInTheDocument();
       expect(screen.queryByTestId('bridge-incidents-unreadable')).toBeNull();
     });
   });
 
-  it('keeps the Errors and Health badges independent of each other', () => {
+  it('keeps the Reliability (incidents) and Product (red features) badges independent of each other', () => {
     render(
       <AdminShell email="admin@helm.test" errorCount={5} healthCount={2}>
         <div>Bridge content</div>
       </AdminShell>,
     );
-    // "Incidents", not "Errors" — the tab was renamed when the list stopped
-    // being errors-only and started folding Sentry issues, Supabase faults,
-    // Vercel faults and reliability signals into one incident each. The route
-    // is unchanged; only the word is.
-    expect(screen.getByText('Incidents:5')).toBeInTheDocument();
-    expect(screen.getByText('Health:2')).toBeInTheDocument();
+    // The phone's tabs are the spaces (owner, 2026-11-26): open incidents ride on
+    // Reliability, red features on Product.
+    expect(screen.getByText('Reliability:5')).toBeInTheDocument();
+    expect(screen.getByText('Product:2')).toBeInTheDocument();
   });
 });

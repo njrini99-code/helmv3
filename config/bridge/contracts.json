@@ -3,7 +3,7 @@
   "screens": {
     "B01": {
       "name": "Pulse",
-      "route": "/admin"
+      "route": "/admin/pulse"
     },
     "B02": {
       "name": "Pages",
