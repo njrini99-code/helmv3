@@ -72,7 +72,7 @@ waits for the owner to say so in that conversation.
 | Gate | What | Unblocks |
 | --- | --- | --- |
 | **G1** | Apply the held migration `20261124090000_clubhouse_bridge_signals.sql` to production (rollout thread, after local Docker and reviews) | Rows and counters can be stored |
-| **G2** | Turn on `clubhouse_signals` in production | Signals flow. The W-tier check (forced CH-7004 → one `admin_events` row with `bridge_id 70603`) |
+| **G2** | Turn on `clubhouse_signals` in production (owner yes 2026-11-26; on in production only) | Signals flow. The W-tier check (forced CH-7004 → one `admin_events` row with `bridge_id 70603`) |
 | **G3** | Production deploy of each landed PR (no preview deploys either) | Anything reaching users or the live Bridge |
 | G4 (optional) | Token for the §9.2 Duet read-only API (D9) | Duet's door |
 

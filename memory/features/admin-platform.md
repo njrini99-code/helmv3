@@ -1595,6 +1595,11 @@ Bridge reads "No signal yet" (each screen's BR-xx93).
 | `BRIDGE_PSEUDONYM_KEY` | unset | Keys the HMAC pseudonyms (`u-`, `t-`, `s-`) in packs, the Duet door and Copy reports (`src/lib/admin/clubhouse/pseudonym.ts`). Unset, a key is derived from the service-role secret; with neither, pseudonyms print as `…-withheld` |
 | Push alerts (D10) | off | Digest only |
 
+The Default column is each switch's default. On 2026-11-26 the owner turned
+`clubhouse_signals` on in production only (`config/feature-flags.yml`).
+Preview and development stay off: staging is not yet confirmed to have the
+migration's tables, and a local dev server may point at production.
+
 ## Known Risk Areas
 
 - Admin actions are more likely to use broad permissions; review for service-role and RLS bypass carefully.
