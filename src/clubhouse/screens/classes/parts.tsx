@@ -84,7 +84,7 @@ export function ClassCard({
   return (
     // Named by its face, in the order it is drawn (PMAC-07, MAC-09: Voice Control); the week strip is drawn for the eye only, so
     // its days and time are said in words after the instructor. No aria-label to disagree with what it shows.
-    <button
+    <button data-ctl="CTL-P012-065"
       type="button"
       className={`ch-cl-card ch-cl-t-${c.tone}`}
       onClick={() => {
@@ -202,7 +202,7 @@ export function SyncStatus({ failed, syncing, onRetry }: { failed: number; synci
         <Icon icon={TriangleAlert} size={14} />
         {failed === 1 ? '1 class is not on your calendar' : `${failed} classes are not on your calendar`}
       </span>
-      <Button size="sm" leftIcon={RotateCw} onClick={onRetry}>
+      <Button data-ctl="CTL-P012-066" size="sm" leftIcon={RotateCw} onClick={onRetry}>
         Retry sync
       </Button>
     </div>

@@ -332,7 +332,7 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
               },
             },
           ]}
-          trigger={(p) => <IconButton icon={Ellipsis} label="More for your classes" menu={p} disabled={busy} />}
+          trigger={(p) => <IconButton data-ctl="CTL-P012-021" icon={Ellipsis} label="More for your classes" menu={p} disabled={busy} />}
         />
       </div>
       {/* CH-12801: the page is labelled by "Classes"; each binder is one button. */}
@@ -392,7 +392,7 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
       {/* Phone: the section's create action is the top bar's plus (B10.1), shown when the head's Add class would be: a
           first run's empty state carries its own, and a failed read keeps it (CH-12201). */}
       {phone && (
-        <PhoneTop title="Classes" start action={<PhoneIconAction icon={Plus} label="Add or import a class" onClick={() => setAddMenu(true)} />} />
+        <PhoneTop title="Classes" start action={<PhoneIconAction data-ctl="CTL-P012-022" icon={Plus} label="Add or import a class" onClick={() => setAddMenu(true)} />} />
       )}
       <header className="ch-cl-h" data-canopy-head={undefined}>
         <div>
@@ -423,13 +423,13 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
           <div className="ch-cl-h__a">
             {!data.classes.error && <SyncStatus failed={failedList.length} syncing={sync.pending} onRetry={() => void syncClasses(failedList)} />}
             {!phone && (
-              <Button leftIcon={Upload} onClick={startImport}>
+              <Button data-ctl="CTL-P012-023" leftIcon={Upload} onClick={startImport}>
                 Import schedule
               </Button>
             )}
             {/* On the phone it is the top bar's plus. */}
             {!phone && (
-              <Button variant="primary" leftIcon={Plus} onClick={startAdd}>
+              <Button data-ctl="CTL-P012-024" variant="primary" leftIcon={Plus} onClick={startAdd}>
                 Add class
               </Button>
             )}
@@ -440,7 +440,7 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
       {data.classes.error ? (
         <Surface variant="card" level={2} padded={false} title="Your classes">
           <CrhStateBlock kind="failed" code="CH-12201" title="Classes didn’t load" body="Try again. Nothing you added is lost.">
-            <Button leftIcon={RotateCw} onClick={() => router.refresh()}>
+            <Button data-ctl="CTL-P012-025" leftIcon={RotateCw} onClick={() => router.refresh()}>
               Try again
             </Button>
           </CrhStateBlock>
@@ -448,10 +448,10 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
       ) : nothing ? (
         <Surface variant="card" level={2} padded={false} title="Your classes">
           <CrhStateBlock code="CH-12301" icon={GraduationCap} title="No classes yet" body="Add your schedule so practice and travel are planned around it. Your coach sees when you’re in class. Your teammates don’t.">
-            <Button variant="primary" leftIcon={Upload} onClick={startImport}>
+            <Button data-ctl="CTL-P012-026" variant="primary" leftIcon={Upload} onClick={startImport}>
               Import schedule
             </Button>
-            <Button leftIcon={Plus} onClick={startAdd}>
+            <Button data-ctl="CTL-P012-027" leftIcon={Plus} onClick={startAdd}>
               Add a class
             </Button>
           </CrhStateBlock>
@@ -549,10 +549,10 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
         description={asking ? `${label(asking)} comes off your schedule and your calendar. This can’t be undone.` : undefined}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsking(null)}>
+            <Button data-ctl="CTL-P012-028" variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button
+            <Button data-ctl="CTL-P012-029"
               variant="danger"
               busy={remove.pending}
               // The warning came with the question (D-70): the yes is silent, and the result answers.
@@ -581,11 +581,11 @@ export function ClassesView({ data, writes, statusWrites }: { data: ChClassesPag
         }
         footer={
           <>
-            <Button variant="ghost" disabled={removeAll.pending} onClick={() => setAskingAll(false)}>
+            <Button data-ctl="CTL-P012-030" variant="ghost" disabled={removeAll.pending} onClick={() => setAskingAll(false)}>
               Keep them
             </Button>
             {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
-            <Button variant="danger" busy={removeAll.pending} disabled={classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
+            <Button data-ctl="CTL-P012-031" variant="danger" busy={removeAll.pending} disabled={classes.length === 0} feel={null} onClick={() => void removeAll.run(classes.map((c) => c.id))}>
               {removeAll.pending ? 'Deleting…' : 'Delete all classes'}
             </Button>
           </>

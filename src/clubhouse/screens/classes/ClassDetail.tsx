@@ -112,7 +112,7 @@ export function ClassDetail({
       footer={
         c && (
           <>
-            <Button
+            <Button data-ctl="CTL-P012-001"
               variant="ghost"
               className="ch-cl-danger"
               onClick={() => {
@@ -123,7 +123,7 @@ export function ClassDetail({
             >
               Remove
             </Button>
-            <Button variant="primary" leftIcon={Pencil} onClick={() => onEdit(c)}>
+            <Button data-ctl="CTL-P012-002" variant="primary" leftIcon={Pencil} onClick={() => onEdit(c)}>
               Edit class
             </Button>
           </>
@@ -139,7 +139,7 @@ export function ClassDetail({
                 <b>Not on your calendar</b>
                 The last sync failed, so your coach won’t see this class on the team calendar yet.
               </span>
-              <Button size="sm" leftIcon={RotateCw} busy={syncing} onClick={() => onRetrySync(c)}>
+              <Button data-ctl="CTL-P012-003" size="sm" leftIcon={RotateCw} busy={syncing} onClick={() => onRetrySync(c)}>
                 {syncing ? 'Syncing…' : 'Retry sync'}
               </Button>
             </div>
@@ -234,10 +234,10 @@ export function ClassDetail({
           description={removing ? `Remove ${removing.label || 'exam'} on ${shortDay(removing.on)}?` : undefined}
           footer={
             <>
-              <Button variant="ghost" disabled={removeExam.pending} onClick={() => setRemoving(null)}>
+              <Button data-ctl="CTL-P012-004" variant="ghost" disabled={removeExam.pending} onClick={() => setRemoving(null)}>
                 Cancel
               </Button>
-              <Button
+              <Button data-ctl="CTL-P012-005"
                 variant="danger"
                 busy={removeExam.pending}
                 onClick={() => {
