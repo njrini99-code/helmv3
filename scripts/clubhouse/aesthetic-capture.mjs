@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Aesthetic-audit capture (docs/clubhouse/AESTHETIC_AUDIT.md): the same Clubhouse
+ * Aesthetic-audit capture (docs/clubhouse/history/AESTHETIC_AUDIT.md): the same Clubhouse
  * preview screens, at the same widths and on the same fixture data, before and
  * after a change, filed and labeled by scripts/clubhouse/shots.mjs.
  *

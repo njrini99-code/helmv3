@@ -2,7 +2,7 @@ name: CI
 
 # The long history of why this workflow is shaped as it is (job consolidation,
 # the shared detector, parallel ordering, the 2026-09-23 red-by-default work)
-# lives in docs/CI_RUNBOOK.md, "ci.yml: how it got its shape". Read that before
+# lives in docs/operations/CI_RUNBOOK.md, "ci.yml: how it got its shape". Read that before
 # restructuring jobs; this file keeps only the comments that explain a line.
 
 on:
@@ -421,7 +421,7 @@ jobs:
 
       # Value-level import cycles typecheck and build cleanly but can crash at
       # cold runtime (TDZ) — the #803/#804 prod-crash class. Baseline-aware:
-      # fails only on cycles not in .cycles-baseline.json.
+      # fails only on cycles not in config/baselines/.cycles-baseline.json.
       - name: Import-cycle ratchet
         id: import_cycles
         continue-on-error: true
@@ -431,7 +431,7 @@ jobs:
       # against scripts/knowledge/bench/gold-set.v1.json and fails if
       # docs/generated/RETRIEVAL_BENCH.md / retrieval-bench.json are stale,
       # or if feature_recall drops / wrong_feature_rate rises versus
-      # retrieval-bench-baseline.json. The ratchet may only improve;
+      # config/baselines/retrieval-bench-baseline.json. The ratchet may only improve;
       # `node scripts/knowledge/bench.mjs --update-baseline` locks in a gain.
       - name: Retrieval bench ratchet
         id: knowledge_bench
@@ -444,7 +444,7 @@ jobs:
       # DESIGN_SPEC, STATE_SNAPSHOT, AGENT_SKILL) — HISTORY_LEDGER, ARCHIVE,
       # PLAN, AUDIT_SNAPSHOT, ADR, INCIDENT, INDEX and UNKNOWN are excluded
       # because dated/historical records are allowed to name paths that no
-      # longer exist. Ratchets against .dead-refs-baseline.json — the
+      # longer exist. Ratchets against config/baselines/.dead-refs-baseline.json — the
       # baseline may only fall, never rise; a NEW dead reference always
       # fails regardless of the baseline.
       #
@@ -670,7 +670,7 @@ jobs:
         continue-on-error: true
         run: npm run audit:paginated-reads
 
-      # Duplicate exports had a committed baseline (.duplicate-exports-baseline.json,
+      # Duplicate exports had a committed baseline (config/baselines/.duplicate-exports-baseline.json,
       # 27 grandfathered) and a process.exit(1) on anything new — but NO job ran it,
       # so the ratchet could never ratchet and new duplicates landed silently. A
       # baseline nothing compares against is a green that means nothing.
@@ -1081,7 +1081,7 @@ jobs:
           version: 2.119.0
 
       # Squawk lints only the migration files this PR adds — pinned version,
-      # scoped to the PR diff (see docs/CI_RUNBOOK.md / .circleci/README.md:
+      # scoped to the PR diff (see docs/operations/CI_RUNBOOK.md / .circleci/README.md:
       # the weekly CircleCI squawk job stays as an advisory full-history
       # sweep; this is the per-PR blocking gate for NEW migrations).
       - name: Lint new migrations with squawk
@@ -1216,7 +1216,7 @@ jobs:
     # Renamed from the bare `all` (2026-08-19): review-gate.yml's aggregate
     # job was ALSO named `all`, so both workflows posted an identically-named
     # check run and a single required context "all" could not tell them
-    # apart — see .github/branch-protection.md and docs/CI_RUNBOOK.md for the
+    # apart — see .github/branch-protection.md and docs/operations/CI_RUNBOOK.md for the
     # PR #1125 incident this caused (a red BaseballHelm smoke merged because
     # Review Gate's "all" reported green while CI's "all" was still running).
     # This job's id stays `all` (nothing references it via `needs:` — grepped

@@ -5,7 +5,7 @@
  * THEME → DIRECT CAUSE → ROOT DRIVER → DEVELOPMENT PLAN.
  *
  * This is the read-time assembly target for the saved plan
- * (docs/fairway-coachhelm-insight-rebuild.md). The engine ALREADY produces the
+ * (docs/archive/stale-root-2026-11/fairway-coachhelm-insight-rebuild.md). The engine ALREADY produces the
  * cascade — `evidence.counterfactual.strokes_saved_per_round` per cause and the
  * composite rules' `evidence.source_insight_ids[]` (parent→child edges) — and
  * the flat read path collapses it via sibling dedup. The assembler

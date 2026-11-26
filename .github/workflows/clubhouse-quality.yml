@@ -22,7 +22,7 @@ on:
       - 'src/lib/security/clubhouse-preview-headers.mjs'
       - 'scripts/clubhouse/**'
       - 'config/clubhouse/**'
-      - 'stylelint.clubhouse.config.mjs'
+      - 'config/stylelint.clubhouse.config.mjs'
       - 'scripts/clubhouse/__tests__/a11y.test.mjs'
       - '.github/workflows/clubhouse-quality.yml'
       - 'package.json'

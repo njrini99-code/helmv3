@@ -246,7 +246,7 @@ Not sold on its own. Its "users" are the other products and the engineers/agents
 - **(b) calendar**, **(c) SG scoring**, **(d) recruiting**, **(e) LLM budget**, **(f) no destructive writes** — as detailed per product above.
 
 ### Current maturity / state
-Live and load-bearing. Note: there is a **documented prior RLS incident** ([docs/audits/COACH_DASHBOARD_AUDIT_REPORT.md](../../audits/COACH_DASHBOARD_AUDIT_REPORT.md)) — treat every RLS-touching change as requiring explicit verification, not assumed correctness. Compliance surface (FERPA/COPPA-adjacent minors' PII; TCPA/DNC for outreach) is framed as *stakes*, not a claim of current violation; account deletion exists but full cascade is not confirmed complete, and there is no cookie/consent banner today.
+Live and load-bearing. Note: there is a **documented prior RLS incident** ([docs/archive/audits-2026-08/COACH_DASHBOARD_AUDIT_REPORT.md](../../archive/audits-2026-08/COACH_DASHBOARD_AUDIT_REPORT.md)) — treat every RLS-touching change as requiring explicit verification, not assumed correctness. Compliance surface (FERPA/COPPA-adjacent minors' PII; TCPA/DNC for outreach) is framed as *stakes*, not a claim of current violation; account deletion exists but full cascade is not confirmed complete, and there is no cookie/consent banner today.
 
 ### Deep docs
 [00-business-context.md](../../business/00-business-context.md) · [CLAUDE.md](../../../CLAUDE.md) · [docs/v3-master-plan.md](../../v3-master-plan.md) · [docs/v3-rls-template.md](../../v3-rls-template.md) · [.external-review-bot/rules.md](../../../.external-review-bot/rules.md)

@@ -14,7 +14,7 @@
  *   node scripts/test-location-ratchet.mjs --update   # rewrite the baseline after moving tests
  *   node scripts/test-location-ratchet.mjs --list     # print the files
  *
- * Baseline: .test-location-baseline.json. Only rewrite it to a LOWER count.
+ * Baseline: config/baselines/.test-location-baseline.json. Only rewrite it to a LOWER count.
  * Support files that are not tests (stubs, fixtures, helpers) are not counted.
  */
 import { execFileSync } from 'node:child_process';
@@ -23,7 +23,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, '.test-location-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.test-location-baseline.json');
 const TEST_FILE = /\.(test|spec)\.[cm]?[jt]sx?$/;
 
 export function listLegacyTests(root = ROOT) {

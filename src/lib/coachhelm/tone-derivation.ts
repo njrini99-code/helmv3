@@ -7,7 +7,7 @@
  * primitive. No React, no DB, no side effects — trivially testable.
  *
  * Rules are Rule 4 + Rule 7 of the Insight Delivery design contract:
- *   docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md
+ *   docs/archive/superpowers-plans/2026-04-22-insight-delivery/00-design-contract.md
  */
 import type { EvidenceInsight } from '@/app/golf/actions/insight-delivery';
 import { getMetricRenderConfig } from '@/lib/coachhelm/v3/standing/metric-config';

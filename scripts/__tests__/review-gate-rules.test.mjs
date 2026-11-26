@@ -11,10 +11,10 @@
 //   - helmv3-no-service-role-key produces ZERO findings outside the
 //     admin/scripts/edge allowlist.
 //   - helmv3-no-bare-table-names DOES fire on the synthetic positive
-//     fixture in .coderabbit/semgrep/__test__/positive-bare-table.ts.
+//     fixture in config/review-rules/semgrep/__test__/positive-bare-table.ts.
 //   - helmv3-no-service-role-key DOES fire (>= 2 findings) on the synthetic
 //     positive fixture in
-//     .coderabbit/semgrep/__test__/positive-service-role-secret-key.ts,
+//     config/review-rules/semgrep/__test__/positive-service-role-secret-key.ts,
 //     which reads BOTH SUPABASE_SERVICE_ROLE_KEY and the new-format
 //     SUPABASE_SECRET_KEY (Phase 2 / P6).
 //
@@ -116,26 +116,26 @@ test.skipIf(!sgAvailable)('Review Gate rule smoke test', () => {
   }
 
   // 1. no-bare-table-names — should be ZERO on src/.
-  const bare = sgScan('.coderabbit/ast-grep/no-bare-table-names.yml', 'src');
+  const bare = sgScan('config/review-rules/ast-grep/no-bare-table-names.yml', 'src');
   assertCount('no-bare-table-names: src/ → 0 findings', bare, 0);
 
   // 2. no-process-env-in-edge — should be ZERO on supabase/functions/.
   if (existsSync(resolve(repoRoot, 'supabase/functions'))) {
-    const edgeEnv = sgScan('.coderabbit/ast-grep/no-process-env-in-edge.yml', 'supabase/functions');
+    const edgeEnv = sgScan('config/review-rules/ast-grep/no-process-env-in-edge.yml', 'supabase/functions');
     assertCount('no-process-env-in-edge: supabase/functions/ → 0 findings', edgeEnv, 0);
   }
 
   // 3. no-service-role-in-client — should be ZERO outside the admin/scripts/edge allowlist.
   //    Replicate the workflow's exclude regex on a synthetic file list.
-  const serviceRoleAll = sgScan('.coderabbit/ast-grep/no-service-role-in-client.yml', 'src');
+  const serviceRoleAll = sgScan('config/review-rules/ast-grep/no-service-role-in-client.yml', 'src');
   const allowlist = /^(src\/lib\/supabase\/admin|src\/lib\/supabase\/keys|src\/lib\/supabase\/service|src\/lib\/auth\/supabase-rate-limit|src\/lib\/notifications\/push|src\/app\/api\/admin\/|src\/app\/api\/.+\/admin\/)/;
   const serviceRoleLeaks = serviceRoleAll.filter((f) => !allowlist.test(f.file ?? ''));
   assertCount('no-service-role-key: leaks outside admin allowlist → 0', serviceRoleLeaks, 0);
 
   // 4. Positive fixture — synthetic bare table call MUST fire.
-  const posFixture = '.coderabbit/semgrep/__test__/positive-bare-table.ts';
+  const posFixture = 'config/review-rules/semgrep/__test__/positive-bare-table.ts';
   if (existsSync(resolve(repoRoot, posFixture))) {
-    const pos = sgScan('.coderabbit/ast-grep/no-bare-table-names.yml', posFixture);
+    const pos = sgScan('config/review-rules/ast-grep/no-bare-table-names.yml', posFixture);
     if (pos.length === 0) {
       failures.push(`no-bare-table-names: positive fixture ${posFixture} expected ≥ 1 finding, got 0`);
     }
@@ -144,10 +144,10 @@ test.skipIf(!sgAvailable)('Review Gate rule smoke test', () => {
   // 5. Positive fixture — legacy SUPABASE_SERVICE_ROLE_KEY AND new-format
   //    SUPABASE_SECRET_KEY reads MUST both fire no-service-role-key (Phase 2 /
   //    P6: the rule was extended to catch the new key name too).
-  const posServiceRoleFixture = '.coderabbit/semgrep/__test__/positive-service-role-secret-key.ts';
+  const posServiceRoleFixture = 'config/review-rules/semgrep/__test__/positive-service-role-secret-key.ts';
   if (existsSync(resolve(repoRoot, posServiceRoleFixture))) {
     const posServiceRole = sgScan(
-      '.coderabbit/ast-grep/no-service-role-in-client.yml',
+      'config/review-rules/ast-grep/no-service-role-in-client.yml',
       posServiceRoleFixture,
     );
     if (posServiceRole.length < 2) {

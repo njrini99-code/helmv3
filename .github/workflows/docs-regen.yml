@@ -24,7 +24,7 @@ name: Docs Regen
 #      opened.
 #
 # The PR still needs CI to merge, and a PR opened with GITHUB_TOKEN gets
-# none. The token, first one set wins (owner action, see docs/CI_RUNBOOK.md):
+# none. The token, first one set wins (owner action, see docs/operations/CI_RUNBOOK.md):
 #   1. a GitHub App: variable REGEN_APP_ID and secret REGEN_APP_PRIVATE_KEY
 #      (preferred: short-lived tokens, nothing tied to a person);
 #   2. secret REGEN_PR_PAT, a fine-grained PAT;

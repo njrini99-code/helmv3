@@ -6,7 +6,7 @@
     "via": "direct",
     "note": null
   },
-  "anchor_sha": "4655c6a04ba9",
+  "anchor_sha": "c7f9d4a04786",
   "current_contract": [
     {
       "id": "c1-status",
@@ -15,7 +15,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1547,
+        "line": 1576,
         "heading": "admin_platform"
       },
       "date": null,
@@ -34,7 +34,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1548,
+        "line": 1577,
         "heading": "admin_platform"
       },
       "date": null,
@@ -53,7 +53,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1551,
+        "line": 1580,
         "heading": "admin_platform"
       },
       "date": null,
@@ -72,7 +72,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1585,
+        "line": 1614,
         "heading": "code.routes"
       },
       "date": null,
@@ -93,7 +93,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1586,
+        "line": 1615,
         "heading": "code.routes"
       },
       "date": null,
@@ -114,7 +114,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1592,
+        "line": 1621,
         "heading": "code.routes"
       },
       "date": null,
@@ -135,7 +135,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1593,
+        "line": 1622,
         "heading": "code.routes"
       },
       "date": null,
@@ -156,7 +156,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1594,
+        "line": 1623,
         "heading": "code.routes"
       },
       "date": null,
@@ -177,7 +177,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1595,
+        "line": 1624,
         "heading": "code.routes"
       },
       "date": null,
@@ -198,7 +198,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1596,
+        "line": 1625,
         "heading": "code.routes"
       },
       "date": null,
@@ -219,7 +219,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1597,
+        "line": 1626,
         "heading": "code.routes"
       },
       "date": null,
@@ -240,7 +240,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1598,
+        "line": 1627,
         "heading": "code.routes"
       },
       "date": null,
@@ -261,7 +261,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1599,
+        "line": 1628,
         "heading": "code.routes"
       },
       "date": null,
@@ -282,7 +282,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1600,
+        "line": 1629,
         "heading": "code.routes"
       },
       "date": null,
@@ -303,7 +303,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1601,
+        "line": 1630,
         "heading": "code.routes"
       },
       "date": null,
@@ -324,7 +324,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1602,
+        "line": 1631,
         "heading": "code.routes"
       },
       "date": null,
@@ -345,7 +345,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1603,
+        "line": 1632,
         "heading": "code.routes"
       },
       "date": null,
@@ -366,7 +366,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1604,
+        "line": 1633,
         "heading": "code.routes"
       },
       "date": null,
@@ -387,7 +387,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1605,
+        "line": 1634,
         "heading": "code.routes"
       },
       "date": null,
@@ -408,7 +408,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1606,
+        "line": 1635,
         "heading": "code.routes"
       },
       "date": null,
@@ -429,7 +429,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1607,
+        "line": 1636,
         "heading": "code.routes"
       },
       "date": null,
@@ -450,7 +450,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1608,
+        "line": 1637,
         "heading": "code.routes"
       },
       "date": null,
@@ -471,7 +471,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1610,
+        "line": 1639,
         "heading": "code.components"
       },
       "date": null,
@@ -492,7 +492,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1617,
+        "line": 1646,
         "heading": "code.components"
       },
       "date": null,
@@ -513,7 +513,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1618,
+        "line": 1647,
         "heading": "code.components"
       },
       "date": null,
@@ -534,7 +534,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1626,
+        "line": 1655,
         "heading": "code.components"
       },
       "date": null,
@@ -555,7 +555,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1631,
+        "line": 1660,
         "heading": "code.components"
       },
       "date": null,
@@ -576,7 +576,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1633,
+        "line": 1662,
         "heading": "code.api"
       },
       "date": null,
@@ -597,7 +597,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1637,
+        "line": 1666,
         "heading": "code.api"
       },
       "date": null,
@@ -618,7 +618,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1638,
+        "line": 1667,
         "heading": "code.api"
       },
       "date": null,
@@ -639,7 +639,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1642,
+        "line": 1671,
         "heading": "code.api"
       },
       "date": null,
@@ -660,7 +660,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1643,
+        "line": 1672,
         "heading": "code.api"
       },
       "date": null,
@@ -681,7 +681,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1644,
+        "line": 1673,
         "heading": "code.api"
       },
       "date": null,
@@ -702,7 +702,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1646,
+        "line": 1675,
         "heading": "code.actions"
       },
       "date": null,
@@ -723,7 +723,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1647,
+        "line": 1676,
         "heading": "code.actions"
       },
       "date": null,
@@ -744,7 +744,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1648,
+        "line": 1677,
         "heading": "code.actions"
       },
       "date": null,
@@ -765,7 +765,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1649,
+        "line": 1678,
         "heading": "code.actions"
       },
       "date": null,
@@ -786,7 +786,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1655,
+        "line": 1684,
         "heading": "code.actions"
       },
       "date": null,
@@ -807,7 +807,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1656,
+        "line": 1685,
         "heading": "code.actions"
       },
       "date": null,
@@ -828,7 +828,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1657,
+        "line": 1686,
         "heading": "code.actions"
       },
       "date": null,
@@ -849,7 +849,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1658,
+        "line": 1687,
         "heading": "code.actions"
       },
       "date": null,
@@ -870,7 +870,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1660,
+        "line": 1689,
         "heading": "code.services"
       },
       "date": null,
@@ -891,7 +891,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1661,
+        "line": 1690,
         "heading": "code.services"
       },
       "date": null,
@@ -912,7 +912,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1672,
+        "line": 1701,
         "heading": "code.services"
       },
       "date": null,
@@ -933,7 +933,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1673,
+        "line": 1702,
         "heading": "code.services"
       },
       "date": null,
@@ -954,7 +954,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1681,
+        "line": 1710,
         "heading": "code.services"
       },
       "date": null,
@@ -975,7 +975,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1698,
+        "line": 1727,
         "heading": "code.services"
       },
       "date": null,
@@ -996,7 +996,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1699,
+        "line": 1728,
         "heading": "code.services"
       },
       "date": null,
@@ -1017,7 +1017,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1700,
+        "line": 1729,
         "heading": "code.services"
       },
       "date": null,
@@ -1038,7 +1038,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1701,
+        "line": 1730,
         "heading": "code.services"
       },
       "date": null,
@@ -1059,7 +1059,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1713,
+        "line": 1742,
         "heading": "code.services"
       },
       "date": null,
@@ -1080,7 +1080,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1723,
+        "line": 1752,
         "heading": "code.db"
       },
       "date": null,
@@ -1101,7 +1101,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1724,
+        "line": 1753,
         "heading": "code.db"
       },
       "date": null,
@@ -1122,7 +1122,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1725,
+        "line": 1754,
         "heading": "code.db"
       },
       "date": null,
@@ -1143,7 +1143,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1726,
+        "line": 1755,
         "heading": "code.db"
       },
       "date": null,
@@ -1164,7 +1164,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1730,
+        "line": 1759,
         "heading": "code.db"
       },
       "date": null,
@@ -1185,7 +1185,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1731,
+        "line": 1760,
         "heading": "code.db"
       },
       "date": null,
@@ -1206,7 +1206,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1732,
+        "line": 1761,
         "heading": "code.db"
       },
       "date": null,
@@ -1227,7 +1227,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1733,
+        "line": 1762,
         "heading": "code.db"
       },
       "date": null,
@@ -1248,7 +1248,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1735,
+        "line": 1764,
         "heading": "code.tests"
       },
       "date": null,
@@ -1269,7 +1269,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1736,
+        "line": 1765,
         "heading": "code.tests"
       },
       "date": null,
@@ -1290,7 +1290,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1747,
+        "line": 1776,
         "heading": "code.tests"
       },
       "date": null,
@@ -1311,7 +1311,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1760,
+        "line": 1789,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1330,7 +1330,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1761,
+        "line": 1790,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1349,7 +1349,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1762,
+        "line": 1791,
         "heading": "review.required_checks"
       },
       "date": null,
@@ -1368,7 +1368,7 @@
       "source": {
         "kind": "registry",
         "path": "memory/registry.yml",
-        "line": 1748,
+        "line": 1777,
         "heading": "admin_platform"
       },
       "date": null,
@@ -1387,7 +1387,7 @@
       "source": {
         "kind": "feature_registry_ts",
         "path": "src/lib/admin/feature-registry.ts",
-        "line": 621,
+        "line": 637,
         "heading": "admin_dashboard"
       },
       "date": null,
@@ -1557,7 +1557,7 @@
     {
       "id": "c74-action",
       "kind": "action",
-      "text": "- `src/app/golf/actions/admin-dashboard-data.ts`, `admin-incidents-data.ts`, `admin-dashboard-assemble.ts`, `admin-data-shared.ts` (split out of the former `admin-data.ts`)\n- `src/app/golf/actions/admin-people-data.ts`\n- `src/app/golf/actions/admin-system-data.ts`\n- `src/app/golf/actions/admin-tracer-data.ts`\n- `src/app/golf/actions/admin-bi-data.ts`\n- `src/app/golf/actions/admin/**`\n- `src/app/golf/actions/crm-*.ts`\n- `src/app/golf/actions/resend-activity.ts`\n- `src/app/admin/actions/view-as.ts`, `golf-tracer.ts`, `billing.ts`,\n  `sessions.ts` — general admin actions; `analyze-error.ts`/`resolve-error.ts`/\n  `sentry-resolve.ts` moved to `admin_incidents` and `triage.ts` moved to\n  `admin_selfheal` in the same change that mapped `src/app/admin/actions/**`\n  (previously unmapped to any feature — a closed system gap).\n- `src/lib/supabase/admin*`\n- `src/lib/cron/**`\n- `src/lib/observability/supabase/**` — the zero-cost Supabase observability\n  layer (Phase 1): `envelope.ts` (canonical error shape, code-first\n  fingerprint), `classify.ts` (SQLSTATE/PostgREST classifier), `observe-\n  result.ts` (`observeSupabaseResult()` — the call a server call site adds\n  around a `{data,error}` result), `record-db-error.ts` (fail-open\n  out-of-band durable writer), `integrity.ts` (the HTTP-200-with-error\n  primitive), `db-health-delta.ts` / `query-regression.ts` (pure delta and\n  regression-detection arithmetic the two health/stat collectors call). See\n  `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.\n  **Phase 2 Track B (2026-09-03)** extended the SAME directory with\n  service-specific classifiers/observers for Auth, Storage, Realtime, and\n  Edge Functions, plus a pure retry/timeout/commit-outcome model — see\n  `memory/features/observability-supabase.md` for that current-state doc and\n  `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` for the full\n  design/verification writeup. Kept as a SEPARATE feature doc rather than\n  folded into this section because it is large enough (four services, its\n  own fetched-docs ledger) to need its own current-state doc; this section\n  stays the pointer, not a duplicate.\n- `src/lib/admin/database/**` — the `/admin/database` read models.\n- `src/lib/admin/**` — the remainder not carved into a sub-capability above\n  (deploy-freshness, integration-health, sentry-api, vercel-api,\n  feature-registry, error-trend, severity, credential-shape, and the rest).\n  Overlaps by design with the sub-capabilities' narrower globs on their own\n  carved files — see the registry comment on this glob.\n- `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor\n  entropy-report generator. Read-only: it never modifies source files, only\n  writes `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) and\n  `janitor-findings.json` (same directory, gitignored). Scans the entropy classes\n  (duplicate helpers, dead flags, stale docs, orphan routes, deprecated\n  APIs, stale TODOs, oversized modules, unused tests, mock inflation,\n  duplicate telemetry, missing feature mappings, abandoned experiments)\n  using only signals this repo already produces — `.duplicate-exports-baseline.json`,\n  `.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,\n  `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),\n  `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every\n  classifier returns one of three verdicts, `FINDINGS` /\n  `ZERO_FINDINGS_VERIFIED` / `NO_SIGNAL` (`scripts/janitor/lib/verdicts.mjs`);\n  `NO_SIGNAL` means the substrate a class needs does not exist yet (no\n  feature-flag module, no committed Knip report) and is never conflated with\n  a genuine zero-findings pass. Findings are written in\n  `config/control-plane-gaps.json`'s `id`/`owner`/`opened`/`scope`/`reason`/\n  `closes_when` field shape but to a SEPARATE file — never into that file\n  itself, which records human-approved \"won't fix\" decisions\n  (\"Adding one is a decision, not a repair\" — its own `$comment`). `npm run\n  janitor` regenerates both output files; a weekly CircleCI job\n  (`.circleci/config.yml`'s `janitor` job) runs it as an advisory artifact.\n  `npm run test:janitor` (`node --test scripts/janitor/__tests__/*.test.mjs`)\n  covers every classifier against real disposable git-repo fixtures.",
+      "text": "- `src/app/golf/actions/admin-dashboard-data.ts`, `admin-incidents-data.ts`, `admin-dashboard-assemble.ts`, `admin-data-shared.ts` (split out of the former `admin-data.ts`)\n- `src/app/golf/actions/admin-people-data.ts`\n- `src/app/golf/actions/admin-system-data.ts`\n- `src/app/golf/actions/admin-tracer-data.ts`\n- `src/app/golf/actions/admin-bi-data.ts`\n- `src/app/golf/actions/admin/**`\n- `src/app/golf/actions/crm-*.ts`\n- `src/app/golf/actions/resend-activity.ts`\n- `src/app/admin/actions/view-as.ts`, `golf-tracer.ts`, `billing.ts`,\n  `sessions.ts` — general admin actions; `analyze-error.ts`/`resolve-error.ts`/\n  `sentry-resolve.ts` moved to `admin_incidents` and `triage.ts` moved to\n  `admin_selfheal` in the same change that mapped `src/app/admin/actions/**`\n  (previously unmapped to any feature — a closed system gap).\n- `src/lib/supabase/admin*`\n- `src/lib/cron/**`\n- `src/lib/observability/supabase/**` — the zero-cost Supabase observability\n  layer (Phase 1): `envelope.ts` (canonical error shape, code-first\n  fingerprint), `classify.ts` (SQLSTATE/PostgREST classifier), `observe-\n  result.ts` (`observeSupabaseResult()` — the call a server call site adds\n  around a `{data,error}` result), `record-db-error.ts` (fail-open\n  out-of-band durable writer), `integrity.ts` (the HTTP-200-with-error\n  primitive), `db-health-delta.ts` / `query-regression.ts` (pure delta and\n  regression-detection arithmetic the two health/stat collectors call). See\n  `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md`.\n  **Phase 2 Track B (2026-09-03)** extended the SAME directory with\n  service-specific classifiers/observers for Auth, Storage, Realtime, and\n  Edge Functions, plus a pure retry/timeout/commit-outcome model — see\n  `memory/features/observability-supabase.md` for that current-state doc and\n  `docs/observability/SUPABASE_SERVICE_OBSERVABILITY.md` for the full\n  design/verification writeup. Kept as a SEPARATE feature doc rather than\n  folded into this section because it is large enough (four services, its\n  own fetched-docs ledger) to need its own current-state doc; this section\n  stays the pointer, not a duplicate.\n- `src/lib/admin/database/**` — the `/admin/database` read models.\n- `src/lib/admin/**` — the remainder not carved into a sub-capability above\n  (deploy-freshness, integration-health, sentry-api, vercel-api,\n  feature-registry, error-trend, severity, credential-shape, and the rest).\n  Overlaps by design with the sub-capabilities' narrower globs on their own\n  carved files — see the registry comment on this glob.\n- `scripts/janitor/**` — the Phase K.4.5 (Engineering OS Intelligence) Janitor\n  entropy-report generator. Read-only: it never modifies source files, only\n  writes `JANITOR_REPORT.md` (written under the generated-docs directory, gitignored) and\n  `janitor-findings.json` (same directory, gitignored). Scans the entropy classes\n  (duplicate helpers, dead flags, stale docs, orphan routes, deprecated\n  APIs, stale TODOs, oversized modules, unused tests, mock inflation,\n  duplicate telemetry, missing feature mappings, abandoned experiments)\n  using only signals this repo already produces — `config/baselines/.duplicate-exports-baseline.json`,\n  `config/baselines/.doc-path-baseline.json`, `scripts/find-orphan-mounts.mjs`,\n  `memory/registry.yml` (via `scripts/knowledge/lib/registry.mjs`),\n  `git ls-files`/`git grep`/`git log` — never a filesystem walk. Every\n  classifier returns one of three verdicts, `FINDINGS` /\n  `ZERO_FINDINGS_VERIFIED` / `NO_SIGNAL` (`scripts/janitor/lib/verdicts.mjs`);\n  `NO_SIGNAL` means the substrate a class needs does not exist yet (no\n  feature-flag module, no committed Knip report) and is never conflated with\n  a genuine zero-findings pass. Findings are written in\n  `config/control-plane-gaps.json`'s `id`/`owner`/`opened`/`scope`/`reason`/\n  `closes_when` field shape but to a SEPARATE file — never into that file\n  itself, which records human-approved \"won't fix\" decisions\n  (\"Adding one is a decision, not a repair\" — its own `$comment`). `npm run\n  janitor` regenerates both output files; a weekly CircleCI job\n  (`.circleci/config.yml`'s `janitor` job) runs it as an advisory artifact.\n  `npm run test:janitor` (`node --test scripts/janitor/__tests__/*.test.mjs`)\n  covers every classifier against real disposable git-repo fixtures.",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
@@ -1621,7 +1621,7 @@
     {
       "id": "c76-business_rule",
       "kind": "business_rule",
-      "text": "- Admin access must remain explicit and server-side; service-role behavior must not leak into client bundles.\n- Helm Bridge uses the authenticated GolfHelm session. Its shell must expose a\n  usable sign-out control on both the desktop rail and the mobile More sheet;\n  sign-out clears the active-team selection before revoking that session.\n- Admin dashboards can read broad platform state, but mutations still need authorization and auditability.\n- CRM automation/suppression behavior must respect opt-out and reply-stop logic.\n- Operational charts should not be treated as source of truth if rollups are stale.\n- Cron/admin endpoints must use configured secrets and auth checks.\n- **The row status vocabulary is `completed` / `failed`.** Verified against\n  production: all existing `background_job_logs` rows use those two words and\n  nothing else. An earlier draft wrote `success`, which no other writer emits and\n  every status-based filter would have missed. Both `admin_reliability_collector`\n  and `admin_selfheal` write to this shared table under this vocabulary.\n  every status-based filter would have missed.\n- **`admin_events.source` is a closed enum** — `ADMIN_EVENT_SOURCES` in\n  `src/lib/admin-logger.ts` mirrors the DB check constraint\n  `admin_events_source_check`; `logAdminEvent`'s `source` is typed to it.\n  A caller's free-form origin belongs in metadata (`logEmailSuppressed` →\n  `metadata.origin`), never in `source`: the constraint rejected 1,006\n  `email.suppressed` writes as `bridge_write_failed` before this (#1917).\n- **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor\n  check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,\n  not a replacement for it.** `startCronCheckIn`/`finishCronCheckIn`\n  (`src/lib/observability/cron-monitors.ts`) wrap all 3 exit paths (success,\n  a resolved >=400 Response, a thrown error), and each path `await`s\n  `flushCronCheckIn` before returning — Vercel freezes the function on\n  response, and an unflushed terminal check-in is what Sentry reports as a\n  monitor timeout (`api-cron-db-health-sampler`, ~half its runs, #1918).\n  Check-ins are keyed by a monitor slug\n  resolved from `CRON_REGISTRY` (`api-cron-<dashed-path>`, or\n  `job-<jobType>` for anything unregistered). This is Sentry's OWN Cron\n  Monitors feature (an external \"did this heartbeat arrive on schedule\"\n  alert), independent of the Jobs board's own overdue/failed\n  classification (`classifyCronStatus`) — the two can disagree (Sentry\n  alerts on a missed check-in before the Jobs board's own 1.5x-cadence\n  threshold would mark a row overdue), and that is intentional redundancy,\n  not a bug to reconcile. `automaticVercelMonitors` in\n  `src/lib/sentry-build-options.mjs` is deliberately `false` so this\n  manual, per-job check-in stays the SINGLE Cron Monitor mechanism — the\n  installed SDK's own build-time source shows the auto option would\n  build-time-inject a second, independent monitor per Vercel cron path,\n  duplicating this. Fail-open throughout: a Sentry outage never blocks or\n  fails a cron. Full job table, monitor slug conventions, and the\n  `automaticVercelMonitors:false` decision record live in\n  `docs/observability/SENTRY_CRON_MONITORS.md`.\n  (The launchd Repair script and its own Sentry check-in helper —\n  scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05\n  along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;\n  Repair ran as `.github/workflows/selfheal-repair.yml` from 2026-09-05 and,\n  since 2026-09-23, as the Claude desktop health routine; both report through\n  a `background_job_logs` heartbeat, not a Sentry Cron Monitor.)\n- **Only a TOTALLY blind reliability run returns 503; a partially blind one\n  returns 200.** `recordJobRun` does more than write a job row on a >=400 — it\n  also calls `logServerEvent(..., 'error')`, which writes an `admin_events` row.\n  Failing the run whenever ANY arm was blind therefore produced eight error rows\n  a day, indefinitely, into `/admin/errors`, the incident feed and the nav error\n  badge. A degraded run is already reported honestly twice — the snapshot row\n  carries `status='failed'` and the tab renders a danger band naming each blind\n  source — so a red Jobs board is not worth polluting the triage queue for.\n  These behaviours are coupled with the self-feed filter: a failed run's\n  `admin_events` row is titled `Cron failed: reliability-triage`, which is\n  exactly what `collectSupabase` excludes. Do not change one without the other.\n- **Evidence references carry their source; they are never paired by index.**\n  A `CorrelatedSignal`'s `sources[]` and its evidence list dedupe on different\n  keys, so their indices do not correspond — one source contributing two refs\n  shifts every later index and misattributes the rest. Evidence is\n  `Array<{source, ref}>` for that reason, and `evidenceTarget` needs the source\n  to decide whether a ref is a Sentry permalink, a Bridge drill-through, or\n  opaque text.\n- **Error resolution belongs to the FINGERPRINT, not the row.**\n  `public.admin_error_resolutions` (applied 2026-08-27) records what fixed a\n  fault: PR, merge SHA, who decided (`auto` cron vs `manual` operator), and\n  whether it has regressed. `admin_events.resolved` stays per-row and is not a\n  substitute — with it alone, a fixed fault's next occurrence is a new\n  unresolved row, indistinguishable from a regression.\n- **An archived fault must come back if it recurs.** \"Never show it again\" is\n  correct only until the fault returns after its fix shipped; that is a\n  REGRESSION and the most valuable signal this system produces. Nothing is\n  deleted and archiving is a read-time join, so dropping the table makes every\n  incident reappear — the correct failure direction for a feature whose job is\n  hiding things. `reopened_count` survives a re-resolve, so \"fixed three times\n  already\" cannot be laundered.\n- **A regression whose analysis already says NOT A DEFECT is expected\n  recurrence, not a regression.** `deriveLifecycle` rule 1\n  (`src/lib/admin/incidents/lifecycle.ts`) checks `analysis?.category ===\n  'not-a-defect'` before returning `'regressed'` — the analysis already\n  explained why this fingerprint fires (e.g. an access denial that is\n  SUPPOSED to keep happening), so its recurrence is not new information and\n  must not re-alarm an operator with the single loudest signal this system\n  produces. Lands in the dedicated `'expected-recurrence'` lifecycle state\n  (`INCIDENT_LIFECYCLE_STATES`) instead — distinct from the pre-existing\n  `'not-a-defect'` state, which is the classifier's verdict (`!actionable`)\n  and never had a resolution to regress from in the first place; keeping\n  them separate lets a lens count \"this specifically recurred after being\n  fixed\" apart from \"this was never a defect\". Neutral tone, not danger; not\n  in `NEEDS_ATTENTION_STATES` (so the REGRESSION-specific alarm is gone);\n  treated as `offLoop('done', …)` by `selfheal-flow.ts`, same as\n  `not-a-defect`; excluded from the `actionable` lens and the Truth Strip's\n  `actionable` count, same as `not-a-defect`. The `regressions` lens\n  (`incident.lifecycle.state === 'regressed'`) needed no change — the state\n  itself no longer produces `'regressed'` for these, so the exclusion is\n  automatic — and a new `expected-recurrence` lens counts them apart.\n  **It IS still in `attention.ts`'s `UNRESOLVED_STATES`**, deliberately unlike\n  `not-a-defect` — an LLM-authored \"NOT A DEFECT\" `suggestedFix` string must\n  never be able to silence a CRITICAL, still-unresolved fault outright; only\n  the specific \"this is a regression\" alarm it was wrong about is what goes\n  quiet. Rule 2 (critical) still fires for one, same as any other open state.\n- **Auto-resolution requires a production DEPLOY after the last occurrence, not\n  merely silence.** A nightly cron is silent 23 hours a day and a seasonal\n  feature for months. When the deploy timestamp is unreadable, nothing is\n  auto-resolved and the plan states why. The cron's inference never overwrites\n  an operator's `manual` resolution.\n- **`shipStatus` has three outcomes, not two.** `unknown` exists because Vercel\n  can be unreachable; rendering that as `pending` tells an operator their fix\n  has not shipped when the truth is that we could not find out.\n- **A discarded rejection reason is an invisible outage.** `Promise.allSettled`\n  callers must capture WHY a task rejected, not just count it — the reason is\n  the only thing that answers \"what is wrong\". See\n  INC-2026-08-27: a counter-only handler let a cron fail for two days while\n  `background_job_logs` recorded 72 consecutive `completed` runs. Reasons\n  written into a cron response must be SCALARS: `recordJobRun`'s\n  `extractOutcomeMetadata` keeps only top-level scalars and silently drops\n  arrays. Since 2026-09-24 the same bounded scalar snapshot is taken from a\n  job that returns a PLAIN OBJECT (not a Response), which is how\n  `selfheal-close` reports `AutoResolveResult`; before that every\n  `selfheal-close` row carried `metadata = null`.\n- **A source that could not be read is never reported as zero problems.** The\n  reliability collector's arms each return `{status, reason, signals}`, and the\n  run's status is the WORST arm — so a run whose Sentry token is missing writes\n  `status='failed'` and the Bridge renders a danger band, not a green tick. An\n  arm that returned `[]` on failure would be indistinguishable from a healthy\n  arm finding nothing, which inverts the meaning of the entire tab. This is the\n  OS contract's \"never error→[]\" rule; `worstStatus` is the single function\n  enforcing it and it is covered red/green.\n- **The reliability collector must never read its own emissions.** It is a cron\n  that reads the table crons write failures to, so without exclusions one failed\n  run becomes a signal, becomes a triage item, becomes another error row — a\n  loop that manufactures work from its own failure. `collectSupabase` filters\n  out `event_type='rca_analysis'` AND any row naming `reliability-triage`. This\n  is the same shape as the `rca_analysis` bug above, which is why the fix is the\n  same fix; do not remove either filter.\n- **Cross-source correlation drops severity from the key, and must.**\n  `buildIncidentSignature` folds severity INTO its key\n  (`severity::errorCode::route::messagePrefix`), which is right for its original\n  callers — they group rows arriving from one source through one writer. It is\n  wrong across sources: Sentry rates as `error` plenty of conditions this app\n  logs to `admin_events` as `warning`, so the severity-bearing key splits one\n  root cause into two entries and the \"confirmed by N sources\" badge never\n  fires. `correlationSignature` in `src/lib/reliability/normalize.ts` therefore\n  calls the same function with a FIXED severity and lets `pickWorseSeverity`\n  carry severity across the fold instead.\n  Be precise about what this shares with the other views, because the looser\n  claim rots: the reliability tab reuses the **normalisation** — and therefore\n  the notion of what counts as the same failure — but its signature value is\n  **not** equal to the row's stored `admin_events.fingerprint`, which was\n  computed with that row's real severity. Within the Supabase arm, rows are\n  still pre-grouped on the stored fingerprint before correlation runs.\n- **One incident model, derived at read time, never stored.**\n  `src/lib/admin/incidents/` folds the app fingerprint bucket, the Sentry\n  issue, the reliability `CorrelatedSignal` and the `rca_analysis` row into a\n  single `UnifiedIncident`. It is a READ MODEL: there is no `admin_incidents`\n  table and no persisted `lifecycleState`, because lifecycle and proof are\n  functions of evidence that changes underneath them (a PR merges, production\n  rolls forward, a fault recurs) and a stored string would outrank live\n  evidence. The layering is `existing readers -> correlate -> lifecycle+proof\n  -> UnifiedIncident[]`; every derivation is a pure function unit-tested with\n  no I/O. If persistence is ever added, persist durable EVENTS, never the\n  derived state.\n- **An incident's id is the key that was already stored under it.** In\n  priority order: an `admin_events` fingerprint, then `rel:<signature>`, then\n  `sentry:<issueId>`. That order is not cosmetic — `rca_analysis` rows,\n  `/admin/errors/<id>` links and repair PR bodies all address exactly these\n  strings, so a synthetic key would break every artefact the self-healing loop\n  has already written. `fetchIncidentById` also matches on any fingerprint an\n  incident folded, so links written before correlation still resolve.\n- **`unknown` is a state, and nothing may collapse it into a healthy value.**\n  A CI check read that failed is `unknown`, never `pending` — pending reads as\n  orderly progress. An unreadable deploy leaves an incident `merged`, never\n  `resolved` and never `awaiting-deploy`. This principle is stated once here\n  and applied throughout the Bridge — by `admin_reliability_collector` for a\n  collector run's freshness and by `admin_incidents` for every derived state.\n- **The Flight Recorder's two axes are never summed.** Instrumentation coverage\n  (how much of the declared pipeline has call sites wired to the recorder) and\n  outcome (whether the work succeeded) are independent. Measured 2026-09-01, 46\n  of 50 production traces miss declared-required steps while 40 of those\n  succeeded — a short trace is not a failed one, and a combined \"46 problems\"\n  figure would be false. `trace-fleet.ts` counts them separately;\n  outcome counts only what a trace recorded: `succeeded` is counted from\n  status 'success', never derived as total minus failures. A trace still\n  'started' after `STUCK_TRACE_AFTER_MS` (15 min) is `stuck` (\"never\n  closed\", neutral tone), and a younger one is `running`. `stuck` is not a\n  failure count: on 2026-09-23 all 68 open traces were\n  `golf.round.autosave`, and each one with steps ended on a successful\n  `db.save_partial_round_atomic.commit`, so the autosave path leaves traces\n  open (an instrumentation gap). Deriving healthy by\n  subtraction had shown 62 never-finalized runs as succeeded (2026-09-23);\n  `stepCoverage` returns null rather than inventing a denominator. This is\n  `/admin/traces`, a DIFFERENT Flight Recorder from the self-healing loop's\n  Diagnose/Repair pipeline in `admin_selfheal`.\n- **The capture-quality panel's 'user' field excludes rows that could never\n  have carried a user.** `analyzeCaptureQuality` (`src/lib/admin/data/\n  capture-quality.ts`) measures how completely `admin_events` rows were\n  instrumented — but a `source: 'cron'` row (`job-log.ts`'s `Cron failed:\n  <jobType>`, including the reliability collector's own) or `source:\n  'system'` row (`deploy-marker.ts`) is a machine invocation with no session\n  to resolve a user from, not an under-instrumented call site. Counting them\n  against the 'user' field's denominator understated capture quality for a\n  gap no call site could ever close. They stay in `rows` and every OTHER\n  field's denominator (error-code/stack/route/feature/action) — a cron\n  failure legitimately carries all five — and stay eligible to rank as a\n  weakest emitter on those five, just never penalised for the one field they\n  were never eligible to carry. `SELF_REFERENTIAL_SOURCES` is the single set;\n  `rca_analysis` rows need no matching check because they are already outside\n  `queryAppErrorEvents`'s `event_type='error'` filter.\n- **\"Steps observed\" has exactly one definition, and only one place fixes it\n  up.** The fleet-list RPC (`helm_debug_list_traces`) and the per-trace tree\n  (`trace-tree.ts`'s `buildTraceTree`) each carry their own count over the\n  same underlying fact — the list's is a DB-stored counter, the tree's is\n  computed live over the steps array it was actually handed — and the two can\n  disagree for a trace finalized before the 2026-09-01\n  `helm_debug_finalize_trace` migration, or one still mid-flight.\n  `TraceTree.observedStepCount` is the one named, tested definition\n  (`observed.length`, before synthesised missing nodes); `bridgeGetFlightTrace`\n  reconciles a trace's `observed_step_count` against it via\n  `reconcileObservedStepCount` the moment that trace is OPENED. This fixes the\n  number for whichever trace is open, not for the other rows still sitting in\n  the fleet list — that needs a `helm_debug_list_traces` migration change and\n  stays a known, documented gap.\n- **An observed step can be undeclared, and that is not the same as missing.**\n  `TraceStepNode.isUndeclared` marks a step that WAS recorded but whose key\n  isn't in the workflow's own declared-step set (`golf-round-flight-workflow.ts`)\n  — the shape every postgres-layer checkpoint child the trace-checkpoints\n  migration writes will have, since e.g. `golf.round.submit` declares only its\n  top-level RPC key, never the in-transaction children already observed under\n  it. `isMissing` stays the opposite condition (declared, never observed);\n  neither ever overlaps the other on the same node. A step recording only\n  `finished_at` (a single-moment checkpoint, not a measured span) is\n  `isPointInTime` and renders \"point-in-time\" rather than reading identically\n  to a step with no data at all. `errorCode` falls back to\n  `metadata.sqlstate`/`metadata.failure_code` when the `error_code` column is\n  empty, matching what `helm_private.trace_exception_checkpoint` actually\n  writes.\n- **`buildTraceTree` never silently drops a node, cycles included.**\n  `parent_step_key` is free text written by three separate producers (server,\n  collector, RPC), so a genuine mutual cycle is possible; every member of one\n  used to be attached as some OTHER member's child and none of them ever\n  reached `roots`, so the whole cycle vanished from the rendered tree with no\n  error. `observedStepCount` (above) was already immune, since it counts the\n  raw observed array rather than the walked tree — this closes the same gap\n  for the tree itself, via a rescue sweep that promotes any still-unvisited\n  node to an additional root after the normal walk. No cycle has been\n  observed in a real trace; this is defensive, matching the module's own\n  stated design principle.\n- **A downgraded trace's badge only ever appears once you open it.**\n  `helm_debug_finalize_trace` (since the applied\n  `20260901140000_trace_cannot_claim_success_while_blind.sql`) writes\n  `status_downgraded_from`/`status_downgraded_reason` into a run's `metadata`\n  when it silently downgrades a caller-claimed `success`. `helm_debug_get_trace`\n  returns that metadata in full; `helm_debug_list_traces` explicitly SELECTs a\n  fixed column list that omits it. So the warning `InlineNotice` in\n  `TracesClient.tsx` can only ever render on the opened trace's detail panel —\n  never as a fleet-list row badge — without a list-RPC migration change.\n- **`npm run flight-recorder:audit`** (`scripts/observability/flight-recorder-audit.mjs` +\n  `scripts/lib/flight-recorder-audit-lib.mjs`) is the read-only, post-deploy\n  check that the two in-flight timing/checkpoint branches actually wrote real\n  data: runs/steps/distinct-step-keys/steps-with-identity/zero-step-runs/\n  downgraded-runs over the last 24h. It calls the same two `helm_debug_*` RPCs\n  the app uses — `helm_debug` sits outside PostgREST's exposed schema list, so\n  an ordinary Supabase table client cannot reach `trace_runs`/`trace_steps`\n  under any key, service-role included. `helm_debug_list_traces` hard-caps at\n  200 rows server-side with no offset/cursor; the script logs (never silently\n  drops) the case where that cap may have truncated the true 24h population.\n- **Error text is redacted before it is stored**, not only before it reaches\n  Sentry, and `stack` / `message` / `title` count as error text — not just\n  `url` and `context`. URL query strings and fragments can carry magic-link\n  tokens, OTPs and OAuth codes; a stack embeds them mid-string\n  (`new Error(url)`), and a Postgres message echoes offending values.\n  `redactFreeTextForStorage` in `src/lib/observability/redact-pii.ts` is the\n  single implementation, called by BOTH write paths (the client ingest route\n  and the server logger). Keep it that way: both write the same two columns,\n  both are read back by the RCA action (`admin_selfheal`) and forwarded to a\n  third-party model, and a second copy is one that eventually stops matching —\n  silently, on the half nobody is looking at.\n- **A Bridge write on an error path is SCHEDULED, never detached.** Every\n  capture class used to `void logServerException(...)` and throw. On Vercel a\n  promise nobody awaited and nobody registered with the platform is dropped\n  the moment the response is sent — Sentry's own capture landed (its SDK\n  flushes through the platform), the Bridge row did not: 6 process-level\n  rejections in Sentry on 2026-09-01, 0 `admin_events` rows for `process.*`\n  in 60 days. `scheduleBridgeWrite` (`src/lib/admin/schedule-bridge-write.ts`)\n  is the single mechanism: Next 16's `after()` inside a request scope (zero\n  latency on the error path, Vercel keeps the function alive), and an AWAITED\n  write under a bounded timeout wherever `after()` throws (unit tests, module\n  init, inside `unstable_cache`, a prerender). The fallback is the awaited\n  path on purpose — a dropped write is the failure being removed, and it is\n  ALSO handed to the Vercel request context's `waitUntil` when one exists\n  (start-up on Vercel has a request context but no request scope). It captures\n  the correlation scope (`bindRequestContext`) because `after()` callbacks run\n  outside the request's AsyncLocalStorage and would otherwise lose\n  `requestId`. Wired into `observed-action.ts`, `observe-action-result.ts`\n  (which now returns a promise), `job-log.ts`, `integration-health.ts`\n  (`reportIntegrationFault` is async and its callers `await` it — a `void`ed\n  bounded await is still a promise nobody holds). The process-level handlers\n  (`register-process-error-handlers.ts`) have no request scope, so they import\n  the logger statically, hand the write to the Vercel request context's\n  `waitUntil` when one exists (`vercel-wait-until.ts` — `@sentry/core`'s own\n  helper is Edge-only) and await it under `BRIDGE_PROCESS_WRITE_TIMEOUT_MS`.\n- **Flood collapse has a DURABLE half.** `emit-throttle.ts` is per process;\n  on serverless a 60s auto-refresh lands on a fresh lambda most of the time,\n  so \"one row per window\" became one row per refresh — 99 identical\n  `provider_vercel_unavailable` rows in 2h05m on 2026-09-01, 83% of all\n  unresolved error rows in seven days, every `collapsed_count` NULL, and\n  `admin_dashboard` RED because `get_feature_health` counts rows. The logger\n  now runs `absorbIntoRecentEvent` (`src/lib/admin/durable-collapse.ts`)\n  before inserting any `provider_*` fault: an UNRESOLVED row with the same\n  fingerprint inside 15 minutes gets its `metadata.metadata.collapsed_count`\n  bumped (plus `last_seen_at`) instead of a new row. The bump is a\n  compare-and-swap — the UPDATE is guarded on the counter exactly as it was\n  read (`metadata->metadata->>collapsed_count`, or its absence), re-read and\n  retried once on a miss — because the new count is computed in JS and two\n  lambdas that both read N would otherwise both write N+1. Fails OPEN — an\n  unreadable lookup, a failed update, or a second guard miss (`lost_race`)\n  inserts as before. Opt in for other codes with\n  `durableCollapse: true`, out with `false`. Severity is never changed by it.\n  The Vercel insights reader additionally negative-caches its own failure for\n  5 minutes per process so a dead endpoint is not re-probed on every refresh.\n- **Database-saturation rows are throttled per process before they write.**\n  During the 2026-09-24 pool-exhaustion brownout (#2061) every failing read\n  also wrote an `error_logs` row and an `admin_events` row into the database\n  that was already saturated. `server-error-logger.ts` now treats a trace\n  whose code (`errorCode` or `extra.errorCode`) is `57014`, `PGRST003`,\n  `PGRST002` or `53300`, or whose message is one of those failures' own text,\n  as a saturation signal: within `DB_SATURATION_WRITE_WINDOW_MS` (60s) a\n  repeat of the same fingerprint in the same process writes nothing, and the\n  next row that does write carries the suppressed count in\n  `metadata.metadata.collapsed_count`. Sentry still gets every occurrence. A\n  row that does not land gives the window back (`releaseEmit`). Every other\n  trace writes exactly as before.\n- **Inngest was removed (2026-10-06).** The Inngest client, the\n  `/api/inngest` handler, its credential reporter\n  (`provider_inngest_missing_credential`), the Jobs tab's Inngest tile and the\n  `INNGEST_*` env checks are gone; durable background work is the pgmq queue\n  plus Vercel crons, and the post-round CoachHelm trigger runs via the queue or\n  the direct `postRoundTrigger` call with the safety-net cron as backstop. The\n  `integrations` registry entry stays as the provider-fault catch-all area\n  (label \"Integrations\", no heartbeat, quiet renders NEUTRAL). The provider-fault\n  and incident classifiers keep their Inngest string rules, inert, so\n  historical rows still classify.\n- **Feature attribution aliases `feature` too, not only `featureArea`.**\n  `resolveFeatureKey` used to return an explicit `feature` untouched, so\n  `feature: 'coachhelm_chat'` landed unregistered while the same string as\n  `featureArea` would have been aliased. Both go through\n  `FEATURE_AREA_ALIASES` now, and the table carries every key measured with\n  rows in 30d, each mapped to the registry entry whose action manifest owns\n  the emitting file: `calendar → calendar_events`, `insights → coachhelm_ai_engine`,\n  `coachhelm_chat → coachhelm_ai_engine`, `coachhelm_effectiveness →\n  coachhelm_analytics`, `teams → join_team_flow`, `rounds → round_tracking`.\n  Deliberately NOT aliased: `crm` (owner directive — CRM is never tagged onto\n  the Bridge) and `lifting-onboarding` (Helm Lifting Lab has no registry entry\n  at all; the Baseball Lift Onboarding `FeatureKey` maps a different file,\n  `src/app/baseball/actions/lift-onboarding.ts`, not the Lift Lab one). Every\n  alias must resolve to a registered key and never shadow one —\n  `src/lib/admin/__tests__/feature-aliases.test.ts`.\n- **Credential values are validated by SHAPE, in one module.** Every one of\n  the eight Bridge values in the local `.env.local` was exactly 11 characters,\n  which cleared the old `length >= 10` floor in both\n  `scripts/check-helm-bridge-env.mjs` (printed PASS) and the runtime readers'\n  identical `usableSecret()` (treated Sentry as configured, so every local\n  read failed soft and silently). `src/lib/admin/credential-shape.mjs` is the\n  single implementation — `.mjs` so the plain-node script and the TS readers\n  (`sentry-api.ts`, `vercel-api.ts`) import the same\n  code — and it never returns or prints a value it was not given. Shape is not\n  validity: a rotated key still passes; the runtime diagnosis and the health\n  probe are what detect that.\n- **Message-shaped traces get a real Sentry title and the Bridge's own\n  fingerprint.** `logServerError`/`logServerEvent` at error/critical hand\n  Sentry a synthetic Error; its message was the constant \"Server trace error\"\n  (six issues in one week, one title). It is now `ServerTrace:\n  <errorCode>: <redacted summary>`, and the Sentry fingerprint is pinned to\n  `['helm-server-trace', <admin_events.fingerprint>]` (tag\n  `bridge_fingerprint`) so one Bridge incident is one Sentry issue and a\n  varying title cannot fragment grouping. An explicit `context.fingerprint`\n  still wins. Consequence: existing server-trace Sentry issues regroup once.",
+      "text": "- Admin access must remain explicit and server-side; service-role behavior must not leak into client bundles.\n- Helm Bridge uses the authenticated GolfHelm session. Its shell must expose a\n  usable sign-out control on both the desktop rail and the mobile More sheet;\n  sign-out clears the active-team selection before revoking that session.\n- Admin dashboards can read broad platform state, but mutations still need authorization and auditability.\n- CRM automation/suppression behavior must respect opt-out and reply-stop logic.\n- Operational charts should not be treated as source of truth if rollups are stale.\n- Cron/admin endpoints must use configured secrets and auth checks.\n- **The row status vocabulary is `completed` / `failed`.** Verified against\n  production: all existing `background_job_logs` rows use those two words and\n  nothing else. An earlier draft wrote `success`, which no other writer emits and\n  every status-based filter would have missed. Both `admin_reliability_collector`\n  and `admin_selfheal` write to this shared table under this vocabulary.\n  every status-based filter would have missed.\n- **`admin_events.source` is a closed enum** — `ADMIN_EVENT_SOURCES` in\n  `src/lib/admin-logger.ts` mirrors the DB check constraint\n  `admin_events_source_check`; `logAdminEvent`'s `source` is typed to it.\n  A caller's free-form origin belongs in metadata (`logEmailSuppressed` →\n  `metadata.origin`), never in `source`: the constraint rejected 1,006\n  `email.suppressed` writes as `bridge_write_failed` before this (#1917).\n- **As of 2026-09-02, `recordJobRun` also drives a Sentry Cron Monitor\n  check-in — a SEPARATE signal from `background_job_logs`/the Jobs board,\n  not a replacement for it.** `startCronCheckIn`/`finishCronCheckIn`\n  (`src/lib/observability/cron-monitors.ts`) wrap all 3 exit paths (success,\n  a resolved >=400 Response, a thrown error), and each path `await`s\n  `flushCronCheckIn` before returning — Vercel freezes the function on\n  response, and an unflushed terminal check-in is what Sentry reports as a\n  monitor timeout (`api-cron-db-health-sampler`, ~half its runs, #1918).\n  Check-ins are keyed by a monitor slug\n  resolved from `CRON_REGISTRY` (`api-cron-<dashed-path>`, or\n  `job-<jobType>` for anything unregistered). This is Sentry's OWN Cron\n  Monitors feature (an external \"did this heartbeat arrive on schedule\"\n  alert), independent of the Jobs board's own overdue/failed\n  classification (`classifyCronStatus`) — the two can disagree (Sentry\n  alerts on a missed check-in before the Jobs board's own 1.5x-cadence\n  threshold would mark a row overdue), and that is intentional redundancy,\n  not a bug to reconcile. `automaticVercelMonitors` in\n  `src/lib/sentry-build-options.mjs` is deliberately `false` so this\n  manual, per-job check-in stays the SINGLE Cron Monitor mechanism — the\n  installed SDK's own build-time source shows the auto option would\n  build-time-inject a second, independent monitor per Vercel cron path,\n  duplicating this. Fail-open throughout: a Sentry outage never blocks or\n  fails a cron. Full job table, monitor slug conventions, and the\n  `automaticVercelMonitors:false` decision record live in\n  `docs/observability/SENTRY_CRON_MONITORS.md`.\n  (The launchd Repair script and its own Sentry check-in helper —\n  scripts/lib/sentry-cron-checkin.mjs no longer exists — were removed 2026-09-05\n  along with the rest of the launchd Repair path — see `memory/features/admin-selfheal.md`;\n  Repair ran as a GitHub Actions workflow from 2026-09-05 (deleted 2026-11-25;\n  .github/workflows/selfheal-repair.yml no longer exists) and,\n  since 2026-09-23, as the Claude desktop health routine; both report through\n  a `background_job_logs` heartbeat, not a Sentry Cron Monitor.)\n- **Only a TOTALLY blind reliability run returns 503; a partially blind one\n  returns 200.** `recordJobRun` does more than write a job row on a >=400 — it\n  also calls `logServerEvent(..., 'error')`, which writes an `admin_events` row.\n  Failing the run whenever ANY arm was blind therefore produced eight error rows\n  a day, indefinitely, into `/admin/errors`, the incident feed and the nav error\n  badge. A degraded run is already reported honestly twice — the snapshot row\n  carries `status='failed'` and the tab renders a danger band naming each blind\n  source — so a red Jobs board is not worth polluting the triage queue for.\n  These behaviours are coupled with the self-feed filter: a failed run's\n  `admin_events` row is titled `Cron failed: reliability-triage`, which is\n  exactly what `collectSupabase` excludes. Do not change one without the other.\n- **Evidence references carry their source; they are never paired by index.**\n  A `CorrelatedSignal`'s `sources[]` and its evidence list dedupe on different\n  keys, so their indices do not correspond — one source contributing two refs\n  shifts every later index and misattributes the rest. Evidence is\n  `Array<{source, ref}>` for that reason, and `evidenceTarget` needs the source\n  to decide whether a ref is a Sentry permalink, a Bridge drill-through, or\n  opaque text.\n- **Error resolution belongs to the FINGERPRINT, not the row.**\n  `public.admin_error_resolutions` (applied 2026-08-27) records what fixed a\n  fault: PR, merge SHA, who decided (`auto` cron vs `manual` operator), and\n  whether it has regressed. `admin_events.resolved` stays per-row and is not a\n  substitute — with it alone, a fixed fault's next occurrence is a new\n  unresolved row, indistinguishable from a regression.\n- **An archived fault must come back if it recurs.** \"Never show it again\" is\n  correct only until the fault returns after its fix shipped; that is a\n  REGRESSION and the most valuable signal this system produces. Nothing is\n  deleted and archiving is a read-time join, so dropping the table makes every\n  incident reappear — the correct failure direction for a feature whose job is\n  hiding things. `reopened_count` survives a re-resolve, so \"fixed three times\n  already\" cannot be laundered.\n- **A regression whose analysis already says NOT A DEFECT is expected\n  recurrence, not a regression.** `deriveLifecycle` rule 1\n  (`src/lib/admin/incidents/lifecycle.ts`) checks `analysis?.category ===\n  'not-a-defect'` before returning `'regressed'` — the analysis already\n  explained why this fingerprint fires (e.g. an access denial that is\n  SUPPOSED to keep happening), so its recurrence is not new information and\n  must not re-alarm an operator with the single loudest signal this system\n  produces. Lands in the dedicated `'expected-recurrence'` lifecycle state\n  (`INCIDENT_LIFECYCLE_STATES`) instead — distinct from the pre-existing\n  `'not-a-defect'` state, which is the classifier's verdict (`!actionable`)\n  and never had a resolution to regress from in the first place; keeping\n  them separate lets a lens count \"this specifically recurred after being\n  fixed\" apart from \"this was never a defect\". Neutral tone, not danger; not\n  in `NEEDS_ATTENTION_STATES` (so the REGRESSION-specific alarm is gone);\n  treated as `offLoop('done', …)` by `selfheal-flow.ts`, same as\n  `not-a-defect`; excluded from the `actionable` lens and the Truth Strip's\n  `actionable` count, same as `not-a-defect`. The `regressions` lens\n  (`incident.lifecycle.state === 'regressed'`) needed no change — the state\n  itself no longer produces `'regressed'` for these, so the exclusion is\n  automatic — and a new `expected-recurrence` lens counts them apart.\n  **It IS still in `attention.ts`'s `UNRESOLVED_STATES`**, deliberately unlike\n  `not-a-defect` — an LLM-authored \"NOT A DEFECT\" `suggestedFix` string must\n  never be able to silence a CRITICAL, still-unresolved fault outright; only\n  the specific \"this is a regression\" alarm it was wrong about is what goes\n  quiet. Rule 2 (critical) still fires for one, same as any other open state.\n- **Auto-resolution requires a production DEPLOY after the last occurrence, not\n  merely silence.** A nightly cron is silent 23 hours a day and a seasonal\n  feature for months. When the deploy timestamp is unreadable, nothing is\n  auto-resolved and the plan states why. The cron's inference never overwrites\n  an operator's `manual` resolution.\n- **`shipStatus` has three outcomes, not two.** `unknown` exists because Vercel\n  can be unreachable; rendering that as `pending` tells an operator their fix\n  has not shipped when the truth is that we could not find out.\n- **A discarded rejection reason is an invisible outage.** `Promise.allSettled`\n  callers must capture WHY a task rejected, not just count it — the reason is\n  the only thing that answers \"what is wrong\". See\n  INC-2026-08-27: a counter-only handler let a cron fail for two days while\n  `background_job_logs` recorded 72 consecutive `completed` runs. Reasons\n  written into a cron response must be SCALARS: `recordJobRun`'s\n  `extractOutcomeMetadata` keeps only top-level scalars and silently drops\n  arrays. Since 2026-09-24 the same bounded scalar snapshot is taken from a\n  job that returns a PLAIN OBJECT (not a Response), which is how\n  `selfheal-close` reports `AutoResolveResult`; before that every\n  `selfheal-close` row carried `metadata = null`.\n- **A source that could not be read is never reported as zero problems.** The\n  reliability collector's arms each return `{status, reason, signals}`, and the\n  run's status is the WORST arm — so a run whose Sentry token is missing writes\n  `status='failed'` and the Bridge renders a danger band, not a green tick. An\n  arm that returned `[]` on failure would be indistinguishable from a healthy\n  arm finding nothing, which inverts the meaning of the entire tab. This is the\n  OS contract's \"never error→[]\" rule; `worstStatus` is the single function\n  enforcing it and it is covered red/green.\n- **The reliability collector must never read its own emissions.** It is a cron\n  that reads the table crons write failures to, so without exclusions one failed\n  run becomes a signal, becomes a triage item, becomes another error row — a\n  loop that manufactures work from its own failure. `collectSupabase` filters\n  out `event_type='rca_analysis'` AND any row naming `reliability-triage`. This\n  is the same shape as the `rca_analysis` bug above, which is why the fix is the\n  same fix; do not remove either filter.\n- **Cross-source correlation drops severity from the key, and must.**\n  `buildIncidentSignature` folds severity INTO its key\n  (`severity::errorCode::route::messagePrefix`), which is right for its original\n  callers — they group rows arriving from one source through one writer. It is\n  wrong across sources: Sentry rates as `error` plenty of conditions this app\n  logs to `admin_events` as `warning`, so the severity-bearing key splits one\n  root cause into two entries and the \"confirmed by N sources\" badge never\n  fires. `correlationSignature` in `src/lib/reliability/normalize.ts` therefore\n  calls the same function with a FIXED severity and lets `pickWorseSeverity`\n  carry severity across the fold instead.\n  Be precise about what this shares with the other views, because the looser\n  claim rots: the reliability tab reuses the **normalisation** — and therefore\n  the notion of what counts as the same failure — but its signature value is\n  **not** equal to the row's stored `admin_events.fingerprint`, which was\n  computed with that row's real severity. Within the Supabase arm, rows are\n  still pre-grouped on the stored fingerprint before correlation runs.\n- **One incident model, derived at read time, never stored.**\n  `src/lib/admin/incidents/` folds the app fingerprint bucket, the Sentry\n  issue, the reliability `CorrelatedSignal` and the `rca_analysis` row into a\n  single `UnifiedIncident`. It is a READ MODEL: there is no `admin_incidents`\n  table and no persisted `lifecycleState`, because lifecycle and proof are\n  functions of evidence that changes underneath them (a PR merges, production\n  rolls forward, a fault recurs) and a stored string would outrank live\n  evidence. The layering is `existing readers -> correlate -> lifecycle+proof\n  -> UnifiedIncident[]`; every derivation is a pure function unit-tested with\n  no I/O. If persistence is ever added, persist durable EVENTS, never the\n  derived state.\n- **An incident's id is the key that was already stored under it.** In\n  priority order: an `admin_events` fingerprint, then `rel:<signature>`, then\n  `sentry:<issueId>`. That order is not cosmetic — `rca_analysis` rows,\n  `/admin/errors/<id>` links and repair PR bodies all address exactly these\n  strings, so a synthetic key would break every artefact the self-healing loop\n  has already written. `fetchIncidentById` also matches on any fingerprint an\n  incident folded, so links written before correlation still resolve.\n- **`unknown` is a state, and nothing may collapse it into a healthy value.**\n  A CI check read that failed is `unknown`, never `pending` — pending reads as\n  orderly progress. An unreadable deploy leaves an incident `merged`, never\n  `resolved` and never `awaiting-deploy`. This principle is stated once here\n  and applied throughout the Bridge — by `admin_reliability_collector` for a\n  collector run's freshness and by `admin_incidents` for every derived state.\n- **The Flight Recorder's two axes are never summed.** Instrumentation coverage\n  (how much of the declared pipeline has call sites wired to the recorder) and\n  outcome (whether the work succeeded) are independent. Measured 2026-09-01, 46\n  of 50 production traces miss declared-required steps while 40 of those\n  succeeded — a short trace is not a failed one, and a combined \"46 problems\"\n  figure would be false. `trace-fleet.ts` counts them separately;\n  outcome counts only what a trace recorded: `succeeded` is counted from\n  status 'success', never derived as total minus failures. A trace still\n  'started' after `STUCK_TRACE_AFTER_MS` (15 min) is `stuck` (\"never\n  closed\", neutral tone), and a younger one is `running`. `stuck` is not a\n  failure count: on 2026-09-23 all 68 open traces were\n  `golf.round.autosave`, and each one with steps ended on a successful\n  `db.save_partial_round_atomic.commit`, so the autosave path leaves traces\n  open (an instrumentation gap). Deriving healthy by\n  subtraction had shown 62 never-finalized runs as succeeded (2026-09-23);\n  `stepCoverage` returns null rather than inventing a denominator. This is\n  `/admin/traces`, a DIFFERENT Flight Recorder from the self-healing loop's\n  Diagnose/Repair pipeline in `admin_selfheal`.\n- **The capture-quality panel's 'user' field excludes rows that could never\n  have carried a user.** `analyzeCaptureQuality` (`src/lib/admin/data/\n  capture-quality.ts`) measures how completely `admin_events` rows were\n  instrumented — but a `source: 'cron'` row (`job-log.ts`'s `Cron failed:\n  <jobType>`, including the reliability collector's own) or `source:\n  'system'` row (`deploy-marker.ts`) is a machine invocation with no session\n  to resolve a user from, not an under-instrumented call site. Counting them\n  against the 'user' field's denominator understated capture quality for a\n  gap no call site could ever close. They stay in `rows` and every OTHER\n  field's denominator (error-code/stack/route/feature/action) — a cron\n  failure legitimately carries all five — and stay eligible to rank as a\n  weakest emitter on those five, just never penalised for the one field they\n  were never eligible to carry. `SELF_REFERENTIAL_SOURCES` is the single set;\n  `rca_analysis` rows need no matching check because they are already outside\n  `queryAppErrorEvents`'s `event_type='error'` filter.\n- **\"Steps observed\" has exactly one definition, and only one place fixes it\n  up.** The fleet-list RPC (`helm_debug_list_traces`) and the per-trace tree\n  (`trace-tree.ts`'s `buildTraceTree`) each carry their own count over the\n  same underlying fact — the list's is a DB-stored counter, the tree's is\n  computed live over the steps array it was actually handed — and the two can\n  disagree for a trace finalized before the 2026-09-01\n  `helm_debug_finalize_trace` migration, or one still mid-flight.\n  `TraceTree.observedStepCount` is the one named, tested definition\n  (`observed.length`, before synthesised missing nodes); `bridgeGetFlightTrace`\n  reconciles a trace's `observed_step_count` against it via\n  `reconcileObservedStepCount` the moment that trace is OPENED. This fixes the\n  number for whichever trace is open, not for the other rows still sitting in\n  the fleet list — that needs a `helm_debug_list_traces` migration change and\n  stays a known, documented gap.\n- **An observed step can be undeclared, and that is not the same as missing.**\n  `TraceStepNode.isUndeclared` marks a step that WAS recorded but whose key\n  isn't in the workflow's own declared-step set (`golf-round-flight-workflow.ts`)\n  — the shape every postgres-layer checkpoint child the trace-checkpoints\n  migration writes will have, since e.g. `golf.round.submit` declares only its\n  top-level RPC key, never the in-transaction children already observed under\n  it. `isMissing` stays the opposite condition (declared, never observed);\n  neither ever overlaps the other on the same node. A step recording only\n  `finished_at` (a single-moment checkpoint, not a measured span) is\n  `isPointInTime` and renders \"point-in-time\" rather than reading identically\n  to a step with no data at all. `errorCode` falls back to\n  `metadata.sqlstate`/`metadata.failure_code` when the `error_code` column is\n  empty, matching what `helm_private.trace_exception_checkpoint` actually\n  writes.\n- **`buildTraceTree` never silently drops a node, cycles included.**\n  `parent_step_key` is free text written by three separate producers (server,\n  collector, RPC), so a genuine mutual cycle is possible; every member of one\n  used to be attached as some OTHER member's child and none of them ever\n  reached `roots`, so the whole cycle vanished from the rendered tree with no\n  error. `observedStepCount` (above) was already immune, since it counts the\n  raw observed array rather than the walked tree — this closes the same gap\n  for the tree itself, via a rescue sweep that promotes any still-unvisited\n  node to an additional root after the normal walk. No cycle has been\n  observed in a real trace; this is defensive, matching the module's own\n  stated design principle.\n- **A downgraded trace's badge only ever appears once you open it.**\n  `helm_debug_finalize_trace` (since the applied\n  `20260901140000_trace_cannot_claim_success_while_blind.sql`) writes\n  `status_downgraded_from`/`status_downgraded_reason` into a run's `metadata`\n  when it silently downgrades a caller-claimed `success`. `helm_debug_get_trace`\n  returns that metadata in full; `helm_debug_list_traces` explicitly SELECTs a\n  fixed column list that omits it. So the warning `InlineNotice` in\n  `TracesClient.tsx` can only ever render on the opened trace's detail panel —\n  never as a fleet-list row badge — without a list-RPC migration change.\n- **`npm run flight-recorder:audit`** (`scripts/observability/flight-recorder-audit.mjs` +\n  `scripts/lib/flight-recorder-audit-lib.mjs`) is the read-only, post-deploy\n  check that the two in-flight timing/checkpoint branches actually wrote real\n  data: runs/steps/distinct-step-keys/steps-with-identity/zero-step-runs/\n  downgraded-runs over the last 24h. It calls the same two `helm_debug_*` RPCs\n  the app uses — `helm_debug` sits outside PostgREST's exposed schema list, so\n  an ordinary Supabase table client cannot reach `trace_runs`/`trace_steps`\n  under any key, service-role included. `helm_debug_list_traces` hard-caps at\n  200 rows server-side with no offset/cursor; the script logs (never silently\n  drops) the case where that cap may have truncated the true 24h population.\n- **Error text is redacted before it is stored**, not only before it reaches\n  Sentry, and `stack` / `message` / `title` count as error text — not just\n  `url` and `context`. URL query strings and fragments can carry magic-link\n  tokens, OTPs and OAuth codes; a stack embeds them mid-string\n  (`new Error(url)`), and a Postgres message echoes offending values.\n  `redactFreeTextForStorage` in `src/lib/observability/redact-pii.ts` is the\n  single implementation, called by BOTH write paths (the client ingest route\n  and the server logger). Keep it that way: both write the same two columns,\n  both are read back by the RCA action (`admin_selfheal`) and forwarded to a\n  third-party model, and a second copy is one that eventually stops matching —\n  silently, on the half nobody is looking at.\n- **A Bridge write on an error path is SCHEDULED, never detached.** Every\n  capture class used to `void logServerException(...)` and throw. On Vercel a\n  promise nobody awaited and nobody registered with the platform is dropped\n  the moment the response is sent — Sentry's own capture landed (its SDK\n  flushes through the platform), the Bridge row did not: 6 process-level\n  rejections in Sentry on 2026-09-01, 0 `admin_events` rows for `process.*`\n  in 60 days. `scheduleBridgeWrite` (`src/lib/admin/schedule-bridge-write.ts`)\n  is the single mechanism: Next 16's `after()` inside a request scope (zero\n  latency on the error path, Vercel keeps the function alive), and an AWAITED\n  write under a bounded timeout wherever `after()` throws (unit tests, module\n  init, inside `unstable_cache`, a prerender). The fallback is the awaited\n  path on purpose — a dropped write is the failure being removed, and it is\n  ALSO handed to the Vercel request context's `waitUntil` when one exists\n  (start-up on Vercel has a request context but no request scope). It captures\n  the correlation scope (`bindRequestContext`) because `after()` callbacks run\n  outside the request's AsyncLocalStorage and would otherwise lose\n  `requestId`. Wired into `observed-action.ts`, `observe-action-result.ts`\n  (which now returns a promise), `job-log.ts`, `integration-health.ts`\n  (`reportIntegrationFault` is async and its callers `await` it — a `void`ed\n  bounded await is still a promise nobody holds). The process-level handlers\n  (`register-process-error-handlers.ts`) have no request scope, so they import\n  the logger statically, hand the write to the Vercel request context's\n  `waitUntil` when one exists (`vercel-wait-until.ts` — `@sentry/core`'s own\n  helper is Edge-only) and await it under `BRIDGE_PROCESS_WRITE_TIMEOUT_MS`.\n- **Flood collapse has a DURABLE half.** `emit-throttle.ts` is per process;\n  on serverless a 60s auto-refresh lands on a fresh lambda most of the time,\n  so \"one row per window\" became one row per refresh — 99 identical\n  `provider_vercel_unavailable` rows in 2h05m on 2026-09-01, 83% of all\n  unresolved error rows in seven days, every `collapsed_count` NULL, and\n  `admin_dashboard` RED because `get_feature_health` counts rows. The logger\n  now runs `absorbIntoRecentEvent` (`src/lib/admin/durable-collapse.ts`)\n  before inserting any `provider_*` fault: an UNRESOLVED row with the same\n  fingerprint inside 15 minutes gets its `metadata.metadata.collapsed_count`\n  bumped (plus `last_seen_at`) instead of a new row. The bump is a\n  compare-and-swap — the UPDATE is guarded on the counter exactly as it was\n  read (`metadata->metadata->>collapsed_count`, or its absence), re-read and\n  retried once on a miss — because the new count is computed in JS and two\n  lambdas that both read N would otherwise both write N+1. Fails OPEN — an\n  unreadable lookup, a failed update, or a second guard miss (`lost_race`)\n  inserts as before. Opt in for other codes with\n  `durableCollapse: true`, out with `false`. Severity is never changed by it.\n  The Vercel insights reader additionally negative-caches its own failure for\n  5 minutes per process so a dead endpoint is not re-probed on every refresh.\n- **Database-saturation rows are throttled per process before they write.**\n  During the 2026-09-24 pool-exhaustion brownout (#2061) every failing read\n  also wrote an `error_logs` row and an `admin_events` row into the database\n  that was already saturated. `server-error-logger.ts` now treats a trace\n  whose code (`errorCode` or `extra.errorCode`) is `57014`, `PGRST003`,\n  `PGRST002` or `53300`, or whose message is one of those failures' own text,\n  as a saturation signal: within `DB_SATURATION_WRITE_WINDOW_MS` (60s) a\n  repeat of the same fingerprint in the same process writes nothing, and the\n  next row that does write carries the suppressed count in\n  `metadata.metadata.collapsed_count`. Sentry still gets every occurrence. A\n  row that does not land gives the window back (`releaseEmit`). Every other\n  trace writes exactly as before.\n- **Inngest was removed (2026-10-06).** The Inngest client, the\n  `/api/inngest` handler, its credential reporter\n  (`provider_inngest_missing_credential`), the Jobs tab's Inngest tile and the\n  `INNGEST_*` env checks are gone; durable background work is the pgmq queue\n  plus Vercel crons, and the post-round CoachHelm trigger runs via the queue or\n  the direct `postRoundTrigger` call with the safety-net cron as backstop. The\n  `integrations` registry entry stays as the provider-fault catch-all area\n  (label \"Integrations\", no heartbeat, quiet renders NEUTRAL). The provider-fault\n  and incident classifiers keep their Inngest string rules, inert, so\n  historical rows still classify.\n- **Feature attribution aliases `feature` too, not only `featureArea`.**\n  `resolveFeatureKey` used to return an explicit `feature` untouched, so\n  `feature: 'coachhelm_chat'` landed unregistered while the same string as\n  `featureArea` would have been aliased. Both go through\n  `FEATURE_AREA_ALIASES` now, and the table carries every key measured with\n  rows in 30d, each mapped to the registry entry whose action manifest owns\n  the emitting file: `calendar → calendar_events`, `insights → coachhelm_ai_engine`,\n  `coachhelm_chat → coachhelm_ai_engine`, `coachhelm_effectiveness →\n  coachhelm_analytics`, `teams → join_team_flow`, `rounds → round_tracking`.\n  Deliberately NOT aliased: `crm` (owner directive — CRM is never tagged onto\n  the Bridge) and `lifting-onboarding` (Helm Lifting Lab has no registry entry\n  at all; the Baseball Lift Onboarding `FeatureKey` maps a different file,\n  `src/app/baseball/actions/lift-onboarding.ts`, not the Lift Lab one). Every\n  alias must resolve to a registered key and never shadow one —\n  `src/lib/admin/__tests__/feature-aliases.test.ts`.\n- **Credential values are validated by SHAPE, in one module.** Every one of\n  the eight Bridge values in the local `.env.local` was exactly 11 characters,\n  which cleared the old `length >= 10` floor in both\n  `scripts/check-helm-bridge-env.mjs` (printed PASS) and the runtime readers'\n  identical `usableSecret()` (treated Sentry as configured, so every local\n  read failed soft and silently). `src/lib/admin/credential-shape.mjs` is the\n  single implementation — `.mjs` so the plain-node script and the TS readers\n  (`sentry-api.ts`, `vercel-api.ts`) import the same\n  code — and it never returns or prints a value it was not given. Shape is not\n  validity: a rotated key still passes; the runtime diagnosis and the health\n  probe are what detect that.\n- **Message-shaped traces get a real Sentry title and the Bridge's own\n  fingerprint.** `logServerError`/`logServerEvent` at error/critical hand\n  Sentry a synthetic Error; its message was the constant \"Server trace error\"\n  (six issues in one week, one title). It is now `ServerTrace:\n  <errorCode>: <redacted summary>`, and the Sentry fingerprint is pinned to\n  `['helm-server-trace', <admin_events.fingerprint>]` (tag\n  `bridge_fingerprint`) so one Bridge incident is one Sentry issue and a\n  varying title cannot fragment grouping. An explicit `context.fingerprint`\n  still wins. Consequence: existing server-trace Sentry issues regroup once.",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
@@ -1664,7 +1664,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 628,
+        "line": 629,
         "heading": "UI Contract"
       },
       "date": null,
@@ -1686,7 +1686,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 686,
+        "line": 687,
         "heading": "Phase 0 truth models (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -1708,7 +1708,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 696,
+        "line": 697,
         "heading": "Phase 0 truth models (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -1731,7 +1731,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 761,
+        "line": 762,
         "heading": "Phase 5 Engineering OS (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -1754,7 +1754,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 767,
+        "line": 768,
         "heading": "Phase 5 Engineering OS (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -1789,7 +1789,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 845,
+        "line": 846,
         "heading": "Phase 5 Engineering OS (Bridge Premium Observability, 2026-09-03) > PR #1790 review fixes (2026-09-03)"
       },
       "date": null,
@@ -1808,7 +1808,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 848,
+        "line": 849,
         "heading": "Phase 5 Engineering OS (Bridge Premium Observability, 2026-09-03) > PR #1790 review fixes (2026-09-03)"
       },
       "date": null,
@@ -1833,7 +1833,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 897,
+        "line": 898,
         "heading": "Phase 5 Engineering OS (Bridge Premium Observability, 2026-09-03) > PR #1790 review fixes (2026-09-03)"
       },
       "date": null,
@@ -1852,7 +1852,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 915,
+        "line": 916,
         "heading": "Phase 2 Command Deck (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -1873,7 +1873,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 929,
+        "line": 930,
         "heading": "Phase 2 Command Deck (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -1895,7 +1895,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 937,
+        "line": 938,
         "heading": "Phase 2 Command Deck (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -1920,7 +1920,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1029,
+        "line": 1030,
         "heading": "Phase 1 wiring — incident cards, Incident Genome, Release Watch, Evidence Inspector (2026-09-03)"
       },
       "date": null,
@@ -1941,7 +1941,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1034,
+        "line": 1035,
         "heading": "Phase 1 wiring — incident cards, Incident Genome, Release Watch, Evidence Inspector (2026-09-03)"
       },
       "date": null,
@@ -1962,7 +1962,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1107,
+        "line": 1108,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -1981,7 +1981,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1116,
+        "line": 1117,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2004,7 +2004,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1123,
+        "line": 1124,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2023,7 +2023,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1128,
+        "line": 1129,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2044,7 +2044,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1132,
+        "line": 1133,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2063,7 +2063,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1143,
+        "line": 1144,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2082,7 +2082,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1147,
+        "line": 1148,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2103,7 +2103,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1151,
+        "line": 1152,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2124,7 +2124,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1158,
+        "line": 1159,
         "heading": "The 30→19 consolidation (2026-09-08)"
       },
       "date": null,
@@ -2143,7 +2143,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1162,
+        "line": 1163,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2170,7 +2170,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1174,
+        "line": 1175,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2191,7 +2191,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1193,
+        "line": 1194,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2216,7 +2216,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1209,
+        "line": 1210,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2240,7 +2240,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1249,
+        "line": 1250,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2261,7 +2261,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1258,
+        "line": 1259,
         "heading": "Phase 4 lenses (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2283,7 +2283,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1267,
+        "line": 1268,
         "heading": "Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2306,7 +2306,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1278,
+        "line": 1279,
         "heading": "Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2330,7 +2330,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1353,
+        "line": 1354,
         "heading": "Phase 3 triage tabs (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2353,7 +2353,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1365,
+        "line": 1366,
         "heading": "Phase 6 polish (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2375,7 +2375,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1374,
+        "line": 1375,
         "heading": "Phase 6 polish (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2394,7 +2394,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1377,
+        "line": 1378,
         "heading": "Phase 6 polish (Bridge Premium Observability, 2026-09-03)"
       },
       "date": null,
@@ -2427,7 +2427,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1496,
+        "line": 1497,
         "heading": "Known Risk Areas"
       },
       "date": null,
@@ -2458,7 +2458,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1594,
+        "line": 1595,
         "heading": "Tests To Prefer"
       },
       "date": null,
@@ -2508,11 +2508,11 @@
     {
       "id": "c113-other",
       "kind": "other",
-      "text": "- `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`\n- `docs/BI_DASHBOARD_ARCHITECTURE.md`\n- `docs/OBSERVABILITY.md`\n- `docs/SECURITY_AUDIT.md`\n- `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —\n  the Bridge Premium Observability brief the \"Phase 0 truth models\" and\n  \"Phase 5 Engineering OS\" sections above implement. Verified resolvable in\n  this checkout 2026-09-03 — the \"Phase 0\" section's claim above that it\n  \"does not resolve in this checkout yet\" is now stale; corrected here\n  rather than edited in place, per `.claude/rules/shipping.md` §1 (leave\n  the original reasoning legible, don't silently rewrite history).\n- `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §J.4.5 —\n  the \"do not build a second Decision Inbox\" finding the Phase 5 section's\n  Decision Inbox module is scoped against.\n- `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` —\n  `AGENT_FLIGHT_RECORDER_STORAGE`, the owner decision the Phase 5 section's\n  migration implements.\n- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's\n  re-measured production baseline for the Supabase/Postgres observability\n  program (the master brief itself lands separately, on the sibling\n  control-plane branch).\n- `memory/features/admin-incidents.md`\n- `memory/features/admin-reliability-collector.md`\n- `memory/features/admin-selfheal.md`\n- The Bridge Premium Observability brief the \"Phase 0 truth models\" section\n  above implements — see that section for its worktree location as of\n  2026-09-03; not linked here as a repo path because it does not resolve in\n  this checkout yet (`docs:path-drift` would flag it).",
+      "text": "- `docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md`\n- `docs/BI_DASHBOARD_ARCHITECTURE.md`\n- `docs/observability/OBSERVABILITY.md`\n- `docs/SECURITY_AUDIT.md`\n- `docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md` —\n  the Bridge Premium Observability brief the \"Phase 0 truth models\" and\n  \"Phase 5 Engineering OS\" sections above implement. Verified resolvable in\n  this checkout 2026-09-03 — the \"Phase 0\" section's claim above that it\n  \"does not resolve in this checkout yet\" is now stale; corrected here\n  rather than edited in place, per `.claude/rules/shipping.md` §1 (leave\n  the original reasoning legible, don't silently rewrite history).\n- `docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md` §J.4.5 —\n  the \"do not build a second Decision Inbox\" finding the Phase 5 section's\n  Decision Inbox module is scoped against.\n- `memory/decisions/ADR-2026-09-03-control-plane-owner-decisions.md` —\n  `AGENT_FLIGHT_RECORDER_STORAGE`, the owner decision the Phase 5 section's\n  migration implements.\n- `docs/observability/SUPABASE_OBSERVABILITY_MEASURED_TRUTH.md` — Phase 1's\n  re-measured production baseline for the Supabase/Postgres observability\n  program (the master brief itself lands separately, on the sibling\n  control-plane branch).\n- `memory/features/admin-incidents.md`\n- `memory/features/admin-reliability-collector.md`\n- `memory/features/admin-selfheal.md`\n- The Bridge Premium Observability brief the \"Phase 0 truth models\" section\n  above implements — see that section for its worktree location as of\n  2026-09-03; not linked here as a repo path because it does not resolve in\n  this checkout yet (`docs:path-drift` would flag it).",
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1684,
+        "line": 1685,
         "heading": "Related Docs"
       },
       "date": null,
@@ -2521,7 +2521,7 @@
         "paths": [
           "docs/ADMIN_DASHBOARD_UPGRADE_PLAN.md",
           "docs/BI_DASHBOARD_ARCHITECTURE.md",
-          "docs/OBSERVABILITY.md",
+          "docs/observability/OBSERVABILITY.md",
           "docs/SECURITY_AUDIT.md",
           "docs/ai-system/briefs/BRIDGE_PREMIUM_OBSERVABILITY_BRIEF_2026-09-03.md",
           "docs/ai-system/CONTROL_PLANE_IMPLEMENTATION_PLAN_2026-09-03.md",
@@ -2543,7 +2543,7 @@
       "source": {
         "kind": "feature_doc",
         "path": "memory/features/admin-platform.md",
-        "line": 1713,
+        "line": 1714,
         "heading": "Related Docs"
       },
       "date": null,
@@ -6268,7 +6268,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_TRACKED_FILES",
         "confidence": "mechanical",
-        "evidence": "scripts/lib/selfheal-repair-runner.mjs, src/test/scripts/run-selfheal-repair.test.ts, src/test/scripts/selfheal-repair-launchd.test.ts — matches 0 files in `git ls-files` as of 4655c6a04ba9"
+        "evidence": "scripts/lib/selfheal-repair-runner.mjs, src/test/scripts/run-selfheal-repair.test.ts, src/test/scripts/selfheal-repair-launchd.test.ts — matches 0 files in `git ls-files` as of c7f9d4a04786"
       }
     },
     {
@@ -6294,7 +6294,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "baseball_strength_group_audit not found in src/lib/types/database.ts (baseball_strength_group_audit NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "baseball_strength_group_audit not found in src/lib/types/database.ts (baseball_strength_group_audit NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     },
     {
@@ -6320,7 +6320,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "helm_debug_record_agent_run not found in src/lib/types/database.ts (helm_debug_record_agent_run NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "helm_debug_record_agent_run not found in src/lib/types/database.ts (helm_debug_record_agent_run NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     },
     {
@@ -6346,7 +6346,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "helm_debug_list_agent_runs not found in src/lib/types/database.ts (helm_debug_list_agent_runs NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "helm_debug_list_agent_runs not found in src/lib/types/database.ts (helm_debug_list_agent_runs NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     },
     {
@@ -6372,7 +6372,7 @@
       "superseded": {
         "reason": "ABSENT_FROM_GENERATED_SCHEMA_TYPES",
         "confidence": "mechanical",
-        "evidence": "helm_debug_get_agent_run not found in src/lib/types/database.ts (helm_debug_get_agent_run NOT yet in .doc-schema-baseline.json — run npm run docs:schema-drift)"
+        "evidence": "helm_debug_get_agent_run not found in src/lib/types/database.ts (helm_debug_get_agent_run NOT yet in config/baselines/.doc-schema-baseline.json — run npm run docs:schema-drift)"
       }
     }
   ],
@@ -6603,6 +6603,18 @@
     },
     {
       "path": "supabase/migrations/20260906142000_pgaudit_ddl_role_only.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20261023151000_graveyard_orphan_admin_telemetry_tables.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20261028140700_capture_helm_bridge_feedback_bucket.sql",
+      "kind": "migration"
+    },
+    {
+      "path": "supabase/migrations/20261116190000_admin_read_policies_initplan.sql",
       "kind": "migration"
     }
   ]

@@ -92,6 +92,10 @@
     "archive",
     "scripts",
     "supabase/functions",
+    // config/review-rules/**/__test__ are deliberately broken positive fixtures for the
+    // semgrep and ast-grep rules. They lived in `.coderabbit/`, which the `**` globs above skip
+    // (dot directory); this restores that exclusion after the move.
+    "config/review-rules",
     ".next",
     // replay/fixtures/**/*.test.ts(x) are inert snapshots of a repair's own
     // regression test, copied verbatim from a historical commit — their

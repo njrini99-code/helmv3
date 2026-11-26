@@ -12,7 +12,7 @@
  * `ThemeState`) and the taxonomy (`THEME_TAXONOMY`) are LOCKED — this file
  * only produces them.
  *
- * Honesty rules (docs/fairway-coachhelm-insight-rebuild.md):
+ * Honesty rules (docs/archive/stale-root-2026-11/fairway-coachhelm-insight-rebuild.md):
  *   - `evidence.{counterfactual,standing,source_insight_ids,composite_rule_id}`
  *     are injected at RUNTIME and are NOT on the base evidence type, so we read
  *     them via the `AssembledEvidence` cast and null-guard every access.

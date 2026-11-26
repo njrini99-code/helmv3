@@ -244,7 +244,7 @@ budget — a NEW derived view over `error-budget.ts`, likewise owned by
 
 ## Related Docs
 
-- `docs/OBSERVABILITY.md`
+- `docs/observability/OBSERVABILITY.md`
 - `memory/features/admin-platform.md` — the shared shell this entry was
   carved from.
 - `memory/features/admin-incidents.md` — folds this feature's correlated

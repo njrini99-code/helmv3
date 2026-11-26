@@ -53,7 +53,7 @@ import { canonicalRootOf, topLevelOf } from '../.claude/hooks/lib/workspace-iden
 const HERE = dirname(fileURLToPath(import.meta.url));
 
 /**
- * The six contexts required on `main` as of 2026-09-06 (docs/CI_RUNBOOK.md).
+ * The six contexts required on `main` as of 2026-09-06 (docs/operations/CI_RUNBOOK.md).
  * Used only when branch protection cannot be read live — this list is a
  * fallback, not the source of truth; `fetchRequiredContexts()` always tries
  * the live API first.

@@ -33,7 +33,7 @@
  * Auth: coach must own the player via `verify_coach_owns_player` (delegated
  * to `verifyPlayerAccess`). Anonymous / denied users get `null`.
  *
- * Contract: docs/superpowers/plans/2026-04-22-insight-delivery/00-design-contract.md
+ * Contract: docs/archive/superpowers-plans/2026-04-22-insight-delivery/00-design-contract.md
  */
 
 import type { SupabaseClient } from '@supabase/supabase-js';

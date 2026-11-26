@@ -140,5 +140,5 @@ Vercel
 ## Related docs
 
 - `docs/operations/VERCEL_ADMIN_DEPLOYS_RUNBOOK.md` — admin panel + API tokens
-- `docs/CI_RUNBOOK.md` — required checks and rerun commands
+- `docs/operations/CI_RUNBOOK.md` — required checks and rerun commands
 - `scripts/vercel-ignore-build.sh` — ignored build step script

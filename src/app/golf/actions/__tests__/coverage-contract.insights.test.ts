@@ -9,7 +9,7 @@ import {
  * coverage-contract gate for `insights.ts`.
  *
  * insights.ts spans THREE batches (B7/B8/B9 — plan
- * docs/superpowers/plans/helm-bridge/waves/w15-total-coverage.md "Batch
+ * docs/archive/superpowers-plans/helm-bridge/waves/w15-total-coverage.md "Batch
  * notes"). B7 (git eb4395f52) wrapped the 16 default-tagged
  * `coachhelm_ai_engine` exports (see coverage-contract.b7.test.ts, which
  * excludes exactly the exports below). This is the FINAL slice: it wraps

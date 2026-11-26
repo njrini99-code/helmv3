@@ -515,7 +515,7 @@ always derived at read time.
 ## Related Docs
 
 - `docs/SECURITY_AUDIT.md`
-- `docs/OBSERVABILITY.md`
+- `docs/observability/OBSERVABILITY.md`
 - `memory/features/admin-platform.md` — the shared shell this entry was
   carved from.
 - `memory/features/admin-reliability-collector.md` — one of this feature's

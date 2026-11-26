@@ -29,8 +29,8 @@
  *
  * BASELINE
  *
- * .doc-path-baseline.json records the known-bad paths so this lands green and
- * ratchets down, matching .doc-schema-baseline.json and .lint-baseline.json.
+ * config/baselines/.doc-path-baseline.json records the known-bad paths so this lands green and
+ * ratchets down, matching config/baselines/.doc-schema-baseline.json and config/baselines/.lint-baseline.json.
  * The count may only shrink.
  *
  * NOTE ON REPAIR: do NOT bulk-repoint these by basename search. The audit tried
@@ -48,7 +48,7 @@
 import { readFileSync, writeFileSync, existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASELINE = '.doc-path-baseline.json';
+const BASELINE = 'config/baselines/.doc-path-baseline.json';
 const ROOTS = ['memory', '.claude/rules'];
 const SINGLES = ['CLAUDE.md', 'AGENTS.md', 'docs/REPO_MAP.md'];
 const PREFIX = '(?:src|docs|memory|scripts|supabase|e2e|tools|public)';

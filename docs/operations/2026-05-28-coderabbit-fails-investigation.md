@@ -145,7 +145,7 @@ need the service role: `src/lib/supabase/admin.ts`, `scripts/*.ts`,
 `src/lib/auth/supabase-rate-limit.ts`, `src/lib/notifications/push.ts`.
 
 **Fix:** bake the exclude list into the rule (the same exclude list
-already exists in `.coderabbit/semgrep/helmv3.yml` for the equivalent
+already exists in `config/review-rules/semgrep/helmv3.yml` for the equivalent
 semgrep rule `helmv3-service-role-outside-admin`).
 
 ### 4.4 `helmv3-no-console-log-in-src` — **INHERITED NOISE** (259 hits)
@@ -243,9 +243,9 @@ is firing at 100% but catching nothing real.
    - shellcheck SC2155 in `apply-migration.sh` + actionlint nags.
    - ruff F401/F541 in `tools/continuous-improvement/`.
 3. **P2 — Add a smoke test for the Review Gate config itself.** Run
-   `sg scan --rule .coderabbit/ast-grep/<each>.yml --validate` and
-   `semgrep --validate --config .coderabbit/semgrep/helmv3.yml` as a
-   pre-merge step on `.coderabbit/**` changes so future rule
+   `sg scan --rule config/review-rules/ast-grep/<each>.yml --validate` and
+   `semgrep --validate --config config/review-rules/semgrep/helmv3.yml` as a
+   pre-merge step on `config/review-rules/**` changes so future rule
    regressions don't silently break the gate.
 
 Until P0 lands, **today's 14 PRs all merged with a red Review Gate**

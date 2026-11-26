@@ -673,7 +673,7 @@ describe('savePartialRound — single admin_events row per failure (no duplicate
 });
 
 /**
- * Single-flight coalescing (2026-08-20, docs/audits/
+ * Single-flight coalescing (2026-08-20, docs/archive/audits-2026-08/
  * ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md): save_partial_round_atomic
  * now takes its golf_rounds row with FOR UPDATE NOWAIT and returns
  * {success:false, error:'busy'} when another save (or a submit) already holds

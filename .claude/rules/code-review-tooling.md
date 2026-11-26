@@ -1,7 +1,7 @@
 ---
 paths:
   - ".github/**"
-  - ".coderabbit/**"
+  - "config/review-rules/**"
   - ".coderabbit.yaml"
   - ".circleci/**"
   - ".gitleaks.toml"
@@ -10,7 +10,7 @@ paths:
 ## Code Review Tooling
 No AI reviewer bots run on PRs — Review Gate + CodeQL cover the same hard
 rules deterministically. `.coderabbit.yaml` is a disable stub. The custom
-rule packs under `.coderabbit/ast-grep/` and `.coderabbit/semgrep/` remain
+rule packs under `config/review-rules/ast-grep/` and `config/review-rules/semgrep/` remain
 load-bearing — CI consumes them directly; the directory name is historical.
 
 **Review Gate** (`.github/workflows/review-gate.yml`) runs ast-grep,
@@ -28,6 +28,6 @@ owns the weekly heavy jobs and two native compile checks gated by branch
 name (iOS on `main`/`release/*`/`ios/*`/`capacitor/*`; Android on those plus
 `android/*`/`ci/android-*`). See `.circleci/README.md` for setup.
 
-`docs/CI_RUNBOOK.md` classifies every check as hard-gate vs. advisory with
+`docs/operations/CI_RUNBOOK.md` classifies every check as hard-gate vs. advisory with
 rerun commands — use it when a check is red or stuck. `.gitleaks.toml`'s
 `[allowlist]` `paths` are global across every rule, not scoped to one entry.

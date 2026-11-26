@@ -202,7 +202,7 @@ function getPreservedRoundSubmitError(backupPersisted: boolean): string {
  * abort, so the window is wide. On 2026-08-20 `submit_round_atomic` committed
  * round `8e89c73e` in full, the client aborted at 10s and read that as failure,
  * and the "recovery" fallback then deleted the 18 holes and 72 shots the RPC had
- * just written. See docs/audits/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
+ * just written. See docs/archive/audits-2026-08/ROUND_SUBMIT_TIMEOUT_INVERSION_2026-08-20.md.
  *
  * A DB-returned error (57014 statement_timeout, a constraint, a deadlock) is NOT
  * indeterminate: Postgres rolled the transaction back and the rows are untouched,

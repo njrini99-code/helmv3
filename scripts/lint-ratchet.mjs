@@ -3,7 +3,7 @@
  * lint-ratchet.mjs
  *
  * Runs `npx eslint src scripts --format json`, tallies warnings per rule-id,
- * and compares them against .lint-baseline.json.
+ * and compares them against config/baselines/.lint-baseline.json.
  *
  * SCOPE NOTE (2026-08-19): `scripts/` was added. It had been covered by NO
  * gate at all — `npm run lint` is `eslint "src/**"`, tsconfig.json EXCLUDES
@@ -18,7 +18,7 @@
  *   1 — regression detected (at least one rule count > baseline)
  *
  * Flags:
- *   --update  Rewrite .lint-baseline.json from the current run and exit 0.
+ *   --update  Rewrite config/baselines/.lint-baseline.json from the current run and exit 0.
  */
 
 import { loadResults, withoutAuditRules } from './lib/lint-results.mjs';
@@ -28,7 +28,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
-const BASELINE_PATH = resolve(ROOT, '.lint-baseline.json');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.lint-baseline.json');
 
 const UPDATE = process.argv.includes('--update');
 

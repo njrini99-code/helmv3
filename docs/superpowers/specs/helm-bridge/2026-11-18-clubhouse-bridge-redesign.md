@@ -44,7 +44,7 @@ what changed. It hands Claude Duet everything about it in one paste.
 | Distinct `CH-` codes written in the source | 1,550 (1,613 counting tests) | an `rg` over `src/` |
 | Actions (tap → handler → server action → tables → outcome IDs) | **225**, with **847** outcome links | `CLUBHOUSE_ACTION_MAP.md` |
 | **Every control in the code** | **1,762 controls in 387 files**, listed by page and file in the map. **402** sit under a `CH-` code; **576** build their label at run time; **144** have no label. | `docs/clubhouse/generated/CLUBHOUSE_CLICKABLE_MAP.md` from `scripts/clubhouse/clickable-map.mjs` (`npm run clubhouse:clickables`) |
-| Controls on the design boards | **666** rows (405 works, 205 decided, 41 GAP, 13 hidden, 2 data-gap), the Sept 30 snapshot, kept for its board verdicts | `docs/clubhouse/CLICKABLES.md` |
+| Controls on the design boards | **666** rows (405 works, 205 decided, 41 GAP, 13 hidden, 2 data-gap), the Sept 30 snapshot, kept for its board verdicts | `docs/clubhouse/history/CLICKABLES.md` |
 | Audit findings | **26** (`F-0001`…): 1 S1, 12 S2, 10 S3, 3 S4, across correctness, a11y, content, touch, contrast, craft, motion and speed. Each has page, screen, role, tier, standard (`CO-01`…), observed, expected, SQL, evidence, repro, fix, files and effort. | `docs/clubhouse/audit/2026-11-13/findings.jsonl`, `scorecard.json` (grades per page family) |
 | Numbers against the database | 8 pages: each figure Clubhouse showed, the expected value from staging, the verdict and the query | `docs/clubhouse/audit/2026-11-13/numbers/P0xx-*.md` |
 | Production phone audit | 16 coach findings and 13 player findings, 15 Nov, tier C | `clubhouse-handoff/prod-audit-2026-11-15/` (untracked, canonical checkout) |

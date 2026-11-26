@@ -47,7 +47,7 @@ migration is staged, and run `gitleaks protect --staged` if `gitleaks` is
 on PATH) and `pre-push` (typecheck, eslint, the lint ratchet, sqlfluff,
 gitleaks, markdownlint, and generated-docs freshness — each scoped to only
 the files the push actually changes; see "Before you push" in
-[`docs/CI_RUNBOOK.md`](docs/CI_RUNBOOK.md)); a missing local tool is skipped,
+[`docs/operations/CI_RUNBOOK.md`](docs/operations/CI_RUNBOOK.md)); a missing local tool is skipped,
 not failed, when CI's Review Gate still covers it.
 **`core.hooksPath` lives in the SHARED git config** (`.git/config` at the
 common dir), not per-worktree — `setup-hooks.mjs` writes the *relative*

@@ -25,7 +25,7 @@ earlier observations below retain their original date and scope.
 | Design boards | [Coach - Qualifiers.html](../../../../design/handoff/Coach%20-%20Qualifiers.html) · [Qualifiers.html](../../../../design/handoff/Qualifiers.html) · [qualifiers.jsx](../../../../design/handoff/qualifiers.jsx) · [qual-core.jsx](../../../../design/handoff/qual-core.jsx) · [Coach - Qualifiers - Mobile.html](../../../../design/handoff/Coach%20-%20Qualifiers%20-%20Mobile.html) · [Qualifiers Mobile.html](../../../../design/handoff/mobile/Qualifiers%20Mobile.html) · [qual-mobile.jsx](../../../../design/handoff/qual-mobile.jsx) |
 | Code | [qualifiers](../../../../src/clubhouse/screens/qualifiers) · [qualifiers.ts](../../../../src/clubhouse/data/qualifiers.ts) · [qualifiers.tsx](../../../../src/clubhouse/routes/qualifiers.tsx) · [qualifiers.css](../../../../src/clubhouse/styles/qualifiers.css) |
 | Held plans | [qualifier-squad-and-entrants.md](../../held/features/qualifier-squad-and-entrants.md) · [qualifier-db-hardening.md](../../held/data/qualifier-db-hardening.md) |
-| Audits | [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
+| Audits | [PAGE_PERFORMANCE](../../PAGE_PERFORMANCE.md) · [AESTHETIC_AUDIT](../../history/AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Qualifiers" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |
 | Screenshots | `npm run clubhouse:shots -- gallery --page P009`, which opens `.helm/screenshots/clubhouse/P009-qualifiers/GALLERY.html` (local) |

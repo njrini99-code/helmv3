@@ -53,7 +53,7 @@ without the unwanted green control outline. Shared card depth is quieter;
 Settings form groups are flat and Home's broad/nested green shadows are removed.
 Existing layout, motion preferences, dirty/busy guards and writes are preserved.
 
-See [POPUP_AUDIT](POPUP_AUDIT.md), [DEPTH_AUDIT](DEPTH_AUDIT.md), and the
+See [POPUP_AUDIT](POPUP_AUDIT.md), [DEPTH_AUDIT](history/DEPTH_AUDIT.md), and the
 page VERIFY screenshot logs. Browser evidence covers 150 distinct popup cases,
 25 primitive stress cases, three long-description cases and five emulated
 keyboard/menu families. Physical Safari/iPhone, VoiceOver and authenticated
@@ -117,7 +117,7 @@ release nor changes production flags, held migrations or deployment.
 
 ## October 2 whole-app smoothness follow-up
 
-[UX_OPTIMIZATION.md](UX_OPTIMIZATION.md) records the custom overlay repairs,
+[UX_OPTIMIZATION.md](history/UX_OPTIMIZATION.md) records the custom overlay repairs,
 narrow controls, task continuity, request feedback and measured performance.
 The optimized a32c933e0 baseline completed 44 cases / 132 trials with 4x CPU
 throttling at 390/1280px, without blank flashes or recorded runtime problems.
@@ -1130,7 +1130,7 @@ check). The turn-on steps and rollback are in [STATUS.md](STATUS.md).
   creative, exceed expectations, take command, go full auto, complete every
   aspect of Clubhouse"). Each is cheap to reverse; production deploys,
   production migrations and the production flag stay with the owner. Plan:
-  [COMPLETION_PLAN_2026-10-18.md](COMPLETION_PLAN_2026-10-18.md).
+  [COMPLETION_PLAN_2026-10-18.md](history/COMPLETION_PLAN_2026-10-18.md).
   - D-72: Empty sections draw the shape of what will fill them
     (`ui/EmptyShape.tsx`): the real layout's rules and alignment, no invented
     content, one sentence and one action. Supersedes D-71's medallion for page
