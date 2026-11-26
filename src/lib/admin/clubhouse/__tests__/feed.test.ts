@@ -9,6 +9,10 @@ import {
   filterFeed,
   hourlyKeyOf,
   howItCounts,
+  itemHeadline,
+  feedReport,
+  fixStatus,
+  hourlyCodeOf,
   itemState,
   newCodes,
   ordinal,
@@ -26,7 +30,8 @@ import { EMPTY_NOTES, indexNotes, type BridgeNoteRow } from '../notes';
 
 const graph = fixtureGraph();
 graph.controls = { 'CTL-P007-015': { page: 'P007', label: 'Send', actions: ['ACT-P007-SEND-MESSAGE'], file: 'src/clubhouse/messages/Send.tsx' } };
-graph.ids['70603']!.catalogRow = { theySee: "Couldn't send the message" };
+// As the catalog writes it: the toast in quotes, then builder notes the headline must drop.
+graph.ids['70603']!.catalogRow = { theySee: '"Couldn\'t send the message" + Try again, in the composer (GAP-S-31)' };
 
 const fail = (over: Parameters<typeof ev>[0]) =>
   ev({ kind: 'action', outcome: 'failure', code: 'CH-7004', bridge_id: 70603, action_id: 'ACT-P007-SEND-MESSAGE', act: 'messages.send', control_id: 'CTL-P007-015', ...over });
@@ -78,7 +83,8 @@ describe('buildFeed', () => {
     const items = feed();
     expect(items.map((i) => i.key)).toEqual(['sess_coach001:7', 'sess_playr001:2', 'sess_coach001:3', 'sess_out00001:1', 'sess_ghost0001:1']);
     const top = items[0]!;
-    expect(top).toMatchObject({ theySee: "Couldn't send the message", pageName: 'Messages', controlLabel: 'Send', actionLabel: 'Send a message', role: 'coach', teamName: 'Demo University Golf', catalogCode: 'CH-7004' });
+    expect(itemHeadline(top!)).toBe('Couldn’t send the message');
+    expect(top).toMatchObject({ pageName: 'Messages', controlLabel: 'Send', actionLabel: 'Send a message', role: 'coach', teamName: 'Demo University Golf', catalogCode: 'CH-7004' });
     expect(items.find((i) => i.sessionId === 'sess_playr001')!.teamName).toBeNull();
   });
   it('numbers each person’s hits of a code oldest first; signed out counts per session', () => {
@@ -96,7 +102,7 @@ describe('buildFeed', () => {
     const items = feed();
     expect(items.find((i) => i.sessionId === 'sess_ghost0001')!.role).toBeNull();
     const s = roleSummary(items);
-    expect(s.coach).toMatchObject({ errors: 2, people: 1, top: { text: "Couldn't send the message", count: 2 } });
+    expect(s.coach).toMatchObject({ errors: 2, people: 1, top: { text: 'Couldn’t send the message', count: 2 } });
     expect(s.player).toMatchObject({ errors: 1, people: 1 });
     expect(s.signedOut).toBe(1);
     expect(s.unknownRole).toBe(1);
@@ -158,7 +164,7 @@ describe('where and trail', () => {
       ev({ session_id: 's1abcdefg', seq: 5, kind: 'action', outcome: 'success', action_id: 'ACT-P007-SEND-MESSAGE', duration_ms: 600 }),
     ];
     const lines = trailLines(events, graph, { sessionId: 's1abcdefg', seq: 4 }, 'coach');
-    expect(lines.map((l) => l.text)).toEqual(['Opened Messages', 'Opened Messages', 'Pressed Send (CTL-P007-015)', 'Failed: CH-7004 (server 42501)', 'Done: Send a message']);
+    expect(lines.map((l) => l.text)).toEqual(['Opened Messages', 'Opened Messages', 'Pressed Send (CTL-P007-015)', 'Failed: CH-7004 · Row rule refused (42501)', 'Done: Send a message']);
     expect(lines.map((l) => l.detail)).toEqual([null, 'switch 1.4 s', null, 'after 1.8 s', 'after 600 ms']);
     expect(lines[2]!.tone).toBe('coach');
     expect(lines[3]).toMatchObject({ tone: 'bad', current: true });
@@ -226,14 +232,62 @@ describe('how it counts', () => {
 
 describe('server codes', () => {
   it('in plain words, or the code itself', () => {
-    expect(serverCodeWords('42501')).toEqual({ words: 'Not allowed by a row rule', known: true });
-    expect(serverCodeWords('57014').words).toBe('The query ran too long');
-    expect(serverCodeWords('23505').words).toBe('It already exists');
-    expect(serverCodeWords('P0001').words).toBe('A database rule said no');
-    expect(serverCodeWords('PGRST116').words).toBe('Expected one row, got none');
-    expect(serverCodeWords('23P01')).toEqual({ words: 'Server code 23P01', known: false });
+    expect(serverCodeWords('42501')).toMatchObject({ words: 'Row rule refused', known: true });
+    expect(serverCodeWords('57014').words).toBe('Query timed out');
+    expect(serverCodeWords('23505').words).toBe('Already exists');
+    expect(serverCodeWords('P0001').words).toBe('Database rule said no');
+    expect(serverCodeWords('PGRST116').words).toBe('Not exactly one row');
+    expect(serverCodeWords('23P01')).toMatchObject({ words: 'Overlaps another', known: true });
+    expect(serverCodeWords('ZZ999')).toMatchObject({ words: 'Server code ZZ999', known: false });
     expect(serverCodeWords(null).known).toBe(false);
   });
 });
 
 void h;
+
+describe('fixStatus (from the 8-day hourly history, never a stored flag)', () => {
+  const rows = [
+    { code: 'CH-7004', release: 'old1', at: '2026-11-20T10:00:00.000Z' },
+    { code: 'CH-7004', release: 'old2', at: '2026-11-22T09:00:00.000Z' },
+    { code: 'CH-1201', release: 'live', at: '2026-11-26T08:00:00.000Z' },
+  ];
+  it('says unknown when the history, the code or the live release is missing', () => {
+    expect(fixStatus(null, 'CH-7004', 'live').state).toBe('unknown');
+    expect(fixStatus(rows, null, 'live').state).toBe('unknown');
+    expect(fixStatus(rows, 'CH-7004', null).state).toBe('unknown');
+  });
+  it('a code only in the live release is new there', () => {
+    expect(fixStatus(rows, 'CH-1201', 'live')).toMatchObject({ state: 'new-in-live', tone: 'bad' });
+  });
+  it('a code in the live release and earlier ones is still failing', () => {
+    expect(fixStatus([...rows, { code: 'CH-7004', release: 'live', at: '2026-11-26T09:00:00.000Z' }], 'CH-7004', 'live')).toMatchObject({ state: 'still-failing', tone: 'bad' });
+  });
+  it('a code absent from the live release points to fixed, and says it needs real use to be sure', () => {
+    const f = fixStatus(rows, 'CH-7004', 'live');
+    expect(f).toMatchObject({ state: 'not-seen-in-live', tone: 'good' });
+    expect(f.words).toContain('last failed in old2 (2026-11-22)');
+    expect(f.words).toContain('only once the live release has had real use');
+  });
+  it('the failure on screen counts: a live-release failure is never "not seen in live" or "no history"', () => {
+    expect(fixStatus([], 'CH-9999', 'live', { release: 'live', at: '2026-11-26T10:00:00.000Z' })).toMatchObject({ state: 'new-in-live', tone: 'bad' });
+    expect(fixStatus(rows, 'CH-7004', 'live', { release: 'live', at: '2026-11-26T10:00:00.000Z' })).toMatchObject({ state: 'still-failing', tone: 'bad' });
+    expect(fixStatus(rows, 'CH-7004', 'live', { release: 'old2', at: '2026-11-22T09:00:00.000Z' }).state).toBe('not-seen-in-live');
+  });
+  it('keys on the code the hourly store counts under: the sent code, else the catalog code', () => {
+    expect(hourlyCodeOf({ code: 'CH-1000', catalogCode: 'CH-7004' })).toBe('CH-1000');
+    expect(hourlyCodeOf({ code: null, catalogCode: 'CH-7004' })).toBe('CH-7004');
+  });
+  it('no rows for the code is no history, not fixed', () => {
+    expect(fixStatus(rows, 'CH-9999', 'live').state).toBe('no-history');
+  });
+});
+
+describe('feedReport', () => {
+  it('names the likely cause from fixed words, never the raw message', () => {
+    const items = feed().map((i, n) => (n === 0 ? { ...i, serverCode: null, message: 'Load failed for user 3f9a…' } : i));
+    const text = feedReport(items, roleSummary(items), '24h', 'pipe: live');
+    expect(text).toContain('| Likely cause |');
+    expect(text).toContain('Connection dropped');
+    expect(text).not.toContain('3f9a');
+  });
+});

@@ -78,8 +78,10 @@ export default async function TodaySpacePage() {
       return heldCount(rows);
     }),
     settleRead('today.clubhouse', async () => {
-      const [hourly, pipe] = await Promise.all([readHourly({ sinceIso: new Date(midnight).toISOString() }), readPipe(now)]);
+      const [hourly, pipe] = await Promise.all([readHourly({ sinceIso: new Date(midnight).toISOString(), failuresOnly: true }), readPipe(now)]);
       if (hourly.state === 'error') throw new Error(hourly.error ?? 'clubhouse_signal_hourly read failed');
+      // A cut-off read is not today's count: show it as unread ("at least"), never as a complete, possibly clean total.
+      if (hourly.truncated) throw new Error('clubhouse_signal_hourly: more failure rows today than one read keeps');
       return clubhouseToday(hourly.data, pipe);
     }),
     settleRead('today.activity', async () => {
@@ -97,7 +99,7 @@ export default async function TodaySpacePage() {
   const headline = todayHeadline({ teams, rounds, release, needs, reading });
 
   const t = teams.ok ? teams.data : null;
-  const teamTone: Tone = t && t.total > 0 && t.activeThisWeek / t.total >= 1 / 3 ? 'good' : 'watch';
+  const teamTone: Tone = t && t.total > 0 && t.activeNow / t.total >= 1 / 3 ? 'good' : 'watch';
   const rel = release.ok ? release.data : null;
   const relWord = rel ? RELEASE_WORD[rel.state] : null;
   const f = features.ok ? features.data : null;
@@ -106,10 +108,10 @@ export default async function TodaySpacePage() {
   const tiles = [
     {
       label: 'Teams active',
-      value: t ? `${t.activeThisWeek}/${t.total}` : null,
-      sub: 'used Helm in the last 7 days',
+      value: t ? `${t.activeNow}/${t.total}` : null,
+      sub: 'did something in the last 2 days, counted as on People',
       tone: teamTone,
-      meter: t ? { value: t.activeThisWeek, max: t.total, label: `${t.activeThisWeek} of ${t.total} teams active` } : undefined,
+      meter: t ? { value: t.activeNow, max: t.total, label: `${t.activeNow} of ${t.total} teams active` } : undefined,
     },
     {
       label: 'Features used today',
@@ -176,7 +178,7 @@ export default async function TodaySpacePage() {
         }
         aside={
           <span data-br={BR.today.copy}>
-            <CopyReportButton report={report} variant="labeled" label="Copy report" />
+            <CopyReportButton report={report} variant="labeled" label="Copy report" className="bs-copy" />
           </span>
         }
       />

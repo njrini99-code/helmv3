@@ -26,12 +26,12 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | B18 | One team | /admin/spaces/people/[teamId] | 11 |
 | B19 | Error feed | /admin/spaces/reliability | 15 |
 | B20 | Counting rules | /admin/spaces/reliability/rules | 5 |
-| B21 | Speed | /admin/spaces/reliability/speed | 11 |
+| B21 | Speed | /admin/spaces/reliability/speed | 12 |
 | B22 | Product | /admin/spaces/product | 6 |
 | B23 | Ship | /admin/spaces/ship | 6 |
 | B24 | Desk | /admin/spaces/desk | 6 |
 
-242 codes in all.
+243 codes in all.
 
 ## B01 Pulse
 
@@ -357,6 +357,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-2105 | Database error row | Opens the codes that carried that server code | `BR.speed.dbRow` |
 | BR-2106 | Copy report | Copies the speed table as Markdown | `BR.speed.copy` |
 | BR-2107 | Window switch | Reads the last 24 hours, 7 days or 30 days | `BR.speed.window` |
+| BR-2108 | Slow query row | Opens the Database tab's performance view | `BR.speed.queryRow` |
 | BR-2190 | Loading | Shown while the space reads | `BR.speed.loading` |
 | BR-2191 | Empty | Nothing to show, said plainly | `BR.speed.empty` |
 | BR-2192 | Failed | The read failed; never shown as all clear | `BR.speed.failed` |

@@ -17,6 +17,10 @@ import {
   feedHref,
   feedReport,
   filterFeed,
+  fixStatus,
+  hourlyCodeOf,
+  itemExplanation,
+  itemHeadlineQuoted,
   hourlyKeyOf,
   howItCounts,
   itemHeadline,
@@ -35,6 +39,7 @@ import {
 } from '@/lib/admin/clubhouse/feed';
 import { readErrorLogForSession, readEventByKey, readFailureCodeReleases, readFailures, readSessionsByIds, readTeamNames } from '@/lib/admin/clubhouse/feed-server';
 import { readNotes, readPipe, readSessionEvents } from '@/lib/admin/clubhouse/live';
+import { OWNER_TONE } from '@/lib/admin/clubhouse/explain';
 import { PLATFORM_WORDS, type LiveState } from '@/lib/admin/clubhouse/live-model';
 import { EMPTY_NOTES } from '@/lib/admin/clubhouse/notes';
 import { RULE_LINES } from '@/lib/admin/clubhouse/rule-book';
@@ -42,6 +47,7 @@ import { liveRef } from '@/lib/admin/clubhouse/screens';
 import { CopyReportButton } from '@/app/admin/_components/CopyReportButton';
 import { LocalTime } from '@/app/admin/_components/LocalTime';
 import { Pill, RoleBadge, SpaceHeader, SpaceRoot, SpaceState } from '../_ui/ui';
+import { SignalNotThere, ReadFailed } from '../_ui/states';
 import { ExpectedNote, WatchControl } from '@/app/admin/clubhouse/_components/CodeNotes';
 import { ErrorDetail, noteBlocker } from './_components/ErrorDetail';
 import { LinkGroup, ReliabilityTabs, PipeTruth } from './_components/shared';
@@ -88,6 +94,13 @@ function RoleCardLink({ card, scope }: { card: RoleCard; scope: FeedScope }) {
   );
 }
 
+/** The likely cause in two words, so the list explains itself before a row is opened. */
+function CauseChip({ item }: { item: FeedItem }) {
+  const e = itemExplanation(item);
+  if (e.basis === 'nothing') return null;
+  return <span className={`rl-cause bs-tone-${OWNER_TONE[e.owner]}`}>{e.label}</span>;
+}
+
 function FeedRow({ item, scope, selected }: { item: FeedItem; scope: FeedScope; selected: boolean }) {
   return (
     <Link
@@ -99,11 +112,12 @@ function FeedRow({ item, scope, selected }: { item: FeedItem; scope: FeedScope; 
       <span className="rl-time bs-mono">
         <LocalTime iso={item.at} variant="time" />
       </span>
-      <span className="rl-badge">{item.role ? <RoleBadge role={item.role} /> : <Pill tone="muted">Role not read</Pill>}</span>
+      <span className="rl-badge">{item.role ? <RoleBadge role={item.role} /> : <Pill tone="muted">Role unknown</Pill>}</span>
       <span className="rl-main" style={{ minWidth: 0 }}>
         <span className="rl-saw">
-          <q>{itemHeadline(item)}</q>
+          {itemHeadlineQuoted(item) ? <q>{itemHeadline(item)}</q> : <span>{itemHeadline(item)}</span>}
           {item.code ? <span className="bs-chip">{item.code}</span> : null}
+          <CauseChip item={item} />
         </span>
         <span className="rl-where" style={{ display: 'block' }}>
           {item.pageName}
@@ -141,9 +155,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
       <SpaceRoot br={BR.feed.failed}>
         {header}
         <SpaceHeader eyebrow="Reliability · error feed" title="Every error a person saw," second="where, on which button." secondTone="ink" />
-        <SpaceState br={BR.feed.failed} title="The Bridge map could not be read.">
-          docs/clubhouse/generated/bridge-graph.json is missing from this deploy, so codes, pages and buttons cannot be named.
-        </SpaceState>
+        <ReadFailed br={BR.feed.failed} what="The Bridge map" why="docs/clubhouse/generated/bridge-graph.json is missing from this deploy, so codes, pages and buttons cannot be named" />
       </SpaceRoot>
     );
   }
@@ -202,7 +214,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
       code,
       expected,
       watched: Boolean(watching),
-      isNew: selected.state === 'new' || (release !== null && selected.release === release && Boolean(selected.catalogCode && fresh.has(selected.catalogCode))),
+      isNew: selected.state === 'new' || (release !== null && selected.release === release && Boolean(hourlyCodeOf(selected) && fresh.has(hourlyCodeOf(selected)!))),
       errorLog: errorLog.state === 'ok' ? { state: 'ok', rows: errorLog.data } : { state: errorLog.state === 'no-signal' ? 'no-signal' : 'error' },
       r02People: RULE_LINES.newAfterReleasePeople,
     });
@@ -222,6 +234,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
         sameServer={selected.serverCode ? { same: sameCode.filter((i) => i.serverCode === selected!.serverCode).length, of: sameCode.length } : null}
         notes={{ state: notesState, expected, watching }}
         outsideWindow={outsideWindow}
+        fix={fixStatus(baselineComplete ? releaseRows.data : null, hourlyCodeOf(selected), release, { release: selected.release, at: selected.at })}
         noteControls={{
           watch: <WatchControl id={noteId} watching={watching} state={notesState} why={why} />,
           expected: <ExpectedNote id={noteId} note={expected} by={null} state={notesState} why={why} />,
@@ -278,7 +291,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
                 </Link>
               )
               : 'Signed out: none'}
-            {summary.unknownRole ? ` · ${summary.unknownRole} whose session row could not be read` : ''}
+            {summary.unknownRole ? ` · ${summary.unknownRole} with the role unknown (no session row was found)` : ''}
           </p>
         </div>
       </div>
@@ -289,20 +302,17 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
           {all.length} {all.length === 1 ? 'failure' : 'failures'} {windowWords(scope.w)} · {scope.pf === 'all' ? 'every device' : PLATFORM_WORDS[scope.pf]} · from the session store (clubhouse_session_events), every failure kept
         </span>
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps: the oldest are not shown</Pill> : null}
+        {!baselineComplete ? <Pill tone="watch">New in this release: unknown (the 8-day history could not be read whole), so nothing is marked new</Pill> : null}
         {notes.state === 'error' ? <p className="bs-panel-note bs-tone-watch" style={{ margin: 0 }}>The Bridge notes could not be read: nothing shows as Expected or Watching.</p> : null}
         <span data-br={BR.feed.copy}>
-          <CopyReportButton report={feedReport(items, summary, scope.w, pipe.label)} variant="labeled" size="sm" label="Copy report" />
+          <CopyReportButton report={feedReport(items, summary, scope.w, pipe.label)} variant="labeled" size="sm" label="Copy report" className="bs-copy" />
         </span>
       </PipeTruth>
 
       {failures.state === 'error' ? (
-        <SpaceState br={BR.feed.failed} title="The failures could not be read.">
-          Nothing here is an all clear. {failures.errors[0] ?? ''} Reload to try again.
-        </SpaceState>
+        <ReadFailed br={BR.feed.failed} what="The failures" why={failures.errors[0]} action="admin.spaces.reliability.feed" />
       ) : failures.state === 'no-signal' ? (
-        <SpaceState br={BR.feed.noSignal} title="No signal yet.">
-          The session store is not there yet, so no error can be listed and nothing here is an all clear. {pipe.label}.
-        </SpaceState>
+        <SignalNotThere br={BR.feed.noSignal} why={`The session store is not there yet, so no error can be listed (${pipe.label}).`} />
       ) : !items.length ? (
         pipe.untrusted ? (
           <SpaceState br={BR.feed.noSignal} title={`No errors arrived ${windowWords(scope.w)}, but the pipe cannot vouch for it.`}>

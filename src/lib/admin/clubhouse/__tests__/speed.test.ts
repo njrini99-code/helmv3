@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { fixtureGraph } from './fixtures';
 import { U, at, h } from './fixtures-live';
-import { buttonSpeed, dbErrors, pageSpeed, parseSpeedScope, slowestPage, speedHref, speedRows, switchMeasured, DEFAULT_SPEED } from '../speed';
+import { buttonSpeed, dbErrors, pageSpeed, parseSpeedScope, slowQueries, slowestPage, speedHref, speedRows, switchMeasured, DEFAULT_SPEED } from '../speed';
 import type { FeedItem } from '../feed';
 
 const graph = fixtureGraph();
@@ -65,8 +65,35 @@ describe('dbErrors', () => {
   it('groups by server code with the role split and the action’s tables from the map', () => {
     const out = dbErrors([item({}), item({ role: 'player' }), item({ role: 'signed-out', serverCode: '57014', action: null }), item({ serverCode: null })], graph);
     expect(out).toEqual([
-      expect.objectContaining({ code: '42501', words: 'Not allowed by a row rule', total: 2, coach: 1, player: 1, signedOut: 0, tables: ['golf_messages'], actions: ['Send a message'] }),
+      expect.objectContaining({ code: '42501', words: 'Row rule refused', total: 2, coach: 1, player: 1, signedOut: 0, tables: ['golf_messages'], actions: ['Send a message'] }),
       expect.objectContaining({ code: '57014', total: 1, signedOut: 1, tables: [] }),
     ]);
+  });
+});
+
+describe('slowQueries', () => {
+  const row = (o: Partial<import('@/lib/admin/database/performance').StatDeltaRow>): import('@/lib/admin/database/performance').StatDeltaRow => ({
+    id: 1, sampledAt: '2026-11-26T18:00:00Z', queryid: 'q', safeQueryClass: 'select golf_rounds', sourceClass: 'helm_product',
+    callsDelta: 10, totalExecMsDelta: 100, meanExecMsWindow: 10, maxExecMsObserved: 40, rowsDelta: 5, regressionFlags: [], baselineStatus: 'established', ...o,
+  });
+  it('keeps only the app\'s own queries, slowest mean first, and flags regressions', () => {
+    const out = slowQueries([
+      row({ queryid: 'a', safeQueryClass: 'fast', meanExecMsWindow: 5 }),
+      row({ queryid: 'b', safeQueryClass: 'slow', meanExecMsWindow: 900, regressionFlags: ['mean_doubled'] }),
+      row({ queryid: 'c', safeQueryClass: 'realtime', sourceClass: 'supabase_realtime', meanExecMsWindow: 5000 }),
+      row({ queryid: 'd', safeQueryClass: 'no mean', meanExecMsWindow: null }),
+    ]);
+    expect(out.map((q) => [q.queryClass, q.meanMs, q.regressed])).toEqual([['slow', 900, true], ['fast', 5, false]]);
+  });
+  it('keys and names each query by its own id, since every app query shares one workload label', () => {
+    const out = slowQueries([row({ queryid: '-8234567890123456789', meanExecMsWindow: 9 }), row({ queryid: '1234567890123456789', meanExecMsWindow: 8 })]);
+    expect(out.map((q) => [q.queryid, q.label, q.queryClass])).toEqual([
+      ['-8234567890123456789', 'q·23456789', 'select golf_rounds'],
+      ['1234567890123456789', 'q·23456789', 'select golf_rounds'],
+    ]);
+    expect(new Set(out.map((q) => q.queryid)).size).toBe(2);
+  });
+  it('caps the list', () => {
+    expect(slowQueries(Array.from({ length: 20 }, (_, i) => row({ queryid: String(i), meanExecMsWindow: i })), 3)).toHaveLength(3);
   });
 });

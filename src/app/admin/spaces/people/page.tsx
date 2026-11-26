@@ -20,6 +20,7 @@ import {
 } from '@/lib/admin/data/people-space-model';
 import { CopyReportButton } from '../../_components/CopyReportButton';
 import { Panel, SpaceHeader, SpaceRoot, SpaceState, toneClass } from '../_ui/ui';
+import { Incomplete, ReadFailed, listWords } from '../_ui/states';
 import { Ring, SignedIn, Spark, SportChip, StatePill, STATE_TONE, TestChip } from './_parts';
 
 export const metadata: Metadata = { title: 'People' };
@@ -48,9 +49,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
     return (
       <SpaceRoot br={BR.teams.failed}>
         <SpaceHeader eyebrow="People · teams by activity" title="Teams could not be read." />
-        <SpaceState br={BR.teams.failed} title="The team read failed, so nothing here is all clear.">
-          {e instanceof Error ? e.message : String(e)}. Reload; if it persists, check error_logs for admin.people-space.
-        </SpaceState>
+        <ReadFailed br={BR.teams.failed} what="The teams" why={e instanceof Error ? e.message : String(e)} action="admin.people-space" />
       </SpaceRoot>
     );
   }
@@ -60,15 +59,20 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
     return (
       <SpaceRoot br={failed ? BR.teams.failed : BR.teams.empty}>
         <SpaceHeader eyebrow="People · teams by activity" title={failed ? 'Teams could not be read.' : 'No teams yet.'} />
-        <SpaceState br={failed ? BR.teams.failed : BR.teams.empty} title={failed ? 'The team read failed, so nothing here is all clear.' : 'No golf or baseball team exists yet.'}>
-          {failed ? `Could not read: ${result.degraded.join(', ')}.` : 'A team appears here as soon as a coach creates one.'}
-        </SpaceState>
+        {failed ? (
+          <ReadFailed br={BR.teams.failed} what="The teams" why={`${listWords(result.degraded)} failed`} action="admin.people-space" />
+        ) : (
+          <SpaceState br={BR.teams.empty} title="No golf or baseball team exists yet.">
+            A team appears here as soon as a coach creates one.
+          </SpaceState>
+        )}
       </SpaceRoot>
     );
   }
 
   const all = result.rows;
   const shown = sortTeams(filterTeams(all, params), params.sort);
+  const rosterDown = rosterDownSports(result.degraded);
   const headline = teamsHeadline(shown);
   const counts = stateCounts(shown);
   const cards = needsCards(shown);
@@ -86,14 +90,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
         aside={<StateStrip counts={counts} rows={shown} />}
       />
 
-      {result.degraded.length > 0 ? (
-        <Panel tone="watch" br={BR.teams.failed} title="Incomplete this load">
-          <p className="bs-panel-note" style={{ padding: '0 22px 18px', margin: 0 }}>
-            {result.degraded.join(', ')} could not be read, so the counts below understate what happened. Reload; if it persists, check error_logs for
-            admin.people-space.
-          </p>
-        </Panel>
-      ) : null}
+      <Incomplete br={BR.teams.failed} sources={result.degraded} action="admin.people-space" />
 
       {cards.length > 0 ? (
         <section className="bp-needs" aria-label="Teams that need you">
@@ -126,7 +123,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
             {params.hideTest ? 'Show test and demo' : 'Hide test and demo'}
           </Link>
           <span data-br={BR.teams.copy} style={{ marginLeft: 'auto' }}>
-            <CopyReportButton report={teamsReport(shown, now)} variant="labeled" size="sm" label="Copy team list" />
+            <CopyReportButton report={teamsReport(shown, now)} variant="labeled" size="sm" label="Copy team list" className="bs-copy" />
           </span>
         </div>
 
@@ -139,7 +136,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
             </SpaceState>
           </div>
         ) : (
-          <div>
+          <div className="bs-stack-scope">
             <div className="bp-list-head" aria-hidden="true">
               <span>#</span>
               <span>Team</span>
@@ -151,7 +148,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
               <span>State</span>
             </div>
             {shown.map((row, i) => (
-              <TeamRow key={row.teamId} row={row} rank={i + 1} now={now} />
+              <TeamRow key={row.teamId} row={row} rank={i + 1} now={now} rosterFailed={rosterDown.has(row.sport)} />
             ))}
           </div>
         )}
@@ -170,7 +167,7 @@ function StateStrip({ counts, rows }: { counts: Record<TeamState, number>; rows:
   const order: TeamState[] = ['active', 'slipping', 'dormant', 'never'];
   const blocks = [...rows].sort((a, b) => order.indexOf(a.state) - order.indexOf(b.state));
   return (
-    <div className="bs-panel" style={{ minWidth: 300, overflow: 'hidden' }}>
+    <div className="bs-panel bp-strip-panel">
       <div className="bp-states">
         {order.map((s) => (
           <div key={s} className="bp-state">
@@ -235,7 +232,12 @@ function NeedsCardView({ card, now }: { card: NeedsCard; now: Date }) {
   );
 }
 
-function TeamRow({ row, rank, now }: { row: TeamActivityRow; rank: number; now: Date }) {
+/** Sports whose roster or staff read failed: their teams' empty rosters are unknown, not empty. */
+function rosterDownSports(degraded: readonly string[]): Set<string> {
+  return new Set(degraded.filter((d) => / (roster|staff)$/.test(d)).map((d) => d.slice(0, d.indexOf(' '))));
+}
+
+function TeamRow({ row, rank, now, rosterFailed }: { row: TeamActivityRow; rank: number; now: Date; rosterFailed: boolean }) {
   const roundWord = row.sport === 'golf' ? 'rounds' : 'games';
   return (
     <Link href={row.href} className="bp-team" data-br={BR.teams.row}>
@@ -255,12 +257,12 @@ function TeamRow({ row, rank, now }: { row: TeamActivityRow; rank: number; now: 
         <span>
           <span className="bp-big">{row.people === 0 ? '—' : `${row.active7d} / ${row.people}`}</span>
           <span className="bp-sub" style={{ display: 'block' }}>
-            {row.people === 0 ? 'nobody on the team' : `${row.active30d} in 30 days`}
+            {row.people === 0 ? (rosterFailed ? 'roster not read' : 'nobody on the team') : `${row.active30d} in 30 days`}
           </span>
         </span>
       </span>
       <span className="bp-c-seen">
-        <SignedIn at={row.lastSignIn?.at ?? null} role={row.lastSignIn?.role ?? null} now={now} empty={row.people === 0 ? 'nobody to sign in' : 'no sign-in recorded'} />
+        <SignedIn at={row.lastSignIn?.at ?? null} role={row.lastSignIn?.role ?? null} now={now} empty={row.people === 0 ? (rosterFailed ? 'roster not read' : 'nobody to sign in') : 'no sign-in recorded'} />
       </span>
       <span className="bp-c-spark">
         <Spark values={row.activity} tone={STATE_TONE[row.state] === 'muted' ? 'muted' : STATE_TONE[row.state]} label={`${row.name}: ${row.activity.reduce((s, v) => s + v, 0)} activity ticks in 30 days`} />

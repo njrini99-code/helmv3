@@ -8,6 +8,7 @@ import { buildFeed, feedHref, DEFAULT_FEED, type FeedWindow } from '@/lib/admin/
 import { readFailures } from '@/lib/admin/clubhouse/feed-server';
 import { readHourly, readPipe } from '@/lib/admin/clubhouse/live';
 import { msText } from '@/lib/admin/clubhouse/live-model';
+import { describeServerCode, isMigrationMissingCode } from '@/lib/admin/server-codes';
 import { EMPTY_NOTES } from '@/lib/admin/clubhouse/notes';
 import { INP_LINE_MS, LCP_LINE_MS, SLOW_SAVE_LINE_MS } from '@/lib/admin/clubhouse/rules';
 import { clubhouseHref, markdownTable } from '@/lib/admin/clubhouse/screens';
@@ -29,9 +30,12 @@ import {
   speedRows,
   switchMeasured,
   type SpeedWindow,
+  slowQueries,
 } from '@/lib/admin/clubhouse/speed';
 import { CopyReportButton } from '@/app/admin/_components/CopyReportButton';
+import { fetchQueryPerformance } from '@/lib/admin/database/performance';
 import { Meter, Panel, Pill, SpaceHeader, SpaceRoot, SpaceState, Stat, type Tone } from '../../_ui/ui';
+import { SignalNotThere, ReadFailed } from '../../_ui/states';
 import { LinkGroup, ReliabilityTabs, PipeTruth } from '../_components/shared';
 
 export const metadata: Metadata = { title: 'Reliability · Speed' };
@@ -40,11 +44,17 @@ export const dynamic = 'force-dynamic';
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
+// The feed's longest window is 7 days, so a 30-day Speed view links to the last 7 days and says so on the link.
 const FEED_WINDOW_FOR: Record<SpeedWindow, FeedWindow> = { '24h': '24h', '7d': '7d', '30d': '7d' };
 
 function lineTone(ms: number | null, line: number): Tone {
   if (ms === null) return 'muted';
   return ms > line ? 'bad' : ms > line * 0.8 ? 'watch' : 'good';
+}
+
+/** The copy report says what the page says: a missing number is "not measured yet", never a dash. */
+function measured(ms: number | null): string {
+  return ms === null ? 'not measured yet' : msText(ms);
 }
 
 function MeterCell({ ms, line, label }: { ms: number | null; line: number; label: string }) {
@@ -70,11 +80,27 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
   const graph = loadBridgeGraph();
   const now = Date.now();
   const since = new Date(now - SPEED_WINDOW_MS[scope.w]).toISOString();
-  const [pipe, hourly, failures] = await Promise.all([readPipe(now), readHourly({ sinceIso: since, kinds: ['view', 'vital', 'action'] }), readFailures(since)]);
+  const [pipe, hourly, failures, queryPerf] = await Promise.all([
+    readPipe(now),
+    // Twice the default cap: a 7- or 30-day window can hold more rows than a day's read. Past it, the page says exactly
+    // which hours it covers instead of calling the result the whole window.
+    readHourly({ sinceIso: since, kinds: ['view', 'vital', 'action'], cap: 12_000 }),
+    readFailures(since),
+    // Per-query time is the database's own (helm_debug.db_stat_deltas, every 15 minutes), not a Clubhouse signal, so it
+    // shows whatever the pipe says. A thrown read is a failed panel, never an empty one.
+    fetchQueryPerformance().catch((e: unknown) => ({ status: 'failed' as const, data: null, error: e instanceof Error ? e.message : String(e) })),
+  ]);
+  const queries = queryPerf.status === 'ok' && queryPerf.data ? slowQueries(queryPerf.data.latest) : null;
+  const queriesAt = queryPerf.status === 'ok' && queryPerf.data ? queryPerf.data.latestSampledAt : null;
   if (hourly.state === 'error' || failures.state === 'error') {
     await logServerError('Reliability speed: a read failed', { action: 'admin.spaces.reliability.speed', route: '/admin/spaces/reliability/speed', feature: 'admin_dashboard' });
   }
 
+  // Rows come newest first, so a cut-off read covers from its oldest hour to now, not the whole window.
+  const coveredFrom = hourly.truncated && hourly.data.length ? hourly.data.reduce((m, r) => (r.bucket_hour < m ? r.bucket_hour : m), hourly.data[0]!.bucket_hour) : null;
+  const windowText = coveredFrom
+    ? `since ${new Date(coveredFrom).toISOString().slice(5, 16).replace('T', ' ')} UTC only (the last ${SPEED_WINDOW_LABEL[scope.w]} held more rows than one read keeps)`
+    : `last ${SPEED_WINDOW_LABEL[scope.w]}`;
   const rows = speedRows(hourly.data, scope);
   const pages = graph ? pageSpeed(rows, graph) : [];
   const buttons = graph ? buttonSpeed(rows, graph) : [];
@@ -88,13 +114,13 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
   const who = scope.role === 'coach' ? 'coaches' : scope.role === 'player' ? 'players' : 'everyone';
 
   const report = [
-    `# Speed, last ${SPEED_WINDOW_LABEL[scope.w]} · ${SPEED_ROLE_LABEL[scope.role]} · ${SPEED_DEVICE_LABEL[scope.device]}`,
+    `# Speed, ${windowText} · ${SPEED_ROLE_LABEL[scope.role]} · ${SPEED_DEVICE_LABEL[scope.device]}`,
     '',
     `- ${pipe.label}`,
     '',
     markdownTable(
       ['Page', 'Load (LCP p75)', 'Tap (INP p75)', 'Switch to first paint p75', 'Views'],
-      pages.map((p) => [`${p.name} (${p.page})`, msText(p.lcp), msText(p.inp), p.switchP75 === null ? 'not measured yet' : msText(p.switchP75), p.views]),
+      pages.map((p) => [`${p.name} (${p.page})`, measured(p.lcp), measured(p.inp), measured(p.switchP75), p.views]),
     ),
     '',
     markdownTable(['Button', 'p50', 'p95', 'Tries'], buttons.map((b) => [b.label, msText(b.p50), msText(b.p95), b.tries])),
@@ -120,24 +146,20 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
         <LinkGroup label="Window" br={BR.speed.window} options={SPEED_WINDOWS.map((w) => ({ key: w, label: SPEED_WINDOW_LABEL[w], href: speedHref(scope, { w }), active: scope.w === w }))} />
       </div>
       <PipeTruth pipe={pipe}>
-        <span>Field data from real users, last {SPEED_WINDOW_LABEL[scope.w]}; not the W, S and D lab tiers. A p75 reads the upper edge of its bucket, so it can read high.</span>
-        {hourly.truncated ? <Pill tone="watch">More hourly rows than one read keeps: the oldest hours are left out</Pill> : null}
+        <span>Field data from real users, {windowText}; not the W, S and D lab tiers. A p75 reads the upper edge of its bucket, so it can read high.</span>
+        {hourly.truncated ? <Pill tone="watch">Partial window: the numbers below cover fewer hours than the window names</Pill> : null}
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps</Pill> : null}
         <span data-br={BR.speed.copy}>
-          <CopyReportButton report={report} variant="labeled" size="sm" label="Copy report" />
+          <CopyReportButton report={report} variant="labeled" size="sm" label="Copy report" className="bs-copy" />
         </span>
       </PipeTruth>
 
       {!graph ? (
-        <SpaceState br={BR.speed.failed} title="The Bridge map could not be read.">Pages and buttons cannot be named without it.</SpaceState>
+        <ReadFailed br={BR.speed.failed} what="The Bridge map" why="docs/clubhouse/generated/bridge-graph.json is missing from this deploy, so pages and buttons cannot be named" />
       ) : hourly.state === 'error' ? (
-        <SpaceState br={BR.speed.failed} title="The speed counters could not be read.">
-          Nothing here is an all clear. {hourly.error ?? ''} Reload to try again.
-        </SpaceState>
+        <ReadFailed br={BR.speed.failed} what="The speed counters" why={hourly.error} />
       ) : hourly.state === 'no-signal' ? (
-        <SpaceState br={BR.speed.noSignal} title="No signal yet.">
-          The hourly counters are not there yet, so nothing can be timed. {pipe.label}.
-        </SpaceState>
+        <SignalNotThere br={BR.speed.noSignal} why={`The hourly counters are not there yet, so nothing can be timed (${pipe.label}).`} />
       ) : !rows.length && pipe.untrusted ? (
         <SpaceState br={BR.speed.noSignal} title={`Nothing was timed for ${who} in this window, and the pipe cannot vouch for it.`}>
           {pipe.label}.
@@ -148,7 +170,7 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
         </SpaceState>
       ) : (
         <>
-          <div className="bs-grid">
+          <div className="bs-grid bs-grid-stats">
             <Stat label="Slowest page to open" value={worstLcp ? msText(worstLcp.lcp) : null} sub={worstLcp ? `${worstLcp.name} · load p75` : undefined} tone={lineTone(worstLcp?.lcp ?? null, LCP_LINE_MS)} />
             <Stat label="Slowest tap response" value={worstInp ? msText(worstInp.inp) : null} sub={worstInp ? `${worstInp.name} · tap p75` : undefined} tone={lineTone(worstInp?.inp ?? null, INP_LINE_MS)} />
             <Stat
@@ -169,33 +191,36 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
             title={`Every page · ${who}`}
             note={`Load = opening the page cold (LCP). Tap = the slowest response to a tap (INP). The line is where R-12 raises it on iPhone. Switch to first paint = from an in-app link or Back to the new page's first paint.`}
           >
-            <div className="bs-scroll-x">
-              <table className="bs-table">
+            <div className="bs-scroll-x bs-stack-scope">
+              <table className="bs-table bs-table-stack rl-speed-table">
                 <thead>
                   <tr>
                     <th scope="col">Page</th>
                     <th scope="col">Load · line {msText(LCP_LINE_MS)}</th>
                     <th scope="col">Tap · line {msText(INP_LINE_MS)}</th>
                     <th scope="col">Switch to first paint</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Views</th>
+                    <th scope="col" className="bs-num">Views</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pages.map((p) => (
                     <tr key={p.page}>
-                      <td style={{ minWidth: 160 }}>
+                      <td className="bs-cell-head rl-c-page">
                         <Link href={clubhouseHref.page(p.page)} className="bs-link" data-br={BR.speed.pageRow}>
                           {p.name}
                         </Link>{' '}
                         <span className="bs-mono bs-tone-muted">{p.page}</span>
                       </td>
-                      <td style={{ minWidth: 200 }}>
+                      <td className="bs-cell-wide rl-c-meter">
+                        <span className="bs-cell-label">Load · line {msText(LCP_LINE_MS)}</span>
                         <MeterCell ms={p.lcp} line={LCP_LINE_MS} label="Load p75" />
                       </td>
-                      <td style={{ minWidth: 200 }}>
+                      <td className="bs-cell-wide rl-c-meter">
+                        <span className="bs-cell-label">Tap · line {msText(INP_LINE_MS)}</span>
                         <MeterCell ms={p.inp} line={INP_LINE_MS} label="Tap p75" />
                       </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td className="bs-cell-half rl-c-switch">
+                        <span className="bs-cell-label">Switch to first paint</span>
                         {p.switchP75 === null ? (
                           <span className="rl-none">not measured yet</span>
                         ) : (
@@ -204,7 +229,10 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
                           </span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'right' }}>{p.views}</td>
+                      <td className="bs-cell-half bs-num">
+                        <span className="bs-cell-label">Views</span>
+                        {p.views}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -262,6 +290,7 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
                       key={d.code}
                       href={feedHref({ ...DEFAULT_FEED, w: FEED_WINDOW_FOR[scope.w], role: scope.role, pf: scope.device }, { sc: d.code })}
                       className="rl-db"
+                      title={scope.w === '30d' ? 'Opens the last 7 days: the feed reaches back 7 days at most' : undefined}
                       data-br={BR.speed.dbRow}
                     >
                       <span className="bs-chip" style={{ justifySelf: 'start' }}>
@@ -269,6 +298,11 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
                       </span>
                       <span style={{ minWidth: 0 }}>
                         <b>{d.words}</b>
+                        {describeServerCode(d.code)?.match !== 'none' ? (
+                          <span className="bs-panel-note" style={{ display: 'block', color: 'var(--bs-ink-2)' }}>
+                            {describeServerCode(d.code)!.meaning} {isMigrationMissingCode(d.code) ? 'Check supabase/migrations/HELD.md first.' : ''}
+                          </span>
+                        ) : null}
                         <span className="bs-panel-note" style={{ display: 'block', overflowWrap: 'anywhere' }}>
                           {d.tables.length ? `${d.tables.join(', ')} · ` : ''}
                           {d.actions.length ? d.actions.join(', ') : d.pages.join(', ')}
@@ -294,6 +328,41 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
           </div>
         </>
       )}
+
+      <Panel
+        title="Slowest database queries"
+        note={`The app's own requests in the latest 15-minute window, by mean time per call. The collector never keeps query text, so each query is named by its Postgres id; open the Database tab's performance view to see it beside its history${queriesAt ? ` · sampled ${new Date(queriesAt).toISOString().slice(11, 16)} UTC` : ''}. Not split by coach and player: the database does not know who asked.`}
+      >
+        {queryPerf.status === 'unconfigured' ? (
+          <p className="bs-panel-note" style={{ padding: '0 22px 20px' }} data-br={BR.speed.noSignal}>
+            Not measured: the per-query collector is not set up on this database.
+          </p>
+        ) : queryPerf.status !== 'ok' ? (
+          <p className="bs-panel-note" style={{ padding: '0 22px 20px' }} data-br={BR.speed.failed}>
+            The query timings could not be read, so no query is shown as fast or slow.
+          </p>
+        ) : queries && queries.length ? (
+          <div>
+            {queries.map((q) => (
+              <Link key={q.queryid} href="/admin/database?view=performance" className="rl-db" data-br={BR.speed.queryRow}>
+                <span className="bs-chip" style={{ justifySelf: 'start' }}>
+                  {q.regressed ? 'slower' : 'query'}
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <b className="bs-mono">{q.label}</b>
+                  <span className="bs-panel-note" style={{ display: 'block' }}>
+                    app request · {q.calls !== null ? `${q.calls} calls` : 'calls not counted'}
+                    {q.maxMs !== null ? ` · slowest ${msText(q.maxMs)}` : ''}
+                  </span>
+                </span>
+                <span className={`rl-db-n ${q.meanMs > 500 ? 'bs-tone-bad' : q.meanMs > 100 ? 'bs-tone-watch' : 'bs-tone-good'}`}>{msText(q.meanMs)}</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p className="bs-panel-note" style={{ padding: '0 22px 20px' }}>No timed app query in the latest window yet.</p>
+        )}
+      </Panel>
     </SpaceRoot>
   );
 }

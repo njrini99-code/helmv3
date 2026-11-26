@@ -47,6 +47,18 @@ const HOUR_MS = 3_600_000;
 const IN_CHUNK = 100;
 /** The most hourly rows one screen reads. A few hundred rows an hour (plan §4.5) is a day in about 5,000. */
 export const HOURLY_CAP = 6000;
+
+/**
+ * The rest of clubhouse_signal_hourly's primary key after (bucket_hour, code). Paging with LIMIT/OFFSET needs a total
+ * order: rows tied on the first keys come back in any order per call, so a row at a page edge can be read twice or
+ * not at all.
+ */
+export const HOURLY_KEY_TAIL = ['kind', 'outcome', 'act', 'page_id', 'role', 'platform', 'release'] as const;
+
+/** Appends HOURLY_KEY_TAIL to a query already ordered by bucket_hour and code. */
+export function orderByHourlyKeyTail<Q extends { order: (c: string) => Q }>(q: Q): Q {
+  return HOURLY_KEY_TAIL.reduce((acc, c) => acc.order(c), q);
+}
 export const EVENT_CAP = 3000;
 
 const HOURLY_COLUMNS =
@@ -107,6 +119,8 @@ export async function readHourly(o: {
   pages?: string[];
   /** Oldest hours first (a search forward in time); newest first otherwise. */
   ascending?: boolean;
+  /** Only error rows (a crash, or an action that ended in failure): the counters a failure count needs, far fewer rows. */
+  failuresOnly?: boolean;
   cap?: number;
 }): Promise<LiveRead<HourlyRow[]>> {
   try {
@@ -119,7 +133,8 @@ export async function readHourly(o: {
         if (o.release) q = q.eq('release', o.release);
         if (o.kinds?.length) q = q.in('kind', o.kinds);
         if (o.pages?.length) q = q.in('page_id', o.pages);
-        return q.order('bucket_hour', { ascending: Boolean(o.ascending) }).order('code').range(from, to);
+        if (o.failuresOnly) q = q.or('kind.eq.crash,outcome.eq.failure');
+        return orderByHourlyKeyTail(q.order('bucket_hour', { ascending: Boolean(o.ascending) }).order('code')).range(from, to);
       },
       o.cap ?? HOURLY_CAP,
       normalizeHourly,
@@ -134,7 +149,11 @@ export async function readHourlyAt(hoursIso: readonly string[]): Promise<LiveRea
   if (!hoursIso.length) return { state: 'ok', data: [] };
   try {
     const client = db();
-    return await paged((from, to) => client.from('clubhouse_signal_hourly').select(HOURLY_COLUMNS).in('bucket_hour', [...hoursIso]).range(from, to), HOURLY_CAP, normalizeHourly);
+    return await paged(
+      (from, to) => orderByHourlyKeyTail(client.from('clubhouse_signal_hourly').select(HOURLY_COLUMNS).in('bucket_hour', [...hoursIso]).order('bucket_hour').order('code')).range(from, to),
+      HOURLY_CAP,
+      normalizeHourly,
+    );
   } catch (e) {
     return { state: 'error', data: [], error: e instanceof Error ? e.message : String(e) };
   }

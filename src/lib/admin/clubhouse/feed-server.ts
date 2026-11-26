@@ -144,21 +144,23 @@ export async function readTeamNames(ids: readonly string[]): Promise<LiveRead<Ma
 }
 
 /** Failure rows' code and release from the hourly store since `sinceIso`: the input to "new in this release". */
-export async function readFailureCodeReleases(sinceIso: string, cap = NEW_CODE_CAP): Promise<LiveRead<Array<{ code: string; release: string }>>> {
+export async function readFailureCodeReleases(sinceIso: string, cap = NEW_CODE_CAP): Promise<LiveRead<Array<{ code: string; release: string; at: string }>>> {
   try {
     const client = db();
     return await paged(
       (from, to) =>
         client
           .from('clubhouse_signal_hourly')
-          .select('code, release')
+          .select('code, release, bucket_hour')
           .gte('bucket_hour', hourFloorIso(sinceIso))
           .or(FAILURE_FILTER)
           .order('bucket_hour', { ascending: false })
           .order('code')
+          // The rest of the table's key: a total order, so paging never skips or repeats a row (live.ts).
+          .order('kind').order('outcome').order('act').order('page_id').order('role').order('platform').order('release')
           .range(from, to),
       cap,
-      (r) => ({ code: String(r.code ?? ''), release: String(r.release ?? '') }),
+      (r) => ({ code: String(r.code ?? ''), release: String(r.release ?? ''), at: String(r.bucket_hour ?? '') }),
     );
   } catch (e) {
     return thrown(e, []);

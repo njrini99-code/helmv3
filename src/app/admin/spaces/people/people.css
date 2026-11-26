@@ -3,6 +3,10 @@
  * ../_ui/bridge-space.css, so light and dark both follow `.dark`. Coach is always --bs-coach, player --bs-player.
  */
 
+.bp-strip-panel { min-width: 300px; overflow: hidden; }
+@media (max-width: 640px) {
+  .bp-strip-panel { min-width: 0; }
+}
 .bp-states {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -16,6 +20,11 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+@media (max-width: 640px) {
+  /* Four counts do not fit a phone's width as words: two by two, each label on one line. */
+  .bp-states { grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--bs-line); }
+  .bp-state { padding: 12px 16px 14px; }
 }
 .bp-state-n { font-size: 34px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; }
 .bp-state-sub { font-size: 12px; color: var(--bs-ink-3); }
@@ -36,12 +45,13 @@
 .bp-toggle {
   display: inline-flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
   border: 1px solid var(--bs-line-strong);
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
   color: var(--bs-ink-2);
   text-decoration: none;
 }
@@ -72,7 +82,9 @@
   text-decoration: none;
   min-height: 64px;
 }
-.bp-team:hover { background: var(--bs-panel-2); }
+@media (hover: hover) {
+  .bp-team:hover { background: var(--bs-panel-2); }
+}
 .bp-team:focus-visible { outline: 2px solid var(--bs-good); outline-offset: -2px; }
 .bp-rank { font-size: 13px; color: var(--bs-ink-3); }
 .bp-name { font-weight: 600; font-size: 15px; color: var(--bs-ink); }
@@ -83,7 +95,8 @@
 .bp-num { text-align: right; }
 .bp-label { display: none; }
 
-@media (max-width: 960px) {
+/* The ranked list needs about 1050px as a grid; narrower (a phone, or beside the admin sidebar) it is a card a team. */
+@container (max-width: 1059px) {
   .bp-list-head { display: none; }
   .bp-team {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -105,6 +118,17 @@
   .bp-team > .bp-c-errors { grid-area: errors; justify-self: end; }
   .bp-label { display: inline; }
 }
+/* Beside the sidebar or on a tablet: two rows a team instead of four. */
+@container (min-width: 640px) and (max-width: 1059px) {
+  .bp-team {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name active seen state'
+      'name spark rounds errors';
+    padding: 14px 22px;
+  }
+  .bp-team > .bp-c-seen { justify-self: start; text-align: left; }
+}
 
 .bp-chip-sport {
   font-size: 11px;
@@ -125,7 +149,7 @@
   border: 1px dashed var(--bs-line-strong);
   color: var(--bs-ink-2);
 }
-.bp-pill-never { border-style: dashed; }
+.bp-pill-never .bs-pill { border-style: dashed; }
 
 .bp-ring { flex: none; display: block; }
 .bp-ring-track { stroke: var(--bs-track); }
@@ -135,7 +159,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
   border: 1px solid var(--bs-line-strong);
@@ -171,10 +195,29 @@
 .bp-facts li:first-child { border-top: 0; }
 .bp-facts strong { font-size: 16px; font-weight: 600; }
 .bp-facts em { font-style: normal; font-size: 12px; color: var(--bs-ink-3); margin-left: 6px; }
+.bp-fact-label { flex: none; max-width: 45%; }
+.bp-fact-value { min-width: 0; text-align: right; }
+@media (max-width: 640px) {
+  /* A settings row: the label left, the number right with its plain-words line under it. */
+  .bp-facts { padding: 0 16px 8px; }
+  .bp-facts em { display: block; margin: 2px 0 0; line-height: 1.35; }
+}
 
 .bp-tabsbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 16px 22px; }
 .bp-people td { padding-top: 10px; padding-bottom: 10px; }
 .bp-person { display: flex; align-items: center; gap: 12px; min-width: 190px; }
+.bp-person-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.bp-people .bp-pname { text-decoration: none; }
+/* Sorting for the stacked cards (the table's header row, with its sort links, is hidden below 900px). */
+.bp-sort-phone { display: none; padding: 0 22px 14px; }
+@container (max-width: 1039px) {
+  .bp-sort-phone { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .bp-person { min-width: 0; }
+  .bp-people .bp-pname { display: inline-flex; align-items: center; min-height: 44px; margin: -12px 0 -10px; font-size: 16px; }
+}
+@media (max-width: 640px) {
+  .bp-sort-phone { padding: 0 16px 12px; }
+}
 .bp-initials {
   width: 36px;
   height: 36px;
@@ -194,15 +237,32 @@
 .bp-strip i { display: block; width: 4px; height: 16px; border-radius: 2px; background: var(--bs-track); }
 .bp-strip i[data-d='active'] { background: var(--bs-good); }
 .bp-strip i[data-d='round'] { background: var(--bs-watch); }
-.bp-th-link { color: inherit; text-decoration: none; }
+.bp-th-link { color: inherit; text-decoration: none; display: inline-flex; align-items: center; min-height: 32px; }
 .bp-th-link[aria-current='true'] { color: var(--bs-ink); }
 .bp-th-link:focus-visible { outline: 2px solid var(--bs-good); outline-offset: 2px; }
 .bp-legend { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; padding: 14px 22px 18px; border-top: 1px solid var(--bs-line); }
 .bp-legend .bp-strip i { height: 12px; }
+.bp-legend-note { margin-left: auto; }
+@media (max-width: 640px) {
+  .bp-legend { padding: 14px 16px 18px; }
+  .bp-legend-note { margin-left: 0; flex-basis: 100%; }
+}
 .bp-timeline { list-style: none; margin: 0; padding: 0; }
 .bp-timeline li { display: grid; grid-template-columns: 120px minmax(0, 1fr) auto; gap: 14px; align-items: baseline; padding: 12px 22px; border-top: 1px solid var(--bs-line); font-size: 14px; }
 @media (max-width: 640px) {
-  .bp-timeline li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .bp-timeline li { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 12px 16px; }
+  .bp-timeline li > .bs-chip { justify-self: start; }
+}
+.bp-codes .bs-chip { display: inline-flex; align-items: center; min-height: 32px; justify-self: start; }
+@media (hover: none) {
+  .bp-team:active,
+  .bp-back:active,
+  .bp-toggle:active,
+  .bp-codes .bs-chip:active { background-image: linear-gradient(var(--bs-press), var(--bs-press)); }
+}
+@media (max-width: 640px) {
+  .bp-tabsbar { padding: 14px 16px; }
+  .bp-chart { padding: 0 16px 16px; }
 }
 .bp-codes li { grid-template-columns: 120px minmax(0, 1fr) auto; }
 

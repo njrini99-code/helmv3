@@ -3,6 +3,7 @@ import {
   DAY_MS,
   ago,
   buildTimeline,
+  touchesForTeam,
   dailyPeopleActive,
   filterTeams,
   isTestTeam,
@@ -93,8 +94,27 @@ describe('summarizePerson', () => {
     expect(p.active7d).toBe(true);
     expect(p.activeToday).toBe(false);
     expect(p.lastSignInAt).toBeNull();
-    expect(p.lastActive?.kind).toBe('message');
     expect(p.messages30d).toBe(1);
+    // Privacy (players may be minors): a player's message counts as activity, but its time is never shown by name.
+    expect(p.lastActive).toBeNull();
+    expect(p.daysActive30).toBe(0);
+    expect(p.quietDays).toBeNull();
+  });
+
+  it('shows a coach\'s message as their last activity', () => {
+    const c = summarizePerson({ ...player('c1'), role: 'coach' }, [touch('c1', 3, 'message')], opts);
+    expect(c.lastActive?.kind).toBe('message');
+    expect(c.daysActive30).toBe(1);
+  });
+
+  it('counts a round, game or event only for the team it belongs to', () => {
+    const t = [
+      { ...touch('p1', 2, 'round'), teamId: 'A' },
+      { ...touch('p1', 3, 'round'), teamId: null },
+      touch('p1', 4, 'sign_in'),
+    ];
+    expect(touchesForTeam(t, 'A').map((x) => x.kind)).toEqual(['round', 'sign_in']);
+    expect(touchesForTeam(t, 'B').map((x) => x.kind)).toEqual(['sign_in']);
   });
 
   it('marks round days on the strip and counts rounds only when they are per person', () => {
@@ -240,7 +260,7 @@ describe('headline and needs cards', () => {
   it('builds the headline from the rows', () => {
     expect(stateCounts(rows)).toEqual({ active: 2, slipping: 2, dormant: 2, never: 1 });
     const h = teamsHeadline(rows);
-    expect(h.title).toBe('4 of 7 teams active.');
+    expect(h.title).toBe('4 of 7 teams active in two weeks.');
     expect(h.second).toBe('3 quiet for two weeks.');
     expect(h.lede).toContain('Two teams did something in the last two days, and all are test or demo teams.');
     expect(h.lede).toContain('Two more are slipping');

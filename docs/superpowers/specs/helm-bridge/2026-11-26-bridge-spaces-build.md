@@ -90,8 +90,37 @@ xx90 to xx93 stay the four states (loading, empty, failed, no signal yet).
   readers' fixtures and that is said in the PR.
 - `memory/registry.yml` maps every new file; the feature map and World Model are regenerated in each PR.
 
+## Follow-ups landed after the build
+
+- Speed shows the slowest database queries per 15-minute window (`helm_debug.db_stat_deltas` through
+  `fetchQueryPerformance`, the app's own requests only, query shapes not text).
+- Today's "Teams active" uses People's `teamState()` on the pulse halo, so the two spaces count teams the same way.
+- A team page counts only its own sport's messages and says they cover every conversation in that sport.
+
 ## Not in this build
 
-- Per-query database time (needs `pg_stat_statements` read server-side; a later PR).
 - Retiring old tabs. They stay until the owner decides, after living with the spaces.
 - Deploying.
+
+## Follow-up: error explanation and one read-state vocabulary
+
+- **Headlines** (`src/lib/admin/clubhouse/explain.ts`): the catalog's "they see" and "meaning" are builder prose. A feed
+  headline is the quoted message the person read (only when the catalog row starts with it), else the meaning's first
+  plain line (spec references, backticks and code calls removed, capped at 120 characters), else the kind. Quoted
+  headlines show in quotes; descriptions do not. `explain.test.ts` runs every id in `bridge-graph.json` through it.
+- **Likely cause** (`explainFailure`): the server code first (`src/lib/admin/server-codes.ts`: exact Postgres or
+  PostgREST code, else its SQLSTATE class; PostgREST meanings from its errors reference), else the message's wording
+  (Safari's "Load failed", sign-in, forbidden, timeouts, old app version, schema missing...), else only the kind. Each
+  says how it knows and lists steps that name only real tools (Fix pack, Replay, Speed, `HELD.md`, `npm run test:rls`).
+  The copy report carries the cause label, never the raw message.
+- **Still failing?** (`fixStatus`): from the 8-day hourly history only. New in the live release, still failing, not seen
+  in the live release (points to fixed once it has had real use), or unknown when the history was not read whole. No
+  stored "resolved" flag.
+- **Read states** (`src/app/admin/spaces/_ui/states.tsx`): `ReadFailed` ("<What> could not be read." + "Nothing here is
+  an all clear."), `SignalNotThere`, `Incomplete` ("Part of this page could not be read": numbers may be low, never a
+  zero) and `incompleteLine` for reports. `states.test.ts` bans the old variants across the spaces.
+- Two code lists in `server-codes.ts`: the wide `MIGRATION_MISSING_CODES` for explanations, and the narrow
+  `NOT_APPLIED_CODES` (function, table or schema absent) that the query-performance reader treats as "not applied yet".
+  A missing column on an applied function stays a failure there.
+- "Still failing?" keys on the code the hourly store counts under (`hourlyCodeOf`: the sent code, else the catalog
+  code), and the failure on screen is folded in, so a live-release failure never reads as fixed.

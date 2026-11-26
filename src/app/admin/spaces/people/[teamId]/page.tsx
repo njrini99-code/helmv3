@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { clubhouseHref } from '@/lib/admin/clubhouse/screens';
+import { codeHeadline } from '@/lib/admin/clubhouse/feed';
+import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
 import { enterViewAs } from '@/app/admin/actions/view-as';
 import { ViewAsButton } from '@/app/admin/users/[id]/ViewAsButton';
 import { readTeamPeople, type TeamPeopleResult } from '@/lib/admin/data/people-space';
@@ -20,6 +22,7 @@ import {
 import { CopyReportButton } from '../../../_components/CopyReportButton';
 import { AreaChart } from '../../_ui/AreaChart';
 import { LinkTabs, Panel, RoleBadge, SpaceHeader, SpaceRoot, SpaceState, toneClass } from '../../_ui/ui';
+import { Incomplete, SignalNotThere, ReadFailed, incompleteLine } from '../../_ui/states';
 import { ActiveRings, DayStrip, StatePill, TestChip, initials } from '../_parts';
 
 export const metadata: Metadata = { title: 'Team' };
@@ -59,9 +62,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
       <SpaceRoot br={BR.team.failed}>
         <BackLink />
         <SpaceHeader eyebrow="People · one team" title="This team could not be read." />
-        <SpaceState br={BR.team.failed} title="The read failed, so nothing here is all clear.">
-          {e instanceof Error ? e.message : String(e)}. Reload; if it persists, check error_logs for admin.people-space.
-        </SpaceState>
+        <ReadFailed br={BR.team.failed} what="This team" why={e instanceof Error ? e.message : String(e)} action="admin.people-space" />
       </SpaceRoot>
     );
   }
@@ -75,13 +76,15 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
   const busiestValue = data.chart.values[busiest] ?? 0;
 
   const tabs: Array<{ key: TeamTab; label: string; count: number | string }> = [
-    { key: 'people', label: 'People', count: summary.people },
-    { key: 'activity', label: 'Activity', count: data.timeline.length },
+    { key: 'people', label: 'People', count: rosterReadFailed(data) ? '—' : summary.people },
+    // buildTimeline keeps the newest 60, so a full list is "60+", never a total.
+    { key: 'activity', label: 'Activity', count: data.timeline.length >= 60 ? '60+' : data.timeline.length },
     { key: 'errors', label: 'Errors', count: data.codes.state === 'ok' ? data.codes.rows.length : '—' },
   ];
 
+  const rosterFailed = rosterReadFailed(data);
   return (
-    <SpaceRoot br={summary.people === 0 ? BR.team.empty : ''}>
+    <SpaceRoot br={rosterFailed ? BR.team.failed : summary.people === 0 ? BR.team.empty : ''}>
       <nav aria-label="Breadcrumb" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14 }}>
         <BackLink />
         <span className="bs-panel-note">
@@ -100,7 +103,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
               </>
             }
             title={`${team.name}.`}
-            second={summary.people === 0 ? 'Nobody is on this team yet.' : `${summary.active7d} of ${summary.people} active this week.`}
+            second={rosterFailed ? 'Its people could not be read.' : summary.people === 0 ? 'Nobody is on this team yet.' : `${summary.active7d} of ${summary.people} active this week.`}
             secondTone={summary.active7d > 0 ? 'good' : 'watch'}
           />
           {summary.people > 0 ? (
@@ -127,7 +130,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
               </span>
             )}
             <span data-br={BR.team.copy}>
-              <CopyReportButton report={teamReport(data, now)} variant="labeled" size="sm" label="Copy team report" />
+              <CopyReportButton report={teamReport(data, now)} variant="labeled" size="sm" label="Copy team report" className="bs-copy" />
             </span>
           </div>
         </div>
@@ -159,14 +162,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
         ) : null}
       </section>
 
-      {data.degraded.length > 0 ? (
-        <Panel tone="watch" br={BR.team.failed} title="Incomplete this load">
-          <p className="bs-panel-note" style={{ padding: '0 22px 18px', margin: 0 }}>
-            {data.degraded.join(', ')} could not be read, so the numbers below understate what happened. Reload; if it persists, check error_logs for
-            admin.people-space.
-          </p>
-        </Panel>
-      ) : null}
+      <Incomplete br={BR.team.failed} sources={data.degraded} action="admin.people-space" />
 
       <div className="bp-two">
         <Panel
@@ -208,7 +204,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
         <Panel title="This team · last 30 days">
           <ul className="bp-facts">
             <Fact label={team.sport === 'golf' ? 'Rounds logged' : 'Games logged'} value={facts.rounds30d} sub={`${facts.rounds7d} this week`} />
-            <Fact label="Messages sent" value={facts.messages30d} sub={`${facts.messages7d} this week · by this team's people`} />
+            <Fact label="Messages sent" value={facts.messages30d} sub={`${facts.messages7d} this week · sent by this team's people, in any ${team.sport === 'golf' ? 'GolfHelm' : 'BaseballHelm'} conversation`} />
             <Fact label="Events created" value={facts.events30d} sub={facts.nextEventAt ? `next ${day(facts.nextEventAt)}` : 'none upcoming'} />
             <Fact
               label="CoachHelm insights"
@@ -244,6 +240,12 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
   );
 }
 
+/** A failed roster or staff read leaves `people` empty: that is "could not read", never "nobody is here". */
+const ROSTER_READS = ['golf roster', 'golf staff', 'baseball roster', 'baseball staff'];
+function rosterReadFailed(data: TeamPeopleResult): boolean {
+  return data.degraded.some((d) => ROSTER_READS.includes(d));
+}
+
 function BackLink() {
   return (
     <Link href="/admin/spaces/people" className="bp-back" data-br={BR.team.back}>
@@ -255,8 +257,8 @@ function BackLink() {
 function Fact({ label, value, sub, bad = false }: { label: string; value: number | null; sub: string; bad?: boolean }) {
   return (
     <li>
-      <span>{label}</span>
-      <span>
+      <span className="bp-fact-label">{label}</span>
+      <span className="bp-fact-value">
         <strong className={value === null ? 'bs-tone-muted' : bad && value > 0 ? 'bs-tone-bad' : undefined}>{value === null ? '—' : value}</strong>
         <em>{sub}</em>
       </span>
@@ -286,6 +288,12 @@ function lede(data: TeamPeopleResult, quiet: readonly PersonSummary[], now: Date
   return parts.join(' ');
 }
 
+const PEOPLE_SORTS: ReadonlyArray<{ key: PeopleSort; label: string }> = [
+  { key: 'signin', label: 'Last sign-in' },
+  { key: 'active', label: 'Days active' },
+  { key: 'name', label: 'Name' },
+];
+
 function SortHead({ label, k, sort, base }: { label: string; k: PeopleSort; sort: PeopleSort; base: string }) {
   return (
     <Link href={`${base}?tab=people&sort=${k}`} className="bp-th-link" aria-current={sort === k ? 'true' : undefined} data-br={BR.team.sortPeople}>
@@ -297,10 +305,11 @@ function SortHead({ label, k, sort, base }: { label: string; k: PeopleSort; sort
 
 function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: PeopleSort; base: string; now: Date }) {
   if (data.people.length === 0) {
+    const rosterFailed = rosterReadFailed(data);
     return (
       <div style={{ padding: '0 22px 22px' }}>
-        <SpaceState br={BR.team.empty} title="Nobody is on this team yet.">
-          Coaches appear when they are added to the staff, players when they join with the team code.
+        <SpaceState br={rosterFailed ? BR.team.failed : BR.team.empty} title={rosterFailed ? 'The roster could not be read.' : 'Nobody is on this team yet.'}>
+          {rosterFailed ? 'Reload; nothing here means the team is empty.' : 'Coaches appear when they are added to the staff, players when they join with the team code.'}
         </SpaceState>
       </div>
     );
@@ -308,9 +317,17 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
   const people = sortPeople(data.people, sort);
   const golf = data.team.sport === 'golf';
   return (
-    <>
+    <div className="bs-stack-scope">
+      <div className="bp-sort-phone">
+        <span className="bs-eyebrow">Sort</span>
+        <LinkTabs
+          label="Sort people"
+          current={sort}
+          tabs={PEOPLE_SORTS.map((s) => ({ key: s.key, label: s.label, href: `${base}?tab=people&sort=${s.key}`, br: BR.team.sortPeople }))}
+        />
+      </div>
       <div className="bs-scroll-x">
-        <table className="bs-table bp-people">
+        <table className="bs-table bs-table-stack bp-people">
           <thead>
             <tr>
               <th scope="col">
@@ -323,13 +340,13 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
               <th scope="col">
                 <SortHead label="Days active · 30" k="active" sort={sort} base={base} />
               </th>
-              <th scope="col" style={{ textAlign: 'right' }}>
+              <th scope="col" className="bs-num">
                 Rounds
               </th>
-              <th scope="col" style={{ textAlign: 'right' }}>
+              <th scope="col" className="bs-num">
                 Messages
               </th>
-              <th scope="col" style={{ textAlign: 'right' }}>
+              <th scope="col" className="bs-num">
                 Errors
               </th>
               <th scope="col">Device</th>
@@ -340,16 +357,16 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
               const tone = p.role === 'coach' ? 'coach' : 'player';
               return (
                 <tr key={p.userId} className={p.active7d ? undefined : 'bp-quiet'}>
-                  <td>
+                  <td className="bs-cell-head">
                     <div className="bp-person">
                       <span className={`bp-initials ${toneClass(tone)}`} aria-hidden="true">
                         {initials(p.name)}
                       </span>
                       <div>
-                        <Link href={`/admin/users/${p.userId}`} className="bp-pname" style={{ textDecoration: 'none' }} data-br={BR.team.personRow}>
+                        <Link href={`/admin/users/${p.userId}`} className="bp-pname" data-br={BR.team.personRow}>
                           {p.name ?? (p.role === 'coach' ? 'Unnamed coach' : 'Unnamed player')}
                         </Link>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                        <div className="bp-person-tags">
                           <RoleBadge role={p.role} />
                           {p.title && p.role === 'coach' ? <span className="bp-sub">{p.title}</span> : null}
                           {!p.active7d ? (
@@ -359,10 +376,12 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
                       </div>
                     </div>
                   </td>
-                  <td className="bp-dimmable" style={{ fontWeight: 600 }}>
+                  <td className="bs-cell-half bp-dimmable" style={{ fontWeight: 600 }}>
+                    <span className="bs-cell-label">Last sign-in</span>
                     {p.lastSignInAt ? <time dateTime={p.lastSignInAt}>{ago(p.lastSignInAt, now)}</time> : 'none recorded'}
                   </td>
-                  <td className="bp-dimmable">
+                  <td className="bs-cell-half bp-dimmable">
+                    <span className="bs-cell-label">Last active</span>
                     {p.lastActive ? (
                       <>
                         <div>{p.role === 'player' && p.lastActive.kind === 'message' ? 'Active in the app' : TOUCH_WORDS[p.lastActive.kind]}</div>
@@ -372,23 +391,30 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
                       <span className="bp-sub">nothing in 30 days</span>
                     )}
                   </td>
-                  <td>
+                  <td className="bs-cell-wide">
+                    <span className="bs-cell-label">Days active · 30</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <DayStrip days={p.days} label={`${p.daysActive30} of 30 days active`} />
                       <span className="bp-big">{p.daysActive30}</span>
                     </span>
                   </td>
-                  <td style={{ textAlign: 'right' }} className="bp-dimmable">
+                  <td className="bs-num bp-dimmable">
+                    <span className="bs-cell-label">Rounds</span>
                     {p.rounds30d === null ? <span className="bp-sub">team-level</span> : p.rounds30d}
                   </td>
-                  <td style={{ textAlign: 'right' }} className="bp-dimmable">
+                  <td className="bs-num bp-dimmable">
+                    <span className="bs-cell-label">Messages</span>
                     {/* Privacy: a player's message count is team-level only (players may be minors). */}
                     {p.role === 'coach' ? p.messages30d : <span className="bp-sub">team only</span>}
                   </td>
-                  <td style={{ textAlign: 'right' }} className={p.errors30d === null ? 'bs-tone-muted' : p.errors30d > 0 ? 'bs-tone-bad' : 'bp-dimmable'}>
+                  <td className={`bs-num ${p.errors30d === null ? 'bs-tone-muted' : p.errors30d > 0 ? 'bs-tone-bad' : 'bp-dimmable'}`}>
+                    <span className="bs-cell-label">Errors</span>
                     {p.errors30d === null ? '—' : p.errors30d}
                   </td>
-                  <td className="bp-dimmable">{p.device ?? <span className="bp-sub">{golf ? 'none yet' : 'not measured'}</span>}</td>
+                  <td className="bp-dimmable">
+                    <span className="bs-cell-label">Device</span>
+                    {p.device ?? <span className="bp-sub">{golf ? 'none yet' : 'not measured'}</span>}
+                  </td>
                 </tr>
               );
             })}
@@ -405,13 +431,13 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
         <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
           <DayStrip days={['none']} label="" /> nothing
         </span>
-        <span style={{ marginLeft: 'auto' }}>
+        <span className="bp-legend-note">
           {golf
             ? `Device comes from Clubhouse sessions, recorded only ${SIGNALS_ON}.`
             : 'BaseballHelm sends no Clubhouse signals, so device and per-player games are not measured.'}
         </span>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -463,18 +489,14 @@ function ErrorsTab({ data }: { data: TeamPeopleResult }) {
   if (codes.state === 'no-signal') {
     return (
       <div style={pad}>
-        <SpaceState br={BR.team.noSignal} title="No Clubhouse signal yet.">
-          The session tables are not readable yet, so no code can be shown. This is not all clear.
-        </SpaceState>
+        <SignalNotThere br={BR.team.noSignal} why="The Clubhouse session tables are not there yet, so no code can be shown." />
       </div>
     );
   }
   if (codes.state === 'error') {
     return (
       <div style={pad}>
-        <SpaceState br={BR.team.failed} title="Clubhouse sessions could not be read.">
-          {codes.error ?? 'The read failed'}. Nothing here means all clear.
-        </SpaceState>
+        <ReadFailed br={BR.team.failed} what="Clubhouse sessions" why={codes.error} />
       </div>
     );
   }
@@ -487,6 +509,9 @@ function ErrorsTab({ data }: { data: TeamPeopleResult }) {
       </div>
     );
   }
+  // What each code means, from the Bridge map (cleaned catalog words); a missing map just drops the line.
+  const graph = loadBridgeGraph();
+  const headlines = new Map(codes.rows.map((c) => [c.code, graph ? codeHeadline(graph, c.code) : null] as const));
   return (
     <>
       <ul className="bp-timeline bp-codes">
@@ -495,11 +520,12 @@ function ErrorsTab({ data }: { data: TeamPeopleResult }) {
             <Link href={clubhouseHref.code(c.code)} className="bs-chip" style={{ textDecoration: 'none', justifySelf: 'start' }} data-br={BR.team.errorRow}>
               {c.code}
             </Link>
-            <span>
-              <span style={{ fontWeight: 600 }}>{c.page || 'page not recorded'}</span>
+            <span style={{ minWidth: 0 }}>
+              <span style={{ fontWeight: 600, display: 'block' }}>
+                {headlines.get(c.code) ? (headlines.get(c.code)!.quoted ? <q>{headlines.get(c.code)!.text}</q> : headlines.get(c.code)!.text) : 'Not in the Bridge map'}
+              </span>
               <span className="bp-sub">
-                {' '}
-                · in {c.sessions} {c.sessions === 1 ? 'session' : 'sessions'}
+                {c.page || 'page not recorded'} · in {c.sessions} {c.sessions === 1 ? 'session' : 'sessions'}
               </span>
             </span>
             <span className="bs-tone-bad" style={{ fontWeight: 600 }}>
@@ -538,6 +564,6 @@ function teamReport(data: TeamPeopleResult, now: Date): string {
     data.codes.state === 'ok' && data.codes.rows.length > 0
       ? ['Clubhouse codes:', ...data.codes.rows.map((c) => `- ${c.code} on ${c.page || 'unknown page'}: ${c.count}x in ${c.sessions} sessions`)].join('\n')
       : `Clubhouse codes: ${data.codes.state === 'ok' ? 'none failed' : data.codes.state}.`,
-    data.degraded.length > 0 ? `\nIncomplete: ${data.degraded.join(', ')} could not be read.` : '',
+    data.degraded.length > 0 ? `\n${incompleteLine(data.degraded)}` : '',
   ].join('\n');
 }

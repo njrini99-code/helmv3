@@ -8207,6 +8207,18 @@
     },
     {
       "source": "admin_platform",
+      "target": "observability_supabase",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/clubhouse/speed.ts",
+          "anchor": "src/lib/admin/database/performance"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "player_coachhelm_development",
       "kind": "feature_relation",
       "evidence": [
@@ -21172,6 +21184,11 @@
           "kind": "import_graph",
           "path": "src/lib/admin/database/performance.ts",
           "anchor": "src/lib/admin/fetch-result"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/database/performance.ts",
+          "anchor": "src/lib/admin/server-codes"
         },
         {
           "kind": "import_graph",

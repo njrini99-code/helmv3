@@ -18,14 +18,14 @@ import 'server-only';
  */
 import { createAdminClient } from '@/lib/supabase/admin';
 import { failed, ok, unconfigured, type AdminFetchResult } from '@/lib/admin/fetch-result';
+import { isNotAppliedCode } from '@/lib/admin/server-codes';
 
 type MaybePostgrestError = { code?: string | null; message?: string | null } | null;
 
-const MIGRATION_NOT_APPLIED_CODES = new Set(['PGRST202', '42883', '42P01', '3F000']);
-
 function isMigrationNotAppliedError(error: MaybePostgrestError): boolean {
   if (!error) return false;
-  if (MIGRATION_NOT_APPLIED_CODES.has(error.code ?? '')) return true;
+  // The narrow "object absent" set (server-codes.ts): a missing column on an applied function is a failure, not HELD.
+  if (isNotAppliedCode(error.code)) return true;
   const message = (error.message ?? '').toLowerCase();
   return (
     message.includes('could not find the function') ||

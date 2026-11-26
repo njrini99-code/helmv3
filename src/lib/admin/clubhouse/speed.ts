@@ -12,6 +12,7 @@ import { actionStats, bucketQuantile, mergeBuckets, type HourlyRow } from './liv
 import { actionIdFor } from './pulse';
 import { SLOW_SAVE_LINE_MS } from './rules';
 import { serverCodeWords, type FeedItem } from './feed';
+import type { StatDeltaRow } from '@/lib/admin/database/performance';
 
 export const SPEED_ROLES = ['all', 'coach', 'player'] as const;
 export type SpeedRole = (typeof SPEED_ROLES)[number];
@@ -200,4 +201,44 @@ export function speedItems(items: readonly FeedItem[], scope: Pick<SpeedScope, '
 /** A value as a share of a scale, for a meter: values past the scale fill it. */
 export function meterMax(line: number): number {
   return line * 2;
+}
+
+export interface SlowQuery {
+  /** Postgres's own id for the statement (pg_stat_statements queryid): unique per query, and the row key. */
+  queryid: string;
+  /** A short, readable form of the id ("q·1a2b3c4d"): the collector never keeps query text, so this is the name. */
+  label: string;
+  /** The collector's workload label ("postgrest_query" for every app request): a kind, not a name. */
+  queryClass: string;
+  meanMs: number;
+  maxMs: number | null;
+  calls: number | null;
+  regressed: boolean;
+}
+
+/**
+ * The app's slowest database queries in the latest 15-minute window, by mean time per call. Only Helm's own requests
+ * (`helm_product`, PostgREST and RPC calls) count: Supabase's realtime, pg_net, cron and the Bridge's own collectors are
+ * not something a coach or player waits on.
+ */
+export function slowQueries(rows: readonly StatDeltaRow[], limit = 8): SlowQuery[] {
+  return rows
+    .filter((r) => r.sourceClass === 'helm_product' && r.meanExecMsWindow !== null)
+    .sort((a, b) => (b.meanExecMsWindow ?? 0) - (a.meanExecMsWindow ?? 0))
+    .slice(0, limit)
+    .map((r) => ({
+      queryid: r.queryid,
+      label: queryLabel(r.queryid),
+      queryClass: r.safeQueryClass,
+      meanMs: r.meanExecMsWindow ?? 0,
+      maxMs: r.maxExecMsObserved,
+      calls: r.callsDelta,
+      regressed: r.regressionFlags.length > 0,
+    }));
+}
+
+/** "q·" plus the last 8 characters of a pg_stat_statements queryid, enough to find it on the Database tab. */
+export function queryLabel(queryid: string): string {
+  const id = queryid.replace(/^-/, '');
+  return `q·${id.slice(-8)}`;
 }

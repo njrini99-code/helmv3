@@ -111,7 +111,7 @@ export default async function ReliabilityRulesPage() {
                   <span>
                     <b>{r.name}</b> · <span className="bs-tone-muted">{r.when}</span>
                   </span>
-                  <span className={`bs-tone-${SEVERITY_TONE[r.severity.split(' ')[0]!] ?? 'muted'}`} style={{ fontSize: 12, fontWeight: 600, textAlign: 'right' }}>
+                  <span className={`bs-tone-${SEVERITY_TONE[r.severity.split(' ')[0]!] ?? 'muted'} rl-sev`}>
                     {r.severity}
                   </span>
                   {r.where ? <span className="rl-where-link">Shows on {r.where}</span> : null}

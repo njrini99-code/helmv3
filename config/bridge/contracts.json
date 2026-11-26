@@ -1640,6 +1640,13 @@
       "does": "Reads the last 24 hours, 7 days or 30 days"
     },
     {
+      "code": "BR-2108",
+      "screen": "B21",
+      "key": "speed.queryRow",
+      "label": "Slow query row",
+      "does": "Opens the Database tab's performance view"
+    },
+    {
       "code": "BR-2190",
       "screen": "B21",
       "key": "speed.loading",
