@@ -220,4 +220,3 @@ describe('actionStats silent starts (only success, failure or cancelled end a st
     expect(actionStats(rows)[0]).toMatchObject({ starts: 5, tries: 5, silent: 0, rate: 1 });
   });
 });
-
