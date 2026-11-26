@@ -2,7 +2,7 @@
 
 Nothing here blocks the build. Each question has the default the implementers
 use until the owner says otherwise. "HTML" means
-`design-refresh/messages/redesign/clubhouse-messages.html`. Items are numbered
+`design/refresh/messages/redesign/clubhouse-messages.html`. Items are numbered
 Q-nn; SPEC.md and MOTION.md cite them.
 
 ## Conflicts inside the design

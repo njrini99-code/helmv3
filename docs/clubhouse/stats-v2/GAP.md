@@ -1,15 +1,15 @@
 # Stats v2: gap list against the owner's newest design
 
 Date: 2026-11-07. Branch `agent/ch-stats-v2` (from `agent/ch-consolidate`).
-Design: `design-refresh/stats/redesign/clubhouse-stats.html` (newest) against
-`design-refresh/stats-and-home-phone.html` (earlier).
+Design: `design/refresh/stats/redesign/clubhouse-stats.html` (newest) against
+`design/refresh/stats-and-home-phone.html` (earlier).
 
 ## What is new in the newest design
 
 Nothing. After the export wrapper (doctype, head, `<body>`) is stripped, the two
 HTML files are identical
 byte for byte, and both equal
-`design-refresh/stats-home/redesign/stats-and-home-phone.html`, the package the
+`design/refresh/stats-home/redesign/stats-and-home-phone.html`, the package the
 earlier build (`StatsPlayerPhoneShs`, `StatsTeamPhoneShs`, the `.ch-shs-*`
 layer) was made from. So the
 code map below was mostly built already; this list says what is and is not.
@@ -29,7 +29,7 @@ code map below was mostly built already; this list says what is and is not.
 
 ## Later owner decisions that supersede motion rows
 
-The Nov 6 sweep (`design-refresh/redesign-ui-sweep-2026-11-06/lanes/motion.md`,
+The Nov 6 sweep (`design/refresh/redesign-ui-sweep-2026-11-06/lanes/motion.md`,
 MOT-01, MOT-02) records the owner bar:
 no first-paint motion, motion answers the user's action only, Reduce Motion is
 the 180 ms opacity fade

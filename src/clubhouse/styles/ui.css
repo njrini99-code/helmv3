@@ -2566,7 +2566,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
    baseline are drawn empty. Hairlines only: no bars, no sheen (those are the loading skeleton's) and no motion, so there
    is nothing to dim, nothing to reduce and nothing that reads as a placeholder of text. The fade is on the shape layer
    alone; no rule ever runs through the copy. */
-/* One anatomy on every screen and width (design-refresh/DESIGN_LANGUAGE §9, stats-home S-STATS__empty): centred, inside
+/* One anatomy on every screen and width (design/refresh/DESIGN_LANGUAGE §9, stats-home S-STATS__empty): centred, inside
    the card that would have held the data. A page-sized state is that card; a section's sits in its own.
    W19 B, "a moment" (owner, 12 Nov 2026): every empty reads as Tournaments' first run did. A page's is a roomy card that
    holds the space its content will take: Tournaments' medallion (the dark tile on faint rings), its title and its

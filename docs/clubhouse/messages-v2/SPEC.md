@@ -5,10 +5,10 @@ defaults CHANGE some items below. Where an item carries a "Default per Q-nn"
 note, that note overrides the HTML-derived text in the same item. QUESTIONS.md
 holds the full list.
 
-Source of truth: `design-refresh/messages/redesign/clubhouse-messages.html`
+Source of truth: `design/refresh/messages/redesign/clubhouse-messages.html`
 (3,440 lines, owner artifact BXhxxNzJDAJLMoNXPjMpev, updated 2026-11-07; git
 `fd42cc295b`). Where this file and the older lane docs
-(`design-refresh/messages/01`-`08`, `SETTLED-4NOV.md`) disagree, the HTML wins;
+(`design/refresh/messages/01`-`08`, `SETTLED-4NOV.md`) disagree, the HTML wins;
 open conflicts are in [QUESTIONS.md](QUESTIONS.md). Companion files:
 [MOTION.md](MOTION.md) (every motion row), [GAP.md](GAP.md) (today's code vs
 this list), [DATA.md](DATA.md) (schema), [PLAN.md](PLAN.md) (work packages).

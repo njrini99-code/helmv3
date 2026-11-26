@@ -8,7 +8,7 @@ and tests cite their paths. Do not build from them, do not screenshot them as
 
 ## The rule
 
-- Where `design-refresh/<page>/` exists, it replaces `design/handoff/` for that
+- Where `design/refresh/<page>/` exists, it replaces `design/handoff/` for that
   page.
 - A handoff file is never a reason to rebuild a screen that is already built.
   If a built screen and a handoff file disagree, the built screen is current
@@ -47,5 +47,5 @@ What is current instead: the Roster as built in
 `src/clubhouse/screens/roster`.
 
 - Coach desktop: opens on the cards (commit `9e6db115f3`).
-- Phone: per `design-refresh/classes-roster-home`, approved by the owner on
+- Phone: per `design/refresh/classes-roster-home`, approved by the owner on
   31 Oct 2026.

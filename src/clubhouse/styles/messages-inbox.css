@@ -4,7 +4,7 @@
  * with it (SEAMS.md); every rule is anchored on `.ch-inb--phone` or `.ch-inb--rail` (css-owners.mjs: one family, my own
  * first class) and sits under [data-ch-ms-v2], so it outranks the older generations in messages.css without !important
  * (the one exception is the coin's size, which messages.css forces with !important and an inline style sets).
- * Numbers are the artifact's (design-refresh/messages/redesign/clubhouse-messages.html, Part 2), at Text Size k = 1.
+ * Numbers are the artifact's (design/refresh/messages/redesign/clubhouse-messages.html, Part 2), at Text Size k = 1.
  * Spacing steps that are not on the scale (10, 14, 18) are built from two steps, so the spacing ratchet is not touched.
  */
 

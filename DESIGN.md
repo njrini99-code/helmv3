@@ -25,7 +25,7 @@ in `docs/clubhouse/CHANGELOG.md`. The golf-hole arrival is the signature moment;
 daily screens prioritize readable facts and actions. Clubhouse is the only
 GolfHelm coach and player UI in production (Fairway's coach and player screens
 were retired on 14 Nov 2026). Its design system, with token tables generated
-from the runtime tokens, is `design-refresh/DESIGN_LANGUAGE.md`.
+from the runtime tokens, is `design/refresh/DESIGN_LANGUAGE.md`.
 
 ## Colors
 

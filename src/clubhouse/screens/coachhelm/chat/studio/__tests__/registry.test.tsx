@@ -127,7 +127,7 @@ describe('the copy', () => {
     expect(sampleSaid({ sample_size: 0, sample_unit: 'rounds' })).toBeNull();
   });
 
-  // Owner (design-refresh/DESIGN_LANGUAGE.md): no "n=", no "N-4", no count standing alone in brackets.
+  // Owner (design/refresh/DESIGN_LANGUAGE.md): no "n=", no "N-4", no count standing alone in brackets.
   const FORBIDDEN = [/\bn\s*=\s*\d/i, /\bN-\d/, /\(\s*\d+\s*\)/, /\[\s*\d+\s*\]/];
   for (const s of STUDIO_SPECIMENS) {
     it(`${s.id} never prints a sample as a letter or a bare bracketed count`, () => {

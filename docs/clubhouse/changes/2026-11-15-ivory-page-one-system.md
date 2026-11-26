@@ -3,7 +3,7 @@
 ## 2026-11-15 — Ivory page and cards, chart contrast, one system
 
 ```text
-Design package: clubhouse-handoff/prod-audit-2026-11-15/CLUBHOUSE-PROD-AUDIT-FINAL.md (specs S1.1 to S2.8, Batch 0 item 8, Batch 1, Batch 5); design-refresh/DESIGN_LANGUAGE.md (rewritten)
+Design package: clubhouse-handoff/prod-audit-2026-11-15/CLUBHOUSE-PROD-AUDIT-FINAL.md (specs S1.1 to S2.8, Batch 0 item 8, Batch 1, Batch 5); design/refresh/DESIGN_LANGUAGE.md (rewritten)
 PR/commit: branch claude/project-thread-d9q2qs (QUEUE look-01 to look-03)
 Contract IDs: none changed
 Actions: none changed

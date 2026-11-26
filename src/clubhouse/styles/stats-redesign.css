@@ -1,5 +1,5 @@
 /*
- * The phone Stats redesign (clubhouse_stats_redesign_v1; design-refresh/stats-home). Every rule is scoped under .ch-shs, .ch-shs-screen
+ * The phone Stats redesign (clubhouse_stats_redesign_v1; design/refresh/stats-home). Every rule is scoped under .ch-shs, .ch-shs-screen
  * or .ch-shs-home, which render only with the flag on, so a flag-off screen matches nothing here. Values are the design page's
  * (redesign/stats-phone.css); 06-SCREEN-SPECS has them measured. No large title on Stats (Nick, 31 Oct: "Keep as drawn").
  */

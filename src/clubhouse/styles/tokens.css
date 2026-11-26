@@ -754,7 +754,7 @@
   /* A flush row's press: a deeper green tint, not a scale (lib/press.ts scales keys up to 240px only). */
   /* The section rule the phone board draws above a heading: an engraved double hairline. */
   --ch-ledger-rule-double: 3px double rgb(110 98 62 / 0.22);
-  /* Clubhouse refresh, PR 1 (design-refresh/DESIGN_LANGUAGE.md 3, 6, "Adopted from threads"). Additive: nothing reads them yet. */
+  /* Clubhouse refresh, PR 1 (design/refresh/DESIGN_LANGUAGE.md 3, 6, "Adopted from threads"). Additive: nothing reads them yet. */
   --ch-grouped-bg: var(--ch-workspace);
   /* The one card (S1.3, Nick 15 Nov 2026: "Ivory cards, deeper page"): the same value as --ch-bg-surface. */
   --ch-card-bg: var(--ch-bg-surface);
@@ -854,7 +854,7 @@
   --ch-coin-ring: rgb(90 78 54 / 0.22);
   --ch-on-green-2: rgb(244 241 232 / 0.84);
   --ch-on-green-3: rgb(244 241 232 / 0.72);
-  /* Clubhouse classes, roster and home lane (design-refresh/classes-roster-home 06 1.2): additive, read only by its flagged screens. */
+  /* Clubhouse classes, roster and home lane (design/refresh/classes-roster-home 06 1.2): additive, read only by its flagged screens. */
   --ch-crh-ink2: #46433d;
   --ch-crh-ink4: #5f5c55;
   --ch-accent-ink: #155a39;

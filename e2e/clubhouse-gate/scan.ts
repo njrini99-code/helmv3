@@ -1,5 +1,5 @@
 /**
- * The presentation gate's page scan (design-refresh/redesign-ui-sweep-2026-11-06, PR 1).
+ * The presentation gate's page scan (design/refresh/redesign-ui-sweep-2026-11-06, PR 1).
  *
  * Runs inside the page and returns what a person would call broken on real-shaped values: boxes leaving their card, clipped
  * text, cards inside cards, phone type under 12px, tap targets under 44, rows on a card's edge, a page edge that isn't the token.

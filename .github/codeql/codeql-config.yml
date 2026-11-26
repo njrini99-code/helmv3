@@ -12,7 +12,7 @@ name: helmv3 CodeQL config
 #   - archive/**, which AGENTS.md defines as historical evidence only and
 #     which nothing deploys;
 #   - docs and public assets, which CodeQL's JavaScript extractor still walks;
-#   - design-refresh/**, the static design reference pages (self-contained
+#   - design/refresh/**, the static design reference pages (self-contained
 #     HTML with hardcoded sample data, opened by hand, never built, served or
 #     deployed). Their inline scripts produced alerts of the same kind as the
 #     docs pages did (added 2026-11-10, alert #665).
@@ -31,7 +31,7 @@ paths-ignore:
   - 'e2e/**'
   - 'archive/**'
   - 'docs/**'
-  - 'design-refresh/**'
+  - 'design/refresh/**'
   - 'public/**'
   - '.next/**'
   - 'config/review-rules/**/__test__/**'

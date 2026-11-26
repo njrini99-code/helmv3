@@ -3,7 +3,7 @@
 ## 2026-11-15 — The visual half of the motion and visual system (4.1 to 4.8)
 
 ```text
-Design package: clubhouse-handoff/launch-readiness-2026-11-15/MOTION-AND-VISUAL.md (sections 4.1 to 4.8, build steps 6 and 7); design-refresh/DESIGN_LANGUAGE.md
+Design package: clubhouse-handoff/launch-readiness-2026-11-15/MOTION-AND-VISUAL.md (sections 4.1 to 4.8, build steps 6 and 7); design/refresh/DESIGN_LANGUAGE.md
 PR/commit: branch claude/project-thread-d9q2qs (QUEUE look-01 to look-03)
 Contract IDs: none changed
 Actions: none changed

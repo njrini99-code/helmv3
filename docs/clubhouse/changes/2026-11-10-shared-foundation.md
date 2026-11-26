@@ -3,7 +3,7 @@
 ## 2026-11-10 — One card, one page colour, notices in a card, and four primitive fixes
 
 ```text
-Design package: design-refresh/ (DESIGN_LANGUAGE.md 2, 4 and 9), design/handoff/depth.css
+Design package: design/refresh/ (DESIGN_LANGUAGE.md 2, 4 and 9), design/handoff/depth.css
 PR/commit:      agent/clubhouse-release-train (#2497)
 Contract IDs:   none new
 Actions:        none new

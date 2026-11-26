@@ -3,7 +3,7 @@
 ## 2026-11-15 — Colour roles: red for errors only, under par in the gain (4.7)
 
 ```text
-Design package: clubhouse-handoff/launch-readiness-2026-11-15/MOTION-AND-VISUAL.md (section 4.7); design-refresh/DESIGN_LANGUAGE.md §3
+Design package: clubhouse-handoff/launch-readiness-2026-11-15/MOTION-AND-VISUAL.md (section 4.7); design/refresh/DESIGN_LANGUAGE.md §3
 PR/commit: branch claude/project-thread-d9q2qs, its own commit so it can be dropped alone
 Contract IDs: none changed
 Actions: none changed
