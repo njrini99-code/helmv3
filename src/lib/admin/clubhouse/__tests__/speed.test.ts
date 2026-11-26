@@ -85,6 +85,14 @@ describe('slowQueries', () => {
     ]);
     expect(out.map((q) => [q.queryClass, q.meanMs, q.regressed])).toEqual([['slow', 900, true], ['fast', 5, false]]);
   });
+  it('keys and names each query by its own id, since every app query shares one workload label', () => {
+    const out = slowQueries([row({ queryid: '-8234567890123456789', meanExecMsWindow: 9 }), row({ queryid: '1234567890123456789', meanExecMsWindow: 8 })]);
+    expect(out.map((q) => [q.queryid, q.label, q.queryClass])).toEqual([
+      ['-8234567890123456789', 'q·23456789', 'select golf_rounds'],
+      ['1234567890123456789', 'q·23456789', 'select golf_rounds'],
+    ]);
+    expect(new Set(out.map((q) => q.queryid)).size).toBe(2);
+  });
   it('caps the list', () => {
     expect(slowQueries(Array.from({ length: 20 }, (_, i) => row({ queryid: String(i), meanExecMsWindow: i })), 3)).toHaveLength(3);
   });

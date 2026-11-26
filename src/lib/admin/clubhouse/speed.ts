@@ -204,7 +204,11 @@ export function meterMax(line: number): number {
 }
 
 export interface SlowQuery {
-  /** The collector's safe class for the statement: never raw SQL text. */
+  /** Postgres's own id for the statement (pg_stat_statements queryid): unique per query, and the row key. */
+  queryid: string;
+  /** A short, readable form of the id ("q·1a2b3c4d"): the collector never keeps query text, so this is the name. */
+  label: string;
+  /** The collector's workload label ("postgrest_query" for every app request): a kind, not a name. */
   queryClass: string;
   meanMs: number;
   maxMs: number | null;
@@ -223,10 +227,18 @@ export function slowQueries(rows: readonly StatDeltaRow[], limit = 8): SlowQuery
     .sort((a, b) => (b.meanExecMsWindow ?? 0) - (a.meanExecMsWindow ?? 0))
     .slice(0, limit)
     .map((r) => ({
+      queryid: r.queryid,
+      label: queryLabel(r.queryid),
       queryClass: r.safeQueryClass,
       meanMs: r.meanExecMsWindow ?? 0,
       maxMs: r.maxExecMsObserved,
       calls: r.callsDelta,
       regressed: r.regressionFlags.length > 0,
     }));
+}
+
+/** "q·" plus the last 8 characters of a pg_stat_statements queryid, enough to find it on the Database tab. */
+export function queryLabel(queryid: string): string {
+  const id = queryid.replace(/^-/, '');
+  return `q·${id.slice(-8)}`;
 }
