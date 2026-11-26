@@ -212,7 +212,11 @@ export type Database = {
       }
       admin_events: {
         Row: {
+          action_id: string | null
+          bridge_id: number | null
           browser_info: Json | null
+          ch_code: string | null
+          control_id: string | null
           created_at: string | null
           event_type: string
           feature: string | null
@@ -220,9 +224,14 @@ export type Database = {
           id: string
           message: string | null
           metadata: Json | null
+          page_id: string | null
+          platform: string | null
+          release: string | null
           resolved: boolean | null
           resolved_at: string | null
           resolved_by: string | null
+          server_code: string | null
+          session_id: string | null
           severity: Database["public"]["Enums"]["admin_event_severity"]
           source: string | null
           sport: string | null
@@ -234,7 +243,11 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          action_id?: string | null
+          bridge_id?: number | null
           browser_info?: Json | null
+          ch_code?: string | null
+          control_id?: string | null
           created_at?: string | null
           event_type: string
           feature?: string | null
@@ -242,9 +255,14 @@ export type Database = {
           id?: string
           message?: string | null
           metadata?: Json | null
+          page_id?: string | null
+          platform?: string | null
+          release?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
           resolved_by?: string | null
+          server_code?: string | null
+          session_id?: string | null
           severity?: Database["public"]["Enums"]["admin_event_severity"]
           source?: string | null
           sport?: string | null
@@ -256,7 +274,11 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          action_id?: string | null
+          bridge_id?: number | null
           browser_info?: Json | null
+          ch_code?: string | null
+          control_id?: string | null
           created_at?: string | null
           event_type?: string
           feature?: string | null
@@ -264,9 +286,14 @@ export type Database = {
           id?: string
           message?: string | null
           metadata?: Json | null
+          page_id?: string | null
+          platform?: string | null
+          release?: string | null
           resolved?: boolean | null
           resolved_at?: string | null
           resolved_by?: string | null
+          server_code?: string | null
+          session_id?: string | null
           severity?: Database["public"]["Enums"]["admin_event_severity"]
           source?: string | null
           sport?: string | null
@@ -9430,6 +9457,271 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      bridge_notes: {
+        Row: {
+          body: string
+          bridge_id: number | null
+          code: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          page_id: string | null
+          resolved_at: string | null
+        }
+        Insert: {
+          body?: string
+          bridge_id?: number | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          page_id?: string | null
+          resolved_at?: string | null
+        }
+        Update: {
+          body?: string
+          bridge_id?: number | null
+          code?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          page_id?: string | null
+          resolved_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bridge_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubhouse_drift: {
+        Row: {
+          code: string
+          drift_count: number
+          first_seen: string
+          kind: string
+          last_seen: string
+          release: string
+        }
+        Insert: {
+          code: string
+          drift_count?: number
+          first_seen: string
+          kind: string
+          last_seen: string
+          release: string
+        }
+        Update: {
+          code?: string
+          drift_count?: number
+          first_seen?: string
+          kind?: string
+          last_seen?: string
+          release?: string
+        }
+        Relationships: []
+      }
+      clubhouse_session_events: {
+        Row: {
+          act: string | null
+          action_id: string | null
+          bridge_id: number | null
+          code: string | null
+          control_id: string | null
+          drift: string[]
+          duration_ms: number | null
+          kind: string
+          message: string | null
+          outcome: string | null
+          page_id: string | null
+          received_at: string
+          sent_at: string
+          seq: number
+          server_code: string | null
+          session_id: string
+          trail: string[] | null
+        }
+        Insert: {
+          act?: string | null
+          action_id?: string | null
+          bridge_id?: number | null
+          code?: string | null
+          control_id?: string | null
+          drift?: string[]
+          duration_ms?: number | null
+          kind: string
+          message?: string | null
+          outcome?: string | null
+          page_id?: string | null
+          received_at?: string
+          sent_at: string
+          seq: number
+          server_code?: string | null
+          session_id: string
+          trail?: string[] | null
+        }
+        Update: {
+          act?: string | null
+          action_id?: string | null
+          bridge_id?: number | null
+          code?: string | null
+          control_id?: string | null
+          drift?: string[]
+          duration_ms?: number | null
+          kind?: string
+          message?: string | null
+          outcome?: string | null
+          page_id?: string | null
+          received_at?: string
+          sent_at?: string
+          seq?: number
+          server_code?: string | null
+          session_id?: string
+          trail?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clubhouse_session_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "clubhouse_sessions"
+            referencedColumns: ["session_id"]
+          },
+        ]
+      }
+      clubhouse_sessions: {
+        Row: {
+          ended_at: string | null
+          failure_count: number
+          last_at: string
+          pages: string[]
+          platform: string
+          release: string
+          replay_id: string | null
+          role: string
+          session_id: string
+          signal_count: number
+          started_at: string
+          team_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ended_at?: string | null
+          failure_count?: number
+          last_at: string
+          pages?: string[]
+          platform: string
+          release: string
+          replay_id?: string | null
+          role: string
+          session_id: string
+          signal_count?: number
+          started_at: string
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ended_at?: string | null
+          failure_count?: number
+          last_at?: string
+          pages?: string[]
+          platform?: string
+          release?: string
+          replay_id?: string | null
+          role?: string
+          session_id?: string
+          signal_count?: number
+          started_at?: string
+          team_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clubhouse_sessions_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "golf_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clubhouse_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clubhouse_signal_hourly: {
+        Row: {
+          act: string
+          bridge_id: number | null
+          bucket_hour: string
+          code: string
+          duration_buckets: number[]
+          first_at: string
+          kind: string
+          last_at: string
+          outcome: string
+          p50_ms: number | null
+          p95_ms: number | null
+          p99_ms: number | null
+          page_id: string
+          platform: string
+          release: string
+          role: string
+          signal_count: number
+          user_ids: string[]
+        }
+        Insert: {
+          act?: string
+          bridge_id?: number | null
+          bucket_hour: string
+          code: string
+          duration_buckets?: number[]
+          first_at?: string
+          kind: string
+          last_at?: string
+          outcome?: string
+          p50_ms?: number | null
+          p95_ms?: number | null
+          p99_ms?: number | null
+          page_id?: string
+          platform: string
+          release: string
+          role: string
+          signal_count?: number
+          user_ids?: string[]
+        }
+        Update: {
+          act?: string
+          bridge_id?: number | null
+          bucket_hour?: string
+          code?: string
+          duration_buckets?: number[]
+          first_at?: string
+          kind?: string
+          last_at?: string
+          outcome?: string
+          p50_ms?: number | null
+          p95_ms?: number | null
+          p99_ms?: number | null
+          page_id?: string
+          platform?: string
+          release?: string
+          role?: string
+          signal_count?: number
+          user_ids?: string[]
+        }
+        Relationships: []
       }
       crm_automations: {
         Row: {
@@ -24182,6 +24474,13 @@ export type Database = {
         Args: { p_marked_ats: string[]; p_team_ids: string[] }
         Returns: number
       }
+      clubhouse_bucket_quantile: {
+        Args: { p_buckets: number[]; p_q: number }
+        Returns: number
+      }
+      clubhouse_forget_user: { Args: { p_user: string }; Returns: number }
+      clubhouse_ingest_signals: { Args: { p_batch: Json }; Returns: Json }
+      clubhouse_signals_prune: { Args: never; Returns: undefined }
       coach_id_for_team: {
         Args: { p_team_id: string; p_user_id: string }
         Returns: string
