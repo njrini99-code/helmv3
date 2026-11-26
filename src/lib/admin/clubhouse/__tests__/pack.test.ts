@@ -8,6 +8,7 @@ import type { BridgeGraph } from '../graph';
 import {
   DEFAULT_LIVE_SOURCES,
   PACK_SCHEMA,
+  packTargetKey,
   buildPack,
   noSignalSource,
   packFileName,
@@ -32,8 +33,27 @@ function graph(): BridgeGraph {
   g.ids['70603']!.catalogRow = { theySee: 'A toast: not sent', how: 'chReport', test: 'unit' };
   g.actions['ACT-P007-SEND-MESSAGE']!.component = 'src/clubhouse/screens/messages/Composer.tsx#Composer';
   g.controls = { 'CTL-P007-014': { page: 'P007', label: 'Send', actions: ['ACT-P007-SEND-MESSAGE'], file: 'src/clubhouse/screens/messages/Composer.tsx:120' } };
+  g.findings = {
+    'F-0001': {
+      page: 'P007',
+      screen: 'Messages / Composer',
+      severity: 'S2',
+      dimension: 'correctness',
+      standard: 'CO-01 says exactly what is true',
+      title: 'Send says sent before the server answers',
+      repro: ['Open Messages as a coach', 'Go offline and press Send'],
+      fix: 'Wait for the action result before the toast',
+      files: ['src/clubhouse/screens/messages/Composer.tsx:88'],
+      tier: 'W',
+      audit: 'docs/clubhouse/audits/2026-11-01.md',
+      status: 'open',
+    },
+  };
   return g;
 }
+
+const USER = '0f8fad5b-d9cb-469f-a165-70867728950e';
+const TEAM = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
 
 describe('resolvePackTarget', () => {
   const g = graph();
@@ -49,7 +69,23 @@ describe('resolvePackTarget', () => {
   });
 
   it('anything else is null', () => {
-    for (const raw of ['', 'P999', 'CTL-P007-999', 'ACT-NOPE', '99999', 'CH-1', 'x'.repeat(90)]) expect(resolvePackTarget(g, raw)).toBeNull();
+    for (const raw of ['', 'P999', 'CTL-P007-999', 'ACT-NOPE', '99999', 'CH-1', 'x'.repeat(90), 'F-9999', 'rel:xyz', 'rel:12', 'user:not-a-uuid', 'team:', USER]) {
+      expect(resolvePackTarget(g, raw), raw).toBeNull();
+    }
+  });
+
+  it('reads a finding, a release, a person and a team, lower-casing the ids', () => {
+    expect(resolvePackTarget(g, 'f-0001')).toEqual({ kind: 'finding', key: 'F-0001', page: 'P007', ref: 'F-0001' });
+    expect(resolvePackTarget(g, 'REL:ABC1234')).toEqual({ kind: 'release', key: 'rel:abc1234', page: null, ref: 'abc1234' });
+    expect(resolvePackTarget(g, `user:${USER.toUpperCase()}`)).toEqual({ kind: 'person', key: `user:${USER}`, page: null, ref: USER });
+    expect(resolvePackTarget(g, `team:${TEAM}`)).toEqual({ kind: 'team', key: `team:${TEAM}`, page: null, ref: TEAM });
+  });
+
+  it('every kind round-trips through its key, as PackLink and >pack feed it back', () => {
+    for (const raw of ['P007', 'CTL-P007-014', 'ACT-P007-SEND-MESSAGE', 'CH-7004', 'F-0001', packTargetKey.release('ABCDEF1234'), packTargetKey.person(USER), packTargetKey.team(TEAM)]) {
+      const t = resolvePackTarget(g, raw)!;
+      expect(resolvePackTarget(g, t.key), raw).toEqual(t);
+    }
   });
 });
 
@@ -107,6 +143,60 @@ describe('buildPack', () => {
     const g = graph();
     const pack = await buildPack(g, resolvePackTarget(g, 'CTL-P007-014')!);
     expect(pack.contractRows.ids.map((i) => i.id)).toEqual([70603, 70901]);
+  });
+});
+
+describe('live-only and finding packs', () => {
+  const alias = (kind: 'person' | 'team', id: string) => `${kind === 'person' ? 'u' : 't'}-alias-${id.slice(0, 4)}`;
+
+  it('a person pack is pseudonymous by default: the user id is nowhere in the paste', async () => {
+    const g = graph();
+    const target = resolvePackTarget(g, packTargetKey.person(USER))!;
+    const seen: string[] = [];
+    const probe: PackLiveSource = { id: 'probe', title: 'Probe', read: async (t, _g, ctx) => (seen.push(t.ref ?? '', ctx.subject), { source: 'probe', title: 'Probe', state: 'ok', note: ctx.subject }) };
+    const pack = await buildPack(g, target, { pseudonymize: alias, sources: [probe] });
+    const md = renderPackMarkdown(pack);
+    expect(md).not.toContain(USER);
+    expect(pack.target).toMatchObject({ kind: 'person', key: 'u-alias-0f8f', label: 'person u-alias-0f8f', href: '/admin/clubhouse/sessions', page: null });
+    expect(pack.ask.about).toBe('person u-alias-0f8f');
+    expect(packFileName(pack)).toBe('bridge-pack-u-alias-0f8f.md');
+    // The source still reads by the real id; it only prints the pseudonymous subject.
+    expect(seen).toEqual([USER, 'person u-alias-0f8f']);
+  });
+
+  it('without a pseudonymizer the id is withheld, and names show it only when asked', async () => {
+    const g = graph();
+    const target = resolvePackTarget(g, packTargetKey.team(TEAM))!;
+    const off = await buildPack(g, target);
+    expect(renderPackMarkdown(off)).not.toContain(TEAM);
+    expect(off.target.label).toBe('team t-withheld');
+    const on = await buildPack(g, target, { includeNames: true, pseudonymize: alias });
+    expect(on.target).toMatchObject({ key: `team:${TEAM}`, href: `/admin/clubhouse/teams/${TEAM}` });
+    expect(on.people).toBe('names');
+  });
+
+  it('a release pack has no page, no contract rows, and a regression check', async () => {
+    const g = graph();
+    const pack = await buildPack(g, resolvePackTarget(g, 'rel:abcdef1234')!);
+    expect(pack.target).toMatchObject({ label: 'release abcdef1', href: '/admin/clubhouse/releases/abcdef1234', page: null });
+    expect(pack.contractRows.ids).toEqual([]);
+    expect(pack.reproduce).toMatchObject({ routes: [], preview: null, steps: [] });
+    expect(pack.done.checks[0]).toContain('release abcdef1');
+    expect(renderPackMarkdown(pack)).toContain('## 7. Done means');
+  });
+
+  it('a finding pack carries the finding, its files, its repro as steps and a re-audit check', async () => {
+    const g = graph();
+    const pack = await buildPack(g, resolvePackTarget(g, 'F-0001')!);
+    expect(pack.finding).toMatchObject({ id: 'F-0001', severity: 'S2', fix: 'Wait for the action result before the toast' });
+    expect(pack.code.files).toEqual(['src/clubhouse/screens/messages/Composer.tsx']);
+    expect(pack.reproduce.steps).toEqual(['Open Messages as a coach', 'Go offline and press Send']);
+    expect(pack.reproduce.preview).toBe('/clubhouse-preview/messages');
+    expect(pack.target.href).toBe('/admin/clubhouse/readiness?view=findings');
+    expect(pack.done.checks).toEqual(['F-0001 is re-checked by its audit (docs/clubhouse/audits/2026-11-01.md) and marked fixed']);
+    const md = renderPackMarkdown(pack);
+    expect(md).toContain('Finding F-0001 (S2, open)');
+    expect(md).toContain('- Step 2: Go offline and press Send');
   });
 });
 

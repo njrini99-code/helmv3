@@ -17,7 +17,7 @@ import {
   type ContextPack,
   type PackLiveSection,
 } from '@/lib/admin/clubhouse/pack';
-import { adminEventsPackSource } from '@/lib/admin/clubhouse/pack-server';
+import { adminEventsPackSource, packPseudonym } from '@/lib/admin/clubhouse/pack-server';
 import { clubhouseHref, liveRef, scopeEntries, type SearchParams } from '@/lib/admin/clubhouse/screens';
 import { CopyReportButton } from '../../_components/CopyReportButton';
 import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../_components/frame';
@@ -33,7 +33,7 @@ const QUEUE_PENDING = 'The queue keeps packs in bridge_notes, which arrives with
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 /**
- * B13 Duet desk (plan §8, §9.1): what does Claude Duet need, in one paste? Type a page, control, action or code (or
+ * B13 Duet desk (plan §8, §9.1): what does Claude Duet need, in one paste? Type a page, control, action, code or finding (or
  * arrive from a dossier's "Context pack") and the desk builds the pack: the contract and the code from the graph, the
  * evidence from live sources that say "No signal yet" until their tables exist. Pseudonymous unless "Include names"
  * is ticked (D7). Copy and Download are client-side; the queue (sent, verified, archived) waits on bridge_notes.
@@ -55,13 +55,14 @@ export default async function DuetDeskPage({ searchParams }: { searchParams?: Pr
     pack = await buildPack(graph, target, {
       includeNames,
       release: liveRef(),
+      pseudonymize: packPseudonym,
       sources: withSources(DEFAULT_LIVE_SOURCES, [adminEventsPackSource(supabase)]),
     });
   }
   const markdown = pack ? renderPackMarkdown(pack) : '';
   const report = pack
     ? markdown
-    : `# Duet desk (contract ${graph.contentHash})\n\nNo pack built. Type a page, control, action or code to build one.`;
+    : `# Duet desk (contract ${graph.contentHash})\n\nNo pack built. Type a page, control, action, code or finding to build one.`;
 
   return (
     <ClubhouseFrame
@@ -83,7 +84,7 @@ export default async function DuetDeskPage({ searchParams }: { searchParams?: Pr
           <EmptyState
             variant="search"
             title="Nothing to pack"
-            description={`"${raw}" is not a page, control, action or code in contract ${graph.contentHash}. Try P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, 70603 or CH-7004.`}
+            description={`"${raw}" is not a page, control, action, code or finding in contract ${graph.contentHash}, nor a rel:, user: or team: id. Try P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, 70603, CH-7004 or F-0001.`}
           />
         </div>
       ) : null}
@@ -102,7 +103,7 @@ function BuildForm({ raw, includeNames, hidden }: { raw: string; includeNames: b
         <input key={k} type="hidden" name={k} value={v} />
       ))}
       <label className="flex min-w-0 flex-1 basis-72 flex-col gap-1">
-        <span className="text-caption font-medium text-text-secondary">Page, control, action or code</span>
+        <span className="text-caption font-medium text-text-secondary">What to pack: a page, control, action, code or finding, or a release, person or team</span>
         <input
           name="t"
           defaultValue={raw}
@@ -110,7 +111,7 @@ function BuildForm({ raw, includeNames, hidden }: { raw: string; includeNames: b
           maxLength={80}
           autoComplete="off"
           spellCheck={false}
-          placeholder="P007 · CTL-P007-014 · ACT-P007-SEND-MESSAGE · 70603 · CH-7004"
+          placeholder="P007 · CTL-P007-014 · 70603 · CH-7004 · F-0001 · rel:<sha> · user:<id>"
           className="min-h-10 w-full rounded-fw-sm border border-border-control bg-surface px-3 font-fw-mono text-body-sm text-text-primary placeholder:text-text-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
         />
       </label>
@@ -145,7 +146,7 @@ function Queue({ pack }: { pack: ContextPack | null }) {
             <EmptyState
               variant="subtle"
               title="No pack yet"
-              description="Build one above, or press Context pack on any page, control, action or code dossier."
+              description="Build one above, or press Context pack on a dossier, a release, a person, a team or a readiness finding."
             />
           </div>
         )}

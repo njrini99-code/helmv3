@@ -224,6 +224,7 @@ describe('B12 Readiness', () => {
   it('the Findings view opens each finding and offers its pack', async () => {
     const c = await show(Readiness({ searchParams: sp({ view: 'findings' }) }));
     expectCodes(c, [BR.readiness.findingRow, BR.readiness.findingPack]);
+    expect(c.querySelector(`a[data-br="${BR.readiness.findingPack}"]`)?.getAttribute('href')).toMatch(/^\/admin\/clubhouse\/duet\?t=F-\d{4}$/);
     expect(c.textContent).toContain('Tap send twice');
   });
 

@@ -15,7 +15,8 @@ import {
 } from '@/lib/admin/clubhouse/live-model';
 import { readPipe, readSessionEvents, readSessions, readTeamName } from '@/lib/admin/clubhouse/live';
 import { clubhouseHref, markdownTable, type SearchParams } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../../_components/frame';
+import { packTargetKey } from '@/lib/admin/clubhouse/pack';
+import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, Section } from '../../_components/frame';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
 import { Fact, LiveFailed } from '../../_components/live';
 
@@ -83,7 +84,7 @@ export default async function ClubhouseTeamPage({ params, searchParams }: { para
           <Link href={`/admin/teams/${encodeURIComponent(teamId)}`} data-br={BR.people.account} className="inline-flex min-h-9 items-center rounded-fw-sm border border-border-control px-3 text-caption font-medium text-text-secondary hover:border-border-strong hover:text-text-primary">
             Team account
           </Link>
-          <PendingControl code={BR.people.pack} label="Context pack" arrives="Context packs arrive with the Duet desk (B13, PR 4)." />
+          <PackLink code={BR.people.pack} target={packTargetKey.team(teamId)} />
         </>
       }
     >

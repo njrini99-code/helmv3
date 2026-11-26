@@ -17,7 +17,8 @@ import {
 import { readAdminBridgeRows, readPeopleNames, readPipe, readSessionEvents, readSessions, readTeamName } from '@/lib/admin/clubhouse/live';
 import { actionIdFor } from '@/lib/admin/clubhouse/pulse';
 import { clubhouseHref, markdownTable, type SearchParams } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../../_components/frame';
+import { packTargetKey } from '@/lib/admin/clubhouse/pack';
+import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, Section } from '../../_components/frame';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
 import { Fact, LiveFailed } from '../../_components/live';
 import { LocalTime } from '../../../_components/LocalTime';
@@ -98,7 +99,7 @@ export default async function ClubhousePersonPage({ params, searchParams }: { pa
           <Link href={`/admin/users/${encodeURIComponent(userId)}/view-as`} data-br={BR.people.viewAs} className={linkButton}>
             View as (read-only)
           </Link>
-          <PendingControl code={BR.people.pack} label="Context pack" arrives="Context packs arrive with the Duet desk (B13, PR 4)." />
+          <PackLink code={BR.people.pack} target={packTargetKey.person(userId)} />
         </>
       }
     >

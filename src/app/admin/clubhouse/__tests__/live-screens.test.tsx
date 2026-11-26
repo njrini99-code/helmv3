@@ -85,6 +85,8 @@ describe('live screens over the seeded store', () => {
     cleanup();
     const one = await renderPage(ReleasePage({ params: Promise.resolve({ sha: LIVE_RELEASE }), searchParams: Promise.resolve({}) }));
     for (const code of [BR.releases.deltaRow, BR.releases.compareWith, BR.releases.pr, BR.releases.pack]) expect(has(one.container, code), code).toBe(true);
+    // The regression pack is a link to the Duet desk now, not a pending control.
+    expect(one.container.querySelector(`a[data-br="${BR.releases.pack}"]`)?.getAttribute('href')).toBe(`/admin/clubhouse/duet?t=${encodeURIComponent(`rel:${LIVE_RELEASE.toLowerCase()}`)}`);
   });
   it('B09 shows vitals as field data, and frustration per control', async () => {
     const { container } = await renderPage(Experience({ searchParams: Promise.resolve({}) }));
@@ -97,9 +99,11 @@ describe('live screens over the seeded store', () => {
   it('B08 opens a person and a team', async () => {
     const p = await renderPage(PersonPage({ params: Promise.resolve({ userId: USER }), searchParams: Promise.resolve({}) }));
     for (const code of [BR.people.sessionRow, BR.people.codeRow, BR.people.account, BR.people.viewAs, BR.people.pack]) expect(has(p.container, code), code).toBe(true);
+    expect(p.container.querySelector(`a[data-br="${BR.people.pack}"]`)?.getAttribute('href')).toBe(`/admin/clubhouse/duet?t=${encodeURIComponent(`user:${USER.toLowerCase()}`)}`);
     cleanup();
     const t = await renderPage(TeamPage({ params: Promise.resolve({ teamId: TEAM }), searchParams: Promise.resolve({}) }));
     expect(has(t.container, BR.people.sessionRow)).toBe(true);
+    expect(t.container.querySelector(`a[data-br="${BR.people.pack}"]`)?.getAttribute('href')).toBe(`/admin/clubhouse/duet?t=${encodeURIComponent(`team:${TEAM.toLowerCase()}`)}`);
   });
   it('B01 Pulse names each rule hit, the page wall, slipping actions and the release', () => {
     const graph = fixtureGraph();

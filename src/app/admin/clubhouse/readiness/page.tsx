@@ -23,7 +23,7 @@ import {
   type ReadinessView,
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, NoSignalCell, PendingControl } from '../_components/frame';
+import { ClubhouseFrame, GraphUnavailable, NoSignalCell, PackLink } from '../_components/frame';
 import { GateMark, PageChip } from '../_components/chips';
 import { GRAPH_SOURCE, readClubhouse } from '../_components/load';
 
@@ -291,7 +291,7 @@ function Findings({ findings, scope }: { findings: ReturnType<typeof findingRows
               ) : null}
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 <PageChip id={f.page} href={withScope(clubhouseHref.page(f.page), scope)} br={BR.pages.row} />
-                <PendingControl code={BR.readiness.findingPack} label="Send as a pack" arrives="Packs go to the Duet desk, which lands with PR 4." />
+                <PackLink code={BR.readiness.findingPack} target={f.id} label="Send as a pack" />
               </div>
             </div>
           </details>

@@ -248,8 +248,8 @@ export function PendingControl({ code, label, arrives }: { code: string; label: 
 }
 
 /**
- * "Context pack" on a dossier (BR-0209, BR-0306, BR-0407, BR-0509): opens the Duet desk (B13) with the pack for this
- * page, control, action or code already built.
+ * "Context pack" on a dossier (BR-0209, BR-0306, BR-0407, BR-0509), a person or team (BR-0805), a release (BR-1005)
+ * or a readiness finding (BR-1207): opens the Duet desk (B13) with the pack for it already built.
  */
 export function PackLink({ code, target, label = 'Context pack' }: { code: string; target: string; label?: string }) {
   return (

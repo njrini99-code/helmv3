@@ -4,11 +4,16 @@
  * to read, how to reproduce, and what done means.
  *
  * The contract, code, reading and reproduction parts come from the graph and are exact today. The evidence is live
- * data, so it comes from `PackLiveSource`s: each answers "No signal yet" until its table exists, and PR 3's live
- * layer (sessions, counters, releases) plugs in beside the admin_events one without touching this file.
+ * data, so it comes from `PackLiveSource`s: each answers "No signal yet" until its table exists. The live lenses'
+ * readers (pack-server.ts: counters, envelopes, sessions, release, rules) plug in beside the admin_events one by id.
+ *
+ * A pack is about a page, control, action or code from the graph, or about something only live data knows: a release
+ * (`rel:<sha>`, the regression pack), a person (`user:<uuid>`), a team (`team:<uuid>`), or an audit finding (F-0001).
  *
  * People are pseudonymous by default (D7): a source that returns people returns role, team and a pseudonymous id,
  * and names only when the caller passed `includeNames` (the B13 tick; the API never, unless its own switch allows).
+ * A person or team pack's own subject is pseudonymous too: the server passes `pseudonymize`, and without it the id is
+ * withheld, so a raw user id never reaches the paste.
  *
  * Pure and isomorphic. Plan: docs/superpowers/specs/helm-bridge/2026-11-18-clubhouse-bridge-redesign.md
  */
@@ -17,23 +22,55 @@ import { FAILURE_CATEGORIES, actionsEndingIn, categoryCode, categoryName, clubho
 
 export const PACK_SCHEMA = 'bridge-pack/v1' as const;
 
-export type PackKind = 'page' | 'control' | 'action' | 'code';
+export type PackKind = 'page' | 'control' | 'action' | 'code' | 'release' | 'person' | 'team' | 'finding';
 
 export interface PackTarget {
   kind: PackKind;
-  /** P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, or a Bridge ID as a string (70603). */
+  /**
+   * P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, a Bridge ID as a string (70603), `rel:<sha>`, `user:<uuid>`,
+   * `team:<uuid>` or F-0001. Feeding it back to resolvePackTarget gives the same target.
+   */
   key: string;
-  page: PageId;
+  /** The page it belongs to; null for a release, a person or a team. */
+  page: PageId | null;
+  /** The bare SHA, user id, team id or finding id the live sources read by (release, person, team, finding only). */
+  ref?: string;
 }
+
+const SHA_RE = /^[0-9a-f]{7,40}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** The Duet desk targets for the live-only kinds: what PackLink passes. */
+export const packTargetKey = {
+  release: (sha: string) => `rel:${sha.toLowerCase()}`,
+  person: (userId: string) => `user:${userId.toLowerCase()}`,
+  team: (teamId: string) => `team:${teamId.toLowerCase()}`,
+};
 
 /** Most IDs a page pack lists: its failure states first. The whole page is one click away on B02. */
 export const PAGE_PACK_ID_LIMIT = 40;
 
-/** Reads `P007`, `CTL-P007-014`, `ACT-P007-SEND-MESSAGE`, `70603` or `CH-7004` (any case). Null when it is none. */
+/**
+ * Reads `P007`, `CTL-P007-014`, `ACT-P007-SEND-MESSAGE`, `70603`, `CH-7004`, `F-0001`, `rel:<7-40 hex>`,
+ * `user:<uuid>` or `team:<uuid>` (any case). Null when it is none. A SHA and a UUID are prefixed because bare digits
+ * already mean a Bridge ID.
+ */
 export function resolvePackTarget(graph: BridgeGraph, raw: string | null | undefined): PackTarget | null {
   const value = String(raw ?? '').trim();
   if (!value || value.length > 80) return null;
+  const live = /^(rel|user|team):(.+)$/i.exec(value);
+  if (live) {
+    const prefix = live[1]!.toLowerCase();
+    const ref = live[2]!.toLowerCase();
+    if (prefix === 'rel') return SHA_RE.test(ref) ? { kind: 'release', key: packTargetKey.release(ref), page: null, ref } : null;
+    if (!UUID_RE.test(ref)) return null;
+    return prefix === 'user' ? { kind: 'person', key: packTargetKey.person(ref), page: null, ref } : { kind: 'team', key: packTargetKey.team(ref), page: null, ref };
+  }
   const upper = value.toUpperCase();
+  if (/^F-\d{4}$/.test(upper)) {
+    const f = graph.findings[upper];
+    return f ? { kind: 'finding', key: upper, page: f.page, ref: upper } : null;
+  }
   if (/^P\d{3}$/.test(upper) && graph.pages[upper as PageId]) return { kind: 'page', key: upper, page: upper as PageId };
   if (upper.startsWith('CTL-')) {
     const c = graph.controls[upper];
@@ -67,9 +104,11 @@ export interface PackLiveSection {
 
 export interface PackLiveContext {
   includeNames: boolean;
+  /** How a note names the target: its label, pseudonymous for a person or team unless names were asked for. */
+  subject: string;
 }
 
-/** One live lens on a pack's target. PR 3's data layer (src/lib/admin/clubhouse/live.ts) supplies more of these. */
+/** One live lens on a pack's target. pack-server.ts reads them through the live lenses' layer (live.ts). */
 export interface PackLiveSource {
   id: string;
   title: string;
@@ -85,7 +124,7 @@ export function noSignalSource(id: string, title: string, what: string): PackLiv
   };
 }
 
-/** The evidence §9.1 lists, each "No signal yet" until its reader is wired (PR 3 replaces these by id). */
+/** The evidence §9.1 lists, each "No signal yet" until its reader is wired (pack-server.ts replaces these by id). */
 export const DEFAULT_LIVE_SOURCES: readonly PackLiveSource[] = [
   noSignalSource('counters', 'Counts and their split', 'counts by role, platform and release, first and last seen'),
   noSignalSource('envelopes', 'Representative envelopes', 'three envelopes with their trails, grouped stacks and server codes'),
@@ -144,6 +183,20 @@ export interface PackControl {
   verdict: string | null;
 }
 
+/** An audit finding's own words (B12), carried by a finding pack. */
+export interface PackFinding {
+  id: string;
+  severity: string;
+  status: string;
+  title: string;
+  screen: string;
+  dimension: string;
+  standard: string;
+  fix: string;
+  tier: string;
+  audit: string;
+}
+
 export interface ContextPack {
   schema: typeof PACK_SCHEMA;
   /** The contract's content hash: the pack is read against this graph. */
@@ -154,11 +207,13 @@ export interface ContextPack {
   target: PackTarget & { label: string; href: string };
   ask: { about: string; question: string };
   contractRows: { ids: PackId[]; actions: PackAction[]; controls: PackControl[]; categories: string[]; truncated: number };
+  /** Present on a finding pack only. */
+  finding?: PackFinding;
   evidence: PackLiveSection[];
   code: { files: string[]; tests: string[]; testCommand: string | null; services: string[]; tables: string[] };
   read: string[];
-  reproduce: { routes: string[]; roles: string[]; preview: string | null; browser: string };
-  done: { codes: string[]; tests: string[]; gates: string[]; drift: string[] };
+  reproduce: { routes: string[]; roles: string[]; preview: string | null; steps: string[]; browser: string };
+  done: { codes: string[]; checks: string[]; tests: string[]; gates: string[]; drift: string[] };
 }
 
 function packId(id: BridgeId, entry: GraphId): PackId {
@@ -210,6 +265,10 @@ function involved(graph: BridgeGraph, target: PackTarget): { ids: BridgeId[]; ac
     const own = c.code ? graph.chIndex[c.code] : undefined;
     return { ids: uniq([...(own !== undefined ? [own] : []), ...fromActions]).sort((x, y) => x - y), actions: [...c.actions], controls: [target.key], truncated: 0 };
   }
+  // A release, a person or a team has no contract of its own: its evidence names the codes. A finding cites files.
+  if (target.kind === 'release' || target.kind === 'person' || target.kind === 'team' || target.kind === 'finding') {
+    return { ids: [], actions: [], controls: [], truncated: 0 };
+  }
   // A page: its failure states first, then the rest, capped; every action; no controls (B02 lists them).
   const mine = Object.entries(graph.ids)
     .filter(([, e]) => e.page === target.page && e.status !== 'deprecated')
@@ -219,15 +278,41 @@ function involved(graph: BridgeGraph, target: PackTarget): { ids: BridgeId[]; ac
   return { ids: mine.slice(0, PAGE_PACK_ID_LIMIT).map((m) => m.id), actions, controls: [], truncated: Math.max(0, mine.length - PAGE_PACK_ID_LIMIT) };
 }
 
+/** What a person or team pack calls its subject: a pseudonym unless names were asked for (D7). */
+export type PackPseudonymizer = (kind: 'person' | 'team', id: string) => string;
+
+/** Without a server pseudonymizer the id is withheld, never printed. */
+const WITHHELD: PackPseudonymizer = (kind) => (kind === 'person' ? 'u-withheld' : 't-withheld');
+
+/** The target as a pack prints it: a person or team keyed by its pseudonym unless names were asked for. */
+function shownTarget(target: PackTarget, includeNames: boolean, pseudonymize: PackPseudonymizer): PackTarget {
+  if ((target.kind !== 'person' && target.kind !== 'team') || includeNames || !target.ref) return target;
+  const alias = pseudonymize(target.kind, target.ref);
+  return { ...target, key: alias, ref: alias };
+}
+
 function targetLabel(graph: BridgeGraph, target: PackTarget): string {
-  if (target.kind === 'page') return `${target.key} ${graph.pages[target.page]?.name ?? ''}`.trim();
+  if (target.kind === 'release') return `release ${(target.ref ?? '').slice(0, 7)}`;
+  if (target.kind === 'person') return `person ${target.ref ?? ''}`.trim();
+  if (target.kind === 'team') return `team ${target.ref ?? ''}`.trim();
+  if (target.kind === 'finding') return `${target.key} (${graph.findings[target.key]?.title ?? ''})`;
+  if (target.kind === 'page') return `${target.key} ${target.page ? (graph.pages[target.page]?.name ?? '') : ''}`.trim();
   if (target.kind === 'action') return `${target.key} (${graph.actions[target.key]?.label ?? ''})`;
   if (target.kind === 'control') return `${target.key} (${controlLabel(graph.controls[target.key]!)})`;
   const e = graph.ids[target.key];
   return e?.ch ? `${target.key} · ${e.ch}` : target.key;
 }
 
-function targetHref(target: PackTarget): string {
+const LIVE_BASE = '/admin/clubhouse';
+
+/** Where "Open the dossier" goes. A pseudonymous person or team opens the sessions index, not their own page. */
+function targetHref(target: PackTarget, pseudonymous: boolean): string {
+  if (target.kind === 'release') return `${LIVE_BASE}/releases/${encodeURIComponent(target.ref ?? '')}`;
+  if (target.kind === 'person' || target.kind === 'team') {
+    if (pseudonymous || !target.ref) return `${LIVE_BASE}/sessions`;
+    return `${LIVE_BASE}/${target.kind === 'person' ? 'people' : 'teams'}/${encodeURIComponent(target.ref)}`;
+  }
+  if (target.kind === 'finding') return `${clubhouseHref.readiness()}?view=findings`;
   if (target.kind === 'page') return clubhouseHref.page(target.key);
   if (target.kind === 'action') return clubhouseHref.action(target.key);
   if (target.kind === 'control') return clubhouseHref.control(target.key);
@@ -242,6 +327,13 @@ function question(graph: BridgeGraph, target: PackTarget): string {
     if (FAILURE_CATEGORIES.has(e.category)) return `Why does "${e.meaning}" happen, and how do we stop it?`;
     return `Is "${e.meaning}" doing what its contract says?`;
   }
+  if (target.kind === 'release') return `What did ${targetLabel(graph, target)} break or slow down for real people, and which change caused it?`;
+  if (target.kind === 'person') return `Why is Clubhouse failing this person, and is it only them?`;
+  if (target.kind === 'team') return `Why is Clubhouse failing this team, and is it only them?`;
+  if (target.kind === 'finding') {
+    const f = graph.findings[target.key];
+    return `${f?.title ?? target.key}: fix it the way the audit says, and prove it.`;
+  }
   if (target.kind === 'action') return `Does "${graph.actions[target.key]!.label}" end only in the outcomes it lists, and fast enough?`;
   if (target.kind === 'control') return `Does this control do what its label says, and report the action it starts?`;
   return `Is ${targetLabel(graph, target)} doing what its contract says?`;
@@ -252,15 +344,19 @@ export interface BuildPackOptions {
   sources?: readonly PackLiveSource[];
   /** The live SHA (liveRef()), or `main`. */
   release?: string;
+  /** Pseudonyms for a person or team pack's subject (pack-server.ts `packPseudonym`). Without it the id is withheld. */
+  pseudonymize?: PackPseudonymizer;
 }
 
-export async function buildPack(graph: BridgeGraph, target: PackTarget, options: BuildPackOptions = {}): Promise<ContextPack> {
+export async function buildPack(graph: BridgeGraph, rawTarget: PackTarget, options: BuildPackOptions = {}): Promise<ContextPack> {
   const includeNames = options.includeNames === true;
-  const inv = involved(graph, target);
+  const target = shownTarget(rawTarget, includeNames, options.pseudonymize ?? WITHHELD);
+  const finding = rawTarget.kind === 'finding' ? graph.findings[rawTarget.key] : undefined;
+  const inv = involved(graph, rawTarget);
   const ids = inv.ids.flatMap((id) => (graph.ids[String(id)] ? [packId(id, graph.ids[String(id)]!)] : []));
   const actions = inv.actions.flatMap((k) => (graph.actions[k] ? [packAction(k, graph.actions[k]!)] : []));
   const controls = inv.controls.flatMap((k) => (graph.controls[k] ? [packControl(k, graph.controls[k]!)] : []));
-  const page = graph.pages[target.page];
+  const page = target.page ? graph.pages[target.page] : undefined;
 
   const files = uniq([
     ...inv.ids.flatMap((id) => (graph.ids[String(id)]?.where ?? []).map(fileOf)),
@@ -270,6 +366,7 @@ export async function buildPack(graph: BridgeGraph, target: PackTarget, options:
     }),
     ...actions.flatMap((a) => [graph.actions[a.id]?.component, a.service].filter((x): x is string => !!x).map(fileOf)),
     ...controls.flatMap((c) => (c.file ? [fileOf(c.file)] : [])),
+    ...(finding?.files ?? []).map(fileOf),
   ]).sort();
   const tests = uniq([
     ...inv.ids.flatMap((id) => graph.ids[String(id)]?.tests ?? []),
@@ -291,16 +388,23 @@ export async function buildPack(graph: BridgeGraph, target: PackTarget, options:
   if (inv.actions.length) drift.push('7 Action outcomes that are deprecated, or that fired unlisted');
   if (controls.some((c) => !c.actions.length)) drift.push('§4.7 Controls with neither an action nor a link');
 
+  const checks: string[] = [];
+  if (rawTarget.kind === 'release') checks.push(`The new and rising failure codes in ${targetLabel(graph, target)} fall back to the base release's level (B10)`);
+  if (rawTarget.kind === 'person' || rawTarget.kind === 'team') checks.push(`The failure codes in the evidence stop firing for this ${rawTarget.kind}`);
+  if (finding) checks.push(`${rawTarget.key} is re-checked by its audit (${finding.audit}) and marked fixed`);
+
+  const subject = targetLabel(graph, target);
   const sources = options.sources ?? DEFAULT_LIVE_SOURCES;
-  const evidence = await Promise.all(sources.map((s) => readSafely(s, target, graph, { includeNames })));
+  // Sources read by the real ids; they print `subject`, which is pseudonymous unless names were asked for.
+  const evidence = await Promise.all(sources.map((s) => readSafely(s, rawTarget, graph, { includeNames, subject })));
 
   return {
     schema: PACK_SCHEMA,
     contract: graph.contentHash,
     release: options.release ?? 'main',
     people: includeNames ? 'names' : 'pseudonymous',
-    target: { ...target, label: targetLabel(graph, target), href: targetHref(target) },
-    ask: { about: `${target.kind} ${targetLabel(graph, target)}`, question: question(graph, target) },
+    target: { ...target, label: subject, href: targetHref(rawTarget, target !== rawTarget) },
+    ask: { about: target.kind === 'release' || target.kind === 'person' || target.kind === 'team' ? subject : `${target.kind} ${subject}`, question: question(graph, target) },
     contractRows: {
       ids,
       actions,
@@ -308,6 +412,22 @@ export async function buildPack(graph: BridgeGraph, target: PackTarget, options:
       categories: uniq(ids.map((i) => i.category)).sort(),
       truncated: inv.truncated,
     },
+    ...(finding
+      ? {
+          finding: {
+            id: rawTarget.key,
+            severity: finding.severity,
+            status: finding.status,
+            title: finding.title,
+            screen: finding.screen,
+            dimension: finding.dimension,
+            standard: finding.standard,
+            fix: finding.fix,
+            tier: finding.tier,
+            audit: finding.audit,
+          },
+        }
+      : {}),
     evidence,
     code: {
       files,
@@ -320,11 +440,13 @@ export async function buildPack(graph: BridgeGraph, target: PackTarget, options:
     reproduce: {
       routes: page ? [...page.routes, ...page.plannedRoutes] : [],
       roles: page ? [...page.roles] : [],
-      preview: previewPath(target.page),
+      preview: target.page ? previewPath(target.page) : null,
+      steps: finding ? (Array.isArray(finding.repro) ? [...finding.repro] : finding.repro ? [finding.repro] : []) : [],
       browser: 'W first: Playwright WebKit on a phone viewport, then real Safari (.claude/rules/browsers.md)',
     },
     done: {
       codes: failing.map((i) => `${i.id}${i.ch ? ` ${i.ch}` : ''} stops firing`),
+      checks,
       tests,
       gates: ['npm run clubhouse:check'],
       drift,
@@ -372,6 +494,10 @@ export function renderPackMarkdown(pack: ContextPack): string {
     out.push('', '| Control | Label | Role | Runs | Board | File |', '| --- | --- | --- | --- | --- | --- |');
     for (const k of c.controls) out.push(`| ${k.id} | ${esc(k.label)} | ${esc(k.role)} | ${esc(k.actions.join(', ') || null)} | ${esc(k.verdict)} | ${esc(k.file)} |`);
   }
+  if (pack.finding) {
+    const f = pack.finding;
+    out.push('', `Finding ${f.id} (${f.severity}, ${f.status}) on ${f.screen}: ${f.title}`, '', `- Standard: ${f.standard}`, `- Dimension: ${f.dimension} · tier ${f.tier} · audit ${f.audit}`, `- Fix: ${f.fix}`);
+  }
   out.push('', `Categories: ${c.categories.join('; ') || 'none'}.`, '', '## 3. The evidence', '');
   for (const s of pack.evidence) {
     out.push(`### ${s.title}`, '', s.note);
@@ -399,11 +525,12 @@ export function renderPackMarkdown(pack: ContextPack): string {
     `- Routes: ${pack.reproduce.routes.join(', ') || 'none'}`,
     `- Roles: ${pack.reproduce.roles.join(', ') || 'signed out'}`,
     `- Preview: ${pack.reproduce.preview ?? 'none for this page'} (a local dev server; not served in production)`,
+    ...pack.reproduce.steps.map((step, i) => `- Step ${i + 1}: ${step}`),
     `- Browser: ${pack.reproduce.browser}`,
     '',
     '## 7. Done means',
     '',
-    list([...pack.done.codes, ...pack.done.tests.map((t) => `${t} passes`), ...pack.done.gates.map((g) => `${g} green`), ...pack.done.drift.map((d) => `drift list ${d} does not grow`)]),
+    list([...pack.done.codes, ...pack.done.checks, ...pack.done.tests.map((t) => `${t} passes`), ...pack.done.gates.map((g) => `${g} green`), ...pack.done.drift.map((d) => `drift list ${d} does not grow`)]),
     '',
     '```json',
     JSON.stringify(pack, null, 2),

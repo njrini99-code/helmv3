@@ -81,6 +81,9 @@ const GRAPH_HIT_ICON: Record<BridgeSearchKind, typeof House> = {
   action: Zap,
   code: Hash,
   finding: ClipboardCheck,
+  release: GitBranch,
+  person: Users,
+  team: Users,
 };
 
 /**

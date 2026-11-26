@@ -1,6 +1,7 @@
 /**
  * B14, the command palette's graph half (plan §7.2): type a page, an action, a control, a Bridge ID, a CH- code or a
- * finding and land on its dossier. People, teams, SHAs and fingerprints need live data and arrive with PR 3.
+ * finding and land on its dossier. `>pack` also takes a release (`rel:<sha>`), a person (`user:<uuid>`) or a team
+ * (`team:<uuid>`), which only live data knows; plain search stays on the graph.
  *
  * Pure: the GET route (`/api/admin/clubhouse/search`) runs it on the server against the graph, so the 1.4 MB file
  * never reaches the browser. Exact IDs win, then prefixes, then words.
@@ -9,7 +10,7 @@ import type { BridgeGraph } from './graph';
 import { clubhouseHref, controlLabel } from './screens';
 import { resolvePackTarget } from './pack';
 
-export type BridgeSearchKind = 'page' | 'action' | 'control' | 'code' | 'finding';
+export type BridgeSearchKind = 'page' | 'action' | 'control' | 'code' | 'finding' | 'release' | 'person' | 'team';
 
 export interface BridgeSearchHit {
   kind: BridgeSearchKind;

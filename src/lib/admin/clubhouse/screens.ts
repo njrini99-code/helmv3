@@ -193,7 +193,7 @@ export const clubhouseHref = {
   code: (id: string | number) => `${CLUBHOUSE_BASE}/codes/${encodeURIComponent(String(id))}`,
   readiness: () => `${CLUBHOUSE_BASE}/readiness`,
   drift: () => `${CLUBHOUSE_BASE}/drift`,
-  /** B13 with a pack built for `target` (P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, 70603 or CH-7004). */
+  /** B13 with a pack built for `target` (P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, 70603, CH-7004, F-0001, rel:…, user:…, team:…). */
   duet: (target?: string) => (target ? `${CLUBHOUSE_BASE}/duet?t=${encodeURIComponent(target)}` : `${CLUBHOUSE_BASE}/duet`),
 };
 

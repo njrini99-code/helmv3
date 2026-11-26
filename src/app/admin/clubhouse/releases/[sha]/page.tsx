@@ -19,7 +19,8 @@ import {
 import { readDrift, readHourly, readPipe } from '@/lib/admin/clubhouse/live';
 import { actionIdFor } from '@/lib/admin/clubhouse/pulse';
 import { clubhouseHref, markdownTable, type SearchParams } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, LinkChips, NoSignal, PendingControl, Section } from '../../_components/frame';
+import { packTargetKey } from '@/lib/admin/clubhouse/pack';
+import { ClubhouseFrame, GraphUnavailable, LinkChips, NoSignal, PackLink, Section } from '../../_components/frame';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
 import { LiveFailed } from '../../_components/live';
 
@@ -99,7 +100,7 @@ export default async function ClubhouseReleasePage({ params, searchParams }: { p
             <ExternalLink size={12} aria-hidden />
             <span className="sr-only">(opens GitHub)</span>
           </a>
-          <PendingControl code={BR.releases.pack} label="Regression pack" arrives="Context packs arrive with the Duet desk (B13, PR 4)." />
+          {/^[0-9a-f]{7,40}$/i.test(sha) ? <PackLink code={BR.releases.pack} target={packTargetKey.release(sha)} label="Regression pack" /> : null}
         </>
       }
     >
