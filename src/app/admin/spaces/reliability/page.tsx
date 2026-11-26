@@ -19,6 +19,7 @@ import {
   filterFeed,
   fixStatus,
   hourlyCodeOf,
+  isCatchAll,
   itemExplanation,
   itemHeadlineQuoted,
   hourlyKeyOf,
@@ -121,10 +122,10 @@ function FeedRow({ item, scope, selected }: { item: FeedItem; scope: FeedScope; 
         </span>
         <span className="rl-where" style={{ display: 'block' }}>
           {item.pageName}
-          {item.controlLabel || item.actionLabel ? (
+          {item.controlLabel || item.actionLabel || item.act ? (
             <>
               <span className="rl-sep" aria-hidden="true">›</span>
-              {item.controlLabel ?? item.actionLabel}
+              {item.controlLabel ?? item.actionLabel ?? <span className="bs-mono">{item.act}</span>}
             </>
           ) : null}
           <span className="rl-team"> · {item.teamName ?? 'no team name'}</span>
@@ -228,13 +229,19 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
         item={selected}
         graph={graph}
         scope={scope}
-        where={whereOf(selected, graph)}
+        where={whereOf(selected, graph, events.data)}
         trail={{ state: events.state, lines, truncated: lines.length < events.data.length }}
         counts={counts}
         sameServer={selected.serverCode ? { same: sameCode.filter((i) => i.serverCode === selected!.serverCode).length, of: sameCode.length } : null}
         notes={{ state: notesState, expected, watching }}
         outsideWindow={outsideWindow}
-        fix={fixStatus(baselineComplete ? releaseRows.data : null, hourlyCodeOf(selected), release, { release: selected.release, at: selected.at })}
+        fix={fixStatus(
+          baselineComplete ? releaseRows.data : null,
+          hourlyCodeOf(selected),
+          release,
+          { release: selected.release, at: selected.at, page: selected.page },
+          isCatchAll(graph, selected) ? selected.page : undefined,
+        )}
         noteControls={{
           watch: <WatchControl id={noteId} watching={watching} state={notesState} why={why} />,
           expected: <ExpectedNote id={noteId} note={expected} by={null} state={notesState} why={why} />,

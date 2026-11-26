@@ -144,14 +144,14 @@ export async function readTeamNames(ids: readonly string[]): Promise<LiveRead<Ma
 }
 
 /** Failure rows' code and release from the hourly store since `sinceIso`: the input to "new in this release". */
-export async function readFailureCodeReleases(sinceIso: string, cap = NEW_CODE_CAP): Promise<LiveRead<Array<{ code: string; release: string; at: string }>>> {
+export async function readFailureCodeReleases(sinceIso: string, cap = NEW_CODE_CAP): Promise<LiveRead<Array<{ code: string; release: string; at: string; page_id: string }>>> {
   try {
     const client = db();
     return await paged(
       (from, to) =>
         client
           .from('clubhouse_signal_hourly')
-          .select('code, release, bucket_hour')
+          .select('code, release, bucket_hour, page_id')
           .gte('bucket_hour', hourFloorIso(sinceIso))
           .or(FAILURE_FILTER)
           .order('bucket_hour', { ascending: false })
@@ -160,7 +160,7 @@ export async function readFailureCodeReleases(sinceIso: string, cap = NEW_CODE_C
           .order('kind').order('outcome').order('act').order('page_id').order('role').order('platform').order('release')
           .range(from, to),
       cap,
-      (r) => ({ code: String(r.code ?? ''), release: String(r.release ?? ''), at: String(r.bucket_hour ?? '') }),
+      (r) => ({ code: String(r.code ?? ''), release: String(r.release ?? ''), at: String(r.bucket_hour ?? ''), page_id: String(r.page_id ?? '') }),
     );
   } catch (e) {
     return thrown(e, []);

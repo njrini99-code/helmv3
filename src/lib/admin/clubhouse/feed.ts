@@ -281,6 +281,12 @@ export function itemState(
   return null;
 }
 
+/** True when the item's code is a shell-wide catch-all (its row lives on P001, Shell) fired on another page. */
+export function isCatchAll(graph: Pick<BridgeGraph, 'ids'>, item: Pick<FeedItem, 'bridgeId' | 'page'>): boolean {
+  const row = item.bridgeId === null ? undefined : graph.ids[String(item.bridgeId)];
+  return row?.page === 'P001' && item.page !== 'P001';
+}
+
 /**
  * The code a failure is counted under in `clubhouse_signal_hourly` (ingest.ts `codeFor`): the code the event sent,
  * else the resolved row's CH code or Bridge ID. The notes key on `catalogCode`; release history keys on this.
@@ -441,18 +447,44 @@ export interface WhereModel {
   docs: Array<{ name: string; path: string }>;
   /** Plain words when the control → action link is missing, else null. */
   gap: string | null;
+  /** Where the button came from: the failure itself, or the session's last press before it on the same page. */
+  controlSource: 'event' | 'last-press' | null;
+  /** The save's own name (`useAction('messages.send')`), when the event carried one. */
+  actName: string | null;
 }
 
-export function whereOf(item: Pick<FeedItem, 'page' | 'pageName' | 'control' | 'action' | 'bridgeId'>, graph: Pick<BridgeGraph, 'controls' | 'actions' | 'ids' | 'pages'>): WhereModel {
-  const control: GraphControl | undefined = item.control ? graph.controls[item.control] : undefined;
+/**
+ * The last button pressed before a failure, on the same page in the same session. A save that fails sends no control
+ * (useAction knows its name, not the button), so this is how "which button" is answered for it.
+ */
+export function lastPressBefore(events: readonly SessionEventRow[] | undefined, item: Pick<FeedItem, 'sessionId' | 'seq' | 'page'>): string | null {
+  if (!events?.length) return null;
+  let best: SessionEventRow | null = null;
+  for (const e of events) {
+    if (e.session_id !== item.sessionId || e.seq >= item.seq || e.kind !== 'tap' || !e.control_id || e.page_id !== item.page) continue;
+    if (!best || e.seq > best.seq) best = e;
+  }
+  return best?.control_id ?? null;
+}
+
+export function whereOf(
+  item: Pick<FeedItem, 'page' | 'pageName' | 'control' | 'action' | 'bridgeId'> & Partial<Pick<FeedItem, 'sessionId' | 'seq' | 'act'>>,
+  graph: Pick<BridgeGraph, 'controls' | 'actions' | 'ids' | 'pages'>,
+  events?: readonly SessionEventRow[],
+): WhereModel {
+  const pressed = !item.control && item.sessionId && item.seq !== undefined ? lastPressBefore(events, { sessionId: item.sessionId, seq: item.seq, page: item.page }) : null;
+  const controlId = item.control ?? pressed;
+  const control: GraphControl | undefined = controlId ? graph.controls[controlId] : undefined;
   const action: GraphAction | undefined = item.action ? graph.actions[item.action] : undefined;
   const id = item.bridgeId === null ? undefined : graph.ids[String(item.bridgeId)];
   const files = [control?.file, action?.component, action?.service, ...(id?.where ?? [])].filter((f): f is string => Boolean(f));
+  const actName = item.act ?? null;
   const docs = Object.entries(graph.pages[item.page as PageId]?.docs ?? {})
     .filter((e): e is [string, string] => Boolean(e[1]))
     .map(([name, path]) => ({ name, path }));
   let gap: string | null = null;
-  if (!item.control && !item.action) gap = 'The event named no button and no action.';
+  if (pressed) gap = 'The failure named no button, so this is the last one pressed before it on the same page.';
+  else if (!item.control && !item.action) gap = actName ? 'The failure named its save but no button, and no press before it was kept.' : 'The event named no button and no action.';
   else if (item.control && !control) gap = `${item.control} is not in the Bridge map yet.`;
   else if (item.action && !action) gap = `${item.action} is not in the Bridge map yet.`;
   else if (item.control && item.action && control && !control.actions.includes(item.action)) gap = `${item.control} is not linked to ${item.action} in the Bridge map yet.`;
@@ -460,12 +492,14 @@ export function whereOf(item: Pick<FeedItem, 'page' | 'pageName' | 'control' | '
   return {
     page: item.page,
     pageName: item.pageName,
-    control: item.control ? { id: item.control, label: controlName(control), description: control?.description ?? null, file: control?.file ?? null } : null,
+    control: controlId ? { id: controlId, label: controlName(control), description: control?.description ?? null, file: control?.file ?? null } : null,
     action: item.action && action ? { id: item.action, label: action.label, component: action.component, handler: action.handler, service: action.service } : item.action ? { id: item.action, label: item.action, component: null, handler: null, service: null } : null,
     files: [...new Set(files)],
     tables: action?.tables ?? [],
     docs,
     gap,
+    controlSource: item.control ? 'event' : pressed ? 'last-press' : null,
+    actName,
   };
 }
 
@@ -685,18 +719,24 @@ export interface FixStatus {
  * "Not seen in the live release" is not "fixed": it may just have had no traffic yet, and the words say so.
  */
 export function fixStatus(
-  history: ReadonlyArray<{ code: string; release: string; at: string }> | null,
+  history: ReadonlyArray<{ code: string; release: string; at: string; page_id?: string }> | null,
   code: string | null,
   live: string | null,
   /** The failure on screen is evidence too: it can never read as "not seen in live" or "no history". */
-  self?: { release: string | null; at: string },
+  self?: { release: string | null; at: string; page?: string },
+  /**
+   * Count only this page. For a shell-wide catch-all code (the generic "any save fails" row) the hourly store cannot tell one
+   * save from another (an unmapped save keeps no act there), so the page is the finest honest key.
+   */
+  onPage?: string,
 ): FixStatus {
-  const rows = history && code && self?.release ? [...history, { code, release: self.release, at: self.at }] : history;
+  const own = history && code && self?.release ? [...history, { code, release: self.release, at: self.at, page_id: self.page ?? onPage }] : history;
+  const rows = own && onPage ? own.filter((r) => (r as { page_id?: string }).page_id === onPage) : own;
   if (!rows) return { state: 'unknown', words: 'Whether it still fails is unknown: the 8-day release history could not be read whole.', tone: 'muted' };
   if (!code) return { state: 'unknown', words: 'Whether it still fails is unknown: the failure carried no code to follow.', tone: 'muted' };
   if (!live) return { state: 'unknown', words: 'Whether it still fails is unknown: the live release is not known here.', tone: 'muted' };
   const mine = rows.filter((r) => r.code === code && r.release);
-  if (!mine.length) return { state: 'no-history', words: 'No failure of this code is in the hourly store for the last 8 days (it may be older than that).', tone: 'muted' };
+  if (!mine.length) return { state: 'no-history', words: `No failure of this code${onPage ? ' on this page' : ''} is in the hourly store for the last 8 days (it may be older than that).`, tone: 'muted' };
   const inLive = mine.filter((r) => r.release === live);
   const others = [...new Set(mine.filter((r) => r.release !== live).map((r) => r.release))];
   if (inLive.length && !others.length) return { state: 'new-in-live', words: `New in the live release ${live}: it never failed in an earlier release in the 8 days before.`, tone: 'bad' };

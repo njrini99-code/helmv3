@@ -36,6 +36,8 @@ import {
   utcDateLine,
   utcMidnight,
   weekTicks,
+  needUnknownWords,
+  plainActivityTitle,
 } from '../_landing/model';
 
 export const metadata: Metadata = { title: 'Today' };
@@ -227,7 +229,7 @@ export default async function TodaySpacePage() {
             <span className="bs-big">{needs.unread > 0 ? `${needs.total}+` : needs.total}</span>
             <div className="bs-panel-note" style={{ marginTop: 6 }}>
               {needs.unread > 0
-                ? `at least; ${plural(needs.unread, 'source')} could not be read`
+                ? `at least; ${needUnknownWords(needs)}`
                 : needs.total === 0
                   ? 'Nothing needs you right now.'
                   : 'jobs, migrations, teams and causes, each counted once'}
@@ -301,7 +303,7 @@ function SinceRow({ item }: { item: ActivityItem }) {
     <>
       <span className="bs-since-time">{utcClock(item.ts)}</span>
       <span className={`bs-dot ${toneClass(KIND_TONE[item.kind] ?? 'muted')}`} aria-hidden="true" />
-      <span className="bs-since-text">{item.title}</span>
+      <span className="bs-since-text">{plainActivityTitle(item.title)}</span>
     </>
   );
   return item.href ? (

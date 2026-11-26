@@ -7514,6 +7514,23 @@
     },
     {
       "source": "admin_platform",
+      "target": "clubhouse",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/clubhouse/__tests__/wiring.test.ts",
+          "anchor": "src/clubhouse/lib/signal"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/admin/clubhouse/__tests__/wiring.test.ts",
+          "anchor": "src/clubhouse/lib/use-action"
+        }
+      ]
+    },
+    {
+      "source": "admin_platform",
       "target": "clubhouse_drift",
       "kind": "feature_table",
       "evidence": [
