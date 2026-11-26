@@ -379,6 +379,9 @@ export async function getDecisionRoomData(): Promise<DecisionRoomData> {
     {
       featureArea: 'baseball-decision-room',
       requiredCapability: 'can_manage_settings',
+      // demoSafe: every loader in read-models/decision-room only selects, so
+      // the demo coach can open the Decision Room instead of its error page.
+      demoSafe: true,
     },
     async (ctx): Promise<DecisionRoomData> => {
       const supabase = await createClient();

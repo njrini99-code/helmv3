@@ -268,7 +268,8 @@ export const getProgramSettings = withBaseballAction(
 
 export const getProgramBrand = withBaseballAction(
   'getProgramBrand',
-  { featureArea: 'baseball-settings' },
+  // demoSafe: two selects, no write; the demo dashboard shell renders it.
+  { featureArea: 'baseball-settings', demoSafe: true },
   async (ctx): Promise<BaseballProgramBrand> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;

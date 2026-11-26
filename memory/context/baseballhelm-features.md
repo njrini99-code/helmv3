@@ -53,7 +53,7 @@ Route groups in parens are stripped from URLs. "Access" = who the route is inten
 | `/baseball/signup` | Signup with role cards (create program / join staff / join player) | public | `(auth)/signup/page.tsx` |
 | `/baseball/complete-signup` | Invite-context/OAuth profile completion | authed (no profile) | `(auth)/complete-signup/CompleteSignupClient.tsx` |
 | `/baseball/forgot-password` `/baseball/reset-password` | Password recovery (does not reveal if email exists) | public | `(auth)/forgot-password`, `/reset-password` |
-| `/baseball/demo` | Demo login gate (signs visitor into one shared demo coach — issue #392) | public | `(auth)/demo/page.tsx`, `actions/demo-access.ts` |
+| `/baseball/demo` | Demo login gate (signs visitor into one shared demo coach — issue #392). That session runs only actions marked `demoSafe: true`; the reads the demo dashboard needs (program brand, unread count, Decision Room) are marked so (incident 8dee84b8) | public | `(auth)/demo/page.tsx`, `actions/demo-access.ts` |
 
 ### Onboarding
 | Route | Purpose | Access | Key file(s) |

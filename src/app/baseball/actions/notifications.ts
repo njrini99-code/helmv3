@@ -96,7 +96,8 @@ export const getBaseballNotifications = withBaseballAction(
 
 export const getUnreadNotificationCount = withBaseballAction(
   'getUnreadNotificationCount',
-  { featureArea: 'baseball-notifications' },
+  // demoSafe: a single count read; the demo bell badge polls it every 60 s.
+  { featureArea: 'baseball-notifications', demoSafe: true },
   async (ctx): Promise<CountResult> => {
     const supabase = await createClient();
 
