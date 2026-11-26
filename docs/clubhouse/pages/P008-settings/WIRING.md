@@ -245,7 +245,8 @@ None. `status.data` is existing and the manifest lists no held plan.
 
 Every control above was checked against what production's Settings sends
 (`FairwaySettingsGeneral`, `FairwaySettingsCoachingIntelligence`,
-`JoinTeamSection`, `useCoachPhilosophy`, `useCoachHelmSettings` (deleted 2026-11-25 as unused); the Fairway
+`JoinTeamSection`, `useCoachPhilosophy`, `useCoachHelmSettings` (deleted
+2026-11-25 as unused); the Fairway
 files were deleted on 2026-11-14 and are kept in the tag
 `archive/fairway-2026-11-15`) and against the server's role check (the action's
 guard and the live RLS policies). Same tables, columns, filters and actions
