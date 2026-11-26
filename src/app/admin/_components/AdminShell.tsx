@@ -1,5 +1,6 @@
 'use client';
 
+import './admin-ivory.css';
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -715,9 +716,16 @@ export function AdminShell({
     [handleSignOut, isSigningOut],
   );
 
+  // Ivory on <html> too while the admin is mounted (sheets and dialogs portal to <body>); the boot script sets it on
+  // a full load, this keeps it right across client navigation in and out of /admin.
+  useEffect(() => {
+    document.documentElement.classList.add('bridge-ivory');
+    return () => document.documentElement.classList.remove('bridge-ivory');
+  }, []);
+
   return (
     <SessionActivityProvider>
-    <div className="fairway-ds min-h-screen bg-canvas-gradient">
+    <div className="fairway-ds bridge-ivory min-h-screen bg-canvas-gradient">
       <AppShell
         sections={sections}
         brand={brand}

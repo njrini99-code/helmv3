@@ -164,6 +164,14 @@ describe('--fw-color-canvas copies stay in sync', () => {
     expectClose(hexToRgb(m![2]!), lightToken, 'ThemeScript theme-color light');
   });
 
+  it('ThemeScript pre-paint theme-color on the admin (ivory, light only)', () => {
+    const m = read('src/components/theme/ThemeScript.tsx').match(/if\(v&&!d\)m\.setAttribute\('content','(#[0-9a-fA-F]{6})'\)/);
+    expect(m).not.toBeNull();
+    const ivory = read('src/app/admin/_components/admin-ivory.css').match(/--fw-color-canvas:\s*(#[0-9a-fA-F]{6})/);
+    expect(ivory).not.toBeNull();
+    expectClose(hexToRgb(m![1]!), hexToRgb(ivory![1]!), 'ThemeScript theme-color admin ivory');
+  });
+
   it('public/offline.html canvas (light + dark)', () => {
     const html = read('public/offline.html');
     const all = [...html.matchAll(/--canvas:\s*(#[0-9A-Fa-f]{6})/g)].map((m) => m[1]);

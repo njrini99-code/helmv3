@@ -11,10 +11,10 @@
  */
 
 .bs {
-  --bs-bg: #f4f1ea;
-  --bs-glow: rgb(56 140 96 / 0.1);
-  --bs-panel: #ffffff;
-  --bs-panel-2: #faf8f3;
+  /* Ivory, not cream (owner, 2026-11-26): the same page and card the admin shell uses (admin-ivory.css). */
+  --bs-bg: #f8f7f3;
+  --bs-panel: #fffffe;
+  --bs-panel-2: #f6f5f0;
   --bs-line: rgb(20 40 30 / 0.1);
   --bs-line-strong: rgb(20 40 30 / 0.18);
   --bs-ink: #11211a;
@@ -24,7 +24,7 @@
   --bs-good: #1f7a4a;
   --bs-good-wash: rgb(31 122 74 / 0.1);
   --bs-watch: #8a5a00;
-  --bs-watch-wash: rgb(176 122 20 / 0.12);
+  --bs-watch-wash: rgb(176 122 20 / 0.07); /* a hint of amber on ivory, never a cream panel */
   --bs-bad: #b3381f;
   --bs-bad-wash: rgb(179 56 31 / 0.09);
   --bs-coach: #5b46b8;
@@ -41,7 +41,8 @@
   /* Side gutters: 32px on a wide screen, 16px on a phone, never inside the notch or the rounded corners. */
   --bs-gutter: 32px;
 
-  background: radial-gradient(1000px 520px at 50% -12%, var(--bs-glow), transparent 70%), var(--bs-bg);
+  /* One flat colour: no glow or wash behind the page (owner, 2026-11-26). */
+  background: var(--bs-bg);
   color: var(--bs-ink);
   font-variant-numeric: tabular-nums;
   /* The space owns the whole canvas under the shell, even when its content is short. */
@@ -65,7 +66,6 @@
 .dark .bs,
 [data-theme='dark'] .bs {
   --bs-bg: #050f0a;
-  --bs-glow: rgb(56 140 96 / 0.18);
   --bs-panel: rgb(255 255 255 / 0.045);
   --bs-panel-2: rgb(255 255 255 / 0.025);
   --bs-line: rgb(255 255 255 / 0.08);

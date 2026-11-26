@@ -1,0 +1,27 @@
+/*
+ * The admin's own light palette: ivory, flat. Owner, 2026-11-26: "that color is a cream, not an ivory" and "the
+ * gradient isn't good". Fairway's vintage cream and its sunlit page wash stay everywhere else (BaseballHelm, the
+ * CRM); inside the admin these tokens are re-declared on the shell's root, so every Fairway surface under it, the
+ * Bridge spaces included, reads ivory. The theme boot script also puts `bridge-ivory` on <html> for /admin, so the
+ * More sheet and dialogs (portalled to <body>) match, with no cream flash before hydration. Dark mode is untouched (html.dark keeps Fairway's dark tokens).
+ */
+html.bridge-ivory:not(.dark),
+html:not(.dark) .bridge-ivory {
+  --fw-color-canvas: #f8f7f3; /* the page: ivory, a warm off-white with no yellow cast */
+  --fw-color-surface: #fffffe; /* cards: near white, lifting off the page by a hair */
+  --fw-color-surface-tint: #fffffe;
+  --fw-color-surface-sunken: #f1f0eb; /* wells, inputs, row highlights: a neutral ivory grey */
+  --fw-color-border-subtle: #e2e0d9; /* a neutral hairline, still visible on the ivory card */
+  --fw-color-border-strong: #c9c6be;
+  /* The phone's tab bar and sheets are glass: an ivory tint with a white rim, not a cream one, and no warm boost. */
+  --fw-glass-tint: 252 251 247;
+  /* Derived at :root, so they are re-declared here too (a custom property resolves where it is declared). */
+  --fw-glass-bg: rgb(252 251 247 / 0.74);
+  --fw-glass-bg-strong: rgb(252 251 247 / 0.88);
+  --fw-glass-border: rgb(255 255 255 / 0.6);
+  --fw-glass-highlight: rgb(255 255 255 / 0.5);
+  --fw-glass-saturate: 110%;
+  /* No wash: the page is one flat ivory, top to foot. */
+  --fw-gradient-canvas: linear-gradient(var(--fw-color-canvas), var(--fw-color-canvas));
+  background-color: var(--fw-color-canvas);
+}
