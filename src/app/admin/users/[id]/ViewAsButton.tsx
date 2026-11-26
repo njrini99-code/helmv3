@@ -17,7 +17,7 @@ import { Button } from '@/components/fairway';
  * Next's action runtime still honors the thrown redirect when the action is
  * called this way.
  */
-export function ViewAsButton({ onEnter }: { onEnter: () => Promise<void> }) {
+export function ViewAsButton({ onEnter, br }: { onEnter: () => Promise<void>; /** A Bridge code for the trigger and confirm buttons, where the Bridge mounts this. */ br?: string }) {
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -43,6 +43,7 @@ export function ViewAsButton({ onEnter }: { onEnter: () => Promise<void> }) {
           variant="danger"
           size="sm"
           busy={pending}
+          data-br={br}
           onClick={() =>
             startTransition(async () => {
               await onEnter();
@@ -56,7 +57,7 @@ export function ViewAsButton({ onEnter }: { onEnter: () => Promise<void> }) {
   }
 
   return (
-    <Button type="button" variant="secondary" size="sm" onClick={() => setConfirming(true)}>
+    <Button type="button" variant="secondary" size="sm" data-br={br} onClick={() => setConfirming(true)}>
       View as (read-only, 15 min)
     </Button>
   );

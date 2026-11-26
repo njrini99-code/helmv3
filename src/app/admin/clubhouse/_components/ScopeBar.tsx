@@ -120,7 +120,13 @@ export function ScopeBar({ pages, live = false }: { pages: readonly ScopeBarPage
           <label htmlFor={`${id}-w`} className="sr-only">
             Window
           </label>
-          <NativeSelect id={`${id}-w`} value={liveScope.w} onChange={(e) => go({ w: e.target.value })} className={cn(selectClass, 'flex-1 basis-24 sm:flex-none')}>
+          <NativeSelect
+            id={`${id}-w`}
+            value={liveScope.w}
+            onChange={(e) => go({ w: e.target.value })}
+            title="Counted in whole hours: the window starts at the top of the hour it reaches back to"
+            className={cn(selectClass, 'flex-1 basis-24 sm:flex-none')}
+          >
             {LIVE_WINDOWS.map((w) => (
               <option key={w} value={w}>
                 Last {w}

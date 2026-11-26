@@ -4,6 +4,7 @@ import {
   bridgeFieldsOf,
   bucketQuantile,
   classifyReadError,
+  hourFloorIso,
   codeTotals,
   categoryLookup,
   failingCodes,
@@ -57,6 +58,12 @@ describe('the live scope', () => {
     expect(withLive('/admin/clubhouse/sessions', { ...DEFAULT_SCOPE, role: 'coach' }, { w: '7d', pf: 'ios-app' }, { failed: 1 })).toBe(
       '/admin/clubhouse/sessions?role=coach&w=7d&pf=ios-app&failed=1',
     );
+  });
+  it('a window starts at the top of the hour it reaches back to, so the overlapping bucket is kept whole', () => {
+    // At 10:01 the last hour starts at 09:01; the 09:00 bucket (with its 09:59 events) must still be read.
+    expect(hourFloorIso('2026-11-25T09:01:30.000Z')).toBe('2026-11-25T09:00:00.000Z');
+    expect(hourFloorIso('2026-11-25T09:00:00.000Z')).toBe('2026-11-25T09:00:00.000Z');
+    expect(hourFloorIso('not a date')).toBe('not a date');
   });
 });
 

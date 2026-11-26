@@ -137,6 +137,16 @@ export {
 
 const HOUR_MS = 3_600_000;
 
+/**
+ * The top of the hour an instant falls in, as ISO. Hourly rows are stored at the top of their hour (`bucket_hour`), so
+ * a window read from 10:01 back one hour must start at 09:00: `>= 09:01` would drop the whole 09:00 bucket, including
+ * its 09:59 events. Windows are therefore counted in whole hours, and a "last 1h" read covers up to two buckets.
+ */
+export function hourFloorIso(iso: string): string {
+  const t = Date.parse(iso);
+  return Number.isFinite(t) ? new Date(Math.floor(t / HOUR_MS) * HOUR_MS).toISOString() : iso;
+}
+
 /** A Clubhouse link that keeps the registry scope and the live one. Defaults add nothing to the URL. */
 export function withLive(href: string, scope: ClubhouseScope, live: LiveScope, extra?: Record<string, string | number | null | undefined>): string {
   return withScope(href, scope, {

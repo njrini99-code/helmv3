@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { bridgePseudonym } from '@/lib/admin/clubhouse/pseudonym';
 import type { Metadata } from 'next';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { EmptyState } from '@/components/fairway';
+import { Button, EmptyState } from '@/components/fairway';
+import { enterViewAs } from '@/app/admin/actions/view-as';
+import { ViewAsButton } from '@/app/admin/users/[id]/ViewAsButton';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import {
   PLATFORM_WORDS,
@@ -98,9 +100,15 @@ export default async function ClubhousePersonPage({ params, searchParams }: { pa
           <Link href={`/admin/users/${encodeURIComponent(userId)}`} data-br={BR.people.account} className={linkButton}>
             Account
           </Link>
-          <Link href={`/admin/users/${encodeURIComponent(userId)}/view-as`} data-br={BR.people.viewAs} className={linkButton}>
-            View as (read-only)
-          </Link>
+          {/* The same confirm-then-enter flow as the account page: enterViewAs mints the signed view-as cookie the
+              read-only view checks, so a bare link to /view-as would only bounce back to the account. */}
+          {process.env.ADMIN_IMPERSONATION_SECRET ? (
+            <ViewAsButton onEnter={enterViewAs.bind(null, userId)} br={BR.people.viewAs} />
+          ) : (
+            <Button type="button" variant="secondary" size="sm" disabled data-br={BR.people.viewAs} title="ADMIN_IMPERSONATION_SECRET is not set">
+              View as — not configured
+            </Button>
+          )}
           <PackLink code={BR.people.pack} target={packTargetKey.person(userId)} />
         </>
       }

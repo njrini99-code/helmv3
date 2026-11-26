@@ -7,6 +7,7 @@ import type { BridgeGraph } from './graph';
 import {
   categoryLookup,
   classifyReadError,
+  hourFloorIso,
   isActiveHour,
   pipeStatus,
   runRules,
@@ -90,15 +91,19 @@ function chunks<T>(list: readonly T[], size = IN_CHUNK): T[][] {
   return out;
 }
 
-/** Hourly rows from `sinceIso` (and before `untilIso`), optionally one release. Newest hours first. */
+/**
+ * Hourly rows from the hour `sinceIso` falls in (and before the hour `untilIso` falls in), optionally one release. Newest
+ * hours first. Both bounds snap to the top of the hour (`hourFloorIso`), so a window is whole buckets, never a partial
+ * one dropped.
+ */
 export async function readHourly(o: { sinceIso?: string; untilIso?: string; release?: string; kinds?: string[]; cap?: number }): Promise<LiveRead<HourlyRow[]>> {
   try {
     const client = db();
     return await paged(
       (from, to) => {
         let q = client.from('clubhouse_signal_hourly').select(HOURLY_COLUMNS);
-        if (o.sinceIso) q = q.gte('bucket_hour', o.sinceIso);
-        if (o.untilIso) q = q.lt('bucket_hour', o.untilIso);
+        if (o.sinceIso) q = q.gte('bucket_hour', hourFloorIso(o.sinceIso));
+        if (o.untilIso) q = q.lt('bucket_hour', hourFloorIso(o.untilIso));
         if (o.release) q = q.eq('release', o.release);
         if (o.kinds?.length) q = q.in('kind', o.kinds);
         return q.order('bucket_hour', { ascending: false }).order('code').range(from, to);
