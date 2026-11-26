@@ -17,9 +17,9 @@ import {
 } from '@/lib/admin/clubhouse/pack';
 import { bridgePackSources, packPseudonym } from '@/lib/admin/clubhouse/pack-server';
 import { packWatchCodes } from '@/lib/admin/clubhouse/pack';
-import { readHourly, readNotes } from '@/lib/admin/clubhouse/live';
-import { liveHref, type HourlyRow, type LiveRead } from '@/lib/admin/clubhouse/live-model';
-import { PACK_STATUS_WORDS, oldestSent, packVerdict, queuedPack, type BridgeNoteRow, type NotesIndex, type PackVerdict } from '@/lib/admin/clubhouse/notes';
+import { readNotes, readPackVerdict } from '@/lib/admin/clubhouse/live';
+import { liveHref, type LiveRead } from '@/lib/admin/clubhouse/live-model';
+import { PACK_STATUS_WORDS, queuedPack, type BridgeNoteRow, type NotesIndex, type PackVerdict } from '@/lib/admin/clubhouse/notes';
 import { archivePack, markPackSent } from '@/app/admin/actions/bridge-notes';
 import { clubhouseHref, liveRef, scopeEntries, type SearchParams } from '@/lib/admin/clubhouse/screens';
 import { CopyReportButton } from '../../_components/CopyReportButton';
@@ -34,8 +34,8 @@ export const metadata: Metadata = { title: 'Duet desk' };
 
 export const dynamic = 'force-dynamic';
 
-/** How far back the queue reads counters for a pack sent long ago: a month, like B10. */
-const QUEUE_LOOKBACK_MS = 30 * 24 * 3_600_000;
+/** Packs whose verdict is read per render; older ones on the queue say "can't decide yet" until newer ones go. */
+const QUEUE_VERDICTS = 20;
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
@@ -68,17 +68,20 @@ export default async function DuetDeskPage({ searchParams }: { searchParams?: Pr
   }
   const markdown = pack ? renderPackMarkdown(pack) : '';
 
-  // The queue (bridge_notes kind 'pack'): each sent pack, and where it stands after the next release.
+  // The queue (bridge_notes kind 'pack'): each sent pack, and where it stands after the next release, read narrowly on
+  // its own page (readPackVerdict), newest packs first.
   const notes = await readNotes();
-  const since = oldestSent(notes.data.packs);
-  const floor = Date.now() - QUEUE_LOOKBACK_MS;
-  const hourly: LiveRead<HourlyRow[]> = since
-    ? await readHourly({ sinceIso: new Date(Math.max(Date.parse(since), floor)).toISOString() })
-    : { state: 'ok', data: [] };
-  const queue: QueueEntry[] = notes.data.packs.map((note) => {
-    const t = resolvePackTarget(graph, note.body);
-    return { note, label: t?.key ?? note.body, verdict: t ? packVerdict({ sentAt: note.created_at, codes: packWatchCodes(graph, t), rows: hourly.data }) : null };
-  });
+  const reads = await Promise.all(
+    notes.data.packs.map(async (note, n) => {
+      const t = resolvePackTarget(graph, note.body);
+      if (!t) return { note, label: note.body, verdict: null, read: null };
+      if (n >= QUEUE_VERDICTS) return { note, label: t.key, verdict: { status: 'undecided', release: null, firing: 0 } as PackVerdict, read: null };
+      const read = await readPackVerdict({ sentAt: note.created_at, page: t.page, codes: packWatchCodes(graph, t) });
+      return { note, label: t.key, verdict: read.data, read };
+    }),
+  );
+  const queue: QueueEntry[] = reads.map(({ note, label, verdict }) => ({ note, label, verdict }));
+  const hourly = reads.find((r) => r.read && r.read.state !== 'ok')?.read ?? { state: 'ok' as const, error: undefined };
   const report = pack
     ? markdown
     : `# Duet desk (contract ${graph.contentHash})\n\nNo pack built. Type a page, control, action, code or finding to build one.`;
@@ -159,6 +162,7 @@ interface QueueEntry {
 const STATUS_TONE: Record<PackVerdict['status'], string> = {
   sent: 'border-border-subtle bg-surface-sunken text-text-secondary',
   waiting: 'border-border-subtle bg-surface-sunken text-text-secondary',
+  undecided: 'border-border-subtle bg-surface-sunken text-text-tertiary',
   fixed: 'border-fw-success bg-fw-success-bg text-fw-success-ink',
   regressed: 'border-fw-danger/40 bg-fw-danger-bg text-fw-danger-ink',
 };
@@ -192,7 +196,9 @@ function VerifyControl({ verdict }: { verdict: PackVerdict | null }) {
     ? 'The target is no longer in the contract.'
     : verdict.status === 'sent'
       ? 'This pack has no failure codes of its own; its release comparison (B10) decides it.'
-      : 'No release has shipped since it was sent; the first one decides it.';
+      : verdict.status === 'undecided'
+        ? "The counters to decide it could not all be read yet."
+        : 'No release has been used on its page since it was sent; the first one decides it.';
   return (
     <Button type="button" variant="ghost" size="sm" disabled data-br={BR.duet.verify} title={why}>
       Verify after release
@@ -214,7 +220,7 @@ function ArchiveControl({ note, back }: { note: BridgeNoteRow; back?: string }) 
 }
 
 /** The queue: the pack being built (new), then every sent pack with where it stands. */
-function Queue({ pack, notes, hourly, queue }: { pack: ContextPack | null; notes: LiveRead<NotesIndex>; hourly: LiveRead<HourlyRow[]>; queue: QueueEntry[] }) {
+function Queue({ pack, notes, hourly, queue }: { pack: ContextPack | null; notes: LiveRead<NotesIndex>; hourly: { state: LiveRead<unknown>['state']; error?: string }; queue: QueueEntry[] }) {
   const fresh = pack && !queue.some((q) => q.note.body === pack.target.key) ? pack : null;
   return (
     <Section title="Queue" description="New, sent, waiting for a release, fixed, regressed. The first release after a pack is sent decides it.">

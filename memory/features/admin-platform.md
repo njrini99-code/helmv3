@@ -1565,13 +1565,18 @@ nothing about a pack's progress is stored: it is worked out.
   digest's Clubhouse section (`Watched:`), with its failures and people in the
   window; a quiet code shows at zero.
 - **The B13 queue.** Mark sent (BR-1304) keeps the pack's target key only (a
-  `pack` row; `created_at` is when it was sent). The first release first seen
-  in an hour after that decides it (`packVerdict`): none of the pack's failure
-  codes (`packWatchCodes`) failed there is fixed, any did is regressed, no
-  such release yet is waiting; a release or finding pack has no codes of its
-  own and is just "sent". Verify after release (BR-1305) opens B10 at that
-  release. Archive (BR-1306) resolves the row. A person's or a team's pack is
-  never kept (D7: the table is kept forever and the key holds their id).
+  `pack` row; `created_at` is when it was sent). `readPackVerdict` (`live.ts`)
+  decides it with three reads narrowed to the pack's page: the releases in
+  use there the week before, a forward (oldest-first) search from the next
+  hour for the first new release used there (`decidingRelease`), and that
+  release's rows. Any failure of the pack's codes (`packWatchCodes`) there is
+  regressed; none, with the page used, is fixed; no new release yet is
+  waiting; a read cut short where the answer could hide is "can't decide
+  yet", never fixed. A release or finding pack has no codes of its own and is
+  just "sent". The 20 newest packs are decided per render. Verify after
+  release (BR-1305) opens B10 at the deciding release. Archive (BR-1306)
+  resolves the row. A person's or a team's pack is never kept (D7: the table
+  is kept forever and the key holds their id).
 - **B04's failure reasons (BR-0405)** open Incidents narrowed to the
   outcome's CH code: `/admin/errors?ch=CH-…&kind=all` filters
   `admin_events.ch_code` (`parseErrorsFilters`, `IncidentFeedFilters.ch`); a

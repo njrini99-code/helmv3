@@ -19,7 +19,7 @@ const eqCalls: Array<[string, unknown]> = [];
 // The queue's reads: open notes (bridge_notes) and the hourly counters that decide fixed or regressed.
 const live = vi.hoisted(() => ({
   notes: { state: 'ok', data: { expected: new Map(), watched: new Map(), packs: [] as unknown[] } } as { state: string; data: { expected: Map<string, unknown>; watched: Map<string, unknown>; packs: unknown[] }; error?: string },
-  hourly: { state: 'ok', data: [] as unknown[] } as { state: string; data: unknown[] },
+  verdict: { state: 'ok', data: { status: 'waiting', release: null, firing: 0 } } as { state: string; data: { status: string; release: string | null; firing: number }; error?: string },
 }));
 
 vi.mock('@/lib/admin/require-super-admin', () => ({
@@ -46,7 +46,7 @@ vi.mock('@/lib/admin/clubhouse/live', () => ({
   readPeopleNames: vi.fn(async (ids: string[]) => new Map(ids.map((id) => [id, { name: 'Coach Name', email: 'coach@example.com' }]))),
   readTeamName: vi.fn(async () => 'Team Name'),
   readNotes: vi.fn(async () => live.notes),
-  readHourly: vi.fn(async () => live.hourly),
+  readPackVerdict: vi.fn(async () => live.verdict),
 }));
 // Pseudonyms are keyed (pseudonym.ts): a test key, so they print rather than read "withheld".
 process.env.BRIDGE_PSEUDONYM_KEY = 'test-pseudonym-key-0123456789abcdefghij';
@@ -83,7 +83,7 @@ beforeEach(() => {
   graph.controls = { 'CTL-P007-014': { page: 'P007', label: 'Send', actions: ['ACT-P007-SEND-MESSAGE'] } };
   eventsResult = { data: null, error: { code: '42703', message: 'column admin_events.bridge_id does not exist' } };
   live.notes = { state: 'ok', data: { expected: new Map(), watched: new Map(), packs: [] } };
-  live.hourly = { state: 'ok', data: [] };
+  live.verdict = { state: 'ok', data: { status: 'waiting', release: null, firing: 0 } };
 });
 
 const packNote = (body: string, created_at = '2026-11-20T10:30:00.000Z') => ({
@@ -97,22 +97,7 @@ const packNote = (body: string, created_at = '2026-11-20T10:30:00.000Z') => ({
   created_by: 'admin-1',
   resolved_at: null,
 });
-const hour = (iso: string, release: string, outcome: string, count = 1) => ({
-  bucket_hour: iso,
-  code: 'CH-7004',
-  kind: 'action',
-  outcome,
-  act: 'sendMessage',
-  role: 'coach',
-  platform: 'ios-app',
-  release,
-  bridge_id: 70603,
-  page_id: 'P007',
-  signal_count: count,
-  user_ids: ['u1'],
-  duration_buckets: [],
-  last_at: iso,
-});
+
 
 describe('B13 Duet desk', () => {
   it('with no target: the build box, the names tick and an empty queue', async () => {
@@ -163,14 +148,14 @@ describe('B13 Duet desk', () => {
     expect(codes(c)).toContain(BR.duet.archive);
     cleanup();
 
-    // A release first seen the hour after it was sent decides it: no failure there is fixed.
-    live.hourly = { state: 'ok', data: [hour('2026-11-20T10:00:00.000Z', 'aaaaaaa1', 'failure', 4), hour('2026-11-21T09:00:00.000Z', 'bbbbbbb2', 'success', 9)] };
+    // The release that decides it is named, and Verify opens B10 there.
+    live.verdict = { state: 'ok', data: { status: 'fixed', release: 'bbbbbbb2', firing: 0 } };
     c = await show(Duet({ searchParams: sp() }));
     expect(c.textContent).toContain('fixed in the next release');
     expect(c.querySelector(`a[data-br="${BR.duet.verify}"]`)?.getAttribute('href')).toBe('/admin/clubhouse/releases/bbbbbbb2');
     cleanup();
 
-    live.hourly = { state: 'ok', data: [hour('2026-11-21T09:00:00.000Z', 'bbbbbbb2', 'failure', 3)] };
+    live.verdict = { state: 'ok', data: { status: 'regressed', release: 'bbbbbbb2', firing: 3 } };
     c = await show(Duet({ searchParams: sp({ t: '70603' }) }));
     expect(c.textContent).toContain('still firing in the next release');
     // The preview of a queued pack shows its status, Verify and Archive instead of Mark sent.
@@ -183,6 +168,14 @@ describe('B13 Duet desk', () => {
     const sent = c.querySelector(`button[data-br="${BR.duet.markSent}"]`);
     expect(sent?.hasAttribute('disabled')).toBe(true);
     expect(sent?.getAttribute('title')).toContain('D7');
+  });
+
+  it("counters that can't be read say so, and the pack can't be decided", async () => {
+    live.notes = { state: 'ok', data: { expected: new Map(), watched: new Map(), packs: [packNote('70603')] } };
+    live.verdict = { state: 'error', data: { status: 'undecided', release: null, firing: 0 }, error: 'boom' };
+    const c = await show(Duet({ searchParams: sp() }));
+    expect(c.textContent).toContain("can't decide yet");
+    expect(codes(c)).toContain(BR.duet.failed);
   });
 
   it('an unreadable queue says so', async () => {

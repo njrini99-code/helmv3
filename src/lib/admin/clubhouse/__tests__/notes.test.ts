@@ -1,6 +1,6 @@
 /** The Bridge's notes model (bridge_notes): expected and watched codes, and where a sent pack stands. */
 import { describe, expect, it } from 'vitest';
-import { REASON_MAX, cleanReason, indexNotes, oldestSent, packVerdict, queuedPack, watchedCodes, type BridgeNoteRow } from '../notes';
+import { REASON_MAX, cleanReason, decidingRelease, indexNotes, packVerdict, queuedPack, watchedCodes, type BridgeNoteRow } from '../notes';
 import { runRules, pipeStatus, categoryLookup, type HourlyRow } from '../live-model';
 import { packTargetKey, packWatchCodes, resolvePackTarget } from '../pack';
 import { fixtureGraph } from './fixtures';
@@ -62,27 +62,48 @@ describe('indexNotes', () => {
     expect(idx.packs.map((p) => p.id)).toEqual(['p2', 'p1']);
     expect(queuedPack(idx, 'P007')?.id).toBe('p1');
     expect(queuedPack(idx, 'P008')).toBeNull();
-    expect(oldestSent(idx.packs)).toBe('2026-11-02T00:00:00.000Z');
+  });
+});
+
+describe('decidingRelease', () => {
+  const sentAt = '2026-11-20T10:30:00.000Z';
+  it('the first release used on the page from the next hour on that was not already in use there', () => {
+    const before = [row({ release: 'aaaaaaa1', bucket_hour: '2026-11-20T08:00:00.000Z' })];
+    const after = [
+      row({ release: 'aaaaaaa1', bucket_hour: '2026-11-20T11:00:00.000Z' }),
+      row({ release: 'ccccccc3', bucket_hour: '2026-11-22T09:00:00.000Z' }),
+      row({ release: 'bbbbbbb2', bucket_hour: '2026-11-21T09:00:00.000Z' }),
+    ];
+    expect(decidingRelease(before, after, sentAt)).toBe('bbbbbbb2');
+  });
+  it('a release first seen in the hour it was sent counts as before it; main never decides', () => {
+    const before = [row({ release: 'aaaaaaa1', bucket_hour: '2026-11-20T10:00:00.000Z' })];
+    const after = [row({ release: 'aaaaaaa1', bucket_hour: '2026-11-20T12:00:00.000Z' }), row({ release: 'main', bucket_hour: '2026-11-20T13:00:00.000Z' })];
+    expect(decidingRelease(before, after, sentAt)).toBeNull();
   });
 });
 
 describe('packVerdict', () => {
-  const sentAt = '2026-11-20T10:30:00.000Z';
+  const base = { codes: ['CH-7004'], release: 'bbbbbbb2', searchTruncated: false, rowsTruncated: false };
   it('is "sent" when the pack has no failure codes of its own (a release or a finding)', () => {
-    expect(packVerdict({ sentAt, codes: [], rows: [row({})] }).status).toBe('sent');
+    expect(packVerdict({ ...base, codes: [], rows: [row({})] }).status).toBe('sent');
   });
-  it('waits until a release is first seen after the hour it was sent; the same hour counts as before', () => {
-    const rows = [row({ release: 'aaaaaaa1', bucket_hour: '2026-11-20T10:00:00.000Z' })];
-    expect(packVerdict({ sentAt, codes: ['CH-7004'], rows })).toEqual({ status: 'waiting', release: null, firing: 0 });
+  it('waits while no release has been used on the page since; a search cut short cannot say so', () => {
+    expect(packVerdict({ ...base, release: null, rows: [] }).status).toBe('waiting');
+    expect(packVerdict({ ...base, release: null, searchTruncated: true, rows: [] }).status).toBe('undecided');
   });
-  it('the first release after it decides: no failure of its codes is fixed, any is regressed', () => {
-    const before = row({ release: 'aaaaaaa1', bucket_hour: '2026-11-20T08:00:00.000Z', signal_count: 9 });
-    const next = (outcome: string) => row({ release: 'bbbbbbb2', outcome, signal_count: 3 });
-    const later = row({ release: 'ccccccc3', bucket_hour: '2026-11-22T09:00:00.000Z', signal_count: 5 });
-    expect(packVerdict({ sentAt, codes: ['CH-7004'], rows: [before, next('success'), later] })).toEqual({ status: 'fixed', release: 'bbbbbbb2', firing: 0 });
-    expect(packVerdict({ sentAt, codes: ['CH-7004'], rows: [before, next('failure'), later] })).toEqual({ status: 'regressed', release: 'bbbbbbb2', firing: 3 });
-    // Another code failing in that release does not regress this pack.
-    expect(packVerdict({ sentAt, codes: ['CH-7004'], rows: [row({ code: 'CH-7005' })] }).status).toBe('fixed');
+  it('any failure of its codes in the deciding release is regressed; none, with the page used, is fixed', () => {
+    expect(packVerdict({ ...base, rows: [row({ signal_count: 3 })] })).toEqual({ status: 'regressed', release: 'bbbbbbb2', firing: 3 });
+    expect(packVerdict({ ...base, rows: [row({ outcome: 'success', signal_count: 9 })] })).toEqual({ status: 'fixed', release: 'bbbbbbb2', firing: 0 });
+  });
+  it('never fixed without evidence: no page traffic in that release, or its rows cut short, is "can\'t decide yet"', () => {
+    // Only another code's traffic is still traffic on the page, so the pack's own codes did not fail there.
+    expect(packVerdict({ ...base, rows: [row({ code: 'CH-7005' })] }).status).toBe('fixed');
+    expect(packVerdict({ ...base, rows: [] }).status).toBe('undecided');
+    expect(packVerdict({ ...base, rows: [row({ release: 'other' })] }).status).toBe('undecided');
+    expect(packVerdict({ ...base, rowsTruncated: true, rows: [row({ outcome: 'success' })] }).status).toBe('undecided');
+    // A failure found in a truncated read is still a regression.
+    expect(packVerdict({ ...base, rowsTruncated: true, rows: [row({})] }).status).toBe('regressed');
   });
 });
 

@@ -19,7 +19,7 @@ import {
   type SessionEventRow,
   type SessionRow,
 } from './live-model';
-import { EMPTY_NOTES, NOTE_COLUMNS, indexNotes, type BridgeNoteRow, type NotesIndex } from './notes';
+import { EMPTY_NOTES, NOTE_COLUMNS, decidingRelease, indexNotes, packVerdict, sentHour, type BridgeNoteRow, type NotesIndex, type PackVerdict } from './notes';
 import type { BridgeAlert } from './rules';
 import { liveRef } from './screens';
 
@@ -43,6 +43,7 @@ function db(): Db {
 }
 
 const PAGE_SIZE = 1000;
+const HOUR_MS = 3_600_000;
 const IN_CHUNK = 100;
 /** The most hourly rows one screen reads. A few hundred rows an hour (plan §4.5) is a day in about 5,000. */
 export const HOURLY_CAP = 6000;
@@ -97,7 +98,17 @@ function chunks<T>(list: readonly T[], size = IN_CHUNK): T[][] {
  * hours first. Both bounds snap to the top of the hour (`hourFloorIso`), so a window is whole buckets, never a partial
  * one dropped.
  */
-export async function readHourly(o: { sinceIso?: string; untilIso?: string; release?: string; kinds?: string[]; cap?: number }): Promise<LiveRead<HourlyRow[]>> {
+export async function readHourly(o: {
+  sinceIso?: string;
+  untilIso?: string;
+  release?: string;
+  kinds?: string[];
+  /** Only these pages' rows. */
+  pages?: string[];
+  /** Oldest hours first (a search forward in time); newest first otherwise. */
+  ascending?: boolean;
+  cap?: number;
+}): Promise<LiveRead<HourlyRow[]>> {
   try {
     const client = db();
     return await paged(
@@ -107,7 +118,8 @@ export async function readHourly(o: { sinceIso?: string; untilIso?: string; rele
         if (o.untilIso) q = q.lt('bucket_hour', hourFloorIso(o.untilIso));
         if (o.release) q = q.eq('release', o.release);
         if (o.kinds?.length) q = q.in('kind', o.kinds);
-        return q.order('bucket_hour', { ascending: false }).order('code').range(from, to);
+        if (o.pages?.length) q = q.in('page_id', o.pages);
+        return q.order('bucket_hour', { ascending: Boolean(o.ascending) }).order('code').range(from, to);
       },
       o.cap ?? HOURLY_CAP,
       normalizeHourly,
@@ -243,6 +255,36 @@ export async function readNotes(): Promise<LiveRead<NotesIndex>> {
   }
 }
 
+/** How far back the release a pack was sent against is looked for on its page, and how many rows each search reads. */
+const PACK_BEFORE_MS = 7 * 24 * HOUR_MS;
+const PACK_SEARCH_CAP = 1000;
+
+/**
+ * Where one sent pack stands (B13's queue). Three narrow reads, all on the pack's page: the releases already in use
+ * there when it was sent (the week before, newest first), the first release used there after (oldest first, from the
+ * next hour), and that release's rows. A pack with no page or no failure codes is just "sent" and reads nothing.
+ */
+export async function readPackVerdict(i: { sentAt: string; page: string | null; codes: readonly string[] }): Promise<LiveRead<PackVerdict>> {
+  const none = (status: PackVerdict['status']): PackVerdict => ({ status, release: null, firing: 0 });
+  if (!i.codes.length || !i.page) return { state: 'ok', data: none('sent') };
+  const hour = sentHour(i.sentAt);
+  if (!Number.isFinite(hour)) return { state: 'ok', data: none('undecided') };
+  const pages = [i.page];
+  const next = new Date(hour + HOUR_MS).toISOString();
+  const [before, after] = await Promise.all([
+    readHourly({ sinceIso: new Date(hour - PACK_BEFORE_MS).toISOString(), untilIso: next, pages, cap: PACK_SEARCH_CAP }),
+    readHourly({ sinceIso: next, pages, ascending: true, cap: PACK_SEARCH_CAP }),
+  ]);
+  for (const r of [before, after]) if (r.state !== 'ok') return { state: r.state, data: none('undecided'), error: r.error };
+  const release = decidingRelease(before.data, after.data, i.sentAt);
+  const rows = release ? await readHourly({ release, pages, cap: HOURLY_CAP }) : { state: 'ok' as const, data: [] as HourlyRow[] };
+  if (rows.state !== 'ok') return { state: rows.state, data: none('undecided'), error: rows.error };
+  return {
+    state: 'ok',
+    data: packVerdict({ codes: i.codes, release, searchTruncated: Boolean(after.truncated), rows: rows.data, rowsTruncated: Boolean(rows.truncated) }),
+  };
+}
+
 export interface PersonName {
   name: string | null;
   email: string | null;
@@ -348,7 +390,6 @@ function worst(states: LiveState[]): LiveState {
   return 'ok';
 }
 
-const HOUR_MS = 3_600_000;
 
 /**
  * One read of everything the rules need: the last day, the week before it, the same hour four weeks back, the failed

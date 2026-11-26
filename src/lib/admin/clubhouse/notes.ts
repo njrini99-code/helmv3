@@ -72,18 +72,19 @@ export function queuedPack(index: NotesIndex, key: string): BridgeNoteRow | null
 // The queue: sent, waiting for a release, fixed, regressed
 // ---------------------------------------------------------------------------
 
-export type PackStatus = 'sent' | 'waiting' | 'fixed' | 'regressed';
+export type PackStatus = 'sent' | 'waiting' | 'fixed' | 'regressed' | 'undecided';
 
 export const PACK_STATUS_WORDS: Readonly<Record<PackStatus, string>> = {
   sent: 'sent',
   waiting: 'sent · waiting for a release',
   fixed: 'fixed in the next release',
   regressed: 'still firing in the next release',
+  undecided: "can't decide yet",
 };
 
 export interface PackVerdict {
   status: PackStatus;
-  /** The first release seen after the pack was sent: the one that decides it. */
+  /** The first release used on the pack's page after it was sent: the one that decides it. */
   release: string | null;
   /** Failures of the pack's codes in that release. */
   firing: number;
@@ -91,32 +92,50 @@ export interface PackVerdict {
 
 const HOUR_MS = 3_600_000;
 
-/**
- * Where a sent pack stands. A pack with no failure codes to watch (a release or a finding) is just "sent": B10's
- * comparison decides it. Otherwise the first release whose first hour comes after the hour the pack was sent decides:
- * none of its codes failed there is fixed, any did is regressed, no such release yet is waiting. A release first seen
- * in the hour the pack was sent counts as before it, since it may not hold the fix.
- */
-export function packVerdict(i: { sentAt: string; codes: readonly string[]; rows: readonly HourlyRow[] }): PackVerdict {
-  if (!i.codes.length) return { status: 'sent', release: null, firing: 0 };
-  const sentHour = Math.floor(Date.parse(i.sentAt) / HOUR_MS) * HOUR_MS;
-  const firstSeen = new Map<string, number>();
-  for (const r of i.rows) {
-    if (!r.release || r.release === 'main') continue;
-    const t = Date.parse(r.bucket_hour);
-    const prev = firstSeen.get(r.release);
-    if (prev === undefined || t < prev) firstSeen.set(r.release, t);
-  }
-  const next = [...firstSeen.entries()].filter(([, t]) => t > sentHour).sort((a, b) => a[1] - b[1])[0]?.[0] ?? null;
-  if (!next) return { status: 'waiting', release: null, firing: 0 };
-  const codes = new Set(i.codes);
-  const firing = i.rows.filter((r) => r.release === next && codes.has(r.code) && isFailureRow(r)).reduce((a, r) => a + r.signal_count, 0);
-  return { status: firing ? 'regressed' : 'fixed', release: next, firing };
+/** The top of the hour a pack was sent in, as epoch ms. */
+export function sentHour(sentAt: string): number {
+  return Math.floor(Date.parse(sentAt) / HOUR_MS) * HOUR_MS;
 }
 
-/** The earliest time a queued pack was sent: how far back the queue's hourly read must reach. */
-export function oldestSent(packs: readonly BridgeNoteRow[]): string | null {
-  return packs.reduce<string | null>((min, p) => (min === null || p.created_at < min ? p.created_at : min), null);
+/**
+ * The release that decides a pack: the first one used on its page in an hour after the hour it was sent, that was not
+ * already in use on that page by then (`before`). A release first seen in the hour the pack was sent counts as before
+ * it, since it may not hold the fix. `after` is the page's rows from the next hour on, oldest first.
+ */
+export function decidingRelease(before: readonly HourlyRow[], after: readonly HourlyRow[], sentAt: string): string | null {
+  const hour = sentHour(sentAt);
+  const old = new Set(before.filter((r) => Date.parse(r.bucket_hour) <= hour).map((r) => r.release));
+  const first = [...after]
+    .filter((r) => r.release && r.release !== 'main' && !old.has(r.release) && Date.parse(r.bucket_hour) > hour)
+    .sort((a, b) => Date.parse(a.bucket_hour) - Date.parse(b.bucket_hour))[0];
+  return first?.release ?? null;
+}
+
+/**
+ * Where a sent pack stands. A pack with no failure codes of its own (a release or a finding) is just "sent": B10's
+ * comparison decides it. Otherwise the deciding release (`decidingRelease`) does, read over the pack's page only, so
+ * a release nobody used on that page can never call it fixed: any failure of its codes there is regressed, none with
+ * the release's page rows read in full is fixed. A read cut short where the answer could hide is "can't decide yet",
+ * never a verdict.
+ */
+export function packVerdict(i: {
+  codes: readonly string[];
+  /** The deciding release, or null when none has been used on the page since. */
+  release: string | null;
+  /** The search for the deciding release stopped at its cap before finding one. */
+  searchTruncated: boolean;
+  /** That release's rows on the pack's page. */
+  rows: readonly HourlyRow[];
+  rowsTruncated: boolean;
+}): PackVerdict {
+  if (!i.codes.length) return { status: 'sent', release: null, firing: 0 };
+  if (!i.release) return { status: i.searchTruncated ? 'undecided' : 'waiting', release: null, firing: 0 };
+  const codes = new Set(i.codes);
+  const mine = i.rows.filter((r) => r.release === i.release);
+  const firing = mine.filter((r) => codes.has(r.code) && isFailureRow(r)).reduce((a, r) => a + r.signal_count, 0);
+  if (firing) return { status: 'regressed', release: i.release, firing };
+  if (i.rowsTruncated || !mine.length) return { status: 'undecided', release: i.release, firing: 0 };
+  return { status: 'fixed', release: i.release, firing: 0 };
 }
 
 // ---------------------------------------------------------------------------

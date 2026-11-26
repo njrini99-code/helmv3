@@ -34,7 +34,7 @@ function builder(table: string) {
       call.op = 'insert';
       call.payload = payload;
       calls.push(call);
-      return Promise.resolve({ error: writeError });
+      return { select: () => ({ single: () => Promise.resolve(writeError ? { data: null, error: writeError } : { data: { id: 'new-note' }, error: null }) }) };
     },
     update: (payload: Record<string, unknown>) => {
       call.op = 'update';
@@ -43,6 +43,7 @@ function builder(table: string) {
     },
     eq: (c: string, v: unknown) => (call.filters.push(['eq', c, v]), b),
     is: (c: string, v: unknown) => (call.filters.push(['is', c, v]), b),
+    neq: (c: string, v: unknown) => (call.filters.push(['neq', c, v]), b),
     limit: () => {
       calls.push(call);
       return Promise.resolve({ data: openRows, error: null });
@@ -73,13 +74,13 @@ beforeEach(() => {
 });
 
 describe('B05 Mark expected', () => {
-  it('replaces any open mark with one row naming the code, the reason and who, then goes back to the dossier', async () => {
+  it('writes the new mark first, then resolves the older open ones (never the new one), then goes back to the dossier', async () => {
     await expect(markCodeExpected(form({ id: '70603', reason: '  Coaches without a roster see this on purpose. ' }))).rejects.toThrow('REDIRECT:/admin/clubhouse/codes/70603');
     expect(requireSuperAdmin).toHaveBeenCalledTimes(1);
-    const [resolve, insert] = writes();
-    expect(resolve).toMatchObject({ table: 'bridge_notes', op: 'update' });
-    expect(resolve!.filters).toEqual(expect.arrayContaining([['eq', 'kind', 'expected'], ['eq', 'code', 'CH-7004'], ['is', 'resolved_at', null]]));
+    const [insert, resolve] = writes();
     expect(insert!.payload).toEqual({ kind: 'expected', code: 'CH-7004', bridge_id: 70603, page_id: 'P007', body: 'Coaches without a roster see this on purpose.', created_by: 'admin-1' });
+    expect(resolve).toMatchObject({ table: 'bridge_notes', op: 'update' });
+    expect(resolve!.filters).toEqual(expect.arrayContaining([['eq', 'kind', 'expected'], ['eq', 'code', 'CH-7004'], ['is', 'resolved_at', null], ['neq', 'id', 'new-note']]));
   });
 
   it('needs a reason and a registered code, and writes nothing otherwise', async () => {
@@ -101,9 +102,10 @@ describe('B05 Mark expected', () => {
     expect(writes()[0]!.payload).toHaveProperty('resolved_at');
   });
 
-  it('a failed write is an error, not a silent success', async () => {
+  it('a failed write is an error, not a silent success, and leaves the old mark standing', async () => {
     writeError = { message: 'permission denied' };
-    await expect(markCodeExpected(form({ id: '70603', reason: 'x' }))).rejects.toThrow('Could not update the note');
+    await expect(markCodeExpected(form({ id: '70603', reason: 'x' }))).rejects.toThrow('Could not save the note');
+    expect(writes().filter((w) => w.op === 'update')).toEqual([]);
   });
 });
 

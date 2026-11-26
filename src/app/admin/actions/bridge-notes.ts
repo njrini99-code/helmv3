@@ -47,10 +47,11 @@ function codeFrom(graph: BridgeGraph, form: FormData): { id: number; ch: string;
   return { id: Number(raw), ch: entry.ch, page: entry.page };
 }
 
-async function resolveOpen(kind: NoteKind, match: { code?: string; id?: string }): Promise<void> {
+async function resolveOpen(kind: NoteKind, match: { code?: string; id?: string; except?: string }): Promise<void> {
   let q = db().from('bridge_notes').update({ resolved_at: new Date().toISOString() }).eq('kind', kind).is('resolved_at', null);
   if (match.code) q = q.eq('code', match.code);
   if (match.id) q = q.eq('id', match.id);
+  if (match.except) q = q.neq('id', match.except);
   const { error } = await q;
   if (error) throw new Error(`Could not update the note: ${error.message}`);
 }
@@ -64,24 +65,28 @@ async function hasOpen(kind: NoteKind, match: { code?: string; body?: string }):
   return (data ?? []).length > 0;
 }
 
-async function insertNote(row: { kind: NoteKind; code: string | null; bridge_id: number | null; page_id: string | null; body: string; created_by: string }): Promise<void> {
-  const { error } = await db().from('bridge_notes').insert(row);
-  if (error) throw new Error(`Could not save the note: ${error.message}`);
+async function insertNote(row: { kind: NoteKind; code: string | null; bridge_id: number | null; page_id: string | null; body: string; created_by: string }): Promise<string> {
+  const { data, error } = await db().from('bridge_notes').insert(row).select('id').single();
+  if (error || !data) throw new Error(`Could not save the note: ${error?.message ?? 'no row returned'}`);
+  return (data as { id: string }).id;
 }
 
 // ---------------------------------------------------------------------------
 // B05: Mark expected (BR-0506) and Watch (BR-0507)
 // ---------------------------------------------------------------------------
 
-/** Marks a code expected with a reason; R-01 and R-02 skip it from then on. A second mark replaces the first. */
+/**
+ * Marks a code expected with a reason; R-01 and R-02 skip it from then on. A second mark replaces the first: the new
+ * row is written first and only then are the older open ones resolved, so a failed write never leaves it unmarked.
+ */
 async function markCodeExpectedImpl(form: FormData): Promise<string> {
   const admin = await requireSuperAdmin();
   const graph = graphOrThrow();
   const code = codeFrom(graph, form);
   const reason = cleanReason(form.get('reason'));
   if (!reason) throw new Error('A reason is required');
-  await resolveOpen('expected', { code: code.ch });
-  await insertNote({ kind: 'expected', code: code.ch, bridge_id: code.id, page_id: code.page, body: reason, created_by: admin.userId });
+  const id = await insertNote({ kind: 'expected', code: code.ch, bridge_id: code.id, page_id: code.page, body: reason, created_by: admin.userId });
+  await resolveOpen('expected', { code: code.ch, except: id });
   return clubhouseHref.code(code.id);
 }
 
