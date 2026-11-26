@@ -56,7 +56,8 @@
       "src/clubhouse/__tests__/roster-player.test.tsx"
     ],
     "also": [
-      "src/clubhouse/data/roster-player.ts"
+      "src/clubhouse/data/roster-player.ts",
+      "src/clubhouse/ui/DataTable.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/roster.md",

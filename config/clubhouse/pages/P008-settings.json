@@ -80,6 +80,9 @@
     "tests": [
       "src/clubhouse/__tests__/settings.test.tsx",
       "src/clubhouse/__tests__/settings-server.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/ui/Slider.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/settings.md",

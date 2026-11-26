@@ -52,6 +52,9 @@
     "styles": "src/clubhouse/styles/messages.css",
     "tests": [
       "src/clubhouse/__tests__/messages.test.tsx"
+    ],
+    "also": [
+      "src/clubhouse/ui/SwipeRow.tsx"
     ]
   },
   "catalog": "docs/clubhouse/catalog/messages.md",

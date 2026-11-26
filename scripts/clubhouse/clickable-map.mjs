@@ -103,13 +103,18 @@ export function controlsIn(text, file = 'x.tsx') {
   return rows;
 }
 
-/** Which page a file belongs to: the manifest whose implementation path is the longest prefix of it. */
+/**
+ * Which page a file belongs to: the manifest whose implementation path is the longest prefix of it. An exact file in
+ * `implementation.also` beats a shared directory (P004 and P005 share src/clubhouse/screens/stats; each lists its own
+ * screens' files). A tie between equal paths goes to the lower page id, on purpose rather than by load order.
+ */
 export function pageOf(file, manifests) {
   let best = null;
   for (const m of manifests) {
     const i = m.implementation ?? {};
     for (const p of [i.root, i.loader, i.route, i.styles, ...(i.also ?? [])].filter(Boolean)) {
-      if ((file === p || file.startsWith(`${p}/`)) && (!best || p.length > best.len)) best = { m, len: p.length };
+      if (!(file === p || file.startsWith(`${p}/`))) continue;
+      if (!best || p.length > best.len || (p.length === best.len && m.id < best.m.id)) best = { m, len: p.length };
     }
   }
   return best?.m ?? null;

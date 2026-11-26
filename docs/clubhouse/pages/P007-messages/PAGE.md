@@ -23,7 +23,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/messages.md](../../screens/messages.md) |
 | Phone spec | [phone/messages.md](../../phone/messages.md) |
 | Design boards | [Coach - Messages.html](../../../../design/handoff/Coach%20-%20Messages.html) · [Messages.html](../../../../design/handoff/Messages.html) · [messages.jsx](../../../../design/handoff/messages.jsx) · [Coach - Messages - Mobile.html](../../../../design/handoff/Coach%20-%20Messages%20-%20Mobile.html) · [Messages Mobile.html](../../../../design/handoff/mobile/Messages%20Mobile.html) · [m-msg.jsx](../../../../design/handoff/m-msg.jsx) |
-| Code | [messages](../../../../src/clubhouse/screens/messages) · [messages.ts](../../../../src/clubhouse/data/messages.ts) · [messages.tsx](../../../../src/clubhouse/routes/messages.tsx) · [messages.css](../../../../src/clubhouse/styles/messages.css) |
+| Code | [messages](../../../../src/clubhouse/screens/messages) · [messages.ts](../../../../src/clubhouse/data/messages.ts) · [messages.tsx](../../../../src/clubhouse/routes/messages.tsx) · [messages.css](../../../../src/clubhouse/styles/messages.css) · [SwipeRow.tsx](../../../../src/clubhouse/ui/SwipeRow.tsx) |
 | Held plans | [conversation-files.md](../../held/features/conversation-files.md) · [message-attachments-hardening.md](../../held/data/message-attachments-hardening.md) |
 | Audits | [DEPTH_AUDIT](../../DEPTH_AUDIT.md) · [AESTHETIC_AUDIT](../../AESTHETIC_AUDIT.md) · [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Messages" |

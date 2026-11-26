@@ -281,7 +281,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ## P003 Roster
 
-52 controls.
+53 controls.
 
 ### `src/clubhouse/screens/roster/InviteByEmail.tsx`
 
@@ -368,23 +368,92 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 - 56 `Button` "Try again" (button, onClick) CH-3210
 
+### `src/clubhouse/ui/DataTable.tsx`
+
+- 102 `button` "(aria-label built at run time)" (button, onClick)
+
 ## P004 Stats (team)
 
-86 controls.
+33 controls.
 
 ### `src/clubhouse/routes/stats.tsx`
 
 - 85 `Button` "Back to roster" (button, href)
+
+### `src/clubhouse/screens/stats/DeskPane.tsx`
+
+- 78 `BackLink` "(label built at run time)" (link, onClick)
+
+### `src/clubhouse/screens/stats/ScoringFeatureChart.tsx`
+
+- 173 `div` "(aria-label built at run time)" (onPointerDown)
+
+### `src/clubhouse/screens/stats/ShsBlocks.tsx`
+
+- 27 `button` "How this is measured" (button, onClick)
+
+### `src/clubhouse/screens/stats/StatsFilter.tsx`
+
+- 106 `button` "(label built at run time)" (button, onClick)
+- 115 `button` "(aria-label built at run time)" (button, onClick)
+- 132 `button` "Clear filters" (button, onClick)
+- 200 `Button` "Clear filters" (button, onClick)
+- 215 `Button` "Clear filters" (button, onClick)
+- 313 `Button` "Clear" (button, onClick)
+- 326 `Button` "Done" (button, onClick)
+- 336 `button` "All" (button, onClick)
+- 340 `button` "(label built at run time)" (button, onClick)
+- 351 `button` "(label built at run time)" (button, onClick)
+- 433 `button` "(label built at run time)" (button, onClick)
+
+### `src/clubhouse/screens/stats/StatsTeam.tsx`
+
+- 124 `HowStatsCountLink` "(no label)" (link)
+- 306 `Link` "(label built at run time)" (link, href)
+
+### `src/clubhouse/screens/stats/StatsTeamFirstRun.tsx`
+
+- 27 `Button` "(label built at run time)" (button, href) CH-4310
+
+### `src/clubhouse/screens/stats/StatsTeamIslands.tsx`
+
+- 194 `Button` "Export" (button, onClick)
+- 207 `Button` "Show the season" (button, onClick)
+- 714 `button` "(label built at run time)" (button, onClick)
+- 838 `button` "(label built at run time)" (button, onClick)
+- 969 `Link` "(label built at run time)" (link, href)
+- 984 `Link` "(aria-label built at run time)" (link, href)
+
+### `src/clubhouse/screens/stats/StatsTeamPhone.tsx`
+
+- 401 `button` "(aria-label built at run time)" (button, onClick, role=tab)
+- 478 `Link` "(label built at run time)" (link, href)
+
+### `src/clubhouse/screens/stats/StatsTeamPhoneShs.tsx`
+
+- 317 `Button` "Try again" (button, onClick) CH-4201
+- 507 `HowStatsCountLink` "(no label)" (link)
+- 611 `button` "(aria-label built at run time)" (button, onClick)
+
+### `src/clubhouse/screens/stats/SummaryCard.tsx`
+
+- 92 `section` "(label built at run time)" (onClick)
+- 99 `button` "(aria-label built at run time)" (button, onClick)
+- 108 `button` "(aria-label built at run time)" (button, onClick)
+
+### `src/clubhouse/screens/stats/TeamRank.tsx`
+
+- 131 `Link` "Open player" (link, href)
+
+## P005 Stats (player)
+
+53 controls.
 
 ### `src/clubhouse/screens/stats/BestCard.tsx`
 
 - 123 `Button` "Share best score" (button, onClick)
 - 135 `Button` "Cancel" (button, onClick) CH-5810
 - 138 `Button` "Share" (button, onClick) CH-5810
-
-### `src/clubhouse/screens/stats/DeskPane.tsx`
-
-- 78 `BackLink` "(label built at run time)" (link, onClick)
 
 ### `src/clubhouse/screens/stats/GameDetail.tsx`
 
@@ -427,28 +496,6 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 - 106 `Link` "Open round" (link, href)
 
-### `src/clubhouse/screens/stats/ScoringFeatureChart.tsx`
-
-- 173 `div` "(aria-label built at run time)" (onPointerDown)
-
-### `src/clubhouse/screens/stats/ShsBlocks.tsx`
-
-- 27 `button` "How this is measured" (button, onClick)
-
-### `src/clubhouse/screens/stats/StatsFilter.tsx`
-
-- 106 `button` "(label built at run time)" (button, onClick)
-- 115 `button` "(aria-label built at run time)" (button, onClick)
-- 132 `button` "Clear filters" (button, onClick)
-- 200 `Button` "Clear filters" (button, onClick)
-- 215 `Button` "Clear filters" (button, onClick)
-- 313 `Button` "Clear" (button, onClick)
-- 326 `Button` "Done" (button, onClick)
-- 336 `button` "All" (button, onClick)
-- 340 `button` "(label built at run time)" (button, onClick)
-- 351 `button` "(label built at run time)" (button, onClick)
-- 433 `button` "(label built at run time)" (button, onClick)
-
 ### `src/clubhouse/screens/stats/StatsPlayer.tsx`
 
 - 281 `Button` "(label built at run time)" (button, href)
@@ -482,45 +529,6 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 1223 `Link` "(aria-label built at run time)" (link, href)
 - 1258 `GoalSetButton` "(no label)" (button)
 - 1305 `Button` "Add focus area" (button, onClick)
-
-### `src/clubhouse/screens/stats/StatsTeam.tsx`
-
-- 124 `HowStatsCountLink` "(no label)" (link)
-- 306 `Link` "(label built at run time)" (link, href)
-
-### `src/clubhouse/screens/stats/StatsTeamFirstRun.tsx`
-
-- 27 `Button` "(label built at run time)" (button, href) CH-4310
-
-### `src/clubhouse/screens/stats/StatsTeamIslands.tsx`
-
-- 194 `Button` "Export" (button, onClick)
-- 207 `Button` "Show the season" (button, onClick)
-- 714 `button` "(label built at run time)" (button, onClick)
-- 838 `button` "(label built at run time)" (button, onClick)
-- 969 `Link` "(label built at run time)" (link, href)
-- 984 `Link` "(aria-label built at run time)" (link, href)
-
-### `src/clubhouse/screens/stats/StatsTeamPhone.tsx`
-
-- 401 `button` "(aria-label built at run time)" (button, onClick, role=tab)
-- 478 `Link` "(label built at run time)" (link, href)
-
-### `src/clubhouse/screens/stats/StatsTeamPhoneShs.tsx`
-
-- 317 `Button` "Try again" (button, onClick) CH-4201
-- 507 `HowStatsCountLink` "(no label)" (link)
-- 611 `button` "(aria-label built at run time)" (button, onClick)
-
-### `src/clubhouse/screens/stats/SummaryCard.tsx`
-
-- 92 `section` "(label built at run time)" (onClick)
-- 99 `button` "(aria-label built at run time)" (button, onClick)
-- 108 `button` "(aria-label built at run time)" (button, onClick)
-
-### `src/clubhouse/screens/stats/TeamRank.tsx`
-
-- 131 `Link` "Open player" (link, href)
 
 ### `src/clubhouse/screens/stats/detail.tsx`
 
@@ -749,7 +757,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ## P007 Messages
 
-148 controls.
+152 controls.
 
 ### `src/clubhouse/screens/messages/ComposerPlusV2.tsx`
 
@@ -1016,9 +1024,16 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 62 `button` "(aria-label built at run time)" (button, onClick)
 - 95 `IconButton` "Attach a file" (button, onClick)
 
+### `src/clubhouse/ui/SwipeRow.tsx`
+
+- 129 `PresenceRow` "(label built at run time)" (onPointerDown)
+- 216 `SwipeButton` "(no label)" (button)
+- 217 `SwipeButton` "(no label)" (button)
+- 228 `button` "(label built at run time)" (button, onClick)
+
 ## P008 Settings
 
-97 controls.
+98 controls.
 
 ### `src/clubhouse/screens/settings/Account.tsx`
 
@@ -1176,6 +1191,10 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 100 `a` "(label built at run time)" (link, href)
 - 109 `button` "(label built at run time)" (button, onClick)
 - 154 `NavRow` "(no label)" (onClick)
+
+### `src/clubhouse/ui/Slider.tsx`
+
+- 53 `input` "(no label)" (onPointerDown)
 
 ## P009 Qualifiers
 
@@ -1700,7 +1719,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ## P012 Classes
 
-66 controls.
+67 controls.
 
 ### `src/clubhouse/screens/classes/ClassDetail.tsx`
 
@@ -1806,6 +1825,10 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 - 87 `button` " …" (button, onClick)
 - 205 `Button` "Retry sync" (button, onClick)
+
+### `src/clubhouse/ui/ClassStatusRow.tsx`
+
+- 47 `button` "(aria-label built at run time)" (button, onClick)
 
 ## P013 CoachHelm
 
@@ -2898,7 +2921,7 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 ## Shared (no page manifest claims these files)
 
-76 controls.
+69 controls.
 
 ### `src/clubhouse/ui/Button.tsx`
 
@@ -2915,18 +2938,10 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 - 28 `input` "(no label)" (type=radio)
 
-### `src/clubhouse/ui/ClassStatusRow.tsx`
-
-- 47 `button` "(aria-label built at run time)" (button, onClick)
-
 ### `src/clubhouse/ui/ConfirmAction.tsx`
 
 - 42 `Button` "Cancel" (button, onClick)
 - 45 `Button` "(label built at run time)" (button, onClick)
-
-### `src/clubhouse/ui/DataTable.tsx`
-
-- 102 `button` "(aria-label built at run time)" (button, onClick)
 
 ### `src/clubhouse/ui/DateField.tsx`
 
@@ -3020,10 +3035,6 @@ says so. This supersedes the 2026-09-30 snapshot in
 - 122 `button` "(aria-label built at run time)" (button, onClick)
 - 164 `button` "(aria-label built at run time)" (button, onClick)
 
-### `src/clubhouse/ui/Slider.tsx`
-
-- 53 `input` "(no label)" (onPointerDown)
-
 ### `src/clubhouse/ui/StatTerm.tsx`
 
 - 35 `button` "(label built at run time)" (button, onClick)
@@ -3034,13 +3045,6 @@ says so. This supersedes the 2026-09-30 snapshot in
 
 - 41 `IconButton` "(no label)" (button, onClick)
 - 68 `IconButton` "(no label)" (button, onClick)
-
-### `src/clubhouse/ui/SwipeRow.tsx`
-
-- 129 `PresenceRow` "(label built at run time)" (onPointerDown)
-- 216 `SwipeButton` "(no label)" (button)
-- 217 `SwipeButton` "(no label)" (button)
-- 228 `button` "(label built at run time)" (button, onClick)
 
 ### `src/clubhouse/ui/Switch.tsx`
 
