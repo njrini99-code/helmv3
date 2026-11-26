@@ -8,16 +8,14 @@ import { createClient } from '@/lib/supabase/server';
 import { Button, EmptyState } from '@/components/fairway';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import {
-  DEFAULT_LIVE_SOURCES,
   buildPack,
   packFileName,
   renderPackMarkdown,
   resolvePackTarget,
-  withSources,
   type ContextPack,
   type PackLiveSection,
 } from '@/lib/admin/clubhouse/pack';
-import { adminEventsPackSource, packPseudonym } from '@/lib/admin/clubhouse/pack-server';
+import { bridgePackSources, packPseudonym } from '@/lib/admin/clubhouse/pack-server';
 import { clubhouseHref, liveRef, scopeEntries, type SearchParams } from '@/lib/admin/clubhouse/screens';
 import { CopyReportButton } from '../../_components/CopyReportButton';
 import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../_components/frame';
@@ -56,7 +54,7 @@ export default async function DuetDeskPage({ searchParams }: { searchParams?: Pr
       includeNames,
       release: liveRef(),
       pseudonymize: packPseudonym,
-      sources: withSources(DEFAULT_LIVE_SOURCES, [adminEventsPackSource(supabase)]),
+      sources: bridgePackSources(supabase),
     });
   }
   const markdown = pack ? renderPackMarkdown(pack) : '';

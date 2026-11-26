@@ -1,8 +1,8 @@
 import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
-import { DEFAULT_LIVE_SOURCES, buildPack, renderPackMarkdown, resolvePackTarget, withSources, type PackLiveSource } from '@/lib/admin/clubhouse/pack';
-import { adminEventsPackSource, packPseudonym } from '@/lib/admin/clubhouse/pack-server';
+import { buildPack, renderPackMarkdown, resolvePackTarget } from '@/lib/admin/clubhouse/pack';
+import { bridgePackSources, packPseudonym } from '@/lib/admin/clubhouse/pack-server';
 import { auditDuetRead, duetAccess, duetJson, namesFor } from '@/lib/admin/clubhouse/duet-access';
 import { liveRef } from '@/lib/admin/clubhouse/screens';
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -27,13 +27,13 @@ export async function GET(request: NextRequest) {
   if (!target) return duetJson({ error: 'unknown target', t: raw, contract: graph.contentHash }, 404);
 
   const includeNames = namesFor(request, access);
-  let live: PackLiveSource[] = [];
+  let client: SupabaseClient | null = null;
   try {
-    live = [adminEventsPackSource(createAdminClient() as unknown as SupabaseClient)];
+    client = createAdminClient() as unknown as SupabaseClient;
   } catch {
-    // No service role on this server: the incidents section stays "No signal yet" with the rest.
+    // No service role on this server: the incidents section stays "No signal yet", and the live reads say they failed.
   }
-  const pack = await buildPack(graph, target, { includeNames, release: liveRef(), pseudonymize: packPseudonym, sources: withSources(DEFAULT_LIVE_SOURCES, live) });
+  const pack = await buildPack(graph, target, { includeNames, release: liveRef(), pseudonymize: packPseudonym, sources: bridgePackSources(client) });
   await auditDuetRead('packs', target.key, includeNames, access.caller);
   return duetJson({ pack, markdown: renderPackMarkdown(pack) });
 }

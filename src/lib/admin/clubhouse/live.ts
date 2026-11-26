@@ -311,6 +311,8 @@ export interface LiveSnapshot {
   baselineRows: HourlyRow[];
   drift: DriftRow[];
   failedSessions: SessionRow[];
+  /** The failed sessions' events (the rules read them; a context pack reuses them rather than reading twice). */
+  failedEvents: SessionEventRow[];
   errors: string[];
 }
 
@@ -380,6 +382,7 @@ export async function readLiveSnapshot(graph: BridgeGraph, now: number = Date.no
     baselineRows: baseline.data,
     drift: drift.data,
     failedSessions: sessions.data,
+    failedEvents: events.data,
     errors: [last, day, baseline, same, drift, sessions, events].map((r) => r.error).filter((e): e is string => Boolean(e)),
   };
 }

@@ -3,7 +3,19 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isMissingSchema } from './drift-server';
-import type { PackLiveSource, PackPseudonymizer, PackTarget } from './pack';
+import type { BridgeGraph } from './graph';
+import { readLiveSnapshot, readPeopleNames } from './live';
+import { DEFAULT_LIVE_SOURCES, withSources, type PackLiveSource, type PackPseudonymizer, type PackTarget } from './pack';
+import {
+  countersSection,
+  envelopesSection,
+  releaseSection,
+  rulesSection,
+  sessionsFor,
+  sessionsSection,
+  type PackLiveData,
+  type PackPeopleLabels,
+} from './pack-live';
 
 /**
  * A short, stable, pseudonymous id for a person (D7): the same user reads the same across packs, and the id says
@@ -103,4 +115,67 @@ export function adminEventsPackSource(client: SupabaseClient, limit = 12): PackL
       };
     },
   };
+}
+
+// ---------------------------------------------------------------------------
+// The live lenses' evidence: counters, envelopes, sessions, release, rules
+// ---------------------------------------------------------------------------
+
+/**
+ * One read of the live tables for a pack: the rules' snapshot (the last day and the week before it, the failed sessions
+ * of the last day and their events, every rule hit). The snapshot already says "no-signal" while the held migration
+ * keeps the tables away, and "error" when a read failed.
+ */
+export async function loadPackLive(graph: BridgeGraph): Promise<PackLiveData> {
+  const snap = await readLiveSnapshot(graph);
+  if (snap.state !== 'ok') {
+    return { state: snap.state, error: snap.errors.join('; ') || undefined, truncated: snap.truncated, rows: [], sessions: [], events: [], alerts: [] };
+  }
+  return {
+    state: 'ok',
+    truncated: snap.truncated,
+    rows: [...snap.dayRows, ...snap.baselineRows],
+    sessions: snap.failedSessions,
+    events: snap.failedEvents,
+    alerts: snap.alerts,
+  };
+}
+
+/** People and teams as the pack prints them: pseudonyms (D7), or the email (else the id) when names were asked for. */
+async function peopleLabels(graph: BridgeGraph, target: PackTarget, data: PackLiveData, includeNames: boolean): Promise<PackPeopleLabels> {
+  if (!includeNames) return { person: (id) => pseudonym(id), team: (id) => teamPseudonym(id) };
+  const ids = sessionsFor(graph, target, data.sessions, data.events).map((s) => s.user_id).filter((u): u is string => !!u);
+  const names = await readPeopleNames(ids);
+  return { person: (id) => (id ? (names.get(id)?.email ?? names.get(id)?.name ?? id) : null), team: (id) => id };
+}
+
+/**
+ * The §9.1 evidence from the live lenses (live.ts), replacing DEFAULT_LIVE_SOURCES' "No signal yet" placeholders by id
+ * and adding the rules firing. They share one read per pack: build a fresh set for each pack (`load` is for tests).
+ */
+export function livePackSources(load: (graph: BridgeGraph) => Promise<PackLiveData> = loadPackLive): PackLiveSource[] {
+  let cached: Promise<PackLiveData> | null = null;
+  const once = (graph: BridgeGraph) => (cached ??= load(graph));
+  return [
+    { id: 'counters', title: 'Counts and their split', read: async (t, g, ctx) => countersSection(g, t, await once(g), ctx) },
+    { id: 'envelopes', title: 'Representative envelopes', read: async (t, g, ctx) => envelopesSection(g, t, await once(g), ctx) },
+    {
+      id: 'sessions',
+      title: 'Sessions',
+      read: async (t, g, ctx) => {
+        const data = await once(g);
+        return sessionsSection(g, t, data, ctx, await peopleLabels(g, t, data, ctx.includeNames));
+      },
+    },
+    { id: 'release', title: 'The release it started in', read: async (t, g, ctx) => releaseSection(g, t, await once(g), ctx) },
+    { id: 'rules', title: 'Rules firing', read: async (t, g, ctx) => rulesSection(g, t, await once(g), ctx) },
+  ];
+}
+
+/**
+ * Every evidence source a pack reads, for the Duet desk and the 9.2 door alike, so the two cannot drift: the
+ * incidents (admin_events through `client`, when there is one) and the live lenses (through the service role).
+ */
+export function bridgePackSources(client: SupabaseClient | null): PackLiveSource[] {
+  return withSources(DEFAULT_LIVE_SOURCES, [...(client ? [adminEventsPackSource(client)] : []), ...livePackSources()]);
 }

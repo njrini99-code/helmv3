@@ -35,6 +35,11 @@ vi.mock('@/lib/supabase/server', () => ({
     }),
   }),
 }));
+// The live lenses' read while the signal tables are held: the snapshot says no-signal, and the pack must too.
+vi.mock('@/lib/admin/clubhouse/live', () => ({
+  readLiveSnapshot: vi.fn(async () => ({ state: 'no-signal', truncated: false, errors: [], dayRows: [], baselineRows: [], failedSessions: [], failedEvents: [], alerts: [] })),
+  readPeopleNames: vi.fn(async () => new Map()),
+}));
 vi.mock('next/navigation', () => ({
   notFound: () => {
     throw new Error('NEXT_NOT_FOUND');
@@ -85,6 +90,9 @@ describe('B13 Duet desk', () => {
     expect(c.textContent).toContain('bridge-pack/v1');
     expect(c.textContent).toContain('Pseudonymous ids only');
     expect(eqCalls).toEqual([['bridge_id', 70603]]);
+    // The live evidence (counters, envelopes, sessions, release, rules) says No signal yet, naming the held migration.
+    expect(c.textContent).toContain('No signal yet: counts by role, platform and release, first and last seen once the signal tables exist (held migration 20261124090000).');
+    expect(c.textContent).toContain('Rules firing');
   });
 
   it('incidents read pseudonymous by default and with the email only when names are ticked', async () => {
