@@ -51,7 +51,7 @@ describe('shared components forward data-ctl to their DOM element', () => {
           <LedgerRow data-ctl="CTL-P001-006" title="Row" onClick={() => {}} />
         </ul>
         <FeatureCard data-ctl="CTL-P001-007" kicker="K" title="T" href="/f" />
-        <ExportButton data-ctl="CTL-P001-008" file={() => ({ name: 'x', rows: [] }) as never} done={() => 'done'} failed="failed" />
+        <ExportButton data-ctl="CTL-P001-008" file={() => ({ name: 'x', rows: [] }) as never} done={() => 'done'} failed="failed" code="CH-0000" surface="test.export" />
         <HowStatsCountLink data-ctl="CTL-P001-009" />
       </>,
     );
