@@ -5,6 +5,9 @@ type AdminHref =
   | '/admin/clubhouse/actions'
   | '/admin/clubhouse/codes'
   | '/admin/clubhouse/readiness'
+  | '/admin/clubhouse/sessions'
+  | '/admin/clubhouse/experience'
+  | '/admin/clubhouse/releases'
   | '/admin/activity'
   | '/admin/errors'
   | '/admin/traces'
@@ -27,7 +30,12 @@ type AdminHref =
 export interface AdminNavEntry {
   label: string;
   href: AdminHref;
-  key: string;
+  /**
+   * '1'-'9', '0' or a Shift+letter. Absent only where no letter is free: every
+   * unused letter is either live or a retired shortcut operators still use
+   * (RETIRED_SHORTCUTS), so Experience and Releases (PR 3) have none yet.
+   */
+  key?: string;
   // 'More' — an OWNER-DECIDED deprioritized group: still fully wired (URL,
   // shortcut, ⌘K, mobile More sheet), just rendered under its own heading at
   // the end of the rail/⌘K instead of alongside the primary tabs. Derived
@@ -53,14 +61,19 @@ export interface AdminNavEntry {
  * URLs and keys are unchanged by the regrouping. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // CLUBHOUSE — "is Clubhouse doing what its contract says" (plan §7.1).
-  // '/admin' stays "Overview" until B01 Pulse replaces it (PR 3): the bottom
-  // bar, the tab title and this rail must keep naming one place one way.
-  { label: 'Overview', href: '/admin', key: '1', section: 'Clubhouse', description: 'Command posture, triage, deploys; Clubhouse Pulse lands here', meta: 'live' },
+  // '/admin' is B01 Pulse (PR 3); its URL and key '1' are unchanged. The
+  // bottom bar, the tab title and this rail name it one way.
+  { label: 'Pulse', href: '/admin', key: '1', section: 'Clubhouse', description: 'Is Clubhouse OK right now, and if not, where; the cross-sport overview below', meta: 'B01' },
   { label: 'Pages', href: '/admin/clubhouse', key: 'H', section: 'Clubhouse', description: 'The 17 pages against their contracts', meta: 'B02' },
   { label: 'Controls', href: '/admin/clubhouse/controls', key: 'I', section: 'Clubhouse', description: 'Every button, labelled, and what it runs', meta: 'B03' },
   { label: 'Actions', href: '/admin/clubhouse/actions', key: 'J', section: 'Clubhouse', description: 'Each press: handler, tables and outcomes', meta: 'B04' },
   { label: 'Codes', href: '/admin/clubhouse/codes', key: 'C', section: 'Clubhouse', description: 'Every Bridge ID and CH- code, one dossier each', meta: 'B05' },
   { label: 'Readiness', href: '/admin/clubhouse/readiness', key: 'M', section: 'Clubhouse', description: 'How finished Clubhouse is, by its own gates', meta: 'B12' },
+  // The live lenses (PR 3). N is the one free letter; the plan's S, E and V are
+  // retired shortcuts, so Experience and Releases carry no key yet.
+  { label: 'Sessions', href: '/admin/clubhouse/sessions', key: 'N', section: 'Clubhouse', description: 'What exactly one person saw, in order', meta: 'B07' },
+  { label: 'Experience', href: '/admin/clubhouse/experience', section: 'Clubhouse', description: 'Vitals, rage clicks and waits on real phones', meta: 'B09' },
+  { label: 'Releases', href: '/admin/clubhouse/releases', section: 'Clubhouse', description: 'What each release changed for real people', meta: 'B10' },
 
   // TRIAGE — "what is broken right now"
   // "Incidents", not "Errors". The list now carries app errors, Sentry
@@ -210,7 +223,7 @@ export const BRIDGE_BOTTOM_NAV_HREFS = [
  * tab column; the rail keeps the fuller label).
  */
 export const BRIDGE_BOTTOM_NAV_LABELS: Record<(typeof BRIDGE_BOTTOM_NAV_HREFS)[number], string> = {
-  '/admin': 'Overview',
+  '/admin': 'Pulse',
   // Matches the rail label. The bottom tab is the same destination, and two
   // names for one place is how muscle memory gets taught wrong.
   '/admin/errors': 'Incidents',

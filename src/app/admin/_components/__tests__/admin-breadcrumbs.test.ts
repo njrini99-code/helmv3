@@ -35,7 +35,7 @@ describe('computeBreadcrumbs', () => {
     ]);
     expect(computeBreadcrumbs('/admin')).toEqual([
       { label: 'Bridge', href: '/admin' },
-      { label: 'Overview', href: undefined },
+      { label: 'Pulse', href: undefined },
     ]);
   });
 });

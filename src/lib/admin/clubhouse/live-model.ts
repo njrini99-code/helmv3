@@ -24,7 +24,7 @@ import {
   type AlertSeverity,
   type BridgeAlert,
 } from './rules';
-import { DEFAULT_LIVE, type LiveScope } from './live-scope';
+import { DEFAULT_LIVE, PLATFORM_WORDS, type LiveScope } from './live-scope';
 import { FAILURE_CATEGORIES, withScope, type ClubhouseScope } from './screens';
 
 // ---------------------------------------------------------------------------
@@ -563,6 +563,28 @@ export function filterSessions(rows: readonly SessionRow[], f: SessionFilter): S
       (!f.release || s.release === f.release) &&
       (!f.user || s.user_id === f.user),
   );
+}
+
+/**
+ * BR-0707 Reproduce: a session written as steps someone can follow, pseudonymous (role, platform, pages, taps, the
+ * failure). Pages resolve to their first route through `routeOf`.
+ */
+export function reproSteps(s: Pick<SessionRow, 'role' | 'platform' | 'release'>, events: readonly SessionEventRow[], routeOf: (page: string) => string | null): string[] {
+  const steps = [`Sign in as a ${s.role} on ${PLATFORM_WORDS[s.platform] ?? s.platform}, release ${s.release.slice(0, 7)}.`];
+  let lastPage = '';
+  for (const e of [...events].sort((a, b) => a.seq - b.seq)) {
+    const page = e.page_id ?? '';
+    if (page && page !== lastPage && (e.kind === 'view' || !lastPage)) {
+      steps.push(`Open ${page}${routeOf(page) ? ` (${routeOf(page)})` : ''}.`);
+      lastPage = page;
+    }
+    if (e.kind === 'tap' && e.control_id) steps.push(`Tap ${e.control_id}.`);
+    else if (e.kind === 'action' && e.outcome === 'start') steps.push(`Start ${e.action_id ?? e.act ?? 'an action'}.`);
+    else if (isFailureRow({ kind: e.kind, outcome: e.outcome })) {
+      steps.push(`Expect ${e.code ?? 'a failure'}${e.server_code ? ` (server ${e.server_code})` : ''}${e.kind === 'crash' ? ', a crash' : ''}.`);
+    } else if (e.outcome === 'retry') steps.push(`Press Try again on ${e.code ?? 'the error'}.`);
+  }
+  return steps;
 }
 
 /** Codes a set of session events failed with, busiest first. */

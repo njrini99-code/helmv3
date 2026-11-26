@@ -34,6 +34,9 @@ import {
   Hash,
   ClipboardCheck,
   Repeat,
+  ListVideo,
+  Smartphone,
+  Tag,
 } from 'lucide-react';
 import {
   AppShell,
@@ -138,6 +141,9 @@ const NAV_ICON_BY_HREF = {
   '/admin/clubhouse/actions': Zap,
   '/admin/clubhouse/codes': Hash,
   '/admin/clubhouse/readiness': ClipboardCheck,
+  '/admin/clubhouse/sessions': ListVideo,
+  '/admin/clubhouse/experience': Smartphone,
+  '/admin/clubhouse/releases': Tag,
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,

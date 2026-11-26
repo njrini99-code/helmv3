@@ -25,6 +25,9 @@ describe('ADMIN_NAV', () => {
       '/admin/clubhouse/actions',
       '/admin/clubhouse/codes',
       '/admin/clubhouse/readiness',
+      '/admin/clubhouse/sessions',
+      '/admin/clubhouse/experience',
+      '/admin/clubhouse/releases',
       '/admin/errors',
       '/admin/health',
       '/admin/jobs',
@@ -45,7 +48,7 @@ describe('ADMIN_NAV', () => {
       '/admin/ben-leah',
     ]);
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', 'H', 'I', 'J', 'C', 'M',
+      '1', 'H', 'I', 'J', 'C', 'M', 'N', undefined, undefined,
       '3', '0', '8', 'X', 'F', 'T',
       '7', '2', 'U',
       '9', 'K', '4', 'W',
@@ -75,11 +78,25 @@ describe('ADMIN_NAV', () => {
   it('the Clubhouse screens take letters no live or retired shortcut uses', () => {
     const clubhouse = ADMIN_NAV.filter((e) => e.section === 'Clubhouse' && e.href !== '/admin');
     for (const entry of clubhouse) {
+      if (entry.key === undefined) continue;
       expect(entry.key, entry.href).toMatch(/^[A-Z]$/);
       expect(RETIRED_SHORTCUTS[entry.key], `${entry.key} is a retired shortcut`).toBeUndefined();
     }
     expect(hrefForShortcut('C')).toBe('/admin/clubhouse/codes');
     expect(hrefForShortcut('H')).toBe('/admin/clubhouse');
+    expect(hrefForShortcut('N')).toBe('/admin/clubhouse/sessions');
+  });
+
+  // PR 3 changes this on purpose: a tab may go without a key, but only when no
+  // letter is free. Every key-less tab is a Clubhouse lens, and every letter is
+  // taken by a live tab or a retired shortcut, so giving one a letter would
+  // retrain an operator's hands or break a shortcut they still use.
+  it('leaves a tab without a key only when no letter is free', () => {
+    const keyless = ADMIN_NAV.filter((e) => e.key === undefined).map((e) => e.href);
+    expect(keyless).toEqual(['/admin/clubhouse/experience', '/admin/clubhouse/releases']);
+    const taken = new Set([...ADMIN_NAV.map((e) => e.key), ...Object.keys(RETIRED_SHORTCUTS)]);
+    const free = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter((l) => !taken.has(l));
+    expect(free).toEqual([]);
   });
 
   it('maps shortcut keys to hrefs', () => {
@@ -102,7 +119,7 @@ describe('ADMIN_NAV', () => {
   it('no ADMIN_NAV shortcut collides with a key AdminShell reserves locally', () => {
     for (const entry of ADMIN_NAV) {
       expect(
-        RESERVED_LOCAL_SHORTCUTS.has(entry.key),
+        entry.key !== undefined && RESERVED_LOCAL_SHORTCUTS.has(entry.key),
         `${entry.href}'s shortcut '${entry.key}' is reserved by AdminShell's local keydown ` +
           'handler (see RESERVED_LOCAL_SHORTCUTS) and can never navigate there',
       ).toBe(false);
@@ -122,7 +139,7 @@ describe('navEntryForPath (rail highlight and breadcrumbs)', () => {
   });
 
   it('matches on a segment boundary, and /admin owns only itself', () => {
-    expect(navEntryForPath('/admin')?.label).toBe('Overview');
+    expect(navEntryForPath('/admin')?.label).toBe('Pulse');
     expect(navEntryForPath('/admin/users/abc')?.href).toBe('/admin/users');
     expect(navEntryForPath('/admin/users-archive')).toBeNull();
     expect(navEntryForPath('/admin/thread/user/1')).toBeNull();
