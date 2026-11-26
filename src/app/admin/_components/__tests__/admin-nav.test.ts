@@ -110,7 +110,7 @@ describe('ADMIN_NAV', () => {
   it('no ADMIN_NAV shortcut collides with a key AdminShell reserves locally', () => {
     for (const entry of ADMIN_NAV) {
       expect(
-        RESERVED_LOCAL_SHORTCUTS.has(entry.key),
+        entry.key !== undefined && RESERVED_LOCAL_SHORTCUTS.has(entry.key),
         `${entry.href}'s shortcut '${entry.key}' is reserved by AdminShell's local keydown ` +
           'handler (see RESERVED_LOCAL_SHORTCUTS) and can never navigate there',
       ).toBe(false);
