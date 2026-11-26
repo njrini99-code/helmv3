@@ -369,6 +369,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/superpowers/specs/2026-08-18-golf-team-operations-design.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/README.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/2026-11-18-clubhouse-bridge-redesign.md` | current | - | - | yes | - |
+| `docs/superpowers/specs/helm-bridge/2026-11-25-bridge-clubhouse-sync-execution.md` | current | - | - | yes | 1 |
 | `docs/superpowers/specs/helm-bridge/DECISIONS.md` | current | - | - | yes | - |
 | `docs/superpowers/specs/helm-bridge/FEATURE_COVERAGE.md` | current | - | - | yes | - |
 
