@@ -96,7 +96,7 @@ Sign-in telemetry is the server's (`recordLoginOutcome`), so this page records n
 Removed on 2026-11-14 (#2527): the flag, `isClubhouseFrontDoor()` and the old
 pages are gone, and every entrance page draws Clubhouse
 (`src/clubhouse/__tests__/front-door-routes.test.tsx`; `auth-logic.test.ts` and
-`src/__tests__/fairway-retirement-imports.test.ts` hold that the flag stays
+`src/components/fairway/__tests__/fairway-retirement-imports.test.ts` hold that the flag stays
 gone). The block below is the record of it as it was.
 
 ```text
