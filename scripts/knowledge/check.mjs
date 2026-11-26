@@ -55,7 +55,7 @@ execFileSync(process.execPath, ['scripts/knowledge/check-doc-coverage.mjs', ...a
 execFileSync(process.execPath, ['scripts/knowledge/stale-doc-check.mjs', ...args], {
   stdio: 'inherit',
 });
-execFileSync(process.execPath, ['scripts/check-registry-globs.mjs', ...args], {
+execFileSync(process.execPath, ['scripts/checks/check-registry-globs.mjs', ...args], {
   stdio: 'inherit',
 });
 execFileSync(process.execPath, ['scripts/knowledge/check-ledger-integrity.mjs', ...args], {

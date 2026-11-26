@@ -24,7 +24,7 @@ vi.mock('@/lib/admin/agent-runs/fetch', () => ({
 }));
 
 vi.mock('@/lib/admin/engineering/charter', () => ({
-  fetchMutationGateCharter: vi.fn(async () => ({ status: 'ok', data: { floor: 40, scope: 'src/**', provisional: true, evidenceCommand: 'node scripts/mutation-gate.mjs' }, fetchedAt: '2026-09-03T00:00:00Z' })),
+  fetchMutationGateCharter: vi.fn(async () => ({ status: 'ok', data: { floor: 40, scope: 'src/**', provisional: true, evidenceCommand: 'node scripts/checks/mutation-gate.mjs' }, fetchedAt: '2026-09-03T00:00:00Z' })),
   fetchContractsCharter: vi.fn(async () => ({ status: 'ok', data: [], fetchedAt: '2026-09-03T00:00:00Z' })),
   fetchJanitorCharter: vi.fn(async () => ({ status: 'unconfigured', data: null, fetchedAt: null, error: 'not generated' })),
 }));

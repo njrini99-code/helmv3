@@ -8,7 +8,7 @@
 > `golf|baseball`-prefix pattern incidentally. Declared absent below so the
 > check exempts it structurally instead of carrying it in the numeric
 > baseline. Removing the reference entirely is a ratchet-down — re-run
-> `node scripts/check-doc-schema-drift.mjs --update` after.
+> `node scripts/checks/check-doc-schema-drift.mjs --update` after.
 
 <!-- schema-drift-absent: baseball_scope_player_ids_isolation -->
 

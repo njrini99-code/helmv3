@@ -2,7 +2,7 @@
 // never executed. Promoted to vitest (issue #1194).
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { reconcile } from '../check-migration-ledger.mjs';
+import { reconcile } from '../db/check-migration-ledger.mjs';
 
 test('flags file missing from ledger', () => {
   const files = ['20260519100000_new.sql'];

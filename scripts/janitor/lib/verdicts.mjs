@@ -2,7 +2,7 @@
  * Shared verdict vocabulary for every Janitor classifier.
  *
  * Three verdicts, not two — this is the same UNKNOWN-never-becomes-PASS
- * discipline `scripts/control-plane-verify.mjs` applies to the control
+ * discipline `scripts/checks/control-plane-verify.mjs` applies to the control
  * plane, applied here to the Janitor's own output:
  *
  *   FINDINGS               the class was checked and it found something.

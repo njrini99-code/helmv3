@@ -126,11 +126,11 @@ jobs:
       - checkout
       - install-node-deps
       - run:
-          # scripts/mutation-gate.mjs has no non-builtin deps, so this runs
+          # scripts/checks/mutation-gate.mjs has no non-builtin deps, so this runs
           # against the checkout as-is, BEFORE Stryker installs or runs —
           # a broken gate should fail fast with a clear message, not mid-run
-          # 30 minutes into a mutation pass. See scripts/mutation-gate.test.mjs.
-          name: Mutation gate unit tests (scripts/mutation-gate.mjs)
+          # 30 minutes into a mutation pass. See scripts/__tests__/mutation-gate.test.mjs.
+          name: Mutation gate unit tests (scripts/checks/mutation-gate.mjs)
           command: npm run test:mutation-gate
       - run:
           name: Install Stryker
@@ -157,12 +157,12 @@ jobs:
             }
             EOF
             # Used to be `npx stryker run || true`, which swallowed EVERY exit
-            # code including a crash — see scripts/mutation-gate.mjs's header
+            # code including a crash — see scripts/checks/mutation-gate.mjs's header
             # comment for the incident and why the fix is not simply dropping
             # `|| true`. No `thresholds.break` is set here deliberately: that
             # would make Stryker's OWN process exit code the enforcement point,
             # duplicating (and risking silently diverging from) the score
-            # computed by scripts/mutation-gate.mjs below. One gate, one place.
+            # computed by scripts/checks/mutation-gate.mjs below. One gate, one place.
             #
             # Distinguish Stryker itself failing to run (config/compile/runtime
             # crash — always a hard failure, same principle as the knip job
@@ -178,7 +178,7 @@ jobs:
             fi
       - run:
           name: Mutation score gate (config/mutation-gate.json)
-          command: node scripts/mutation-gate.mjs reports/mutation/mutation.json config/mutation-gate.json
+          command: node scripts/checks/mutation-gate.mjs reports/mutation/mutation.json config/mutation-gate.json
       - store_artifacts:
           path: reports/mutation/
           destination: stryker
@@ -189,7 +189,7 @@ jobs:
     # matter what it found, and nothing downstream checked its output either
     # (only artifacts, no aggregator). Fixed 2026-08-19 (Wave L / Lane C) the
     # same way review-gate.yml's per-PR sqlfluff job was fixed: run
-    # scripts/sql-lint-ratchet.mjs (a full-scope, per-rule count ratchet;
+    # scripts/ratchets/sql-lint-ratchet.mjs (a full-scope, per-rule count ratchet;
     # fails only if a rule's violation count goes UP vs. the checked-in
     # config/baselines/.sqlfluff-baseline.json) instead of a bare lint-and-discard.
     #
@@ -213,7 +213,7 @@ jobs:
           node-version: "24.21"
       - run:
           name: SQL lint ratchet (full repo)
-          command: node scripts/sql-lint-ratchet.mjs
+          command: node scripts/ratchets/sql-lint-ratchet.mjs
 
   # ---------- Weekly: Postgres migration safety scan ----------
   squawk-migrations:

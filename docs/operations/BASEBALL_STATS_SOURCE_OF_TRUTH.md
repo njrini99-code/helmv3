@@ -38,5 +38,5 @@ Seeds must not create empty Stats Center with populated legacy-only rows.
 
 ## Verification
 
-- `scripts/verify-stats-consistency.ts` — drift checks between layers
+- `scripts/db/verify-stats-consistency.ts` — drift checks between layers
 - Stats Center non-empty smoke when seed claims stats exist (see `src/contracts/baseball/`)

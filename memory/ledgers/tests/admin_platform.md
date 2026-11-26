@@ -593,7 +593,7 @@
   real `git ls-files`/`git grep`/`git log` on principle (see
   `scripts/janitor/lib/repo.mjs`'s header on the `.worktrees/` filesystem-walk
   incident) and a mock cannot exercise that path honestly.
-- `scripts/mutation-gate.test.mjs` (`npm run test:mutation-gate`) — 13 cases
+- `scripts/__tests__/mutation-gate.test.mjs` (`npm run test:mutation-gate`) — 13 cases
   covering `computeMutationScore`'s formula (killed/timeout vs.
   survived/no-coverage, Ignored/CompileError/RuntimeError excluded), the
   floor-boundary case (`score === floor` is PASS, not FAIL), and every

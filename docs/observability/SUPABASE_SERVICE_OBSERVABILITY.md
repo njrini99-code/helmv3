@@ -393,7 +393,7 @@ session"). Intended call sites once that ownership boundary lifts:
 
 ## 7. Coverage audit (B6)
 
-`scripts/supabase-error-audit.mjs` extended with a report-only section
+`scripts/audits/supabase-error-audit.mjs` extended with a report-only section
 (zero effect on the existing `helm/no-unchecked-supabase-error` ratchet's
 exit code or baseline). Run 2026-09-03 against the tree at the end of this
 track:

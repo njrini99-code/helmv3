@@ -20,7 +20,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync, realpathSync } from 'nod
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
-const SCRIPT = resolve(__dirname, '../../../scripts/check-doc-schema-drift.mjs');
+const SCRIPT = resolve(__dirname, '../../../scripts/checks/check-doc-schema-drift.mjs');
 
 // The script reads ROOT from process.cwd(), so a fixture root is enough to
 // exercise it end to end without touching the live checkout.
