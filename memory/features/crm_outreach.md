@@ -42,7 +42,7 @@ the "tabs" are client state plus `history.replaceState` (`?tab=`, `?outreach=`,
 
 Sending is **human-triggered by design.** The sequence-processing route is fully
 wired but deliberately absent from `vercel.json`, so nothing sends on a
-schedule; an operator runs `scripts/process-sequence-batch.mjs [N] --apply` to
+schedule; an operator runs `scripts/crm/process-sequence-batch.mjs [N] --apply` to
 send the next batch (without `--apply` it is a dry run that lists who would be
 emailed and writes nothing). Enabling automation is a one-line `vercel.json` addition — treat that as
 a product decision, not a config tidy-up.
@@ -136,7 +136,7 @@ Background work is **Vercel Cron** only.
 - **Two files break the `crm-` naming convention** (`resend-activity.ts` and the
   colocated `components/resend/actions.ts`). A sweep keyed on the prefix misses
   both.
-- **`scripts/process-sequence-batch.mjs` duplicates** the merge, unsubscribe and
+- **`scripts/crm/process-sequence-batch.mjs` duplicates** the merge, unsubscribe and
   header logic in `crm-gmail-send.ts` / `outreach-headers.ts` rather than
   importing it, and the two are kept in step by comment convention alone.
 - **A stale schedule comment.** `refresh-engagement/route.ts` and

@@ -3,7 +3,7 @@
  *
  * Schedule: NOT registered in vercel.json by design — automated sequence sends
  *           are kept OFF so outreach stays human-triggered (the operator runs
- *           `scripts/process-sequence-batch.mjs` to send the next batch). The
+ *           `scripts/crm/process-sequence-batch.mjs` to send the next batch). The
  *           route is fully wired (deliverability headers, suppression gating,
  *           daily cap) so enabling automation is a one-line vercel.json add of a
  *           crons entry for this path. Gated by SEQUENCE_DAILY_CAP (default 50).
@@ -437,7 +437,7 @@ async function processEnrollment(
               : buildEmailHtml(recipientName, personalizedSubject, personalizedBody),
         };
 
-  // Deliverability parity with scripts/process-sequence-batch.mjs (closes G2 on
+  // Deliverability parity with scripts/crm/process-sequence-batch.mjs (closes G2 on
   // this cron): reply_to + RFC 8058 one-click List-Unsubscribe headers (the #1
   // free Gmail/Yahoo Primary-placement signal) + sanitized per-cohort tags.
   const extras = buildOutreachExtras({

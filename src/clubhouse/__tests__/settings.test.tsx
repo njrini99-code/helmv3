@@ -169,8 +169,8 @@ describe('Settings · 80xx error toasts', () => {
   it('CH-8004 password change fails with the reason', async () => {
     const { user } = setup({ writes: { changePassword: vi.fn(() => fail('Your current password is incorrect.')) } });
     await user.type(screen.getByLabelText('Current password'), 'old-pass');
-    await user.type(screen.getByLabelText('New password'), 'new-password');
-    await user.type(screen.getByLabelText('Confirm new password'), 'new-password');
+    await user.type(screen.getByLabelText('New password'), 'New-password-1');
+    await user.type(screen.getByLabelText('Confirm new password'), 'New-password-1');
     await user.click(screen.getByRole('button', { name: 'Update password' }));
     await expectCode('CH-8004', /incorrect/);
   });
@@ -388,9 +388,9 @@ describe('Settings · 81xx validation', () => {
   });
 
   it.each([
-    ['CH-8105', '', 'new-password', 'new-password', /current password/, 'Current password'],
+    ['CH-8105', '', 'New-password-1', 'New-password-1', /current password/, 'Current password'],
     ['CH-8106', 'old', 'short', 'short', /8 characters/, 'New password'],
-    ['CH-8107', 'old', 'new-password', 'other-password', /don’t match/, 'Confirm new password'],
+    ['CH-8107', 'old', 'New-password-1', 'Other-password-1', /don’t match/, 'Confirm new password'],
   ])('%s password checks; focus goes to the field it names (row 86)', async (c, cur, next, confirm, text, field) => {
     const { user, writes } = setup();
     if (cur) await user.type(screen.getByLabelText('Current password'), cur);
@@ -414,6 +414,50 @@ describe('Settings · 81xx validation', () => {
     expect(invite.textContent).toMatch(/Players who sign up with your team code or open your invite link join right away\. You can remove anyone from Roster\./);
     expect(invite.textContent).not.toMatch(/approve/);
     expect(within(invite).getByText('Team code')).toBeTruthy();
+  });
+
+  it('a men’s and women’s head coach sees both team codes, each named, active team first', async () => {
+    const base = coachData();
+    const { user } = setup({
+      section: 'team',
+      data: {
+        ...base,
+        programCodes: [
+          { teamId: 'preview-team-w', name: 'Varsity Women', gender: 'womens', code: 'W4NP8RTE' },
+          { teamId: base.teamId!, name: 'Varsity', gender: 'mens', code: base.joinCode && !base.joinCode.error ? base.joinCode.value : 'X' },
+        ],
+      },
+    });
+    const invite = screen.getByRole('region', { name: 'Invite players' });
+    expect(invite.textContent).toMatch(/Each team has its own code\./);
+    const mens = within(invite).getByText('Men’s team code');
+    const womens = within(invite).getByText('Women’s team code');
+    expect(mens.compareDocumentPosition(womens) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(invite).getByText('W4NP8RTE')).toBeTruthy();
+    expect(within(invite).queryByText('Team code')).toBeNull();
+    // Both teams' codes get exactly the same actions, in the same style: neither reads as the lesser one.
+    const actionsOf = (side: string) =>
+      within(invite)
+        .getAllByRole('button')
+        .filter((b) => new RegExp(` ${side}`).test(b.getAttribute('aria-label') ?? ''))
+        .map((b) => [b.textContent, b.className.replace(/\s+/g, ' ').trim()]);
+    expect(actionsOf('men’s team').length).toBeGreaterThanOrEqual(2);
+    expect(actionsOf('women’s team')).toEqual(actionsOf('men’s team'));
+    // Replacing a code names the team being viewed, and how to replace the other.
+    expect(invite.textContent).toMatch(/Replaces the code for the men’s team, the team you’re viewing/);
+    // The other team's code copies on its own, and the toast names the team.
+    const writeText = vi.fn(() => Promise.resolve());
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    await user.click(within(invite).getByRole('button', { name: 'Copy women’s team code' }));
+    expect(writeText).toHaveBeenCalledWith('W4NP8RTE');
+    expect(await screen.findByText('Women’s team code copied')).toBeTruthy();
+  });
+
+  it('a one-team coach keeps the single "Team code" card', () => {
+    setup({ section: 'team', data: { ...coachData(), programCodes: null } });
+    const invite = screen.getByRole('region', { name: 'Invite players' });
+    expect(within(invite).getByText('Team code')).toBeTruthy();
+    expect(within(invite).queryByText(/Men’s team|Women’s team/)).toBeNull();
   });
 
   it.each([
@@ -1327,7 +1371,7 @@ describe('Settings · what a saved value does when the person leaves the section
     await user.click(within(card('Scoring and format')).getByRole('button', { name: 'Save changes' }));
     await within(card('Scoring and format')).findByText('Saved');
     serve({ ...coachData(), teamName: 'Junior varsity' });
-    expect(document.querySelector('.ch-set-head p')!.textContent).toContain('Junior varsity');
+    expect(document.querySelector('.ch-set-head__k')!.textContent).toContain('Junior varsity');
     await openSection(user, /^Account/);
     await screen.findByLabelText('Full name');
     await openSection(user, /^Team/);
@@ -2279,8 +2323,8 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       await user.click(await screen.findByRole('button', { name: /^Password/ }));
       const sheet = dialog('Password');
       await user.type(within(sheet).getByLabelText('Current password'), 'old-pass');
-      await user.type(within(sheet).getByLabelText('New password'), 'new-password');
-      await user.type(within(sheet).getByLabelText('Confirm new password'), 'other-password');
+      await user.type(within(sheet).getByLabelText('New password'), 'New-password-1');
+      await user.type(within(sheet).getByLabelText('Confirm new password'), 'Other-password-1');
       hapticSpy.mockClear();
       await user.click(within(sheet).getByRole('button', { name: 'Update' }));
       await expectCode('CH-8107', /don’t match/);
@@ -2290,10 +2334,10 @@ describe('Settings · phone (docs/clubhouse/phone/settings.md)', () => {
       expect(within(sheet).getByLabelText('Confirm new password').getAttribute('aria-invalid')).toBe('true');
       expect(writes.changePassword).not.toHaveBeenCalled();
       await user.clear(within(sheet).getByLabelText('Confirm new password'));
-      await user.type(within(sheet).getByLabelText('Confirm new password'), 'new-password');
+      await user.type(within(sheet).getByLabelText('Confirm new password'), 'New-password-1');
       await user.click(within(sheet).getByRole('button', { name: 'Update' }));
       await expectCode('CH-8004', /incorrect/);
-      expect(writes.changePassword).toHaveBeenCalledWith('old-pass', 'new-password');
+      expect(writes.changePassword).toHaveBeenCalledWith('old-pass', 'New-password-1');
     });
 
     it('81901 CH-8016 CH-8113 golf details open in a sheet from any row, and a handicap out of range keeps Save off (player)', async () => {

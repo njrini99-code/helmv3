@@ -36,6 +36,7 @@ import { signInWithPasswordResilient } from '@/lib/auth/resilient-get-user';
 import { describeError } from '@/lib/utils/describe-error';
 import { verifySignupGate } from '@/lib/golf/signup-gate';
 import { resolveGolfCoachEntry } from '@/lib/golf/coach-entry-path';
+import { declaredGolfRole } from '@/lib/auth/golf-dashboard-role';
 import { recordLoginOutcome } from '@/lib/observability/golf-login-outcome';
 import { observeAuthResult } from '@/lib/observability/supabase/observe-auth';
 
@@ -59,6 +60,41 @@ const PASSWORD_RESET_IP_LIMIT = {
   maxAttempts: 10,
   windowMs: 60 * 60 * 1000,
   blockDurationMs: 60 * 60 * 1000,
+};
+
+// Sign-ins from one network: every attempt counts, successes too, so it is sized for a whole team signing in on one
+// campus IP at practice (the per-email limit and the lockout guard each account; this only stops a flood).
+const LOGIN_IP_LIMIT = {
+  maxAttempts: 60,
+  windowMs: 60 * 1000,
+  blockDurationMs: 5 * 60 * 1000,
+};
+
+/** A sign-in refused for the password itself (GoTrue's invalid_credentials), the only failure that counts toward lockout. */
+function isRefusedPassword(error: unknown): boolean {
+  const e = error as { code?: string; status?: number; message?: string } | null;
+  if (!e) return false;
+  if (e.code === 'invalid_credentials') return true;
+  // Older GoTrue answers carry no code: a 400 whose message says the credentials were wrong.
+  return !e.code && e.status === 400 && /invalid login credentials/i.test(e.message ?? '');
+}
+
+// Every reset from one network, whatever address it names: bounds how many different inboxes one caller can send reset
+// mail to through our domain. Sized for a whole team behind one campus IP (a team forgetting together is rare; 30 an
+// hour is far above it).
+const PASSWORD_RESET_IP_ALL_LIMIT = {
+  maxAttempts: 30,
+  windowMs: 60 * 60 * 1000,
+  blockDurationMs: 15 * 60 * 1000,
+};
+
+// One address's own budget. Kept short-blocking: a stranger who requests resets for someone's address can only hold
+// their own resets back for a quarter of an hour, not the full hour RATE_LIMITS.PASSWORD_RESET (shared with Baseball)
+// would block for.
+const PASSWORD_RESET_EMAIL_LIMIT = {
+  maxAttempts: 5,
+  windowMs: 60 * 60 * 1000,
+  blockDurationMs: 15 * 60 * 1000,
 };
 
 /**
@@ -121,7 +157,7 @@ async function loginActionImpl(
     };
   }
 
-  const ipRateLimit = await checkRateLimit(`login:ip:${ip}`, RATE_LIMITS.LOGIN);
+  const ipRateLimit = await checkRateLimit(`login:ip:${ip}`, LOGIN_IP_LIMIT);
 
   if (!ipRateLimit.allowed) {
     const remaining = formatTimeRemaining(ipRateLimit.resetAt - Date.now());
@@ -140,8 +176,8 @@ async function loginActionImpl(
     password,
   });
 
-  if (error || !data.user) {
-    // Additive to `recordLoginOutcome` above, not a replacement: that helper
+  if (error) {
+    // Additive to `recordLoginOutcome` below, not a replacement: that helper
     // records the PRODUCT outcome (locked / invalid / rate-limited), this
     // records the SUPABASE AUTH failure behind it. A wrong password
     // (`invalid_credentials`) classifies EXPECTED and stays silent; a 429, a
@@ -153,6 +189,34 @@ async function loginActionImpl(
       operation: 'sign_in',
       sport: 'golf',
     });
+  }
+
+  // Only a refused password is a failed attempt. An unconfirmed email, GoTrue's own throttle, a 5xx or the resilient
+  // helper's timeout say what happened and count nothing toward the lockout: a coach with the right password must not
+  // be told it is wrong (and locked out after retrying) because the auth server blinked.
+  if (error && !isRefusedPassword(error)) {
+    const code = (error as { code?: string }).code;
+    const status = (error as { status?: number }).status;
+    // The form's own words for this (getErrorMessage maps "email not confirmed").
+    if (code === 'email_not_confirmed') {
+      recordLoginOutcome('email_not_confirmed');
+      return { success: false, error: 'Email not confirmed' };
+    }
+    if (status === 429 || code === 'over_request_rate_limit') {
+      recordLoginOutcome('rate_limited_auth');
+      return { success: false, error: 'Too many requests' };
+    }
+    // An outage (5xx, no status: the resilient helper's timeout) reads as one; any other refusal (a banned account, a
+    // malformed request) is not a connection problem and says only that sign in did not go through.
+    if (!status || status >= 500) {
+      recordLoginOutcome('auth_unavailable');
+      return { success: false, error: 'Network error: sign-in could not be reached' };
+    }
+    recordLoginOutcome('auth_refused');
+    return { success: false, error: 'We couldn’t sign you in. Please try again.' };
+  }
+
+  if (error || !data.user) {
     const lockoutResult = await recordFailedLogin(normalizedEmail, ip, userAgent);
 
     // Log failed login attempt (fire-and-forget)
@@ -268,9 +332,9 @@ async function loginActionImpl(
   }
 
   // Resolve role using profile presence to avoid misrouting
-  const declaredRole = (userData?.role === 'coach' || userData?.role === 'player')
-    ? userData.role
-    : null;
+  // `users.role`, else the role sign-up recorded on the account: an account whose `users` row was never written is
+  // still sent to the onboarding it was made for, not to a dashboard that has no profile to show.
+  const declaredRole = declaredGolfRole(userData?.role, data.user.user_metadata?.role);
   const resolvedRole = coachProfile && playerProfile
     ? (declaredRole || 'coach')
     : coachProfile
@@ -341,6 +405,24 @@ export type SignupResult = {
  */
 export type GolfSignupRole = 'player' | 'coach';
 
+/**
+ * Whether a staff invite's single-use nonce has been claimed. Both sign-up paths ask before signUp, so a forwarded,
+ * reused or already-redeemed invite creates no account (an account made first would be a coach login with no program).
+ * Fails closed: `error` when the claim table cannot be read.
+ */
+async function staffInviteClaim(nonce: string, action: string): Promise<'open' | 'spent' | 'error'> {
+  const { data, error } = await createAdminClient()
+    .from('golf_staff_invite_redemptions')
+    .select('nonce')
+    .eq('nonce', nonce)
+    .maybeSingle();
+  if (error) {
+    await logServerError(`[Golf Staff Invite Signup] replay check failed: ${describeError(error)}`, { action });
+    return 'error';
+  }
+  return data ? 'spent' : 'open';
+}
+
 async function signupActionImpl(
   email: string,
   password: string,
@@ -365,13 +447,15 @@ async function signupActionImpl(
   const ip = resolveClientIp(headersList);
 
   // Check rate limit
-  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
+  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.GOLF_SIGNUP);
 
   if (!rateLimit.allowed) {
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
     return {
       success: false,
-      error: `Too many signup attempts. Please try again in ${remaining}.`,
+      // This limit runs before the server re-checks the code, but the screen's own check already matched it by now, so
+      // this says what is wrong: the network, not the code.
+      error: `Too many sign-ups from this network right now. Please try again in ${remaining}.`,
     };
   }
 
@@ -431,6 +515,26 @@ async function signupActionImpl(
         error: 'That staff code is no longer valid. Ask your head coach for a new one.',
       };
     }
+    // The code resolves to a token whether or not its invite was already redeemed, so the token's own expiry and its
+    // nonce are checked here too: a code passed to a second assistant, or used once already, creates nothing.
+    const verified = verifyStaffInvite(staffToken);
+    if (!verified.ok) {
+      return {
+        success: false,
+        error:
+          verified.reason === 'expired'
+            ? 'That staff code has expired. Ask your head coach for a new one.'
+            : 'That staff code is no longer valid. Ask your head coach for a new one.',
+      };
+    }
+    const claim = await staffInviteClaim(verified.payload.n, 'auth.signupAction');
+    if (claim === 'error') return { success: false, error: 'Could not verify that staff code. Please try again.' };
+    if (claim === 'spent') {
+      return {
+        success: false,
+        error: 'That staff code has already been used. Ask your head coach for a new one.',
+      };
+    }
   }
 
   const supabase = await createClient();
@@ -444,9 +548,18 @@ async function signupActionImpl(
         sport: 'golf',
         first_name: firstName || '',
         last_name: lastName || '',
+        // The team code travels with the account, not only with this browser: a player who confirms their email on
+        // another device, or abandons and signs in later, still finishes onboarding on the team they signed up for.
+        ...(role === 'player' && gate.teamJoinCode ? { join_code: gate.teamJoinCode } : {}),
       },
-      // Skip email confirmation redirect - user will be auto-confirmed if disabled in Supabase
-      emailRedirectTo: `${getAppBaseUrl()}/golf/dashboard`,
+      // Skip email confirmation redirect - user will be auto-confirmed if disabled in Supabase.
+      // When confirmation is on, the link opens the account where it left off: a player who joined with their coach's
+      // team code lands in onboarding with that code (the same parameter the invite link uses), so the team survives
+      // the trip through the inbox.
+      emailRedirectTo:
+        role === 'player' && gate.teamJoinCode
+          ? `${getAppBaseUrl()}/golf/player?joinCode=${encodeURIComponent(gate.teamJoinCode)}`
+          : `${getAppBaseUrl()}/golf/dashboard`,
     },
   });
 
@@ -632,10 +745,19 @@ async function requestPasswordResetActionImpl(
 ): Promise<PasswordResetResult> {
   const normalizedEmail = email.toLowerCase().trim();
 
+  const resetIp = resolveClientIp(await headers());
+  const ipAll = await checkRateLimit(`password-reset:ip-all:${resetIp}`, PASSWORD_RESET_IP_ALL_LIMIT);
+  if (!ipAll.allowed) {
+    return {
+      success: true,
+      message: 'If an account exists with this email, a password reset link will be sent.',
+    };
+  }
+
   // Check rate limit
   const rateLimit = await checkRateLimit(
     `password-reset:email:${normalizedEmail}`,
-    RATE_LIMITS.PASSWORD_RESET
+    PASSWORD_RESET_EMAIL_LIMIT
   );
 
   if (!rateLimit.allowed) {
@@ -799,12 +921,14 @@ async function signupWithStaffInviteActionImpl(
   const headersList = await headers();
   const ip = resolveClientIp(headersList);
 
-  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.SIGNUP);
+  const rateLimit = await checkRateLimit(`signup:ip:${ip}`, RATE_LIMITS.GOLF_SIGNUP);
   if (!rateLimit.allowed) {
     const remaining = formatTimeRemaining(rateLimit.resetAt - Date.now());
     return {
       success: false,
-      error: `Too many signup attempts. Please try again in ${remaining}.`,
+      // This limit runs before the server re-checks the code, but the screen's own check already matched it by now, so
+      // this says what is wrong: the network, not the code.
+      error: `Too many sign-ups from this network right now. Please try again in ${remaining}.`,
     };
   }
 
@@ -813,18 +937,9 @@ async function signupWithStaffInviteActionImpl(
   // coach login attached to no program. Checking the claim table first means a
   // forwarded or reused link fails before any account exists. Fails closed: if
   // the check itself cannot run, no account is created.
-  const { data: spent, error: spentError } = await createAdminClient()
-    .from('golf_staff_invite_redemptions')
-    .select('nonce')
-    .eq('nonce', verified.payload.n)
-    .maybeSingle();
-  if (spentError) {
-    await logServerError(`[Golf Staff Invite Signup] replay check failed: ${describeError(spentError)}`, {
-      action: 'auth.signupWithStaffInviteAction',
-    });
-    return { success: false, error: 'Could not verify that invitation. Please try again.' };
-  }
-  if (spent) {
+  const claim = await staffInviteClaim(verified.payload.n, 'auth.signupWithStaffInviteAction');
+  if (claim === 'error') return { success: false, error: 'Could not verify that invitation. Please try again.' };
+  if (claim === 'spent') {
     return {
       success: false,
       error: 'That invitation has already been used. Ask your head coach for a new one.',

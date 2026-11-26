@@ -20,6 +20,7 @@ import { createHash } from 'node:crypto';
 import { logServerException } from '@/lib/server-error-logger';
 import { renderGolfPlayerInviteEmail } from '@/lib/email/golf-player-invite-template';
 import { gateCustomerEmail, isCustomerEmailEnabled } from '@/lib/email/outbound-gate';
+import { HELM_REPLY_TO } from '@/lib/email/reply-to';
 
 const FEATURE = 'golf-player-invites';
 const FROM = 'Helm Sports <notifications@helmsportslabs.com>';
@@ -92,7 +93,7 @@ export async function sendGolfPlayerInviteEmails(params: {
     for (const email of params.emails) {
       try {
         const { error } = await resend.emails.send(
-          { from: FROM, to: email, subject, html, text },
+          { from: FROM, replyTo: HELM_REPLY_TO, to: email, subject, html, text },
           { idempotencyKey: inviteIdempotencyKey(params.teamId, email) },
         );
         if (error) {

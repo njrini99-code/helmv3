@@ -36,13 +36,9 @@
 // "292 unused files" is a RAW knip number. Its own usable figure (125) came
 // from hand-subtracting 53 still-referenced files, i.e. the same manual pass.
 //
-// tools/ is a separate problem. tools/ux-flow-auditor and tools/ultra-agent-audit
-// are self-contained packages with their own package.json and entry chains, so
-// they need knip `workspaces` entries, not a project glob. Configured naively
-// their whole subtree reads as dead. Three attempts gave 215 / 223 / 236 unused
-// depending on the entry and project globs chosen — the count tracks the config,
-// not the code, which is the tell that the config was wrong rather than the code
-// being dead.
+// tools/ (ux-flow-auditor, ultra-agent-audit, ...) was deleted 2026-11-25 (in git
+// history); it had been a separate problem: self-contained packages needing knip
+// `workspaces` entries rather than a project glob.
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [

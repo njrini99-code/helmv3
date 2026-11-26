@@ -2,7 +2,7 @@
  * One refresh of the demo team: generate it for today, check it, and (only
  * with `apply`) write the difference and check what the database now shows.
  * Used by the daily cron (`/api/cron/golf-demo-refresh`) and by
- * `scripts/golf-demo-refresh.ts`. The demo team only: anything else is
+ * `scripts/seed/golf-demo-refresh.ts`. The demo team only: anything else is
  * refused before a query is sent.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';

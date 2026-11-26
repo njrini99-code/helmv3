@@ -6,7 +6,7 @@
 // Resend message: the one-click List-Unsubscribe header pair (the #1 free
 // Gmail-Primary signal), a reply-to, and sanitized per-cohort segmentation tags.
 //
-// Mirrors scripts/process-sequence-batch.mjs exactly:
+// Mirrors scripts/crm/process-sequence-batch.mjs exactly:
 //   - List-Unsubscribe: '<https URL>, <mailto:...?subject=unsubscribe>'
 //   - List-Unsubscribe-Post: 'List-Unsubscribe=One-Click'
 //   - reply_to from HELM_REPLY_TO (default the from-address)
@@ -16,7 +16,7 @@
 // ============================================================================
 import { buildUnsubUrl } from './unsubscribe-token';
 
-// Defaults match scripts/process-sequence-batch.mjs (FROM / REPLY_TO / UNSUB_MAILTO).
+// Defaults match scripts/crm/process-sequence-batch.mjs (FROM / REPLY_TO / UNSUB_MAILTO).
 const FROM_EMAIL = process.env.HELM_FROM_EMAIL ?? 'Helm Sports Labs <admin@helmsportslabs.com>';
 const REPLY_TO = process.env.HELM_REPLY_TO ?? FROM_EMAIL;
 const UNSUB_MAILTO = process.env.HELM_UNSUB_EMAIL ?? 'admin@helmsportslabs.com';

@@ -1,4 +1,4 @@
-// Static contract guard for scripts/seed-baseball-demo.ts (the Phase-1 demo seed).
+// Static contract guard for scripts/seed/seed-baseball-demo.ts (the Phase-1 demo seed).
 //
 // WHY A SOURCE-TEXT TEST: this script's only real execution target is a live
 // Supabase project, so there is no cheap way to exercise it in CI. But the two
@@ -40,7 +40,7 @@ import { readFile, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
-const SEED_FILE = join(REPO_ROOT, 'scripts', 'seed-baseball-demo.ts');
+const SEED_FILE = join(REPO_ROOT, 'scripts', 'seed', 'seed-baseball-demo.ts');
 const MIGRATIONS_DIR = join(REPO_ROOT, 'supabase', 'migrations');
 
 const readSeed = () => readFile(SEED_FILE, 'utf8');
@@ -168,7 +168,7 @@ it('the demo seed is dry-run by default and gates writes before the first one', 
   assert.match(source, /DRY = !confirmed/, 'must be dry-run unless --confirm is passed');
   assert.match(
     source,
-    /from '\.\/lib\/seed-target-guard'/,
+    /from '\.\.\/lib\/seed-target-guard'/,
     'must use the shared target guard, not a private copy that can drift from it',
   );
   assert.match(source, /assertWriteTargetAllowed\(\{/, 'must gate writes on the resolved project ref');
@@ -194,10 +194,10 @@ it('the demo seed is dry-run by default and gates writes before the first one', 
 it('every CI-invoked baseball seed wires up the shared target guard', async () => {
   const CI_SEEDS = ['seed-baseball-demo.ts', 'seed-baseball-e2e.ts'];
   for (const name of CI_SEEDS) {
-    const source = await readFile(join(REPO_ROOT, 'scripts', name), 'utf8');
+    const source = await readFile(join(REPO_ROOT, 'scripts', 'seed', name), 'utf8');
     assert.match(
       source,
-      /from '\.\/lib\/seed-target-guard'/,
+      /from '\.\.\/lib\/seed-target-guard'/,
       `${name}: must import the shared target guard`,
     );
     assert.match(
@@ -215,8 +215,8 @@ it('every CI-invoked baseball seed wires up the shared target guard', async () =
 // being its opposite. The name must not come back anywhere in the seed lane.
 it('production is never described as the expected demo project', async () => {
   const files = [
-    join(REPO_ROOT, 'scripts', 'seed-baseball-demo.ts'),
-    join(REPO_ROOT, 'scripts', 'seed-baseball-e2e.ts'),
+    join(REPO_ROOT, 'scripts', 'seed', 'seed-baseball-demo.ts'),
+    join(REPO_ROOT, 'scripts', 'seed', 'seed-baseball-e2e.ts'),
     join(REPO_ROOT, 'scripts', 'lib', 'seed-target-guard.ts'),
   ];
   for (const file of files) {

@@ -176,8 +176,8 @@ describe('type roles (B1)', () => {
     expect(rule('  .ch-topbar__ptitle {')).toMatch(/font: var\(--ch-type-headline\);/);
   });
 
-  it('every desktop page title is the large title role (MOTION-AND-VISUAL 4.3: 30/36 700)', () => {
-    expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(30 \* var\(--ch-type-k\)\)\/calc\(36 \* var\(--ch-type-k\)\)/);
+  it('every desktop page title is the large title role (MOTION-AND-VISUAL 4.3, owner 24 Nov 2026: 40/46 700)', () => {
+    expect(tokens).toMatch(/--ch-type-large-title: 700 calc\(40 \* var\(--ch-type-k\)\)\/calc\(46 \* var\(--ch-type-k\)\)/);
     for (const [f, sel] of [['shell.css', '.ch-hero__title {'], ['qualifiers.css', '.ch-qf-head h1 {'], ['rounds.css', '.ch-rd-h h2 {'], ['classes.css', '.ch-cl-h h1 {']] as const) {
       const src = read(f);
       expect(src.slice(src.indexOf(sel), src.indexOf('}', src.indexOf(sel))), f).toMatch(/font: var\(--ch-type-large-title\);/);

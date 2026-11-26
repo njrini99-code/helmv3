@@ -5,7 +5,7 @@
 //
 // WHY THIS EXISTS — the third instance of one meta-pattern in a single night.
 //
-// `scripts/seed-baseball-demo.ts` never created a `baseball_team_coach_staff`
+// `scripts/seed/seed-baseball-demo.ts` never created a `baseball_team_coach_staff`
 // row. `getActiveBaseballContext` (src/lib/baseball/active-context.ts) resolves a
 // coach's active team from that table, so with no row `getBaseballNavContext`
 // returns null, `DashboardSessionGuard` sits on `BaseballDashboardBootstrap`
@@ -40,7 +40,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const SEED = join(process.cwd(), 'scripts', 'seed-baseball-demo.ts');
+const SEED = join(process.cwd(), 'scripts', 'seed', 'seed-baseball-demo.ts');
 const ACTIVE_CONTEXT = join(process.cwd(), 'src', 'lib', 'baseball', 'active-context.ts');
 const CAPABILITIES = join(process.cwd(), 'src', 'lib', 'baseball', 'capabilities.ts');
 
@@ -63,7 +63,7 @@ describe('the demo seed writes every table dashboard context resolution reads', 
   it.each(CONTEXT_TABLES)('seeds %s', (table) => {
     expect(
       new RegExp(`upsert\\(\\s*['"]${table}['"]`).test(seed),
-      `scripts/seed-baseball-demo.ts never upserts ${table}. Context resolution ` +
+      `scripts/seed/seed-baseball-demo.ts never upserts ${table}. Context resolution ` +
         'reads it, so without a row the demo coach/player belongs to no team: auth ' +
         'succeeds, then every authenticated page sits on "Opening your command ' +
         'center" and renders no heading. Production may already have the row — that ' +

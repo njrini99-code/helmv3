@@ -44,7 +44,7 @@ Held items: none
   `--ch-border-focus-on-dark`. One rule in `base.css`.
 - Disabled primary at night (G9): `--ch-key-disabled-ink` (#a39e92,
   6.7:1 on the well) in place of ink-400 (4.26).
-- Security: `scripts/gen-appstore-screenshots.mjs` no longer carries
+- Security: `scripts/ui-intelligence/gen-appstore-screenshots.mjs` no longer carries
   the demo account's sign-in as a default. It reads `SHOT_EMAIL` and
   `SHOT_PASSWORD` and exits without them.
 

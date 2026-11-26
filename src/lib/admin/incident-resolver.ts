@@ -9,7 +9,7 @@
  * metadata with `auto_resolved`, `resolution`, and `resolved_at`, the row
  * disappears from the surfaced lists while remaining queryable for debug.
  *
- * Use from one-shot scripts (see `scripts/archive-todays-resolved-incidents.ts`)
+ * Use from one-shot scripts (see `scripts/repair/archive-todays-resolved-incidents.ts`)
  * or future server actions that can prove a class of incident is fixed.
  */
 import { createAdminClient } from '@/lib/supabase/admin';
@@ -66,7 +66,13 @@ export async function archiveIncidentsByCriteria(
     let query = admin
       .from('admin_events')
       .select('id, severity, metadata, message')
-      .in('severity', ACTIVE_SEVERITIES as unknown as AdminEventSeverity[]);
+      .in('severity', ACTIVE_SEVERITIES as unknown as AdminEventSeverity[])
+      // Only rows still on the Bridge feed. Without this the ilike scanned
+      // every error/warning/critical row ever written (about 87k, 2.5 s mean,
+      // 16.7 s max in pg_stat_statements on 2026-11-25) and re-stamped rows a
+      // person or Close had already resolved, overwriting their resolved_at.
+      // `resolved = false` lets the planner use idx_admin_events_unresolved.
+      .eq('resolved', false);
 
     if (messageMatch) {
       query = query.ilike('message', messageMatch);

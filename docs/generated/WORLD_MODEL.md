@@ -79,7 +79,7 @@ Auth Onboarding And Join · active · criticality high · owner platform
 - **Relations:** 1 doc/structurally-evidenced, 31 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `check_rate_limit_atomic`, `golf_team_by_join_code`
-- **Test surfaces:** 3
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** `auth_onboarding`, `join_team_flow`
 
 ### `baseball_core`
@@ -108,7 +108,7 @@ Clubhouse UI (the coach and player UI) · active · criticality medium · owner 
 
 - **Relations:** 1 doc/structurally-evidenced, 7 import-graph-only (weak)
 - **Tables:** `golf_class_exceptions`, `golf_class_hold_dirty`, `golf_player_class_settings`, `golf_push_hold_heartbeat`, `golf_push_holds`, `golf_saved_comparisons`, `golf_team_seasons`, `golf_team_terms`, `golf_tournament_advice_givers`, `golf_tournament_coach_presence`, `golf_tournament_entries`, `golf_tournament_entry_notes`, `golf_tournament_field_scores`, `golf_tournament_field_teams`, `golf_tournament_link_dismissals`, `golf_tournament_player_notes`, `golf_tournament_player_rounds`, `golf_tournament_reflections`, `golf_tournament_result_marks`, `golf_tournament_reviews`, `golf_tournament_round_lineups`, `golf_tournament_rounds`, `golf_tournaments`
-- **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`, `golf_tournament_link_candidates`, `golf_tournament_my_lineup`, `sg_scale_for_player`
+- **RPCs:** `golf_coachhelm_shown_reads`, `golf_event_attendance_counts`, `golf_team_by_join_code`, `golf_tournament_link_candidates`, `golf_tournament_my_lineup`, `sg_scale_for_player`
 - **Test surfaces:** 2
 - **Sentry/admin_events signals:** none
 
@@ -149,7 +149,7 @@ Outbound Customer Email (kill switch) · active · criticality high · owner fou
 - **Relations:** 0 doc/structurally-evidenced, 11 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** none
-- **Test surfaces:** 3
+- **Test surfaces:** 4
 - **Sentry/admin_events signals:** none
 
 ### `feature_awareness_system`

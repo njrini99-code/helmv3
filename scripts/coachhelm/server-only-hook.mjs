@@ -8,7 +8,7 @@
  * and is not an installed package, so a plain tsx run of any lib module that
  * imports it fails with ERR_MODULE_NOT_FOUND. This aliases it (and
  * `client-only`) to the repo's empty test stub — the same approach
- * `scripts/db-observability-certify.mjs` uses.
+ * `scripts/observability/db-observability-certify.mjs` uses.
  */
 import { registerHooks } from 'node:module';
 import { dirname, join } from 'node:path';

@@ -340,7 +340,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/context/golfhelm-database.md` | generated | yes | yes | yes | - |
 | `memory/glossary.md` | current | yes | yes | yes | - |
 | `memory/projects/golfhelm.md` | current | yes | yes | - | - |
-| `tools/ux-flow-auditor/TODO.md` | generated | - | - | - | - |
 
 ### `PROCESS_CONTRACT`
 
@@ -468,7 +467,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `audit/HANDOFF.md` | current | - | - | yes | - |
 | `audit/M00-MANIFEST.md` | current | - | - | yes | 1 |
 | `audit/M01-TEAM-FLAGS.md` | current | - | - | yes | - |
-| `audit/M01-identity.md` | current | - | - | yes | - |
+| `audit/M01-identity.md` | current | - | - | yes | 1 |
 | `audit/M02-state.md` | current | - | - | yes | 2 |
 | `audit/M03A-inbox.md` | current | - | - | yes | 4 |
 | `audit/M03B-thread.md` | current | - | - | yes | 3 |
@@ -480,7 +479,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/PUSH_NOTIFICATION_AUDIT.md` | current | yes | - | - | 6 |
 | `docs/SECURITY_AUDIT.md` | current | yes | - | - | - |
 | `docs/UIUX_AUDIT.md` | current | - | - | - | - |
-| `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 1 |
+| `docs/audits/BASEBALLHELM_CANONICAL_SPEC.md` | current | yes | - | yes | 2 |
 | `docs/audits/BASEBALLHELM_HONEST_FEATURE_READ.md` | current | - | - | yes | - |
 | `docs/audits/BASEBALLHELM_PRODUCTION_VERDICT.md` | current | - | - | yes | 1 |
 | `docs/audits/COACHHELM_PIPELINE_TRACE_2026-08-20.md` | current | - | - | yes | 5 |
@@ -537,7 +536,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-15-phone-audit-overlays.md` | current | - | - | - | - |
-| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 4 |
+| `docs/observability/SENTRY_PHASE_A_FINDINGS.md` | current | - | - | yes | 5 |
 | `docs/reports/REPO_WIRING_AUDIT_2026-08-30.md` | current | - | - | - | - |
 | `docs/security/S4_TEAMMATE_READ_AUDIT_2026-10-21.md` | current | - | - | - | - |
 | `docs/ui-audits/DESIGN_AUDIT_ASK_AND_CALENDAR_2026-08-15.md` | current | - | - | yes | - |
@@ -548,13 +547,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `docs/v3-page-audit.md` | current | yes | - | yes | - |
 | `memory/prompts/master-feature-audit.md` | current | - | - | - | - |
 | `supabase/investigations/shot_type_findings.md` | current | - | - | yes | - |
-| `tools/ultra-agent-audit/README.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/CLAUDE.md` | current | - | - | yes | - |
-| `tools/ux-flow-auditor/README-V4.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/README.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/SCREENSHOT_INTEGRATION_GUIDE.md` | current | - | - | - | 1 |
-| `tools/ux-flow-auditor/VISUAL_DASHBOARD_STATUS.md` | current | - | - | - | - |
-| `tools/ux-flow-auditor/dashboard-v6/README.md` | current | - | - | - | - |
 
 ### `STATE_SNAPSHOT`
 
@@ -576,7 +568,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/README.md` | current | - | - | yes | - |
 | `memory/ledgers/changes/README.md` | current | - | - | - | - |
 | `memory/ledgers/changes/admin_incidents.md` | current | - | - | - | - |
-| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 9 |
+| `memory/ledgers/changes/admin_platform.md` | current | - | - | yes | 10 |
 | `memory/ledgers/changes/admin_reliability_collector.md` | current | - | - | - | - |
 | `memory/ledgers/changes/admin_selfheal.md` | current | - | - | - | - |
 | `memory/ledgers/changes/admin_slo.md` | current | - | - | - | - |
@@ -588,7 +580,7 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `memory/ledgers/changes/feature_awareness_system.md` | current | - | - | yes | - |
 | `memory/ledgers/changes/golf_round_lifecycle.md` | current | - | - | - | - |
 | `memory/ledgers/changes/ios_native_shell.md` | current | - | - | - | - |
-| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 4 |
+| `memory/ledgers/changes/observability_sentry.md` | current | - | - | - | 5 |
 | `memory/ledgers/changes/observability_supabase.md` | current | - | - | - | - |
 | `memory/ledgers/changes/player_coachhelm_development.md` | current | - | - | - | 1 |
 | `memory/ledgers/changes/qualifiers.md` | current | - | - | - | - |
@@ -743,10 +735,6 @@ document and run `git rev-list --count <sha>..HEAD -- <path>`.
 | `supabase/demo/README.md` | current | - | - | yes | - |
 | `supabase/functions/README.md` | current | - | - | - | - |
 | `supabase/rollbacks/README.md` | current | - | - | - | - |
-| `tests/golf/qualifier-hell/README.md` | current | - | - | - | - |
-| `tools/README.md` | current | - | - | yes | - |
-| `tools/baseballhelm-command-center/vendor/README.md` | current | - | - | - | - |
-| `tools/continuous-improvement/README.md` | current | - | - | - | 2 |
 
 ### `ARCHIVE`
 
@@ -1177,6 +1165,9 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-21-desk-keys.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1342,6 +1333,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desktop-keys-scroll-padding.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1424,6 +1417,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-no-double-empty.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-21-desk-dashboard.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-21-stat-card-title-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
@@ -1488,6 +1482,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-19-card-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-19-profile-push-once.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-21-desk-table-default.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1570,6 +1565,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-20-detail-tables.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-21-desk-detail-full-width.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-24-scoring-chart-hold.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1649,6 +1645,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-20-short-game-cards.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-21-desk-detail-full-width.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-24-scoring-chart-hold.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1719,6 +1716,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-desk-shell.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-20-phone-feel.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-21-week-lanes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P007-messages/DESIGN.md` | current | - | - | yes | - |
@@ -1792,6 +1790,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-19-seen-by-name.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-20-components.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-25-jump-key-open-hold.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
@@ -1831,6 +1830,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-18-webkit-freeze.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-19-shadow-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-24-dual-team-codes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-25-auth-scrub.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P009-qualifiers/DESIGN.md` | current | - | - | - | 1 |
@@ -2198,6 +2200,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-20-components.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-20-desk-shell-owner.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-21-standing-two-way-bars.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-24-no-ladder-no-feed.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-25-only-you-ink.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -2261,6 +2265,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-components.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-night-contrast-gradients.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-20-phone-feel-rest.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-25-auth-scrub.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/DESIGN.md` | current | - | - | - | - |
@@ -2314,6 +2320,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-18-polish-w1-w2.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-19-field-names.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-21-hover-guards.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/DESIGN.md` | current | - | - | - | - |
@@ -2384,7 +2391,7 @@ them would bury everything above.
 | `docs/observability/DATADOG.md` | current | - | - | - | - |
 | `docs/observability/SENTRY_CLIENT_EXPERIENCE.md` | current | - | - | - | 2 |
 | `docs/observability/SENTRY_COVERAGE_MATRIX.md` | current | - | - | yes | 2 |
-| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 3 |
+| `docs/observability/SENTRY_CRON_MONITORS.md` | current | - | - | - | 4 |
 | `docs/observability/SENTRY_IGNORE_ERRORS.md` | current | - | - | - | 1 |
 | `docs/observability/SENTRY_SDK_API_VERIFICATION.md` | current | - | - | yes | - |
 | `docs/observability/SENTRY_SNAPSHOTS.md` | current | - | - | - | - |
@@ -2451,8 +2458,4 @@ them would bury everything above.
 | `src/lib/coachhelm/v3/chat/knowledge/SOURCES.md` | current | - | - | - | - |
 | `src/lib/coachhelm/v3/chat/tasks/INVENTORY.md` | current | - | - | - | - |
 | `src/test/SKIPPED.md` | current | - | - | yes | 7 |
-| `supabase/migrations/HELD.md` | current | - | - | yes | 4 |
-| `tools/INTEGRATION_GUIDE.md` | current | - | - | - | - |
-| `tools/MULTI_PLATFORM_GUIDE.md` | current | - | - | - | 1 |
-| `tools/QUICK_REFERENCE.md` | current | - | - | - | - |
-| `tools/baseballhelm-command-center/CONTRACT.md` | current | - | - | - | - |
+| `supabase/migrations/HELD.md` | current | - | - | yes | 6 |

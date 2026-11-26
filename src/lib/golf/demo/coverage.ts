@@ -1,7 +1,7 @@
 /**
  * The demo team coverage check. Pure: it reads a snapshot of the demo team's
  * rows (from the generator in tests and the dry run, or from the database in
- * `scripts/verify-golf-demo-coverage.ts`) and says whether a prospect would
+ * `scripts/seed/verify-golf-demo-coverage.ts`) and says whether a prospect would
  * see a believable, current team. Each check names the finding it guards.
  *
  * An error means the demo is wrong today (a stale season, a test row, a round

@@ -76,7 +76,7 @@ they are on `main`, ungated, and are out of scope for this feature:
   (manual-only, see `memory/features/crm_outreach.md`).
 - `src/app/golf/actions/crm-gmail-send.ts` — the Gmail-API cold-outreach
   transport.
-- `scripts/process-sequence-batch.mjs` and `scripts/send-coach-batch.mjs` —
+- `scripts/crm/process-sequence-batch.mjs` and `scripts/crm/send-coach-batch.mjs` —
   operator CLI senders for CRM sequences/batches. Both are a dry run unless
   given `--apply` (`send-coach-batch.mjs [size]` takes a count, not a batch
   number).
@@ -93,6 +93,14 @@ reported `{ success: true }` — fixed to destructure `{ error }` and return
 `{ success: false, error: error.message }`, matching
 `src/lib/coachhelm/v3/foundation/email.ts`. Matters the day the switch turns
 back on.
+
+Replies go to a real inbox: every coach- or player-facing send passes
+`replyTo: HELM_REPLY_TO` (`src/lib/email/reply-to.ts`, default
+admin@helmsportslabs.com, overridden by the `HELM_REPLY_TO` env var the
+CRM outreach already reads). The senders stay notifications@ and noreply@,
+which have no mailbox. Pinned by `src/lib/email/__tests__/reply-to.test.ts`.
+The ops digest goes to the owner and is exempt. Coach welcome emails
+(`scripts/golf/send-coach-welcome.mjs`) send from admin@ itself.
 
 ## Primary Entry Points
 

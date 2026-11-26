@@ -34,7 +34,7 @@ Examples: `#read-approach-coach-phone-light`, `#why-putts-player-phone-dark`, `#
 
 ## Screenshots
 
-`screenshots/after/` has the 60 lean design shots (light, 390 phone and desktop, every screen, read and viewer). `screenshots/after-extra/` has dark, 430, XXL and Reduce Motion samples. `screenshots/before/` has today's CoachHelm for reference. The full set and the real "before" are made on the Mac. From the repo root, with the package at `design-refresh/coachhelm-read/`:
+`screenshots/after/` has the 60 lean design shots (light, 390 phone and desktop, every screen, read and viewer). `screenshots/after-extra/` has dark, 430, XXL and Reduce Motion samples. Today's CoachHelm for reference is in `../ask/screenshots/before/` (the byte-identical copy that used to sit here as `screenshots/before/` was removed 2026-11-25). The full set and the real "before" are made on the Mac. From the repo root, with the package at `design-refresh/coachhelm-read/`:
 
 ```
 npm run dev -- -p 3100

@@ -19,7 +19,7 @@ import 'server-only';
  * ---------------------------------------------------------
  * `SUPABASE_ACCESS_TOKEN`/`SUPABASE_SERVICE_ROLE_KEY` were UNAVAILABLE in
  * this worktree (`.env.local` is deliberately withheld from worktrees — see
- * AGENTS.md), so `scripts/db-observability-metrics-names.mjs` (the script
+ * AGENTS.md), so `scripts/observability/db-observability-metrics-names.mjs` (the script
  * that fetches the LIVE endpoint and prints only metric/label names) could
  * not be run against production. This allow-list is therefore
  * **DOCS-DERIVED, NOT LIVE-VERIFIED**: it comes from

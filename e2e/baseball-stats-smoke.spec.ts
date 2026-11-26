@@ -14,7 +14,7 @@ import { BASEBALL_SEED_MANIFEST } from './helpers/baseball-seed-manifest';
  *
  *   2. SEEDED data assertions — gated by PLAYWRIGHT_BASEBALL_SEEDED. These log
  *      in as the seeded Rini University Baseball coach/player accounts
- *      (scripts/seed-rini-baseball-demo.ts) and assert manifest-backed
+ *      (scripts/seed/seed-rini-baseball-demo.ts) and assert manifest-backed
  *      non-empty data renders on Command Center, Stats Center, Box Score,
  *      Upload, and the player surfaces.
  *
@@ -325,7 +325,7 @@ test.describe('BaseballHelm seeded smoke — player surfaces', () => {
  * by this job, only by whoever runs the seed):
  *
  *   DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config \
- *     scripts/seed-rini-baseball-demo.ts --confirm
+ *     scripts/seed/seed-rini-baseball-demo.ts --confirm
  *
  * Promotion path: once this job is green across several consecutive runs,
  * remove the `|| echo` / `continue-on-error` non-blocking guard in the

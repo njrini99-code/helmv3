@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   rows: [] as Array<{ id: string; severity: string; metadata: unknown; message: string }>,
   updates: [] as Array<{ id: string; patch: Record<string, unknown> }>,
   failUpdateForId: null as string | null,
+  loadFilters: [] as Array<[string, unknown]>,
 }));
 
 vi.mock('@/lib/supabase/admin', () => ({
@@ -14,6 +15,12 @@ vi.mock('@/lib/supabase/admin', () => ({
         select: () => chain,
         in: () => chain,
         ilike: () => chain,
+        // Records the candidate-load filters so a test can pin the
+        // `resolved = false` scope (see the scope test below).
+        eq: (col: string, value: unknown) => {
+          mocks.loadFilters.push([col, value]);
+          return chain;
+        },
         // The candidate load paginates through fetchAllRowsResult now (the
         // unpaginated select was silently capped at PostgREST's 1,000 rows),
         // so the double has to accept the .order().range() tail. Returning the
@@ -49,6 +56,18 @@ describe('archiveIncidentsByCriteria', () => {
     mocks.rows = [];
     mocks.updates = [];
     mocks.failUpdateForId = null;
+    mocks.loadFilters = [];
+  });
+
+  it('loads only unresolved rows, so the daily sweep reads the partial index instead of scanning every resolved row', async () => {
+    // pg_stat_statements on production, 2026-11-25: this load ran 114 times at
+    // a 2.5 s mean (16.7 s max) because it ilike-scanned every error, warning
+    // and critical row ever written (about 87k), when only the unresolved ones
+    // can still show on the Bridge feed. A resolved row is already off the
+    // feed; re-stamping it also overwrote its real resolved_at.
+    mocks.rows = [{ id: 'evt-1', severity: 'error', metadata: {}, message: 'boom' }];
+    await archiveIncidentsByCriteria({ messageMatch: '%boom%', resolution: 'r' });
+    expect(mocks.loadFilters).toContainEqual(['resolved', false]);
   });
 
   it('sets resolved=true and resolved_at alongside the severity demotion — the live feed filters on `resolved`, not severity', async () => {

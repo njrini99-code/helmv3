@@ -102,7 +102,7 @@ export const COVERAGE_ROWS = [
   { id: 'schema_drift', label: 'Schema drift', modules: ['scripts/db/check-supabase-drift.mjs'], bridgeReader: null, flightSteps: [], replayFixtures: [] },
   { id: 'db_type_drift', label: 'DB type drift', modules: ['scripts/db/check-supabase-drift.mjs'], bridgeReader: null, flightSteps: [], replayFixtures: [] },
   { id: 'data_integrity_violation', label: 'Data integrity violation', modules: [`${S}/integrity.ts`, `${S}/envelope.ts`], bridgeReader: 'src/lib/admin/database/errors.ts', flightSteps: [], invariantModule: `${S}/integrity.ts`, replayFixtures: ['stale_optimistic_lock', 'zero_row_update'] },
-  { id: 'sentry_trace_missing', label: 'Sentry trace missing', modules: ['src/lib/observability/supabase/trace-cert.ts', 'scripts/db-observability-trace-cert.mjs'], bridgeReader: null, flightSteps: [], replayFixtures: [] },
+  { id: 'sentry_trace_missing', label: 'Sentry trace missing', modules: ['src/lib/observability/supabase/trace-cert.ts', 'scripts/observability/db-observability-trace-cert.mjs'], bridgeReader: null, flightSteps: [], replayFixtures: [] },
   { id: 'db_collector_missing', label: 'DB collector missing', modules: [`${S}/freshness.ts`, `${S}/jobs-health.ts`], bridgeReader: 'src/lib/admin/database/telemetry.ts', flightSteps: [], replayFixtures: [] },
 ];
 
@@ -260,8 +260,8 @@ const HEADER = `<!-- markdownlint-disable MD013 -->
 # Supabase observability coverage matrix
 
 <!-- GENERATED FILE - DO NOT HAND-EDIT.
-     Produced by \`node scripts/db-observability-coverage.mjs\`.
-     Verify with \`node scripts/db-observability-coverage.mjs --check\`.
+     Produced by \`node scripts/observability/db-observability-coverage.mjs\`.
+     Verify with \`node scripts/observability/db-observability-coverage.mjs --check\`.
      Every cell is derived by reading the modules named in
      \`scripts/lib/db-observability-coverage.mjs\`, with comments stripped
      first - never transcribed from the brief's intent. Edit the detectors,

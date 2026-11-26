@@ -444,6 +444,18 @@ async function joinGolfTeamImpl(
       feature: 'join_team_flow',
       sport: 'golf',
     });
+    // The database's own refusals say what to do (one team per player, a coach login is not a player): the onboarding
+    // and join screens read "already on" and the coach wording from here (join-reason.ts). Anything else is a retry.
+    const msg = `${error.message ?? ''}`;
+    if (/already on another team|one_current_team/i.test(msg)) {
+      return { success: false, error: 'You’re already on another team' };
+    }
+    if (/coach accounts cannot join/i.test(msg)) {
+      return { success: false, error: 'This account is set up as a coach, so it can’t join a team as a player' };
+    }
+    if (/invalid join code/i.test(msg)) {
+      return { success: false, error: 'Invalid join code' };
+    }
     return {
       success: false,
       error: 'Failed to join team. Please try again.',
@@ -552,8 +564,8 @@ export async function joinGolfTeam(
 async function processGolfTeamInvitationImpl(joinCode: string, playerId: string): Promise<GolfJoinTeamResult> {
   const supabase = await createClient();
 
-  // Normalize join code to uppercase for case-insensitive matching
-  const normalizedCode = joinCode.toUpperCase();
+  // Normalize the code the way people write it: any case, and no spaces or dashes ("k7pq-x4mn" is K7PQX4MN).
+  const normalizedCode = joinCode.toUpperCase().replace(/[^A-Z0-9]/g, '');
 
   // Find the team by join code.
   //
@@ -2333,7 +2345,22 @@ async function redeemStaffInviteImpl(
       return fail('Could not set up your coach profile. Please try again.');
     }
     coachId = created.id;
-  } else if (existingCoach?.organization_id !== organizationId) {
+  } else if (existingCoach?.organization_id == null) {
+    // A coach row with no program (an assistant whose request was declined, which detaches them) is free to take this
+    // invite: attach it to the inviting program instead of refusing it as "another program".
+    const { error: attachError } = await admin
+      .from('golf_coaches')
+      .update({ organization_id: organizationId, onboarding_completed: true })
+      .eq('id', coachId)
+      .is('organization_id', null);
+    if (attachError) {
+      await logServerError(
+        `[redeemStaffInvite] attaching a coach with no program failed: ${describeError(attachError)}`,
+        { action: 'teams.redeemStaffInvite' },
+      );
+      return fail('Could not set up your coach profile. Please try again.');
+    }
+  } else if (existingCoach.organization_id !== organizationId) {
     // Refuse rather than move them: reassigning their organization would strip
     // access to the program they already staff.
     return fail('This account already belongs to another program. Use a different email to join this one.');
@@ -2454,6 +2481,23 @@ async function previewStaffInviteImpl(token: string): Promise<PreviewStaffInvite
 
   const { t: teamId, o: organizationId, r: role } = verified.payload;
   const admin = createAdminClient();
+
+  // A used invite says so here, before anyone signs up or taps Accept for it. A failed read is not "used": the accept
+  // path checks again and refuses a replay, so the screen still offers the invite.
+  const { data: claimed, error: claimError } = await admin
+    .from('golf_staff_invite_redemptions')
+    .select('nonce')
+    .eq('nonce', verified.payload.n)
+    .maybeSingle();
+  if (claimError) {
+    await logServerError(
+      `[previewStaffInvite] redemption read failed: ${describeError(claimError)}`,
+      { action: 'teams.previewStaffInvite', featureArea: 'teams' },
+      'warning',
+    );
+  } else if (claimed) {
+    return { valid: false, error: 'That invitation has already been used. Ask your head coach for a new one.' };
+  }
 
   const [teamResult, orgResult] = await Promise.all([
     admin.from('golf_teams').select('name').eq('id', teamId).maybeSingle(),

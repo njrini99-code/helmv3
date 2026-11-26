@@ -1329,7 +1329,7 @@ flags:
 
   # Launch readiness DD-01 (15 Nov 2026): the daily demo team refresh. Created
   # OFF everywhere; turning it on is the owner's call, after the generator's
-  # migration is applied and its first run (scripts/golf-demo-refresh.ts) is
+  # migration is applied and its first run (scripts/seed/golf-demo-refresh.ts) is
   # checked.
   - feature_id: golf_demo_refresh_v1
     owner: golf/demo

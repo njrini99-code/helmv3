@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
  * #414 — demo seed must cover production-critical team-ops surfaces.
  */
 const REPO_ROOT = resolve(import.meta.dirname, '..', '..');
-const SEED_FILE = join(REPO_ROOT, 'scripts', 'seed-rini-baseball-demo.ts');
+const SEED_FILE = join(REPO_ROOT, 'scripts', 'seed', 'seed-rini-baseball-demo.ts');
 
 const REQUIRED_TABLES = [
   'baseball_announcements',

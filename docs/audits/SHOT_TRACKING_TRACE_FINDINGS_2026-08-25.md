@@ -124,7 +124,7 @@ business transaction fails.
 - `src/lib/supabase/{client,server,admin}.ts` and Sentry init files — current
   Supabase/Sentry trace propagation while retaining timeout fetch behavior.
 - `src/app/admin/golf/tracer/*` — protected Trace Explorer list/detail tree.
-- `scripts/trace-db.ts` — optional local Docker log collector.
+- `scripts/observability/trace-db.ts` — optional local Docker log collector.
 - matching workflow/unit/pgTAP tests and feature ledger updates.
 
 ## Verification performed

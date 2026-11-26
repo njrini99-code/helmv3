@@ -3,7 +3,7 @@ import { readTypeK } from '../../lib/type-k';
 import { pluralWord } from '../../lib/plural';
 import { formatFixed, formatToPar } from '../../lib/format';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_MARKS_MS } from '../../lib/motion';
 import { hapticScrub } from '../../lib/haptics';
@@ -148,12 +148,14 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
     },
     [onRead],
   );
-  const pick = (e: PointerEvent<HTMLDivElement>) => {
-    const left = e.currentTarget.getBoundingClientRect().left;
+  // Takes the chart and the finger's x, not the event: a hold reads it from a timer, where an event's `currentTarget` is gone
+  // (0822e4af: every touch hold threw, so a still finger never read a round).
+  const pick = (el: HTMLElement, clientX: number) => {
+    const left = el.getBoundingClientRect().left;
     let best = 0;
     let bd = Infinity;
     for (let i = 0; i < n; i++) {
-      const d = Math.abs(x(i) - (e.clientX - left));
+      const d = Math.abs(x(i) - (clientX - left));
       if (d < bd) {
         bd = d;
         best = i;
@@ -186,20 +188,19 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
         if (e.pointerType !== 'touch') {
           e.currentTarget.setPointerCapture(e.pointerId);
           hapticScrub('start');
-          pick(e);
+          pick(e.currentTarget, e.clientX);
           return;
         }
         const el = e.currentTarget;
         const id = e.pointerId;
         const x0 = e.clientX;
-        const at = { clientX: e.clientX };
         pending.current = {
           x0,
           timer: window.setTimeout(() => {
             pending.current = null;
             el.setPointerCapture(id);
             hapticScrub('start');
-            pick(at as never);
+            pick(el, x0);
           }, HOLD_MS),
         };
       }}
@@ -210,10 +211,10 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
           pending.current = null;
           e.currentTarget.setPointerCapture(e.pointerId);
           hapticScrub('start');
-          pick(e);
+          pick(e.currentTarget, e.clientX);
           return;
         }
-        if (interactive && e.currentTarget.hasPointerCapture(e.pointerId)) pick(e);
+        if (interactive && e.currentTarget.hasPointerCapture(e.pointerId)) pick(e.currentTarget, e.clientX);
       }}
       onPointerUp={() => {
         cancelPending();

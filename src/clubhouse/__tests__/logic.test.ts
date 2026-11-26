@@ -390,10 +390,15 @@ describe('settings model', () => {
     expect(SM.parseSection(undefined, 'coach')).toBe('account');
   });
   it('validates passwords and email before anything is sent', () => {
-    expect(SM.passwordProblem('', 'abcdefgh', 'abcdefgh')?.text).toMatch(/current/);
+    expect(SM.passwordProblem('', 'Fairway-27!', 'Fairway-27!')?.text).toMatch(/current/);
     expect(SM.passwordProblem('old', 'short', 'short')?.text).toMatch(/8 characters/);
-    expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgx')?.text).toMatch(/match/);
-    expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgh')).toBeNull();
+    // The same rules as sign up and the reset link, so Settings cannot set a password those would refuse.
+    expect(SM.passwordProblem('old', 'abcdefgh', 'abcdefgh')?.text).toMatch(/upper and lower/);
+    expect(SM.passwordProblem('old', 'Abcdefgh', 'Abcdefgh')?.text).toMatch(/number/);
+    expect(SM.passwordProblem('old', 'Abcdefg1', 'Abcdefg1')?.text).toMatch(/symbol/);
+    expect(SM.passwordProblem('Fairway-27!', 'Fairway-27!', 'Fairway-27!')?.text).toMatch(/already use/);
+    expect(SM.passwordProblem('old', 'Fairway-27!', 'Fairway-27?')?.text).toMatch(/match/);
+    expect(SM.passwordProblem('old', 'Fairway-27!', 'Fairway-27!')).toBeNull();
     expect(SM.emailProblem('nope', 'a@b.co')?.text).toMatch(/valid/);
     expect(SM.emailProblem('A@B.co', 'a@b.co')?.text).toMatch(/already/);
     expect(SM.emailProblem('new@b.co', 'a@b.co')).toBeNull();

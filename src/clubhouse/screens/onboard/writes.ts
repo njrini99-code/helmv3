@@ -69,7 +69,7 @@ export interface ProfileInput {
   avatarUrl: string | null;
 }
 
-export type ProfileResult = { ok: true; joinedTeam: boolean | null } | { ok: false; error: string };
+export type ProfileResult = { ok: true; joinedTeam: boolean | null; joinError?: string | null } | { ok: false; error: string };
 
 /** Finishes a player: the same action and fields as today's /golf/player, with the join code the link or gate carried. */
 export async function finishPlayer(p: ProfileInput, joinCode: string | null): Promise<ProfileResult> {
@@ -88,7 +88,8 @@ export async function finishPlayer(p: ProfileInput, joinCode: string | null): Pr
       joinCode ?? undefined,
     );
     if (!r.success) return { ok: false, error: ('error' in r && r.error) || 'We couldn’t save your profile. Please try again.' };
-    return { ok: true, joinedTeam: joinCode ? ('joinedTeam' in r ? r.joinedTeam === true : false) : null };
+    const joinedTeam = joinCode ? ('joinedTeam' in r ? r.joinedTeam === true : false) : null;
+    return { ok: true, joinedTeam, joinError: joinedTeam === false && 'joinError' in r ? (r.joinError ?? null) : null };
   } catch (e) {
     if (!offlineLike(e)) chReport(e, { surface: 'onboard.profile', severity: 'high' });
     return { ok: false, error: 'Unable to reach the server. Please check your internet connection and try again.' };
@@ -136,7 +137,10 @@ export async function sendRequest(d: RequestDetails): Promise<{ ok: true } | { o
   }
 }
 
-export type CoachResult = { ok: true; joinCode: string | null } | { ok: false; error: string };
+export type CoachResult = { ok: true; joinCode: string | null } | { ok: false; error: string; href?: string };
+
+/** Where a refused program setup sends the coach instead: only the two places the server names for this, never anything else. */
+const COACH_REFUSAL_HREF = new Set(['/golf/dashboard', '/golf/coach/pending']);
 
 /**
  * Makes a new head coach's program: the same action and fields as today's /golf/coach (organization, team, then the
@@ -157,7 +161,10 @@ export async function finishCoach(p: ProgramDetails, name: string, title: string
       title: title.trim() || undefined,
       avatarUrl: avatarUrl || undefined,
     });
-    if (!r.success) return { ok: false, error: ('error' in r && r.error) || 'Couldn’t finish setting up your program. Give it another go.' };
+    if (!r.success) {
+      const to = 'redirectTo' in r && typeof r.redirectTo === 'string' && COACH_REFUSAL_HREF.has(r.redirectTo) ? r.redirectTo : undefined;
+      return { ok: false, error: ('error' in r && r.error) || 'Couldn’t finish setting up your program. Give it another go.', ...(to ? { href: to } : {}) };
+    }
     return { ok: true, joinCode: ('data' in r && r.data?.joinCode) || null };
   } catch (e) {
     if (!offlineLike(e)) chReport(e, { surface: 'onboard.coach', severity: 'high' });

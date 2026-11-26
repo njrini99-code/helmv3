@@ -1,7 +1,7 @@
 /**
  * Deterministic per-course scorecard generator — pure, no I/O (fully
  * unit-testable, same pattern as course-library.ts). Used by
- * scripts/seed-course-library-scorecards.ts (#913 part 1/3, DATA) to turn a
+ * scripts/seed/seed-course-library-scorecards.ts (#913 part 1/3, DATA) to turn a
  * course's well-known top-line facts (par, championship yardage, rating,
  * slope) into a full 18-hole routing + 3 tee sets (Championship / Members /
  * Forward), WITHOUT ever reusing the same hole-by-hole layout across two

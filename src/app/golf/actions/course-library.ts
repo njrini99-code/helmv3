@@ -191,7 +191,7 @@ async function getCoachTeam(
 /**
  * True when a golf_courses row has NO human creator — i.e. it's a
  * staff-curated shared LIBRARY course (bulk-seeded via a reviewed script,
- * e.g. scripts/seed-course-library-scorecards.ts), not a coach/team's own
+ * e.g. scripts/seed/seed-course-library-scorecards.ts), not a coach/team's own
  * contribution. `created_by_user_id` is set on every row created through the
  * app (createCourse / contributeCourseFromRound both stamp the actor), so a
  * null value can only mean "nobody added this — it shipped with the

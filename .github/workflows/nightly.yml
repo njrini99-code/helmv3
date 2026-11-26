@@ -225,7 +225,7 @@ jobs:
     env:
       # NOT secrets, and deliberately not read from any. The seed script creates
       # exactly these two accounts on the local stack with exactly these values
-      # (scripts/seed-baseball-demo.ts — DEMO_COACH_EMAIL / DEMO_PLAYER_EMAIL /
+      # (scripts/seed/seed-baseball-demo.ts — DEMO_COACH_EMAIL / DEMO_PLAYER_EMAIL /
       # DEMO_PASSWORD, whose own header names this as the intended wiring). They
       # are credentials for a database that is destroyed when the job ends.
       E2E_BASEBALL_COACH_EMAIL: demo-coach@baseballhelmdemo.com

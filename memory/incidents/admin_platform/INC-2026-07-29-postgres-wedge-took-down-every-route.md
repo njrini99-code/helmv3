@@ -44,7 +44,7 @@ CI-wide outage:
    the fallback existed to absorb, turning a degraded backend into a 500 on
    every route.
 2. **Unguarded CI seed.** `Seed BaseballHelm CI accounts` →
-   `scripts/seed-baseball-demo.ts` → `createUser` had no retry. A single
+   `scripts/seed/seed-baseball-demo.ts` → `createUser` had no retry. A single
    transient 5xx/522 during the wedge killed the BaseballHelm smoke job,
    which feeds one of `main`'s required aggregate checks — a ten-second blip
    was enough to freeze every merge, and the aggregate stayed red after the

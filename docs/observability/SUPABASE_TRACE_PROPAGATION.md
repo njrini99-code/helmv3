@@ -5,7 +5,7 @@ Two different claims, kept separate on purpose:
 
 1. **Static architecture** — is everything wired the way
    `docs/observability/SENTRY_SUPABASE_TRACING.md` describes? Fully
-   automatable, checked by `scripts/db-observability-trace-cert.mjs`.
+   automatable, checked by `scripts/observability/db-observability-trace-cert.mjs`.
 2. **Live proof** — does a real Sentry trace id actually reach a real
    Supabase request log line? NOT automatable by design (brief §14/§32:
    "no continuous ingestion") — a one-time, owner-triggered, manual
@@ -17,8 +17,8 @@ not a substitute for it.
 ## 1. Static certification (automated)
 
 ```bash
-node scripts/db-observability-trace-cert.mjs         # human report
-node scripts/db-observability-trace-cert.mjs --json    # machine report
+node scripts/observability/db-observability-trace-cert.mjs         # human report
+node scripts/observability/db-observability-trace-cert.mjs --json    # machine report
 ```
 
 Checks (verified 2026-09-03, PASS 5/5 at that time — re-run before trusting

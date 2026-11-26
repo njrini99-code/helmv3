@@ -56,6 +56,8 @@ describe('F-0005 a roster strokes gained figure names its window', () => {
 
   it("the desktop card names it under the strokes gained bar", () => {
     vi.mocked(window.matchMedia).mockImplementation((query: string) => ({ matches: query.includes('hover: hover'), media: query, onchange: null, addListener: vi.fn(), removeListener: vi.fn(), addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn() }) as unknown as MediaQueryList);
+    // The card layout (the desk default is the table since premium plan 3.8).
+    localStorage.setItem('ch-roster-view', 'faces');
     const { container } = render(wrap(<Roster data={{ ...PREVIEW_ROSTER, players: [cole, ...PREVIEW_ROSTER.players.slice(1)] }} />));
     const fig = [...container.querySelectorAll('.ch-rs-fig')].find((f) => f.querySelector('.ch-rs-fig__k')?.textContent === 'Strokes gained' && f.textContent?.includes('6.1'))!;
     expect(fig.querySelector('.ch-rs-fig__m')?.textContent).toBe('Last 8 · Jun–Jul');

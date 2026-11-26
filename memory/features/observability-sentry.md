@@ -329,7 +329,7 @@ alongside (not duplicated here).
   Supabase window showed online players "Unable to reach server". `/api/ping`
   is a 204 liveness route with no database and no auth: `src/proxy.ts`
   returns before `updateSession` for that exact path. `/api/health` stays the
-  readiness probe for `scripts/warm-edge.ts`, `StaleDeploymentRecoveryScript`
+  readiness probe for `scripts/crm/warm-edge.ts`, `StaleDeploymentRecoveryScript`
   and the Sentry uptime monitor.
 
 ## Rollback

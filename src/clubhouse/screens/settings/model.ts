@@ -3,6 +3,7 @@ import type { ChannelPref, NotificationCategory, PrefsByCategory } from '@/lib/c
 import type { ChClock } from '../../lib/clock-cookie';
 import { formatHcp } from '../../lib/format';
 import { plural } from '../../lib/plural';
+import { passwordProblem as newPasswordProblem } from '../onboard/logic';
 
 /**
  * Settings (Clubhouse): one page with a section rail. Every section carries
@@ -82,6 +83,38 @@ export interface ChCoachHelmSettings {
 
 type Section<T> = { value: T; error: false } | { value: null; error: true };
 
+/** One team's code, for a coach who runs more than one team. */
+export interface ChProgramCode {
+  teamId: string;
+  name: string;
+  gender: string | null;
+  code: string;
+}
+
+/** What a team's code is called where a coach has two: "Men’s team" and "Women’s team", or the team's own name. */
+export function programCodeLabel(t: Pick<ChProgramCode, 'gender' | 'name'>): string {
+  if (t.gender === 'mens') return 'Men’s team';
+  if (t.gender === 'womens') return 'Women’s team';
+  return t.name;
+}
+
+/** The same label inside a sentence: "the men’s team", or a team's own name as written. */
+export function programCodePhrase(t: Pick<ChProgramCode, 'gender' | 'name'>): string {
+  return t.gender === 'mens' || t.gender === 'womens' ? `the ${programCodeLabel(t).toLowerCase()}` : t.name;
+}
+
+/**
+ * The active team's code entry and the coach's other teams, or null when there is only one team to show. The active
+ * team comes first; the others follow in men's, women's, then name order.
+ */
+export function splitProgramCodes(codes: ChProgramCode[] | null | undefined, teamId: string | null): { active: ChProgramCode | null; others: ChProgramCode[] } | null {
+  if (!codes || codes.length < 2 || !teamId) return null;
+  const rank = (g: string | null) => (g === 'mens' ? 0 : g === 'womens' ? 1 : 2);
+  const others = codes.filter((c) => c.teamId !== teamId).sort((a, b) => rank(a.gender) - rank(b.gender) || a.name.localeCompare(b.name));
+  if (others.length === 0) return null;
+  return { active: codes.find((c) => c.teamId === teamId) ?? null, others };
+}
+
 export interface ChSettingsData {
   role: 'coach' | 'player';
   userId: string;
@@ -105,6 +138,11 @@ export interface ChSettingsData {
   reminders: Section<ChReminders> | null;
   team: Section<ChTeamInfo> | null;
   joinCode: Section<string> | null;
+  /**
+   * Coaches staffed on more than one team (a men's and a women's program): every team's code, so Team shows each one
+   * named, and a coach never hands the women's code to the men's team. Absent or null for a one-team coach.
+   */
+  programCodes?: ChProgramCode[] | null;
   golf: Section<ChGolfDetails> | null;
   membership: Section<{ team: { id: string; name: string; orgName: string | null } | null; requests: ChJoinRequest[] }> | null;
   coachhelm: Section<ChCoachHelmSettings> | null;
@@ -212,7 +250,10 @@ export function profileProblem(role: 'coach' | 'player', p: { fullName: string; 
 
 export function passwordProblem(current: string, next: string, confirm: string): ChProblem | null {
   if (!current) return problem('CH-8105', 'Enter your current password.', 'set-pw-cur');
-  if (next.length < 8) return problem('CH-8106', 'Use at least 8 characters.', 'set-pw-new');
+  // The same rules sign up and the reset link hold a password to, so Settings cannot set one they would refuse.
+  const rule = newPasswordProblem(next);
+  if (rule) return problem('CH-8106', rule, 'set-pw-new');
+  if (next === current) return problem('CH-8106', 'Choose a password you don’t already use.', 'set-pw-new');
   if (next !== confirm) return problem('CH-8107', "The new passwords don’t match.", 'set-pw-confirm');
   return null;
 }

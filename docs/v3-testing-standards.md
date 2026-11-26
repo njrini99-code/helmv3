@@ -177,12 +177,10 @@ Adds new public route? Add it to the `PUBLIC_ROUTES` array.
 
 ## LLM Evals (Promptfoo)
 
-Scored evals for CoachHelm composer prompts live in `evals/*.yaml`.
-Run locally with `ANTHROPIC_API_KEY=… npm run evals`, then
-`npm run evals:view` to open the HTML report.
-
-CircleCI's `promptfoo-evals` job runs these weekly (Mondays 06:00 UTC).
-Each prompt eval should cover:
+The Promptfoo harness (`evals/round-review.yaml`, `npm run evals`, the CircleCI
+`promptfoo-evals` job) was deleted 2026-11-25; it is in git history. Run
+`npx --yes promptfoo@0.124.0 <cmd>` by hand if a prompt eval is needed again.
+A prompt eval should cover:
 
 1. **Citation gate** — assert specific data is referenced (`contains-any`)
 2. **No-hallucination gate** — assert fields NOT in input don't appear

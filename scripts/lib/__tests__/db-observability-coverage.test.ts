@@ -186,7 +186,7 @@ describe('coverage matrix - the generated artifact', () => {
 
   it('carries a do-not-hand-edit header', () => {
     expect(rendered).toContain('GENERATED FILE - DO NOT HAND-EDIT');
-    expect(rendered).toContain('scripts/db-observability-coverage.mjs');
+    expect(rendered).toContain('scripts/observability/db-observability-coverage.mjs');
   });
 
   it('carries no date and no commit SHA, so --check is a real idempotence test', () => {

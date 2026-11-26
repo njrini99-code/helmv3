@@ -1734,8 +1734,8 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/coachhelm-prewarm-round-reviews.ts",
-        "pattern": "scripts/coachhelm-prewarm-round-reviews.ts",
+        "id": "services:scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
+        "pattern": "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
         "category": "services"
       },
       {
@@ -1754,16 +1754,6 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/db-observability-metrics-names.mjs",
-        "pattern": "scripts/db-observability-metrics-names.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/db-observability-trace-cert.mjs",
-        "pattern": "scripts/db-observability-trace-cert.mjs",
-        "category": "services"
-      },
-      {
         "id": "services:scripts/fail-open-audit.mjs",
         "pattern": "scripts/fail-open-audit.mjs",
         "category": "services"
@@ -1774,8 +1764,13 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/golf-demo-refresh.ts",
-        "pattern": "scripts/golf-demo-refresh.ts",
+        "id": "services:scripts/golf/coach-welcome/**",
+        "pattern": "scripts/golf/coach-welcome/**",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/golf/send-coach-welcome.mjs",
+        "pattern": "scripts/golf/send-coach-welcome.mjs",
         "category": "services"
       },
       {
@@ -1819,6 +1814,16 @@
         "category": "services"
       },
       {
+        "id": "services:scripts/observability/db-observability-metrics-names.mjs",
+        "pattern": "scripts/observability/db-observability-metrics-names.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/observability/db-observability-trace-cert.mjs",
+        "pattern": "scripts/observability/db-observability-trace-cert.mjs",
+        "category": "services"
+      },
+      {
         "id": "services:scripts/paginated-read-audit.mjs",
         "pattern": "scripts/paginated-read-audit.mjs",
         "category": "services"
@@ -1831,6 +1836,16 @@
       {
         "id": "services:scripts/repo-doctor/checks/db-observability.mjs",
         "pattern": "scripts/repo-doctor/checks/db-observability.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/seed/golf-demo-refresh.ts",
+        "pattern": "scripts/seed/golf-demo-refresh.ts",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/seed/verify-golf-demo-coverage.ts",
+        "pattern": "scripts/seed/verify-golf-demo-coverage.ts",
         "category": "services"
       },
       {
@@ -1851,11 +1866,6 @@
       {
         "id": "services:scripts/supabase-error-audit.mjs",
         "pattern": "scripts/supabase-error-audit.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/verify-golf-demo-coverage.ts",
-        "pattern": "scripts/verify-golf-demo-coverage.ts",
         "category": "services"
       },
       {
@@ -2301,6 +2311,11 @@
         "category": "tests"
       },
       {
+        "id": "tests:scripts/golf/__tests__/send-coach-welcome.test.mjs",
+        "pattern": "scripts/golf/__tests__/send-coach-welcome.test.mjs",
+        "category": "tests"
+      },
+      {
         "id": "tests:src/app/admin/__tests__/**",
         "pattern": "src/app/admin/__tests__/**",
         "category": "tests"
@@ -2543,6 +2558,11 @@
       {
         "id": "tests:src/lib/email/__tests__/outbound-gate.test.ts",
         "pattern": "src/lib/email/__tests__/outbound-gate.test.ts",
+        "category": "tests"
+      },
+      {
+        "id": "tests:src/lib/email/__tests__/reply-to.test.ts",
+        "pattern": "src/lib/email/__tests__/reply-to.test.ts",
         "category": "tests"
       },
       {
@@ -4289,7 +4309,7 @@
       },
       {
         "id": "golf_join_team_with_code",
-        "definedIn": "supabase/migrations/20260807030600_golf_join_one_team_rule_ignores_status.sql"
+        "definedIn": "supabase/migrations/20261125130000_golf_auth_integrity.sql"
       },
       {
         "id": "golf_live_topic_allowed",
@@ -4646,6 +4666,10 @@
       {
         "id": "guard_lifting_coach_self_update",
         "definedIn": "supabase/migrations/20261016200000_coach_organization_pin.sql"
+      },
+      {
+        "id": "guard_users_email_self_change",
+        "definedIn": "supabase/migrations/20261125130000_golf_auth_integrity.sql"
       },
       {
         "id": "guard_users_role_self_change",
@@ -5030,6 +5054,10 @@
       {
         "id": "submit_round_atomic",
         "definedIn": "supabase/migrations/20260821043500_single_flight_round_submit.sql"
+      },
+      {
+        "id": "sync_user_email_from_auth",
+        "definedIn": "supabase/migrations/20261125130000_golf_auth_integrity.sql"
       },
       {
         "id": "try_redeem_baseball_team_invitation",
@@ -9808,6 +9836,30 @@
     },
     {
       "source": "auth_onboarding_join",
+      "target": "services:scripts/golf/coach-welcome/**",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/coach-welcome/**"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "services:scripts/golf/send-coach-welcome.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/send-coach-welcome.mjs"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
       "target": "services:src/clubhouse/routes/auth.tsx",
       "kind": "feature_service",
       "evidence": [
@@ -9887,6 +9939,18 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "e2e/auth.spec.ts"
+        }
+      ]
+    },
+    {
+      "source": "auth_onboarding_join",
+      "target": "tests:scripts/golf/__tests__/send-coach-welcome.test.mjs",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/golf/__tests__/send-coach-welcome.test.mjs"
         }
       ]
     },
@@ -13941,6 +14005,18 @@
     },
     {
       "source": "clubhouse",
+      "target": "golf_team_by_join_code",
+      "kind": "feature_rpc",
+      "evidence": [
+        {
+          "kind": "rpc_call",
+          "path": "src/clubhouse/data/onboard.ts",
+          "anchor": "golf_team_by_join_code"
+        }
+      ]
+    },
+    {
+      "source": "clubhouse",
       "target": "golf_team_seasons",
       "kind": "feature_table",
       "evidence": [
@@ -17502,6 +17578,18 @@
       ]
     },
     {
+      "source": "email_outbound",
+      "target": "tests:src/lib/email/__tests__/reply-to.test.ts",
+      "kind": "feature_test",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "src/lib/email/__tests__/reply-to.test.ts"
+        }
+      ]
+    },
+    {
       "source": "feature_awareness_system",
       "target": "admin_incidents",
       "kind": "feature_relation",
@@ -18685,6 +18773,16 @@
         },
         {
           "kind": "import_graph",
+          "path": "src/lib/golf/__tests__/signup-gate-throttle.test.ts",
+          "anchor": "src/lib/auth/supabase-rate-limit"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/__tests__/signup-gate-throttle.test.ts",
+          "anchor": "src/lib/auth/rate-limit"
+        },
+        {
+          "kind": "import_graph",
           "path": "src/lib/golf/dashboard-request-cache.ts",
           "anchor": "src/lib/supabase/server"
         },
@@ -18732,16 +18830,6 @@
           "kind": "import_graph",
           "path": "src/lib/golf/stats-action-context.ts",
           "anchor": "src/lib/auth/verify-player-access"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/team-intelligence/loader.ts",
-          "anchor": "src/lib/supabase/server"
-        },
-        {
-          "kind": "import_graph",
-          "path": "src/lib/golf/team-intelligence/loader.ts",
-          "anchor": "src/lib/supabase/fetch-all-rows"
         },
         {
           "kind": "import_graph",
@@ -18864,6 +18952,11 @@
           "kind": "import_graph",
           "path": "src/lib/golf/player-invite-email.ts",
           "anchor": "src/lib/email/outbound-gate"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/golf/player-invite-email.ts",
+          "anchor": "src/lib/email/reply-to"
         }
       ]
     },
@@ -19375,25 +19468,37 @@
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "services:scripts/coachhelm-prewarm-round-reviews.ts",
+      "target": "services:scripts/coachhelm/coachhelm-prewarm-round-reviews.ts",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/coachhelm-prewarm-round-reviews.ts"
+          "pattern": "scripts/coachhelm/coachhelm-prewarm-round-reviews.ts"
         }
       ]
     },
     {
       "source": "golf_round_lifecycle",
-      "target": "services:scripts/golf-demo-refresh.ts",
+      "target": "services:scripts/seed/golf-demo-refresh.ts",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/golf-demo-refresh.ts"
+          "pattern": "scripts/seed/golf-demo-refresh.ts"
+        }
+      ]
+    },
+    {
+      "source": "golf_round_lifecycle",
+      "target": "services:scripts/seed/verify-golf-demo-coverage.ts",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/seed/verify-golf-demo-coverage.ts"
         }
       ]
     },
@@ -19418,18 +19523,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/sql/strip-demo-seed-tags.sql"
-        }
-      ]
-    },
-    {
-      "source": "golf_round_lifecycle",
-      "target": "services:scripts/verify-golf-demo-coverage.ts",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/verify-golf-demo-coverage.ts"
         }
       ]
     },
@@ -20073,6 +20166,11 @@
           "kind": "import_graph",
           "path": "src/lib/lifting/invite-email.ts",
           "anchor": "src/lib/email/outbound-gate"
+        },
+        {
+          "kind": "import_graph",
+          "path": "src/lib/lifting/invite-email.ts",
+          "anchor": "src/lib/email/reply-to"
         }
       ]
     },
@@ -21129,25 +21227,25 @@
     },
     {
       "source": "observability_supabase",
-      "target": "services:scripts/db-observability-metrics-names.mjs",
+      "target": "services:scripts/observability/db-observability-metrics-names.mjs",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/db-observability-metrics-names.mjs"
+          "pattern": "scripts/observability/db-observability-metrics-names.mjs"
         }
       ]
     },
     {
       "source": "observability_supabase",
-      "target": "services:scripts/db-observability-trace-cert.mjs",
+      "target": "services:scripts/observability/db-observability-trace-cert.mjs",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/db-observability-trace-cert.mjs"
+          "pattern": "scripts/observability/db-observability-trace-cert.mjs"
         }
       ]
     },

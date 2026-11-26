@@ -27,6 +27,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  redirect.mockReset();
   vi.unstubAllGlobals();
 });
 
@@ -49,5 +50,23 @@ describe('player onboarding when the account read fails (GAP-S-04)', () => {
     const { container } = render(await ClubhousePlayerOnboardRoute());
     expect(container.querySelector('[data-ch-code="CH-15290"]')).toBeNull();
     expect(screen.getByRole('form', { name: 'player form' })).toBeTruthy();
+  });
+
+  it('a signed-out visit with a team code goes to sign in and comes back to that team, never dropping the code', async () => {
+    load.current = { kind: 'signedOut' };
+    redirect.mockImplementation(() => {
+      throw new Error('NEXT_REDIRECT');
+    });
+    await expect(ClubhousePlayerOnboardRoute({ searchParams: Promise.resolve({ joinCode: 'k7pq-x4mn' }) })).rejects.toThrow('NEXT_REDIRECT');
+    expect(redirect).toHaveBeenCalledWith('/golf/login?returnTo=%2Fgolf%2Fjoin%2FK7PQX4MN');
+  });
+
+  it('a signed-out visit with no usable code goes to plain sign in', async () => {
+    load.current = { kind: 'signedOut' };
+    redirect.mockImplementation(() => {
+      throw new Error('NEXT_REDIRECT');
+    });
+    await expect(ClubhousePlayerOnboardRoute({ searchParams: Promise.resolve({ joinCode: '&?' }) })).rejects.toThrow('NEXT_REDIRECT');
+    expect(redirect).toHaveBeenCalledWith('/golf/login');
   });
 });

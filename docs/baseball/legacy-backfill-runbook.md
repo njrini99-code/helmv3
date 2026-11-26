@@ -11,7 +11,7 @@
 
 ## What it does
 
-`#827` ("#379 Phase 0") fixed `scripts/seed-baseball-stats.mjs` and the live
+`#827` ("#379 Phase 0") fixed `scripts/seed/seed-baseball-stats.mjs` and the live
 import/box-score-save paths (`src/app/baseball/actions/imports.ts`,
 `src/app/baseball/actions/games.ts`) to write **both** stat layers going
 forward — the legacy flat table (`baseball_player_stats`) AND the canonical
@@ -160,7 +160,7 @@ handling.
 ## Known limitations (by design — one-time script, not a product feature)
 
 - **Grouping key is `(team_id, session_date)` only** (no opponent in the key),
-  matching the `#827`/`scripts/seed-baseball-stats.mjs` precedent this
+  matching the `#827`/`scripts/seed/seed-baseball-stats.mjs` precedent this
   migration mirrors. A genuine double-header (two different-opponent games,
   same team, same date) can't be told apart and collapses onto one game.
 - **Duplicate legacy rows for the same player+team+date** (a data-entry dupe)
@@ -180,7 +180,7 @@ handling.
 Every synthesized id is **deterministic**: a SHA-1 hash of a namespaced key
 (`baseball-legacy-backfill-379:<kind>:<...>`), shaped into RFC4122-v5-style
 bytes (version nibble forced to `0x5`, variant bits forced to `10xx`) — the
-exact pattern `scripts/seed-baseball-stats.mjs`'s `detId()` uses (see its
+exact pattern `scripts/seed/seed-baseball-stats.mjs`'s `detId()` uses (see its
 header comment and `#827`). The namespace is deliberately different from the
 seed script's own `baseball-stats-seed` namespace, so these ids can never
 collide with the demo seeder's (or anything else's) ids.

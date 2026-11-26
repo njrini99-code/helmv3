@@ -17,6 +17,10 @@
   overflow: auto;
   /* The page never shifts sideways when a scrollbar comes or goes (SYS-09). */
   scrollbar-gutter: stable;
+  /* AX-15 (premium plan S7): a control that Tab or a find scrolls into view stops clear of the sticky top bar and the
+     dock, never under them. */
+  scroll-padding-top: calc(var(--ch-topbar-h) + 8px);
+  scroll-padding-bottom: calc(var(--ch-dock-h, 0px) + 8px);
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-page-paint);
@@ -2100,8 +2104,8 @@ html[data-ch-ua-pop] .ch-pscreen::after {
 
 /* The page head (owner, 2026-10-07: "match the bundle", the Coach Home design handoff). A page opts in with
    main[data-canopy] and marks its title block data-canopy-head; on desktop the block is the opening of the ivory
-   workspace, not a band: one hairline below, a small date or section line, the 30px desk large title in the primary
-   ink, set flat, one meta line, and the page's actions inline on the right (D16, owner 19 Nov 2026: the compact head;
+   workspace, not a band: one hairline below, a small date or section line, the 40px desk large title in the forest
+   title ink, set flat, one meta line, and the page's actions inline on the right (D16, owner 19 Nov 2026: the compact head;
    it was 44px with a letterpress edge under a double hairline, 170 to 200px of opening before any data). */
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   /* The head sits on the page gutter, level with the content below it: it had a 4px inset of its own, so every title stood
@@ -2138,7 +2142,9 @@ html[data-ch-ua-pop] .ch-pscreen::after {
     font: var(--ch-type-large-title);
     letter-spacing: var(--ch-track-large-title);
     font-variation-settings: var(--ch-wdth-dense);
-    color: var(--ch-text-primary);
+    /* Owner, 24 Nov 2026 ("just black and small and basic"): 40px in the forest title ink, the phone large title's
+       colour, so the page name reads as the program's and not as body type. */
+    color: var(--ch-title-ink);
     text-shadow: none;
   }
   /* P001-D5: not tracked (letterspaced mixed case read as a mistake); colour and the double rule carry the hierarchy. */

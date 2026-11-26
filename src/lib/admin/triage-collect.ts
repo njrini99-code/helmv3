@@ -1,7 +1,7 @@
 /**
  * Triage — collection.
  *
- * Extracted from `scripts/run-triage.ts` (the CLI is now a thin wrapper over
+ * Extracted from `scripts/coachhelm/run-triage.ts` (the CLI is now a thin wrapper over
  * this module plus `triage-apply.ts`) so a Vercel cron
  * (`src/app/api/cron/selfheal-triage/route.ts`) can run the same collection
  * `npm run triage` does, without importing a `tsx` script into a Next.js

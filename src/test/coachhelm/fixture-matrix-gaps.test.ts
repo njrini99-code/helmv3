@@ -56,7 +56,7 @@ describe('§15.2 — "Par-3 tee miss: not counted as a missed fairway opportunit
 });
 
 describe('§15.2 — "Two simultaneous missing-review creators" backfill variant / pre-warm skip-existing', () => {
-  // scripts/coachhelm-prewarm-round-reviews.ts implements repair-plan §16.1
+  // scripts/coachhelm/coachhelm-prewarm-round-reviews.ts implements repair-plan §16.1
   // point 9 ("pre-warm missing 30-day reviews with atomic skip-existing and
   // a resumable run") and reads cleanly (skipped_existing outcome, fixed
   // manifest cutoff, resume cursor — see its header comment and Outcome

@@ -39,7 +39,7 @@ disable-model-invocation: true
 > `src/app/golf/(dashboard)/**`.
 >
 > The craft advice below is still good. Its *vocabulary* is not current. For
-> Clubhouse (`src/clubhouse/**`, off in production) use
+> Clubhouse (`src/clubhouse/**`, the only coach and player UI) use
 > `.claude/rules/clubhouse.md` instead of the Fairway tokens above.
 
 Premium SaaS UI design system for Helm Sports Labs and similar products.

@@ -186,8 +186,9 @@ async function completeCoachOnboardingImpl(input: CoachOnboardingInput) {
         // reaches the fix by re-running signup with the code.
         return {
           success: false,
-          error: `${orgName} is already set up on Helm — so there's nothing to create. Ask your head coach for the team code and enter it at sign-up; that joins you to the existing program as an assistant coach, with full access.`,
-          redirectTo: '/golf/signup',
+          // A roster code no longer makes a coach (players only, 2026-09-30); the way in for staff is the head coach's
+          // staff invite, which attaches this signed-in account to the existing program.
+          error: `${orgName} is already set up on Helm, so there's nothing to create. Ask your head coach for a staff invite link and open it while signed in. It adds you to the program as an assistant coach.`,
         };
       }
       await logServerError(`[Onboarding] Organization creation failed: ${describeError(orgError)}`, { action: 'onboarding.completeCoachOnboarding' });
@@ -526,6 +527,14 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
       await logServerError('[Onboarding] Refused: a coach account submitted player onboarding', { action: 'onboarding.completePlayerOnboarding' }, 'warning');
       return { success: false, error: 'This account is set up as a coach, so it can’t become a player here.' };
     }
+    // A coach account part way through its own setup (a coach row not finished yet, or a coach login with no row at
+    // all, such as one made from a staff code) must not turn into a player by opening a player's invite link. Only a
+    // first player profile is refused: an account that already has one keeps working as it did.
+    const declaredCoach = (user.user_metadata as { role?: unknown } | null)?.role === 'coach';
+    if (!existingPlayer && (existingCoach || declaredCoach)) {
+      await logServerError('[Onboarding] Refused: a coach account started player onboarding', { action: 'onboarding.completePlayerOnboarding' }, 'warning');
+      return { success: false, error: 'This account was made for a coach, so it can’t join a team as a player. Ask your head coach for a staff invite link instead.' };
+    }
 
     // Ensure users table record exists with correct role
     const { error: usersError } = await supabase
@@ -623,15 +632,19 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
     // blocks onboarding — the player still completes setup and reaches the
     // dashboard, where they can join from the invite link as a fallback.
     let joinedTeam = false;
+    // The server's own reason, so the finish screen can say what to do (another team, a code that no longer matches).
+    let joinError: string | null = null;
     if (joinCode?.trim() && playerId) {
       try {
         const joinResult = await processGolfTeamInvitation(joinCode.trim(), playerId);
         joinedTeam = joinResult.success === true;
         if (!joinedTeam) {
-          await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for code ${joinCode.trim().toUpperCase()}`, { action: 'onboarding.completePlayerOnboarding' });
+          joinError = joinResult.error ?? null;
+          await logServerError(`[Onboarding] Auto-join skipped (${joinResult.error ?? 'unknown'}) for a code of ${joinCode.trim().length} characters`, { action: 'onboarding.completePlayerOnboarding' });
         }
-      } catch (joinError) {
-        await logServerError(`[Onboarding] Auto-join threw: ${describeError(joinError)}`, { action: 'onboarding.completePlayerOnboarding' });
+      } catch (thrown) {
+        joinError = 'Failed to join team. Please try again.';
+        await logServerError(`[Onboarding] Auto-join threw: ${describeError(thrown)}`, { action: 'onboarding.completePlayerOnboarding' });
       }
     }
 
@@ -640,6 +653,7 @@ async function completePlayerOnboardingImpl(input: PlayerOnboardingInput, joinCo
     return {
       success: true,
       joinedTeam,
+      joinError,
     };
 
   } catch (error) {

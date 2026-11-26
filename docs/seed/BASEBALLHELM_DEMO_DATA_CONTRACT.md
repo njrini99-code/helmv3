@@ -1,19 +1,19 @@
 # BaseballHelm Demo Data Contract
 
 > Single source of truth for "what does representative demo data mean per
-> surface" — shared by `scripts/seed-baseball-surfaces-demo.ts` (the seeder)
-> and `scripts/verify-baseball-demo-coverage.ts` (the verifier). If you change
+> surface" — shared by `scripts/seed/seed-baseball-surfaces-demo.ts` (the seeder)
+> and `scripts/seed/verify-baseball-demo-coverage.ts` (the verifier). If you change
 > the shape seeded for a table, update this doc and the route mapping below
 > in the same change.
 
 Companion docs:
 - `https://github.com/njrini99-code/helmv3/blob/docs-attic-2026-09/docs/archive/2026-06/audits/BASEBALLHELM_STALE_SURFACE_AUDIT_2026-06-25.md` — the original
   audit that enumerated the 13 empty tables this contract closes.
-- `scripts/seed-baseball-demo.ts` — Phase 1 (org/team/coach/roster + core
+- `scripts/seed/seed-baseball-demo.ts` — Phase 1 (org/team/coach/roster + core
   surfaces).
-- `scripts/seed-baseball-lifting-demo.ts` — Phase 2 (Helm Lifting Lab).
-- `scripts/seed-baseball-surfaces-demo.ts` — Phase 3 (this contract).
-- `scripts/seed-baseball-demo-program.ts` — Phase 4 (season + risks +
+- `scripts/seed/seed-baseball-lifting-demo.ts` — Phase 2 (Helm Lifting Lab).
+- `scripts/seed/seed-baseball-surfaces-demo.ts` — Phase 3 (this contract).
+- `scripts/seed/seed-baseball-demo-program.ts` — Phase 4 (season + risks +
   recruiting board; #912). **The recruiting board no longer seeds** — see
   "Recruiting board (sunset)" below.
 
@@ -26,10 +26,10 @@ dependency has run at least once.
 
 | Phase | Script | Depends on | Seeds |
 |---|---|---|---|
-| 1 | `scripts/seed-baseball-demo.ts` | — | Org, team, coach + 8-player roster, calendar, practice plan, lift assignments (Lite), readiness, coach insights, timeline events, one `baseball_import_runs` row. |
-| 2 | `scripts/seed-baseball-lifting-demo.ts` | Phase 1 | Helm Lifting Lab: lifting-coach identity, programs/weeks/days/sections/prescriptions, sessions, set results, readiness check-ins. |
-| 3 | `scripts/seed-baseball-surfaces-demo.ts` | Phase 1 (player/coach ids only — does **not** depend on Phase 2) | Every table this contract documents below. |
-| 4 | `scripts/seed-baseball-demo-program.ts` | Phase 1 (roster + coach ids only — independent of Phases 2/3) | A believable, already-completed season (games + box scores + derived season stats), open risk flags, a rolling lifting-session history, and more upcoming calendar events/practices. (A recruiting board too — **only while the module is enabled**; see below.) |
+| 1 | `scripts/seed/seed-baseball-demo.ts` | — | Org, team, coach + 8-player roster, calendar, practice plan, lift assignments (Lite), readiness, coach insights, timeline events, one `baseball_import_runs` row. |
+| 2 | `scripts/seed/seed-baseball-lifting-demo.ts` | Phase 1 | Helm Lifting Lab: lifting-coach identity, programs/weeks/days/sections/prescriptions, sessions, set results, readiness check-ins. |
+| 3 | `scripts/seed/seed-baseball-surfaces-demo.ts` | Phase 1 (player/coach ids only — does **not** depend on Phase 2) | Every table this contract documents below. |
+| 4 | `scripts/seed/seed-baseball-demo-program.ts` | Phase 1 (roster + coach ids only — independent of Phases 2/3) | A believable, already-completed season (games + box scores + derived season stats), open risk flags, a rolling lifting-session history, and more upcoming calendar events/practices. (A recruiting board too — **only while the module is enabled**; see below.) |
 
 Run them in order for a from-scratch demo team. Re-running any phase alone
 is always safe (idempotent upserts) — it just won't create anything the
@@ -37,19 +37,19 @@ dependency phase hasn't created yet (gracefully skipped, not a crash).
 
 ```bash
 # 1. Org + team + roster + core surfaces
-DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo.ts --confirm
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-demo.ts --confirm
 
 # 2. Helm Lifting Lab
-DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-lifting-demo.ts --confirm
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-lifting-demo.ts --confirm
 
 # 3. Messaging / video / tasks / strength groups / dev plans / seasons / imports / stats
-DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-surfaces-demo.ts --confirm
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-surfaces-demo.ts --confirm
 
 # 4. Season (games + box scores) / risk flags / lifting history / calendar
-DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed-baseball-demo-program.ts --confirm
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/seed-baseball-demo-program.ts --confirm
 
 # Verify coverage (any time, read-only, no --confirm flag needed)
-DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/verify-baseball-demo-coverage.ts
 
 # Same alignment flow as one npm script
 DOTENV_CONFIG_PATH=.env.local npm run seed:baseball:demo
@@ -149,14 +149,14 @@ exit code:
 
 | Table | Why it stays empty |
 |---|---|
-| `baseball_recruiting_interests` | A *separate*, org-scoped recruiting-interest concept the demo doesn't populate — not to be confused with `baseball_watchlists` (the coach's own pipeline board), which Phase 4 (`scripts/seed-baseball-demo-program.ts`, #912) now seeds with 8 recruits. The demo team's own 8 roster players remain `player_type='college'` / `recruiting_activated=false` throughout — college players never activate recruiting (see `CLAUDE.md` "Recruiting Activation Model") — only the *recruits on the board* (separate `baseball_players` rows on fictional feeder programs) have `recruiting_activated=true`. |
+| `baseball_recruiting_interests` | A *separate*, org-scoped recruiting-interest concept the demo doesn't populate — not to be confused with `baseball_watchlists` (the coach's own pipeline board), which Phase 4 (`scripts/seed/seed-baseball-demo-program.ts`, #912) now seeds with 8 recruits. The demo team's own 8 roster players remain `player_type='college'` / `recruiting_activated=false` throughout — college players never activate recruiting (see `CLAUDE.md` "Recruiting Activation Model") — only the *recruits on the board* (separate `baseball_players` rows on fictional feeder programs) have `recruiting_activated=true`. |
 | `baseball_decision_log`, `baseball_meeting_items`, `baseball_signals`, `baseball_actions` | "Decision Room" is a separate CoachHelm-adjacent workflow (`src/lib/baseball/read-models/decision-room/`) built on top of *other* already-seeded surfaces (readiness, lift, insights, games). It is out of scope for this demo-coverage pass — not audited as empty in the original stale-surface audit. |
 | `baseball_video_events` | The staff-anchored film-tagging queue (Event/Tagged/Evidence video views) is distinct from the player-uploaded `baseball_videos` library this contract seeds, and was not in the original audit's empty-table list. |
 
 ## Verifying coverage
 
 ```bash
-DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/verify-baseball-demo-coverage.ts
+DOTENV_CONFIG_PATH=.env.local npx tsx -r dotenv/config scripts/seed/verify-baseball-demo-coverage.ts
 ```
 
 Prints one line per table in the contract above: route, table, expected

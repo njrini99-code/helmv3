@@ -11,7 +11,7 @@ project has one shared production Supabase database, no staging copy
 (`.claude/rules/shipping.md`), and `.env.local` points at it. Seed scripts that
 write demo data therefore write to production. That reads as a hazard at
 first glance, but the existing seed scripts (e.g.
-`scripts/seed-baseball-surfaces-demo.ts`, `scripts/seed-course-library-scorecards.ts`)
+`scripts/seed/seed-baseball-surfaces-demo.ts`, `scripts/seed/seed-course-library-scorecards.ts`)
 are dry-run-by-default, require an explicit `--confirm`, and target a
 dedicated demo organization documented as safe to ignore in production lists
 — matching an established precedent (the Pat Edwards golf demo clone). The

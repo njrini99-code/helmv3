@@ -23,19 +23,29 @@ const allow = { allowed: true, remaining: 9, resetAt: Date.now() + 60_000 };
 vi.mock('@/lib/auth/rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
   resetRateLimit: vi.fn(),
-  RATE_LIMITS: { LOGIN: {}, SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, PASSWORD_RESET: {} },
+  RATE_LIMITS: { LOGIN: {}, SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, GOLF_SIGNUP: { maxAttempts: 60, windowMs: 3_600_000 }, PASSWORD_RESET: {} },
   formatTimeRemaining: () => '1 minute',
 }));
 vi.mock('@/lib/auth/supabase-rate-limit', () => ({
   checkRateLimit: vi.fn(async () => allow),
-  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 } },
+  RATE_LIMITS: { SIGNUP: { maxAttempts: 10, windowMs: 3_600_000 }, SIGNUP_SAME_CODE: { maxAttempts: 60, windowMs: 3_600_000 }, SIGNUP_ALL: { maxAttempts: 200, windowMs: 3_600_000 } },
 }));
 
 const signUp = vi.fn();
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({ auth: { signUp, getUser: vi.fn(async () => ({ data: { user: null } })) } })),
 }));
-vi.mock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from: vi.fn() }) }));
+// The single-use claim table the code path now reads before signUp: `spent` decides whether the invite was used.
+const claim = vi.hoisted(() => ({ spent: false, error: null as unknown }));
+vi.mock('@/lib/supabase/admin', () => ({
+  createAdminClient: () => ({
+    from: vi.fn(() => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: claim.spent ? { nonce: 'n-1' } : null, error: claim.error }) }) }),
+    })),
+  }),
+}));
+const verify = vi.hoisted(() => ({ result: { ok: true, payload: { n: 'n-1', t: 'team-1', o: 'org-1', r: 'coach' } } as unknown }));
+vi.mock('@/lib/golf/staff-invite', () => ({ verifyStaffInvite: () => verify.result }));
 
 vi.mock('@/lib/golf/signup-gate', () => ({
   verifySignupGate: vi.fn(async () => ({ passed: true, staffInviteCode: 'STAFF123', teamJoinCode: null })),
@@ -77,6 +87,30 @@ describe('signupAction — staff code', () => {
     resolveStaffInviteCode.mockReset();
     redeemStaffInvite.mockReset();
     resetSessionIdleMarker.mockClear();
+    claim.spent = false;
+    claim.error = null;
+    verify.result = { ok: true, payload: { n: 'n-1', t: 'team-1', o: 'org-1', r: 'coach' } };
+  });
+
+  it('refuses a staff code whose invite was already used, before creating any account', async () => {
+    resolveStaffInviteCode.mockResolvedValue(TOKEN);
+    claim.spent = true;
+    const r = await signupAction('assistant@school.edu', STRONG_PASSWORD, 'coach', 'Asa', 'Coach');
+    expect(r.success).toBe(false);
+    expect(r.error).toMatch(/already been used/);
+    expect(signUp).not.toHaveBeenCalled();
+  });
+
+  it('refuses a staff code whose invite has expired, and one whose claim cannot be read, before creating any account', async () => {
+    resolveStaffInviteCode.mockResolvedValue(TOKEN);
+    verify.result = { ok: false, reason: 'expired' };
+    const expired = await signupAction('assistant@school.edu', STRONG_PASSWORD, 'coach', 'Asa', 'Coach');
+    expect(expired.error).toMatch(/expired/);
+    verify.result = { ok: true, payload: { n: 'n-1', t: 'team-1', o: 'org-1', r: 'coach' } };
+    claim.error = { message: 'boom' };
+    const unread = await signupAction('assistant@school.edu', STRONG_PASSWORD, 'coach', 'Asa', 'Coach');
+    expect(unread.success).toBe(false);
+    expect(signUp).not.toHaveBeenCalled();
   });
 
   it('refuses a staff code that no longer resolves, before creating any account', async () => {
