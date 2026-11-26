@@ -72,7 +72,7 @@ export function ReplyChoices({ r, mine, pending, onReply }: {
     <div className="ch-hb-rsvp__choice">
       <span className="ch-hb-rsvp__a" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys(false)} aria-label={`Your reply for ${r.title}`} aria-busy={pending}>
         {REPLIES.map(([answer, label]) => (
-          <button key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
+          <button data-ctl="CTL-P010-007" key={answer} type="button" role="radio" aria-checked={mine === answer} disabled={pending} onClick={() => {
             if (mine === answer) return;
             haptic('select');
             void save.run(r, answer);
@@ -94,7 +94,7 @@ export function Acknowledgement({ a, acked, pending, onAck }: {
   if (pending) return <span className="ch-hb-saving" role="status" data-ch-code="CH-10409">Acknowledging {a.title}…</span>;
   if (acked) return <span className="ch-hb-acked"><Icon icon={Check} size={13} />Acknowledged</span>;
   // A row's own action, never a filled primary (GAP-H-04): Home lists several posts, and at most one filled key is on screen.
-  return <Button size="sm" variant="secondary" onClick={() => void save.run(a)}>Got it</Button>;
+  return <Button data-ctl="CTL-P010-008" size="sm" variant="secondary" onClick={() => void save.run(a)}>Got it</Button>;
 }
 
 export function Announcement({
@@ -155,7 +155,7 @@ export function Announcement({
         <SerifText text={a.title} />
       </h3>
       {fold ? (
-        <button type="button" className="ch-hb-ann__fold" aria-expanded={false} onClick={() => (haptic('select'), setOpen(true))}>
+        <button data-ctl="CTL-P010-009" type="button" className="ch-hb-ann__fold" aria-expanded={false} onClick={() => (haptic('select'), setOpen(true))}>
           <span>{a.body}</span>
           <span className="ch-sr-only">, show all</span>
         </button>
@@ -184,7 +184,7 @@ export function Announcement({
             ]}
             trigger={(p) => (
               <Tooltip>
-                <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
+                <button data-ctl="CTL-P010-010" type="button" className="ch-hb-iconbtn" aria-label={`More for ${a.title}`} {...p}>
                   <Icon icon={Ellipsis} size={16} />
                 </button>
               </Tooltip>
@@ -195,7 +195,7 @@ export function Announcement({
       <div className="ch-hb-ann__f">
         {coach ? (
           waiting ? (
-            <button
+            <button data-ctl="CTL-P010-011"
               type="button"
               className="ch-hb-reads ch-hb-reads--open ch-num"
               aria-expanded={showWaiting}
@@ -268,7 +268,7 @@ function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachmen
   const listId = `ch-hb-ann-files-${a.id}`;
   return (
     <div className="ch-hb-ann__files">
-      <button type="button" className="ch-hb-ann__files-t ch-num" aria-expanded={open} aria-controls={listId} onClick={toggle}>
+      <button data-ctl="CTL-P010-012" type="button" className="ch-hb-ann__files-t ch-num" aria-expanded={open} aria-controls={listId} onClick={toggle}>
         <Icon icon={FileText} size={13} />
         {attachmentCount(a.documentCount)}
       </button>
@@ -281,7 +281,7 @@ function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachmen
           ) : state.status === 'failed' ? (
             <span className="ch-hb-ann__files-err" role="alert">
               The attachments didn’t load.{' '}
-              <button type="button" className="ch-hb-ann__files-retry" onClick={() => void load()}>
+              <button data-ctl="CTL-P010-013" type="button" className="ch-hb-ann__files-retry" onClick={() => void load()}>
                 Try again
               </button>
             </span>
@@ -291,7 +291,7 @@ function Attachments({ a, files }: { a: ChHubAnnouncement; files: ChHubAttachmen
             <ul>
               {state.rows.map((f) => (
                 <li key={f.id}>
-                  <button type="button" className="ch-hb-ann__file" onClick={() => files.open(f)} disabled={files.opening === f.id} aria-label={`Open ${f.title}, ${f.type}`}>
+                  <button data-ctl="CTL-P010-014" type="button" className="ch-hb-ann__file" onClick={() => files.open(f)} disabled={files.opening === f.id} aria-label={`Open ${f.title}, ${f.type}`}>
                     <span>{f.title}</span>
                     <em className="ch-num">{files.opening === f.id ? 'Opening…' : f.type}</em>
                   </button>
@@ -376,7 +376,7 @@ export function TripPass({
               ]}
               trigger={(p) => (
                 <Tooltip>
-                  <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
+                  <button data-ctl="CTL-P010-015" type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.name}`} {...p}>
                     <Icon icon={Ellipsis} size={16} />
                   </button>
                 </Tooltip>
@@ -485,7 +485,7 @@ export function Updates({ data, covered = false, read, onOpen }: {
           {data.rows.map((n: ChHubUpdate) => (
             <li key={n.id} className={isNew(n) ? 'is-new' : undefined}>
               {n.href ? (
-                <Link href={n.href} onClick={() => onOpen?.(n)}>
+                <Link data-ctl="CTL-P010-016" href={n.href} onClick={() => onOpen?.(n)}>
                   <UpdateBody n={{ ...n, unread: isNew(n) }} />
                 </Link>
               ) : (
@@ -560,7 +560,7 @@ export function Tasks({
       <div className="ch-hb-card__h">
         <h2 id="ch-hb-tasks">{coach ? 'Assigned tasks' : 'Your tasks'}</h2>
         {coach && onAssign ? (
-          <Button size="sm" variant="ghost" onClick={onAssign}>
+          <Button data-ctl="CTL-P010-017" size="sm" variant="ghost" onClick={onAssign}>
             Assign
           </Button>
         ) : (
@@ -577,7 +577,7 @@ export function Tasks({
           {!listed.length && <p className="ch-hb-muted">Every task is done.</p>}
           {finished.length > 0 && (
             <>
-              <button
+              <button data-ctl="CTL-P010-018"
                 type="button"
                 className="ch-hw-more ch-hw-q__all"
                 aria-expanded={doneOpen}
@@ -648,7 +648,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
   }, [focus, reduced, onFocused]);
   const save = useTaskSave(d, onToggle);
   return (
-    <PresenceRow as="div"
+    <PresenceRow data-ctl="CTL-P010-019" as="div"
       ref={row}
       className={'ch-hb-task' + (coach ? ' is-coach' : '') + (d ? ' is-done' : '') + (lit ? ' is-focus' : '')}
       onPointerDown={lit ? () => setLit(false) : undefined}
@@ -660,7 +660,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
           <i style={{ ['--ch-hb-p' as string]: t.done && t.done[1] ? t.done[0] / t.done[1] : 0 }} aria-hidden="true" />
         </span>
       ) : (
-        <button type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} disabled={pending} aria-busy={pending} onClick={() => void save.run(t, !d)}>
+        <button data-ctl="CTL-P010-020" type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} disabled={pending} aria-busy={pending} onClick={() => void save.run(t, !d)}>
           {d && <Icon icon={Check} size={13} />}
         </button>
       )}
@@ -682,7 +682,7 @@ function TaskRow({ t, coach, d, pending, onToggle, onDelete, focus = false, onFo
           items={[{ label: 'Delete task', icon: Trash2, danger: true, onSelect: () => onDelete(t) }]}
           trigger={(p) => (
             <Tooltip>
-              <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
+              <button data-ctl="CTL-P010-021" type="button" className="ch-hb-iconbtn" aria-label={`More for ${t.title}`} {...p}>
                 <Icon icon={Ellipsis} size={16} />
               </button>
             </Tooltip>
@@ -742,7 +742,7 @@ export function Documents({
     <div className="ch-hb-docs">
       {coach && (
         <>
-          <button
+          <button data-ctl="CTL-P010-022"
             type="button"
             className={'ch-hb-drop' + (over ? ' is-over' : '')}
             onClick={() => input.current?.click()}
@@ -795,7 +795,7 @@ export function Documents({
             <div className="ch-hb-files">
               {f.files.map((d) => (
                 <div key={d.id} className="ch-hb-file">
-                  <button type="button" className="ch-hb-file__open" onClick={() => onOpen(d)} disabled={opening === d.id} aria-label={`Open ${d.title}, ${d.type}`}>
+                  <button data-ctl="CTL-P010-023" type="button" className="ch-hb-file__open" onClick={() => onOpen(d)} disabled={opening === d.id} aria-label={`Open ${d.title}, ${d.type}`}>
                     <span className={`ch-hb-file__ic is-${d.type.toLowerCase()}`} aria-hidden="true">
                       <Icon icon={FILE_ICON[d.type] ?? FileText} size={18} />
                       {!d.planId && <em>{d.type}</em>}
@@ -813,7 +813,7 @@ export function Documents({
                       items={[{ label: d.planId ? 'Delete plan' : 'Delete file', icon: Trash2, danger: true, onSelect: () => onDelete(d) }]}
                       trigger={(p) => (
                         <Tooltip>
-                          <button type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
+                          <button data-ctl="CTL-P010-024" type="button" className="ch-hb-iconbtn" aria-label={`More for ${d.title}`} {...p}>
                             <Icon icon={Ellipsis} size={16} />
                           </button>
                         </Tooltip>
@@ -833,7 +833,7 @@ export function Documents({
 /** The coach's "Write an announcement…" line that opens the composer. */
 export function NewAnnouncementLine({ name, onOpen }: { name: string; onOpen: () => void }) {
   return (
-    <button
+    <button data-ctl="CTL-P010-025"
       type="button"
       className="ch-hb-new"
       onClick={() => {
