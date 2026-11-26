@@ -143,145 +143,145 @@ snapshot in [CLICKABLES.md](../CLICKABLES.md).
 
 ### `src/clubhouse/screens/home/ClassHomeLine.tsx`
 
-- 101 `button` "{label}" (button, onClick) CH-2870
+- CTL-P002-001 101 `button` "{label}" (button, onClick) CH-2870
 
 ### `src/clubhouse/screens/home/CoachAsks.tsx`
 
-- 30 `Link` "From your coach {map}" (link, href)
+- CTL-P002-002 30 `Link` "From your coach {map}" (link, href)
 
 ### `src/clubhouse/screens/home/CoachHome.tsx`
 
-- 148 `Link` "{title} {sub}" (link, href)
+- CTL-P002-003 148 `Link` "{title} {sub}" (link, href)
 
 ### `src/clubhouse/screens/home/CoachLatest.tsx`
 
-- 46 `button` "Previous round" (button, onClick)
-- 52 `button` "Next round" (button, onClick)
-- 94 `Button` "{Open recap|{firstName}’s stats}" (button, href)
+- CTL-P002-004 46 `button` "Previous round" (button, onClick)
+- CTL-P002-005 52 `button` "Next round" (button, onClick)
+- CTL-P002-006 94 `Button` "{Open recap|{firstName}’s stats}" (button, href)
 
 ### `src/clubhouse/screens/home/CoachQueue.tsx`
 
-- 77 `Link` "{text}" (link, href)
-- 115 `Link` "{text}" (link, href)
+- CTL-P002-007 77 `Link` "{text}" (link, href)
+- CTL-P002-008 115 `Link` "{text}" (link, href)
 
 ### `src/clubhouse/screens/home/DayCard.tsx`
 
-- 92 `Link` "{title}" (link, onClick, href)
-- 122 `Link` "{Nudge {firstName}|Nudge {length}}" (link, onClick, href)
-- 128 `Link` "Message" (link, onClick, href)
-- 134 `a` "Directions" (link, href)
-- 160 `button` "{playerName} {score} {formatToPar}" (button, onClick)
-- 198 `Link` "{All day|{replace}} {title} {{location}|} {Overlaps…" (link, href)
-- 238 `Link` "{body}" (link, href)
-- 253 `Link` "Calendar" (link, href)
-- 418 `LedgerRow` "{label}" (onClick)
-- 420 `LedgerRow` "{label}" (href)
+- CTL-P002-009 92 `Link` "{title}" (link, onClick, href)
+- CTL-P002-010 122 `Link` "{Nudge {firstName}|Nudge {len…" (link, onClick, href)
+- CTL-P002-011 128 `Link` "Message" (link, onClick, href)
+- CTL-P002-012 134 `a` "Directions" (link, href)
+- CTL-P002-013 160 `button` "{playerName} {score} {formatToP…" (button, onClick)
+- CTL-P002-014 198 `Link` "{All day|{replace}} {title} {{location…" (link, href)
+- CTL-P002-015 238 `Link` "{body}" (link, href)
+- CTL-P002-016 253 `Link` "Calendar" (link, href)
+- CTL-P002-017 418 `LedgerRow` "{label}" (onClick)
+- CTL-P002-018 420 `LedgerRow` "{label}" (href)
 
 ### `src/clubhouse/screens/home/HomeActions.tsx`
 
-- 38 `Button` "Message team" (button, href)
-- 41 `Button` "New event" (button, href)
-- 48 `Button` "Message team" (button, href)
-- 51 `Button` "New event" (button, href)
+- CTL-P002-019 38 `Button` "Message team" (button, href)
+- CTL-P002-020 41 `Button` "New event" (button, href)
+- CTL-P002-021 48 `Button` "Message team" (button, href)
+- CTL-P002-022 51 `Button` "New event" (button, href)
 
 ### `src/clubhouse/screens/home/HomeDeskCrh.tsx`
 
-- 27 `Link` "{TYPE_LABEL} {t} {title} {join} {{{going} of {length…" (link, href)
-- 59 `Link` "{link}" (link, href)
-- 76 `DeskHead` "Today" (href)
-- 85 `Link` "{All day|{t12}} {title} {{location}|} {Overlap|{Now|…" (link, href)
-- 114 `DeskHead` "Today" (href)
-- 122 `Button` "New event" (button, href) CH-2301
-- 140 `DeskHead` "Latest rounds" (href)
+- CTL-P002-023 27 `Link` "{TYPE_LABEL} {t} {title} {join} {{{goin…" (link, href)
+- CTL-P002-024 59 `Link` "{link}" (link, href)
+- CTL-P002-025 76 `DeskHead` "Today" (href)
+- CTL-P002-026 85 `Link` "{All day|{t12}} {title} {{location}|} {…" (link, href)
+- CTL-P002-027 114 `DeskHead` "Today" (href)
+- CTL-P002-028 122 `Button` "New event" (button, href) CH-2301
+- CTL-P002-029 140 `DeskHead` "Latest rounds" (href)
 
 ### `src/clubhouse/screens/home/HomePhone.tsx`
 
-- 159 `Link` "Up next · {TYPE_LABEL} {title} {t}" (link, onClick, href)
-- 200 `NewEventLink` "{TYPE_LABEL}" (link, href) CH-2309
-- 235 `Button` "Plan" (button, href) CH-2301
-- 246 `Link` "{All day|{replace}} {title} {{location}|} {Overlap|…" (link, href)
-- 284 `Link` "Calendar" (link, href)
-- 307 `Link` "Calendar" (link, href)
-- 365 `Link` "{link}" (link, href)
-- 371 `Button` "Try again" (button, onClick)
-- 453 `Button` "Message" (button, href)
-- 459 `Button` "Round recap" (button, href)
-- 464 `Button` "Player stats" (button, href)
+- CTL-P002-030 159 `Link` "Up next · {TYPE_LABEL} {title…" (link, onClick, href)
+- CTL-P002-031 200 `NewEventLink` "{TYPE_LABEL}" (link, href) CH-2309
+- CTL-P002-032 235 `Button` "Plan" (button, href) CH-2301
+- CTL-P002-033 246 `Link` "{All day|{replace}} {title} {{location…" (link, href)
+- CTL-P002-034 284 `Link` "Calendar" (link, href)
+- CTL-P002-035 307 `Link` "Calendar" (link, href)
+- CTL-P002-036 365 `Link` "{link}" (link, href)
+- CTL-P002-037 371 `Button` "Try again" (button, onClick)
+- CTL-P002-038 453 `Button` "Message" (button, href)
+- CTL-P002-039 459 `Button` "Round recap" (button, href)
+- CTL-P002-040 464 `Button` "Player stats" (button, href)
 
 ### `src/clubhouse/screens/home/LatestRound.tsx`
 
-- 90 `IconButton` "Previous round" (button, onClick)
-- 91 `IconButton` "Next round" (button, onClick)
-- 176 `Button` "Open recap" (button, href)
-- 181 `Button` "My stats" (button, href)
-- 187 `Button` "{firstName}’s stats" (button, href)
-- 206 `button` "{playerName} {join} {score} {formatToPar}" (button, onClick)
+- CTL-P002-041 90 `IconButton` "Previous round" (button, onClick)
+- CTL-P002-042 91 `IconButton` "Next round" (button, onClick)
+- CTL-P002-043 176 `Button` "Open recap" (button, href)
+- CTL-P002-044 181 `Button` "My stats" (button, href)
+- CTL-P002-045 187 `Button` "{firstName}’s stats" (button, href)
+- CTL-P002-046 206 `button` "{playerName} {join} {score} {fo…" (button, onClick)
 
 ### `src/clubhouse/screens/home/Leaderboard.tsx`
 
-- 77 `Link` "{name}" (link, href)
-- 147 `Button` "Full roster" (button, href)
-- 169 `Button` "Invite players" (button, href) CH-2304
+- CTL-P002-047 77 `Link` "{name}" (link, href)
+- CTL-P002-048 147 `Button` "Full roster" (button, href)
+- CTL-P002-049 169 `Button` "Invite players" (button, href) CH-2304
 
 ### `src/clubhouse/screens/home/LiveNowCard.tsx`
 
-- 97 `Link` "{openLive}" (link, href) CH-16603
-- 101 `Button` "{openLive}" (button, href) CH-16603
-- 107 `Link` "{tournamentLive}" (link, href) CH-16685
-- 121 `Link` "{seeAll}" (link, href) CH-16606
+- CTL-P002-050 97 `Link` "{openLive}" (link, href) CH-16603
+- CTL-P002-051 101 `Button` "{openLive}" (button, href) CH-16603
+- CTL-P002-052 107 `Link` "{tournamentLive}" (link, href) CH-16685
+- CTL-P002-053 121 `Link` "{seeAll}" (link, href) CH-16606
 
 ### `src/clubhouse/screens/home/NewEventLink.tsx`
 
-- 61 `Link` "{children}" (link, onClick, onPointerDown, href)
+- CTL-P002-054 61 `Link` "{children}" (link, onClick, onPointerDown, href)
 
 ### `src/clubhouse/screens/home/NextBeyond.tsx`
 
-- 23 `Link` "Up next Nothing else this week Next…" (link, onClick, href) CH-2316
-- 55 `Link` "Nothing else this week {t} {title} …" (link, onClick, href) CH-2316
+- CTL-P002-055 23 `Link` "Up next Nothing else t…" (link, onClick, href) CH-2316
+- CTL-P002-056 55 `Link` "Nothing else this week…" (link, onClick, href) CH-2316
 
 ### `src/clubhouse/screens/home/OwnLiveCard.tsx`
 
-- 100 `Button` "{resume}" (button, href)
+- CTL-P002-057 100 `Button` "{resume}" (button, href)
 
 ### `src/clubhouse/screens/home/PlayerHome.tsx`
 
-- 145 `Button` "Message coach" (button, href)
-- 149 `Button` "New round" (button, href)
-- 169 `Link` "Up next · {TYPE_LABEL} {t} {title} {join} {{was}|}" (link, href)
-- 218 `Button` "New round" (button, href) CH-2312
-- 225 `Button` "Add classes" (button, href) CH-2312
+- CTL-P002-058 145 `Button` "Message coach" (button, href)
+- CTL-P002-059 149 `Button` "New round" (button, href)
+- CTL-P002-060 169 `Link` "Up next · {TYPE_LABEL} {t} {title} {jo…" (link, href)
+- CTL-P002-061 218 `Button` "New round" (button, href) CH-2312
+- CTL-P002-062 225 `Button` "Add classes" (button, href) CH-2312
 
 ### `src/clubhouse/screens/home/PlayerHomePhone.tsx`
 
-- 97 `Button` "Message coach" (button, href)
-- 101 `Button` "New round" (button, href)
-- 172 `Button` "Add classes" (button, href) CH-2312
-- 200 `button` "Previous round" (button, onClick)
-- 206 `button` "Next round" (button, onClick)
-- 250 `Button` "{Open recap|My stats}" (button, href)
+- CTL-P002-063 97 `Button` "Message coach" (button, href)
+- CTL-P002-064 101 `Button` "New round" (button, href)
+- CTL-P002-065 172 `Button` "Add classes" (button, href) CH-2312
+- CTL-P002-066 200 `button` "Previous round" (button, onClick)
+- CTL-P002-067 206 `button` "Next round" (button, onClick)
+- CTL-P002-068 250 `Button` "{Open recap|My stats}" (button, href)
 
 ### `src/clubhouse/screens/home/TeamLegs.tsx`
 
-- 49 `Link` "{text}" (link, href)
-- 111 `Button` "Team stats" (button, href)
+- CTL-P002-069 49 `Link` "{text}" (link, href)
+- CTL-P002-070 111 `Button` "Team stats" (button, href)
 
 ### `src/clubhouse/screens/home/TeamScoring.tsx`
 
-- 150 `Button` "Team stats" (button, href)
+- CTL-P002-071 150 `Button` "Team stats" (button, href)
 
 ### `src/clubhouse/screens/home/TeammatesLiveCard.tsx`
 
-- 58 `button` "{seeAll}" (button, onClick) CH-16606
+- CTL-P002-072 58 `button` "{seeAll}" (button, onClick) CH-16606
 
 ### `src/clubhouse/screens/home/UpNext.tsx`
 
-- 31 `Link` "{{kicker} · {TYPE_LABEL}|{TYPE_LABEL}} {t} …" (link, onClick, href)
+- CTL-P002-073 31 `Link` "{{kicker} · {TYPE_LABEL}|{TYPE…" (link, onClick, href)
 
 ### `src/clubhouse/screens/home/Week.tsx`
 
-- 105 `AgendaRow` "(no label)" (href)
-- 129 `Link` "{title}" (link, href)
-- 146 `Button` "{aria}" (button, href)
+- CTL-P002-074 105 `AgendaRow` "(no label)" (href)
+- CTL-P002-075 129 `Link` "{title}" (link, href)
+- CTL-P002-076 146 `Button` "{aria}" (button, href)
 
 ## P003 Roster
 

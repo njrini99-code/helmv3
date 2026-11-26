@@ -98,7 +98,7 @@ export function ClassHomeLine({ teamId, today, variant, teamTimeZone }: { teamId
   const open = () => setSheet(line.opens === 'term' ? 'term' : 'class');
   return (
     <span ref={trigger} className={`ch-ca-home ch-ca-home--${variant}`}>
-      <button type="button" className="ch-ca-home__btn" aria-haspopup="dialog" data-ch-code="CH-2870" onClick={open}>
+      <button data-ctl="CTL-P002-001" type="button" className="ch-ca-home__btn" aria-haspopup="dialog" data-ch-code="CH-2870" onClick={open}>
         <Icon icon={BookOpen} size={14} />
         {/* F-0011 (WCAG 2.5.3): named by its own words, the line as drawn and then what it opens, in place of an aria-label
             the drawn lines disagreed with (run together on the phone, a " · " between them on the desk). */}

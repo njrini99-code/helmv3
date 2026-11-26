@@ -74,7 +74,7 @@ function Row({ p, pos, rounds }: { p: ChLeaderRow; pos: { label: string; place: 
   const top = pos.place != null && pos.place <= 3;
   // P002 D3: the row is a table row (a div); the link is the player's name, stretched over the row by its ::after.
   const name = href ? (
-    <Link href={href} className="ch-h-lb__go" {...press(href)}>
+    <Link data-ctl="CTL-P002-047" href={href} className="ch-h-lb__go" {...press(href)}>
       <span className="ch-h-lb__name">{p.name}</span>
       <LinkPending />
     </Link>
@@ -144,7 +144,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
           )}
         </div>
         {rosterHref && (
-          <Button variant="ghost" size="sm" rightIcon={ArrowRight} href={rosterHref}>
+          <Button data-ctl="CTL-P002-048" variant="ghost" size="sm" rightIcon={ArrowRight} href={rosterHref}>
             Full roster
           </Button>
         )}
@@ -166,7 +166,7 @@ export function Leaderboard({ data, covered = false, rounds }: { data: ChCoachHo
             body="Share your team code from Roster; players appear here as they join."
             action={
               inviteHref ? (
-                <Button variant="primary" leftIcon={UserPlus} href={inviteHref}>
+                <Button data-ctl="CTL-P002-049" variant="primary" leftIcon={UserPlus} href={inviteHref}>
                   Invite players
                 </Button>
               ) : undefined
