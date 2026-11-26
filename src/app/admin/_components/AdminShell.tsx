@@ -34,6 +34,8 @@ import {
   Hash,
   ClipboardCheck,
   Repeat,
+  GitCompareArrows,
+  PackageOpen,
 } from 'lucide-react';
 import {
   AppShell,
@@ -138,6 +140,9 @@ const NAV_ICON_BY_HREF = {
   '/admin/clubhouse/actions': Zap,
   '/admin/clubhouse/codes': Hash,
   '/admin/clubhouse/readiness': ClipboardCheck,
+  // B11: the docs against the running code. B13: the pack Duet takes.
+  '/admin/clubhouse/drift': GitCompareArrows,
+  '/admin/clubhouse/duet': PackageOpen,
   '/admin/activity': Activity,
   '/admin/errors': AlertTriangle,
   '/admin/traces': GitBranch,

@@ -32,7 +32,7 @@ import {
   type PageView,
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, LinkChips, NoSignal, PendingControl, Section } from '../_components/frame';
+import { ClubhouseFrame, GraphUnavailable, LinkChips, NoSignal, PackLink, Section } from '../_components/frame';
 import { CategoryLegend, GateMark, IdChip, StatusTag } from '../_components/chips';
 import { StateMatrix } from '../_components/StateMatrix';
 import { ActionList, ControlList } from '../_components/lists';
@@ -137,7 +137,7 @@ export default async function ClubhousePageDossier({
       actions={
         <>
           <ForceState page={id} code={BR.pages.forceState} />
-          <PendingControl code={BR.pages.pack} label="Context pack" arrives="The page's pack goes to the Duet desk, which lands with PR 4." />
+          <PackLink code={BR.pages.pack} target={id} />
         </>
       }
     >

@@ -25,6 +25,8 @@ describe('ADMIN_NAV', () => {
       '/admin/clubhouse/actions',
       '/admin/clubhouse/codes',
       '/admin/clubhouse/readiness',
+      '/admin/clubhouse/drift',
+      '/admin/clubhouse/duet',
       '/admin/errors',
       '/admin/health',
       '/admin/jobs',
@@ -44,8 +46,10 @@ describe('ADMIN_NAV', () => {
       '/admin/engineering',
       '/admin/ben-leah',
     ]);
+    // PR 4: Drift took N, the last free letter; Duet desk has none (undefined),
+    // a deliberate change, because D and Q are retired shortcuts still in use.
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', 'H', 'I', 'J', 'C', 'M',
+      '1', 'H', 'I', 'J', 'C', 'M', 'N', undefined,
       '3', '0', '8', 'X', 'F', 'T',
       '7', '2', 'U',
       '9', 'K', '4', 'W',
@@ -75,11 +79,15 @@ describe('ADMIN_NAV', () => {
   it('the Clubhouse screens take letters no live or retired shortcut uses', () => {
     const clubhouse = ADMIN_NAV.filter((e) => e.section === 'Clubhouse' && e.href !== '/admin');
     for (const entry of clubhouse) {
+      // A Clubhouse screen with no free letter has no key at all (Duet desk), never a borrowed one.
+      if (entry.key === undefined) continue;
       expect(entry.key, entry.href).toMatch(/^[A-Z]$/);
       expect(RETIRED_SHORTCUTS[entry.key], `${entry.key} is a retired shortcut`).toBeUndefined();
     }
     expect(hrefForShortcut('C')).toBe('/admin/clubhouse/codes');
     expect(hrefForShortcut('H')).toBe('/admin/clubhouse');
+    expect(hrefForShortcut('N')).toBe('/admin/clubhouse/drift');
+    expect(ADMIN_NAV.filter((e) => e.key === undefined).map((e) => e.href)).toEqual(['/admin/clubhouse/duet']);
   });
 
   it('maps shortcut keys to hrefs', () => {

@@ -19,7 +19,7 @@ import {
   type ClubhouseScope,
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../../_components/frame';
+import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, PendingControl, Section } from '../../_components/frame';
 import { ActionChip, CategoryTag, ControlChip, IdChip, PageChip, StatusTag } from '../../_components/chips';
 import { ForceState } from '../../_components/ForceState';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
@@ -168,7 +168,7 @@ function Dossier({
           <ForceState page={entry.page as PageId} code={BR.codes.forceState} />
           <PendingControl code={BR.codes.markExpected} label="Mark expected…" arrives="Marking a firing as normal needs signals and their store, which arrive with PR 3." />
           <PendingControl code={BR.codes.watch} label="Watch" arrives="Watching pins a code to Pulse and the digest, which land with PR 3." />
-          <PendingControl code={BR.codes.pack} label="Context pack" arrives="Packs go to the Duet desk, which lands with PR 4." />
+          <PackLink code={BR.codes.pack} target={String(id)} />
         </>
       }
     >

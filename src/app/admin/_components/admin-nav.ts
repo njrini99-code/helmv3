@@ -5,6 +5,8 @@ type AdminHref =
   | '/admin/clubhouse/actions'
   | '/admin/clubhouse/codes'
   | '/admin/clubhouse/readiness'
+  | '/admin/clubhouse/drift'
+  | '/admin/clubhouse/duet'
   | '/admin/activity'
   | '/admin/errors'
   | '/admin/traces'
@@ -27,7 +29,9 @@ type AdminHref =
 export interface AdminNavEntry {
   label: string;
   href: AdminHref;
-  key: string;
+  /** Shift+letter or a digit. Absent when no letter is free (see the KEYS note below): the tab is then reached from
+   *  the rail and ⌘K only, never by a key that already means something else. */
+  key?: string;
   // 'More' — an OWNER-DECIDED deprioritized group: still fully wired (URL,
   // shortcut, ⌘K, mobile More sheet), just rendered under its own heading at
   // the end of the rail/⌘K instead of alongside the primary tabs. Derived
@@ -61,6 +65,12 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Actions', href: '/admin/clubhouse/actions', key: 'J', section: 'Clubhouse', description: 'Each press: handler, tables and outcomes', meta: 'B04' },
   { label: 'Codes', href: '/admin/clubhouse/codes', key: 'C', section: 'Clubhouse', description: 'Every Bridge ID and CH- code, one dossier each', meta: 'B05' },
   { label: 'Readiness', href: '/admin/clubhouse/readiness', key: 'M', section: 'Clubhouse', description: 'How finished Clubhouse is, by its own gates', meta: 'B12' },
+  // PR 4. The plan's D and Q are retired shortcuts (RETIRED_SHORTCUTS), so
+  // Drift takes N, the last letter no live or retired shortcut holds. Duet
+  // desk gets no key: every letter is spoken for, and taking a retired one
+  // would silently retrain an operator's hands. Reclaiming Q is an owner call.
+  { label: 'Drift', href: '/admin/clubhouse/drift', key: 'N', section: 'Clubhouse', description: 'Are the docs still the truth: nine lists to drive to zero', meta: 'B11' },
+  { label: 'Duet desk', href: '/admin/clubhouse/duet', section: 'Clubhouse', description: 'The context pack Claude Duet needs, in one paste', meta: 'B13' },
 
   // TRIAGE — "what is broken right now"
   // "Incidents", not "Errors". The list now carries app errors, Sentry

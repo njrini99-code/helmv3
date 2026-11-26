@@ -192,6 +192,9 @@ export const clubhouseHref = {
   codes: () => `${CLUBHOUSE_BASE}/codes`,
   code: (id: string | number) => `${CLUBHOUSE_BASE}/codes/${encodeURIComponent(String(id))}`,
   readiness: () => `${CLUBHOUSE_BASE}/readiness`,
+  drift: () => `${CLUBHOUSE_BASE}/drift`,
+  /** B13 with a pack built for `target` (P007, CTL-P007-014, ACT-P007-SEND-MESSAGE, 70603 or CH-7004). */
+  duet: (target?: string) => (target ? `${CLUBHOUSE_BASE}/duet?t=${encodeURIComponent(target)}` : `${CLUBHOUSE_BASE}/duet`),
 };
 
 /** The repository the Bridge links into. Doc and code links open at the live release when it is known. */

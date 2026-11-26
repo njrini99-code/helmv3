@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { RadioTower } from 'lucide-react';
+import { PackageOpen, RadioTower } from 'lucide-react';
 import { Surface } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { BridgeGraph } from '@/lib/admin/clubhouse/graph';
-import { describeScope, liveRef, type ClubhouseScope } from '@/lib/admin/clubhouse/screens';
+import { clubhouseHref, describeScope, liveRef, type ClubhouseScope } from '@/lib/admin/clubhouse/screens';
 import { TabHeader } from '../../_components/TabHeader';
 import { PanelStale } from '../../_components/PanelStates';
 import { CopyReportButton } from '../../_components/CopyReportButton';
@@ -203,6 +203,24 @@ export function PendingControl({ code, label, arrives }: { code: string; label: 
       {label}
       <span className="sr-only">: {arrives}</span>
     </button>
+  );
+}
+
+/**
+ * "Context pack" on a dossier (BR-0209, BR-0306, BR-0407, BR-0509): opens the Duet desk (B13) with the pack for this
+ * page, control, action or code already built.
+ */
+export function PackLink({ code, target, label = 'Context pack' }: { code: string; target: string; label?: string }) {
+  return (
+    <Link
+      href={clubhouseHref.duet(target)}
+      data-br={code}
+      prefetch={false}
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-fw-sm border border-border-control bg-surface px-3 text-caption font-medium text-text-primary hover:border-border-strong hover:bg-surface-sunken focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
+    >
+      <PackageOpen size={14} aria-hidden />
+      {label}
+    </Link>
   );
 }
 

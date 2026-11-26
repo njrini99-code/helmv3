@@ -12,7 +12,7 @@ import {
   withScope,
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../../_components/frame';
+import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, Section } from '../../_components/frame';
 import { ActionChip, IdChip, PageChip } from '../../_components/chips';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
 
@@ -75,7 +75,7 @@ export default async function ClubhouseControlDossier({
       copyCode={BR.controls.copy}
       report={report}
       sources={[GRAPH_SOURCE]}
-      actions={<PendingControl code={BR.controls.pack} label="Context pack" arrives="Packs go to the Duet desk, which lands with PR 4." />}
+      actions={<PackLink code={BR.controls.pack} target={id} />}
     >
       <div className="grid min-w-0 gap-4 lg:grid-cols-2">
         <Section title="What it is">

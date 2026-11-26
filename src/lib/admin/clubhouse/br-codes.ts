@@ -84,6 +84,29 @@ export const BR = {
     copy: 'BR-1209',
     ...states('12'),
   },
+  /** B11 Drift (PR 4). */
+  drift: {
+    listTab: 'BR-1101',
+    row: 'BR-1102',
+    /** Markdown or JSON, for Duet. The evidence footer's Copy is the Markdown half. */
+    export: 'BR-1103',
+    pipePanel: 'BR-1104',
+    ...states('11'),
+  },
+  /** B13 Duet desk (PR 4). */
+  duet: {
+    packRow: 'BR-1301',
+    copy: 'BR-1302',
+    download: 'BR-1303',
+    markSent: 'BR-1304',
+    verify: 'BR-1305',
+    archive: 'BR-1306',
+    /** Not in the §8 table: the target box that builds a pack takes the next number. */
+    build: 'BR-1307',
+    /** Not in the §8 table: the "include names" tick (D7). */
+    names: 'BR-1308',
+    ...states('13'),
+  },
   /** B14 command palette. */
   palette: {
     open: 'BR-1401',

@@ -14,7 +14,7 @@ import {
   withScope,
   type SearchParams,
 } from '@/lib/admin/clubhouse/screens';
-import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../../_components/frame';
+import { ClubhouseFrame, GraphUnavailable, NoSignal, PackLink, PendingControl, Section } from '../../_components/frame';
 import { ControlChip, IdChip, PageChip, StatusTag } from '../../_components/chips';
 import { GRAPH_SOURCE, readClubhouse } from '../../_components/load';
 
@@ -97,7 +97,7 @@ export default async function ClubhouseActionDossier({
       actions={
         <>
           <PendingControl code={BR.actions.sessions} label="Sessions" arrives="Sessions that hit this action arrive with B07, in PR 3." />
-          <PendingControl code={BR.actions.pack} label="Context pack" arrives="Packs go to the Duet desk, which lands with PR 4." />
+          <PackLink code={BR.actions.pack} target={id} />
         </>
       }
     >

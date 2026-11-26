@@ -7,6 +7,7 @@
  */
 import type { BridgeGraph } from './graph';
 import { clubhouseHref, controlLabel } from './screens';
+import { resolvePackTarget } from './pack';
 
 export type BridgeSearchKind = 'page' | 'action' | 'control' | 'code' | 'finding';
 
@@ -37,6 +38,14 @@ function rankFor(key: string, needle: string, texts: ReadonlyArray<string | unde
 export function searchBridgeGraph(graph: BridgeGraph, rawQuery: string): BridgeSearchHit[] {
   const needle = rawQuery.trim().toLowerCase().slice(0, SEARCH_MAX_QUERY);
   if (needle.length < SEARCH_MIN_QUERY) return [];
+  // `>pack 70603` (plan §7.2, BR-1406): one hit, straight to the Duet desk with the pack built.
+  const packFor = /^>\s*pack\s+(\S+)$/.exec(needle);
+  if (packFor) {
+    const target = resolvePackTarget(graph, packFor[1]);
+    return target
+      ? [{ kind: target.kind, key: target.key, label: `Build the pack for ${target.key}`, description: 'Opens the Duet desk with it built', href: clubhouseHref.duet(target.key), rank: 0 }]
+      : [];
+  }
   const hits: BridgeSearchHit[] = [];
   // Each kind keeps its best few, so 2,000 code meanings can never crowd out the one page you meant.
   const push = (list: BridgeSearchHit[]) => {
