@@ -135,7 +135,7 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
         {hourly.truncated ? <Pill tone="watch">More hourly rows than one read keeps: the oldest hours are left out</Pill> : null}
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps</Pill> : null}
         <span data-br={BR.speed.copy}>
-          <CopyReportButton report={report} variant="labeled" size="sm" label="Copy report" />
+          <CopyReportButton report={report} variant="labeled" size="sm" label="Copy report" className="bs-copy" />
         </span>
       </PipeTruth>
 
@@ -159,7 +159,7 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
         </SpaceState>
       ) : (
         <>
-          <div className="bs-grid">
+          <div className="bs-grid bs-grid-stats">
             <Stat label="Slowest page to open" value={worstLcp ? msText(worstLcp.lcp) : null} sub={worstLcp ? `${worstLcp.name} · load p75` : undefined} tone={lineTone(worstLcp?.lcp ?? null, LCP_LINE_MS)} />
             <Stat label="Slowest tap response" value={worstInp ? msText(worstInp.inp) : null} sub={worstInp ? `${worstInp.name} · tap p75` : undefined} tone={lineTone(worstInp?.inp ?? null, INP_LINE_MS)} />
             <Stat
@@ -181,32 +181,35 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
             note={`Load = opening the page cold (LCP). Tap = the slowest response to a tap (INP). The line is where R-12 raises it on iPhone. Switch to first paint = from an in-app link or Back to the new page's first paint.`}
           >
             <div className="bs-scroll-x">
-              <table className="bs-table">
+              <table className="bs-table bs-table-stack rl-speed-table">
                 <thead>
                   <tr>
                     <th scope="col">Page</th>
                     <th scope="col">Load · line {msText(LCP_LINE_MS)}</th>
                     <th scope="col">Tap · line {msText(INP_LINE_MS)}</th>
                     <th scope="col">Switch to first paint</th>
-                    <th scope="col" style={{ textAlign: 'right' }}>Views</th>
+                    <th scope="col" className="bs-num">Views</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pages.map((p) => (
                     <tr key={p.page}>
-                      <td style={{ minWidth: 160 }}>
+                      <td className="bs-cell-head rl-c-page">
                         <Link href={clubhouseHref.page(p.page)} className="bs-link" data-br={BR.speed.pageRow}>
                           {p.name}
                         </Link>{' '}
                         <span className="bs-mono bs-tone-muted">{p.page}</span>
                       </td>
-                      <td style={{ minWidth: 200 }}>
+                      <td className="bs-cell-wide rl-c-meter">
+                        <span className="bs-cell-label">Load · line {msText(LCP_LINE_MS)}</span>
                         <MeterCell ms={p.lcp} line={LCP_LINE_MS} label="Load p75" />
                       </td>
-                      <td style={{ minWidth: 200 }}>
+                      <td className="bs-cell-wide rl-c-meter">
+                        <span className="bs-cell-label">Tap · line {msText(INP_LINE_MS)}</span>
                         <MeterCell ms={p.inp} line={INP_LINE_MS} label="Tap p75" />
                       </td>
-                      <td style={{ whiteSpace: 'nowrap' }}>
+                      <td className="bs-cell-half rl-c-switch">
+                        <span className="bs-cell-label">Switch to first paint</span>
                         {p.switchP75 === null ? (
                           <span className="rl-none">not measured yet</span>
                         ) : (
@@ -215,7 +218,10 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
                           </span>
                         )}
                       </td>
-                      <td style={{ textAlign: 'right' }}>{p.views}</td>
+                      <td className="bs-cell-half bs-num">
+                        <span className="bs-cell-label">Views</span>
+                        {p.views}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -308,7 +314,7 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
 
       <Panel
         title="Slowest database queries"
-        note={`The app's own requests in the latest 15-minute window, by mean time per call. Query shapes only, never the text${queriesAt ? ` · sampled ${new Date(queriesAt).toISOString().slice(11, 16)} UTC` : ''}. Not split by coach and player: the database does not know who asked.`}
+        note={`The app's own requests in the latest 15-minute window, by mean time per call. The collector never keeps query text, so each query is named by its Postgres id; open the Database tab's performance view to see it beside its history${queriesAt ? ` · sampled ${new Date(queriesAt).toISOString().slice(11, 16)} UTC` : ''}. Not split by coach and player: the database does not know who asked.`}
       >
         {queryPerf.status === 'unconfigured' ? (
           <p className="bs-panel-note" style={{ padding: '0 22px 20px' }} data-br={BR.speed.noSignal}>
@@ -321,14 +327,14 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
         ) : queries && queries.length ? (
           <div>
             {queries.map((q) => (
-              <Link key={q.queryClass} href="/admin/database?view=performance" className="rl-db" data-br={BR.speed.queryRow}>
+              <Link key={q.queryid} href="/admin/database?view=performance" className="rl-db" data-br={BR.speed.queryRow}>
                 <span className="bs-chip" style={{ justifySelf: 'start' }}>
                   {q.regressed ? 'slower' : 'query'}
                 </span>
                 <span style={{ minWidth: 0 }}>
-                  <b className="bs-mono" style={{ overflowWrap: 'anywhere' }}>{q.queryClass}</b>
+                  <b className="bs-mono">{q.label}</b>
                   <span className="bs-panel-note" style={{ display: 'block' }}>
-                    {q.calls !== null ? `${q.calls} calls` : 'calls not counted'}
+                    app request · {q.calls !== null ? `${q.calls} calls` : 'calls not counted'}
                     {q.maxMs !== null ? ` · slowest ${msText(q.maxMs)}` : ''}
                   </span>
                 </span>

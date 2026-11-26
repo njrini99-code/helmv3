@@ -291,7 +291,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps: the oldest are not shown</Pill> : null}
         {notes.state === 'error' ? <p className="bs-panel-note bs-tone-watch" style={{ margin: 0 }}>The Bridge notes could not be read: nothing shows as Expected or Watching.</p> : null}
         <span data-br={BR.feed.copy}>
-          <CopyReportButton report={feedReport(items, summary, scope.w, pipe.label)} variant="labeled" size="sm" label="Copy report" />
+          <CopyReportButton report={feedReport(items, summary, scope.w, pipe.label)} variant="labeled" size="sm" label="Copy report" className="bs-copy" />
         </span>
       </PipeTruth>
 

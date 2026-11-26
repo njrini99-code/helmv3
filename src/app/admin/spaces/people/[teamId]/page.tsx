@@ -127,7 +127,7 @@ export default async function TeamPeoplePage({ params, searchParams }: { params:
               </span>
             )}
             <span data-br={BR.team.copy}>
-              <CopyReportButton report={teamReport(data, now)} variant="labeled" size="sm" label="Copy team report" />
+              <CopyReportButton report={teamReport(data, now)} variant="labeled" size="sm" label="Copy team report" className="bs-copy" />
             </span>
           </div>
         </div>
@@ -255,8 +255,8 @@ function BackLink() {
 function Fact({ label, value, sub, bad = false }: { label: string; value: number | null; sub: string; bad?: boolean }) {
   return (
     <li>
-      <span>{label}</span>
-      <span>
+      <span className="bp-fact-label">{label}</span>
+      <span className="bp-fact-value">
         <strong className={value === null ? 'bs-tone-muted' : bad && value > 0 ? 'bs-tone-bad' : undefined}>{value === null ? '—' : value}</strong>
         <em>{sub}</em>
       </span>
@@ -286,6 +286,12 @@ function lede(data: TeamPeopleResult, quiet: readonly PersonSummary[], now: Date
   return parts.join(' ');
 }
 
+const PEOPLE_SORTS: ReadonlyArray<{ key: PeopleSort; label: string }> = [
+  { key: 'signin', label: 'Last sign-in' },
+  { key: 'active', label: 'Days active' },
+  { key: 'name', label: 'Name' },
+];
+
 function SortHead({ label, k, sort, base }: { label: string; k: PeopleSort; sort: PeopleSort; base: string }) {
   return (
     <Link href={`${base}?tab=people&sort=${k}`} className="bp-th-link" aria-current={sort === k ? 'true' : undefined} data-br={BR.team.sortPeople}>
@@ -309,8 +315,16 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
   const golf = data.team.sport === 'golf';
   return (
     <>
+      <div className="bp-sort-phone">
+        <span className="bs-eyebrow">Sort</span>
+        <LinkTabs
+          label="Sort people"
+          current={sort}
+          tabs={PEOPLE_SORTS.map((s) => ({ key: s.key, label: s.label, href: `${base}?tab=people&sort=${s.key}`, br: BR.team.sortPeople }))}
+        />
+      </div>
       <div className="bs-scroll-x">
-        <table className="bs-table bp-people">
+        <table className="bs-table bs-table-stack bp-people">
           <thead>
             <tr>
               <th scope="col">
@@ -323,13 +337,13 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
               <th scope="col">
                 <SortHead label="Days active · 30" k="active" sort={sort} base={base} />
               </th>
-              <th scope="col" style={{ textAlign: 'right' }}>
+              <th scope="col" className="bs-num">
                 Rounds
               </th>
-              <th scope="col" style={{ textAlign: 'right' }}>
+              <th scope="col" className="bs-num">
                 Messages
               </th>
-              <th scope="col" style={{ textAlign: 'right' }}>
+              <th scope="col" className="bs-num">
                 Errors
               </th>
               <th scope="col">Device</th>
@@ -340,16 +354,16 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
               const tone = p.role === 'coach' ? 'coach' : 'player';
               return (
                 <tr key={p.userId} className={p.active7d ? undefined : 'bp-quiet'}>
-                  <td>
+                  <td className="bs-cell-head">
                     <div className="bp-person">
                       <span className={`bp-initials ${toneClass(tone)}`} aria-hidden="true">
                         {initials(p.name)}
                       </span>
                       <div>
-                        <Link href={`/admin/users/${p.userId}`} className="bp-pname" style={{ textDecoration: 'none' }} data-br={BR.team.personRow}>
+                        <Link href={`/admin/users/${p.userId}`} className="bp-pname" data-br={BR.team.personRow}>
                           {p.name ?? (p.role === 'coach' ? 'Unnamed coach' : 'Unnamed player')}
                         </Link>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                        <div className="bp-person-tags">
                           <RoleBadge role={p.role} />
                           {p.title && p.role === 'coach' ? <span className="bp-sub">{p.title}</span> : null}
                           {!p.active7d ? (
@@ -359,10 +373,12 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
                       </div>
                     </div>
                   </td>
-                  <td className="bp-dimmable" style={{ fontWeight: 600 }}>
+                  <td className="bs-cell-half bp-dimmable" style={{ fontWeight: 600 }}>
+                    <span className="bs-cell-label">Last sign-in</span>
                     {p.lastSignInAt ? <time dateTime={p.lastSignInAt}>{ago(p.lastSignInAt, now)}</time> : 'none recorded'}
                   </td>
-                  <td className="bp-dimmable">
+                  <td className="bs-cell-half bp-dimmable">
+                    <span className="bs-cell-label">Last active</span>
                     {p.lastActive ? (
                       <>
                         <div>{p.role === 'player' && p.lastActive.kind === 'message' ? 'Active in the app' : TOUCH_WORDS[p.lastActive.kind]}</div>
@@ -372,23 +388,30 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
                       <span className="bp-sub">nothing in 30 days</span>
                     )}
                   </td>
-                  <td>
+                  <td className="bs-cell-wide">
+                    <span className="bs-cell-label">Days active · 30</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
                       <DayStrip days={p.days} label={`${p.daysActive30} of 30 days active`} />
                       <span className="bp-big">{p.daysActive30}</span>
                     </span>
                   </td>
-                  <td style={{ textAlign: 'right' }} className="bp-dimmable">
+                  <td className="bs-num bp-dimmable">
+                    <span className="bs-cell-label">Rounds</span>
                     {p.rounds30d === null ? <span className="bp-sub">team-level</span> : p.rounds30d}
                   </td>
-                  <td style={{ textAlign: 'right' }} className="bp-dimmable">
+                  <td className="bs-num bp-dimmable">
+                    <span className="bs-cell-label">Messages</span>
                     {/* Privacy: a player's message count is team-level only (players may be minors). */}
                     {p.role === 'coach' ? p.messages30d : <span className="bp-sub">team only</span>}
                   </td>
-                  <td style={{ textAlign: 'right' }} className={p.errors30d === null ? 'bs-tone-muted' : p.errors30d > 0 ? 'bs-tone-bad' : 'bp-dimmable'}>
+                  <td className={`bs-num ${p.errors30d === null ? 'bs-tone-muted' : p.errors30d > 0 ? 'bs-tone-bad' : 'bp-dimmable'}`}>
+                    <span className="bs-cell-label">Errors</span>
                     {p.errors30d === null ? '—' : p.errors30d}
                   </td>
-                  <td className="bp-dimmable">{p.device ?? <span className="bp-sub">{golf ? 'none yet' : 'not measured'}</span>}</td>
+                  <td className="bp-dimmable">
+                    <span className="bs-cell-label">Device</span>
+                    {p.device ?? <span className="bp-sub">{golf ? 'none yet' : 'not measured'}</span>}
+                  </td>
                 </tr>
               );
             })}
@@ -405,7 +428,7 @@ function PeopleTab({ data, sort, base, now }: { data: TeamPeopleResult; sort: Pe
         <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
           <DayStrip days={['none']} label="" /> nothing
         </span>
-        <span style={{ marginLeft: 'auto' }}>
+        <span className="bp-legend-note">
           {golf
             ? `Device comes from Clubhouse sessions, recorded only ${SIGNALS_ON}.`
             : 'BaseballHelm sends no Clubhouse signals, so device and per-player games are not measured.'}

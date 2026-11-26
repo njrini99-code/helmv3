@@ -126,7 +126,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
             {params.hideTest ? 'Show test and demo' : 'Hide test and demo'}
           </Link>
           <span data-br={BR.teams.copy} style={{ marginLeft: 'auto' }}>
-            <CopyReportButton report={teamsReport(shown, now)} variant="labeled" size="sm" label="Copy team list" />
+            <CopyReportButton report={teamsReport(shown, now)} variant="labeled" size="sm" label="Copy team list" className="bs-copy" />
           </span>
         </div>
 
@@ -170,7 +170,7 @@ function StateStrip({ counts, rows }: { counts: Record<TeamState, number>; rows:
   const order: TeamState[] = ['active', 'slipping', 'dormant', 'never'];
   const blocks = [...rows].sort((a, b) => order.indexOf(a.state) - order.indexOf(b.state));
   return (
-    <div className="bs-panel" style={{ minWidth: 300, overflow: 'hidden' }}>
+    <div className="bs-panel bp-strip-panel">
       <div className="bp-states">
         {order.map((s) => (
           <div key={s} className="bp-state">

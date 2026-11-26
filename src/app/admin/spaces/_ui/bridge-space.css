@@ -36,12 +36,30 @@
   --bs-cta-ink: #ffffff;
   --bs-radius: 22px;
   --bs-shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 1px 2px rgb(20 40 30 / 0.06);
+  /* The press tint laid over a row or card while a finger is on it (touch only, no transition). */
+  --bs-press: rgb(20 40 30 / 0.06);
+  /* Side gutters: 32px on a wide screen, 16px on a phone, never inside the notch or the rounded corners. */
+  --bs-gutter: 32px;
 
   background: radial-gradient(1000px 520px at 50% -12%, var(--bs-glow), transparent 70%), var(--bs-bg);
   color: var(--bs-ink);
   font-variant-numeric: tabular-nums;
   /* The space owns the whole canvas under the shell, even when its content is short. */
-  min-height: 100dvh;
+  min-height: calc(100dvh - var(--fw-shell-offset, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * The space owns its frame. The admin shell pads every page (px-6 / sm:px-8 / lg:px-12, pt-8, max-width 1280px),
+ * which on a phone stacked a second gutter inside ours (40px a side) and boxed the space's own canvas. While a space
+ * is on screen, its content column drops the side and top padding and the width cap; the bottom padding, which
+ * clears the home indicator and the bottom tab bar, stays the shell's.
+ */
+[data-slot='fw-shell-content']:has(.bs > .bs-main) {
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 0;
+  max-width: none;
 }
 
 .dark .bs,
@@ -70,20 +88,26 @@
   --bs-cta: #8fe3b0;
   --bs-cta-ink: #06120c;
   --bs-shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset;
+  --bs-press: rgb(255 255 255 / 0.06);
 }
 
 .bs-main {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 40px 32px 72px;
+  padding: 40px max(var(--bs-gutter), env(safe-area-inset-right, 0px)) 72px max(var(--bs-gutter), env(safe-area-inset-left, 0px));
   display: flex;
   flex-direction: column;
   gap: 28px;
-  /* Long tokens (file names, codes) wrap instead of pushing the page wider than a phone. */
-  overflow-wrap: anywhere;
+  /*
+   * Words wrap whole; only a word longer than its line breaks. `anywhere` lives on the few elements that hold long
+   * unbreakable tokens (.bs-mono, .bs-chip, .bs-panel-note, decision titles), because on a whole column it lets
+   * table cells and flex items shrink to one letter a line.
+   */
+  overflow-wrap: break-word;
 }
 @media (max-width: 640px) {
-  .bs-main { padding: 24px 16px 56px; gap: 20px; }
+  .bs { --bs-gutter: 16px; }
+  .bs-main { padding-top: 20px; padding-bottom: 48px; gap: 20px; }
 }
 
 .bs-eyebrow {
@@ -94,9 +118,20 @@
   color: var(--bs-eyebrow);
 }
 
+/* The space header: copy on the left, an optional aside (a state strip, an action) right, below it on a phone. */
+.bs-header { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; }
+.bs-header-main { flex: 1 1 600px; min-width: 0; }
+.bs-header-badges { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.bs-header-aside { flex: 0 1 auto; min-width: 0; }
+@media (max-width: 640px) {
+  .bs-header { gap: 16px; }
+  .bs-header-aside { flex: 1 1 100%; }
+}
+
 .bs-headline {
   margin: 10px 0 12px;
-  font-size: clamp(40px, 6vw, 68px);
+  /* 34px on a 390 phone, 68px from about 1100px wide. */
+  font-size: clamp(34px, 3.4vw + 21px, 68px);
   line-height: 1;
   font-weight: 600;
   letter-spacing: -0.04em;
@@ -127,7 +162,7 @@
   gap: 8px 12px;
   padding: 20px 22px 10px;
 }
-.bs-panel-note { font-size: 13px; color: var(--bs-ink-3); }
+.bs-panel-note { font-size: 13px; color: var(--bs-ink-3); overflow-wrap: anywhere; }
 
 .bs-row {
   border-top: 1px solid var(--bs-line);
@@ -141,6 +176,11 @@
 }
 .bs-grid > * { flex: 1 1 260px; }
 .bs-grid-wide > * { flex: 1 1 520px; }
+@media (max-width: 640px) {
+  /* A grid of Stat tiles goes two by two on a phone; a grid of panels stays one a row. */
+  .bs-grid-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .bs-grid-stats > .bs-panel-pad { padding: 14px 14px 16px; }
+}
 
 .bs-stat-value {
   font-size: 40px;
@@ -150,6 +190,9 @@
   margin-top: 6px;
 }
 .bs-stat-sub { font-size: 13px; color: var(--bs-ink-3); margin-top: 4px; }
+@media (max-width: 640px) {
+  .bs-stat-value { font-size: 30px; }
+}
 
 .bs-pill {
   display: inline-flex;
@@ -167,6 +210,7 @@
 .bs-mono {
   font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
   font-size: 12px;
+  overflow-wrap: anywhere;
 }
 .bs-chip {
   font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
@@ -175,7 +219,8 @@
   border: 1px solid var(--bs-line-strong);
   border-radius: 7px;
   padding: 2px 7px;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .bs-tone-good { color: var(--bs-good); }
@@ -208,7 +253,13 @@
   font-weight: 600;
   text-decoration: none;
 }
-.bs-link:hover { text-decoration: underline; }
+@media (hover: hover) {
+  .bs-link:hover { text-decoration: underline; }
+}
+/* One focus ring for anything a keyboard reaches; the tap highlight is off, so focus has to be this visible. */
+.bs a:focus-visible,
+.bs button:focus-visible,
+.bs summary:focus-visible,
 .bs-link:focus-visible,
 .bs-tab:focus-visible,
 .bs-button:focus-visible,
@@ -217,17 +268,32 @@
   outline-offset: 2px;
 }
 
+/*
+ * A segmented control. It stays one line at every width: on a phone the options scroll sideways under the finger
+ * (snap, no scrollbar) instead of wrapping into stacked pill rows.
+ */
 .bs-tabs {
   display: inline-flex;
+  flex-wrap: nowrap;
   gap: 4px;
   padding: 4px;
+  max-width: 100%;
   border-radius: 14px;
   background: var(--bs-panel-2);
   border: 1px solid var(--bs-line);
-  flex-wrap: wrap;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 4px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+.bs-tabs::-webkit-scrollbar { display: none; }
+/* A control row sitting directly in the page column keeps its own width instead of stretching across it. */
+.bs-main > .bs-tabs { align-self: flex-start; }
 .bs-tab {
   display: inline-flex;
+  flex: none;
   align-items: center;
   gap: 8px;
   min-height: 40px;
@@ -235,8 +301,13 @@
   border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
+  white-space: nowrap;
   color: var(--bs-ink-2);
   text-decoration: none;
+  scroll-snap-align: start;
+}
+@media (hover: none), (max-width: 640px) {
+  .bs-tab { min-height: 44px; }
 }
 .bs-tab[aria-current='page'],
 .bs-tab[aria-selected='true'] {
@@ -273,7 +344,9 @@
   text-decoration: none;
   transition: border-color 160ms ease;
 }
-.bs-card-link:hover { border-color: var(--bs-line-strong); }
+@media (hover: hover) {
+  .bs-card-link:hover { border-color: var(--bs-line-strong); }
+}
 @media (prefers-reduced-motion: reduce) {
   .bs-card-link { transition: none; }
 }
@@ -298,6 +371,89 @@
   vertical-align: middle;
 }
 .bs-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/*
+ * A table that becomes a card per row below 900px (People's one-team table, Speed's pages). Each cell carries a
+ * `.bs-cell-label`, hidden while the table is a table. The card is a four-column grid: `.bs-cell-head` (the row's
+ * name) and `.bs-cell-wide` span it, `.bs-cell-half` takes half, any other cell a quarter. The header row is hidden,
+ * so a table that sorts by its headers needs a sort control above the cards.
+ */
+.bs-cell-label { display: none; }
+.bs-table .bs-num { text-align: right; }
+@media (max-width: 899px) {
+  .bs-table-stack,
+  .bs-table-stack tbody { display: block; }
+  .bs-table-stack thead { display: none; }
+  .bs-table-stack tr {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px 12px;
+    padding: 16px;
+    border-top: 1px solid var(--bs-line);
+  }
+  .bs-table-stack td {
+    display: block;
+    grid-column: span 1;
+    border-top: 0;
+    padding: 0;
+    min-width: 0;
+  }
+  .bs-table-stack .bs-num { text-align: left; }
+  .bs-table-stack .bs-cell-half { grid-column: span 2; }
+  .bs-table-stack .bs-cell-head,
+  .bs-table-stack .bs-cell-wide { grid-column: 1 / -1; }
+  .bs-table-stack .bs-cell-label {
+    display: block;
+    margin-bottom: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    color: var(--bs-ink-3);
+  }
+}
+@media (min-width: 600px) and (max-width: 899px) {
+  .bs-table-stack tr { padding: 16px 22px; }
+}
+
+/* The Fairway copy control, sized as the space's own 44px secondary action (via its className). */
+.bs .bs-copy {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  height: auto;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--bs-line-strong);
+  background: var(--bs-panel-2);
+  color: var(--bs-ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: none;
+}
+.bs .bs-copy svg { flex: none; }
+@media (hover: hover) {
+  .bs .bs-copy:hover { border-color: var(--bs-ink-3); background: var(--bs-panel-2); }
+}
+
+/*
+ * Touch press states: a flat tint over whatever the row or card already shows (its wash included), on while the
+ * finger is down and gone on release. No transition and no scale, so nothing moves.
+ */
+@media (hover: none) {
+  .bs-card-link:active,
+  .bs-tab:active,
+  .bs-button:active,
+  .bs .bs-copy:active {
+    background-image: linear-gradient(var(--bs-press), var(--bs-press));
+  }
+}
 
 .bs-dot {
   display: inline-block;

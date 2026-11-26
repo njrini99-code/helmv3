@@ -43,9 +43,9 @@ export function SpaceHeader({
   aside?: ReactNode;
 }) {
   return (
-    <section style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: 20 }}>
-      <div style={{ flex: '1 1 600px', minWidth: 0 }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+    <section className="bs-header">
+      <div className="bs-header-main">
+        <div className="bs-header-badges">
           <span className="bs-eyebrow">{eyebrow}</span>
           {badges}
         </div>
@@ -55,7 +55,7 @@ export function SpaceHeader({
         </h1>
         {lede ? <p className="bs-lede">{lede}</p> : null}
       </div>
-      {aside ? <div style={{ flex: '0 1 auto' }}>{aside}</div> : null}
+      {aside ? <div className="bs-header-aside">{aside}</div> : null}
     </section>
   );
 }

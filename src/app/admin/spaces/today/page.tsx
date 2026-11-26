@@ -176,7 +176,7 @@ export default async function TodaySpacePage() {
         }
         aside={
           <span data-br={BR.today.copy}>
-            <CopyReportButton report={report} variant="labeled" label="Copy report" />
+            <CopyReportButton report={report} variant="labeled" label="Copy report" className="bs-copy" />
           </span>
         }
       />

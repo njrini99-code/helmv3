@@ -75,7 +75,9 @@
   font-size: 15px;
 }
 .bs .bs-ask-count { font-size: 17px; font-weight: 600; }
-.bs a.bs-ask:hover { background: var(--bs-panel-2); }
+@media (max-width: 640px) {
+  .bs .bs-ask { padding: 8px 16px; gap: 10px; grid-template-columns: minmax(32px, auto) 1fr auto; }
+}
 .bs a.bs-ask:focus-visible { outline: 2px solid var(--bs-good); outline-offset: -2px; }
 .bs .bs-chev { color: var(--bs-ink-3); flex: none; }
 
@@ -85,6 +87,7 @@
   grid-template-columns: 48px 10px 1fr;
   align-items: baseline;
   gap: 10px;
+  min-height: 44px;
   padding: 9px 22px;
   color: var(--bs-ink);
   text-decoration: none;
@@ -92,7 +95,7 @@
   line-height: 1.4;
 }
 .bs .bs-since-row .bs-dot { transform: translateY(-1px); }
-.bs a.bs-since-row:hover .bs-since-text { text-decoration: underline; }
+
 .bs a.bs-since-row:focus-visible { outline: 2px solid var(--bs-good); outline-offset: -2px; border-radius: 8px; }
 .bs .bs-since-time { font-size: 13px; color: var(--bs-ink-3); }
 .bs .bs-since-text { min-width: 0; overflow-wrap: anywhere; }
@@ -143,7 +146,10 @@
 }
 .bs .bs-feature-name .bs-dot { margin-top: 5px; }
 .bs .bs-feature-n { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; }
-.bs .bs-feature-quiet { opacity: 0.78; }
+/* A feature nobody used reads quieter through its colours, never through opacity on text (AA in both themes). */
+.bs .bs-feature-quiet { background: transparent; border-style: dashed; }
+.bs .bs-feature-quiet .bs-feature-name,
+.bs .bs-feature-quiet .bs-feature-n { color: var(--bs-ink-2); }
 
 .bs .bs-tablinks { display: flex; flex-wrap: wrap; gap: 8px; }
 .bs .bs-tablink {
@@ -160,7 +166,7 @@
   font-size: 14px;
   font-weight: 600;
 }
-.bs .bs-tablink:hover { border-color: var(--bs-ink-3); }
+
 .bs .bs-tablink:focus-visible { outline: 2px solid var(--bs-good); outline-offset: 2px; }
 .bs .bs-tablink small { font-size: 12px; font-weight: 500; color: var(--bs-ink-3); }
 
@@ -175,7 +181,7 @@
   color: var(--bs-ink);
   text-decoration: none;
 }
-.bs a.bs-release:hover { background: var(--bs-panel-2); }
+
 .bs a.bs-release:focus-visible { outline: 2px solid var(--bs-good); outline-offset: -2px; }
 .bs .bs-release-msg { font-size: 14px; color: var(--bs-ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bs .bs-release-meta { font-size: 13px; color: var(--bs-ink-3); }
@@ -193,10 +199,10 @@
   color: var(--bs-ink);
   text-decoration: none;
 }
-.bs a.bs-decision:hover { background: var(--bs-panel-2); }
+
 .bs a.bs-decision:focus-visible { outline: 2px solid var(--bs-good); outline-offset: -2px; }
 .bs .bs-decision-title { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
-.bs .bs-decision-why { font-size: 14px; line-height: 1.45; color: var(--bs-ink-2); grid-column: 1 / -1; max-width: 90ch; }
+.bs .bs-decision-why { font-size: 14px; line-height: 1.45; color: var(--bs-ink-2); grid-column: 1 / -1; max-width: 90ch; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .bs .bs-decision { padding: 12px 16px; }
 }
@@ -205,8 +211,29 @@
 .bs .bs-kv dt { color: var(--bs-ink-2); }
 .bs .bs-kv dd { margin: 0; font-weight: 600; text-align: right; }
 
-.bs .bs-note { font-size: 13px; line-height: 1.45; color: var(--bs-ink-3); max-width: 90ch; }
+.bs .bs-note { font-size: 13px; line-height: 1.45; color: var(--bs-ink-3); max-width: 90ch; overflow-wrap: anywhere; }
 .bs .bs-inline-state { padding: 4px 22px 20px; font-size: 14px; color: var(--bs-ink-2); }
+@media (max-width: 640px) {
+  .bs .bs-inline-state { padding: 4px 16px 16px; }
+  .bs .bs-big { font-size: 44px; }
+  .bs .bs-tablinks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Hover only where a pointer hovers (a tap would leave it stuck on iOS); a press tint where it does not. */
+@media (hover: hover) {
+  .bs a.bs-ask:hover,
+  .bs a.bs-release:hover,
+  .bs a.bs-decision:hover { background: var(--bs-panel-2); }
+  .bs a.bs-since-row:hover .bs-since-text { text-decoration: underline; }
+  .bs .bs-tablink:hover { border-color: var(--bs-ink-3); }
+}
+@media (hover: none) {
+  .bs a.bs-ask:active,
+  .bs a.bs-release:active,
+  .bs a.bs-decision:active,
+  .bs a.bs-since-row:active,
+  .bs .bs-tablink:active { background-image: linear-gradient(var(--bs-press), var(--bs-press)); }
+}
 
 .bs .bs-section-title {
   margin: 0;
