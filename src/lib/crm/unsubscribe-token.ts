@@ -18,7 +18,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto';
 // CRM_UNSUB_SECRET is the whole authorization on this endpoint (see route.ts
 // header) -- a hardcoded fallback here IS the production key the moment the
 // env var is unset, which is exactly what happened (found 2026-08-01, see
-// scripts/check-env-secret-fallbacks.mjs). Fail closed on SIGNING instead,
+// scripts/checks/check-env-secret-fallbacks.mjs). Fail closed on SIGNING instead,
 // mirroring createAdminClient()'s missing-key behaviour. Must be set in BOTH
 // Vercel and whatever env scripts/crm/process-sequence-batch.mjs runs under -- the
 // two must produce byte-identical tokens.

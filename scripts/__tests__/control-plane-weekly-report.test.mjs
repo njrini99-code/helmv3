@@ -9,7 +9,7 @@ import {
   evaluateDependabot,
   evaluateStaleNoPrBranches,
   summarizeGitleaksFindings,
-} from '../control-plane-weekly-report.mjs';
+} from '../checks/control-plane-weekly-report.mjs';
 
 describe('repoSlug', () => {
   it('prefers GITHUB_REPOSITORY when set (the value Actions provides)', () => {

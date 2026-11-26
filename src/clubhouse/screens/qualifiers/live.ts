@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { chReport } from '../../lib/track';
-import { joinLiveTopic, type LiveRealtime } from '../../live/channel';
+import { channelDropReporter, joinLiveTopic, type LiveRealtime } from '../../live/channel';
 import { parseBroadcast } from '../../live/live-rounds-adapter';
 
 /**
@@ -157,6 +156,8 @@ export function useLiveStandings(qualifierId: string, enabled: boolean, version?
     const timers = gate.current;
     const seen = new Map<string, RoundMark>();
     dispatch({ type: 'reset' });
+    // A drop the channel rejoins from is the network; only an outage reaches the Bridge (2169818a).
+    const reportDrop = channelDropReporter('qualifier realtime channel error', 'qualifiers.live');
     const sb = createClient();
     const channel = sb
       .channel(`ch-qualifier-${qualifierId}`)
@@ -169,8 +170,9 @@ export function useLiveStandings(qualifierId: string, enabled: boolean, version?
       })
       .subscribe((status) => {
         if (!alive) return;
-        // A dropped feed is reported and shown: the chip says Paused, with the time of the standings it still has.
-        if (status === 'CHANNEL_ERROR') chReport(new Error('qualifier realtime channel error'), { surface: 'qualifiers.live', severity: 'low' });
+        // A dropped feed is shown at once (the chip says Paused, with the time of the standings it still has) and reported
+        // only when it stays down.
+        reportDrop(status);
         dispatch({ type: 'channel', status });
       });
     return () => {

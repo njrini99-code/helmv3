@@ -41,7 +41,7 @@
  *     GENERATED_TRUTH, CURRENT_FEATURE, PROCESS_CONTRACT, RUNBOOK, POLICY,
  *     DESIGN_SPEC, STATE_SNAPSHOT, AGENT_SKILL — and ratchets the total
  *     against `config/baselines/.dead-refs-baseline.json`. Same shape as
- *     scripts/markdown-lint-ratchet.mjs: the baseline may only fall, never
+ *     scripts/ratchets/markdown-lint-ratchet.mjs: the baseline may only fall, never
  *     rise; `--update` rewrites it from the current count.
  *   node scripts/knowledge/document-inventory.mjs --dead-refs --introduced-since <ref>
  *     CI's form: fails only for (doc, reference) pairs that are dead now and
@@ -445,7 +445,7 @@ function main() {
 }
 
 /**
- * --dead-refs. Same ratchet shape as scripts/markdown-lint-ratchet.mjs: the
+ * --dead-refs. Same ratchet shape as scripts/ratchets/markdown-lint-ratchet.mjs: the
  * baseline is a floor that may only fall. Scoped to LIVING_CATEGORIES —
  * ARCHIVE, HISTORY_LEDGER, PLAN, AUDIT_SNAPSHOT, ADR, INCIDENT, INDEX and
  * UNKNOWN are excluded, matching what the plan calls the living set.

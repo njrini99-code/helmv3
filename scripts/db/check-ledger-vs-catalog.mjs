@@ -6,7 +6,7 @@
  * WHAT THIS CHECKS THAT NOTHING ELSE DOES
  *
  * `scripts/db/migration-ledger-drift.mjs` compares VERSIONS: does every
- * ledger row have a local file and vice versa. `scripts/check-migration-ledger.mjs`
+ * ledger row have a local file and vice versa. `scripts/db/check-migration-ledger.mjs`
  * does the same reconciliation from a different transport. Neither looks
  * INSIDE a migration file — a version can be present on both sides while the
  * table, function, or policy it claims to create is missing from the live

@@ -51,7 +51,7 @@ beforeAll(async () => {
   // suite that rewrote a committed artifact as a side effect of running would
   // be a worse defect than the one it pins.
   docBefore = readDoc();
-  ({ VERCEL_MUTATING_TOOL_RE, vercelMutatingDenyHits } = await import('../gen-enforcement-inventory.mjs'));
+  ({ VERCEL_MUTATING_TOOL_RE, vercelMutatingDenyHits } = await import('../gen/gen-enforcement-inventory.mjs'));
   docAfter = readDoc();
 });
 
@@ -143,7 +143,7 @@ describe('vercelMutatingDenyHits — the Supabase exclusion is derived from the 
   });
 
   it('the generator carries no Supabase connector id literal', () => {
-    const src = readFileSync(resolve(REPO, 'scripts/gen-enforcement-inventory.mjs'), 'utf-8');
+    const src = readFileSync(resolve(REPO, 'scripts/gen/gen-enforcement-inventory.mjs'), 'utf-8');
     // Both halves of the old literal, checked outside comments: a comment may
     // record what the literal WAS, code may not carry it.
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');

@@ -43,7 +43,7 @@ src/lib/flags/never-gate.ts        the NEVER-GATE keyword check
 
 scripts/flags/lib.mjs              shared parse/validate/render (plain ESM)
 scripts/flags/generate-flags.mjs   the generator (refuses on a violation)
-scripts/check-feature-flags.mjs    the CI governance gate (npm run flags:check)
+scripts/checks/check-feature-flags.mjs    the CI governance gate (npm run flags:check)
 ```
 
 **Why two checkers instead of one.** The generator and `flags:check` both
@@ -121,14 +121,14 @@ above):
 
 1. `scripts/flags/generate-flags.mjs` refuses to write
    `registry.generated.ts` at all while any flag has a NEVER-GATE hit.
-2. `scripts/check-feature-flags.mjs` (`npm run flags:check`, CI) reports the
+2. `scripts/checks/check-feature-flags.mjs` (`npm run flags:check`, CI) reports the
    same violation directly against the YAML, independent of the generated
    file.
 
 ## The expiry / governance gate — `npm run flags:check`
 
 Runs `flags:generate -- --check` (registry.generated.ts must be current)
-then `scripts/check-feature-flags.mjs`, which fails the build on:
+then `scripts/checks/check-feature-flags.mjs`, which fails the build on:
 
 - an **expired flag still `active`** — `expires_at` in the past, `status`
   not moved to `archived`
@@ -142,7 +142,7 @@ named, `continue-on-error: true` step (same pattern as every other check in
 that job — one failure never hides another; the aggregate step fails the
 job and prints every non-`success` step by name).
 
-`scripts/check-feature-flags.mjs`'s exit codes follow this repo's
+`scripts/checks/check-feature-flags.mjs`'s exit codes follow this repo's
 `guards`/`control-plane:verify` convention: `0` clean, `1` a real governance
 violation (printed by `feature_id` and rule), `2` the YAML itself could not
 be read or parsed — an infrastructure failure, never presented as a pass.

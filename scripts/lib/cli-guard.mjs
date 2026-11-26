@@ -28,7 +28,7 @@
 
 /**
  * @typedef {object} CliSpec
- * @property {string} name        script path as run, e.g. "scripts/run-sql.mjs"
+ * @property {string} name        script path as run, e.g. "scripts/db/run-sql.mjs"
  * @property {string} summary     one or two sentences: what it does and to what
  * @property {string} [usage]     argument synopsis after the script name
  * @property {Array<[string, string]>} [options]  [flag, description] pairs

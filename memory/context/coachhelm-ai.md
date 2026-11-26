@@ -10,7 +10,7 @@
 > below so `npm run docs:schema-drift` exempts them structurally
 > instead of carrying them in the numeric baseline. Removing this
 > reference entirely is a ratchet-down — re-run
-> `node scripts/check-doc-schema-drift.mjs --update` after.
+> `node scripts/checks/check-doc-schema-drift.mjs --update` after.
 
 <!-- schema-drift-absent: golf_insight_feedback, golf_insight_weights, golf_player_insight_preferences, golf_review_insights, golf_validations -->
 

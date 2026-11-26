@@ -22,6 +22,7 @@ vi.mock('@/app/golf/actions/qualifier-actions', () => ({ createGolfQualifier: vi
 vi.mock('@/app/golf/actions/qualifier-setup', () => ({ setQualifierEntrants: vi.fn(), setQualifierSquadSize: vi.fn() }));
 
 import { chReport } from '../lib/track';
+import { REPORT_AFTER_FAILURES } from '../live/channel';
 import { QualifierDetail } from '../screens/qualifiers/QualifierDetail';
 import { QualifiersList } from '../screens/qualifiers/QualifiersList';
 import { FEED_START, HIDDEN_LONG_MS, feedOf, feedReduce, useLiveStandings, type ChFeedEvent } from '../screens/qualifiers/live';
@@ -117,7 +118,16 @@ describe('P009-B2 an honest Live state', () => {
     expect(realtime.channel).toHaveBeenCalledTimes(1);
     act(() => first.handle.status('CHANNEL_ERROR'));
     expect(result.current.feed).toBe('paused');
-    expect(chReport).toHaveBeenCalledWith(expect.objectContaining({ message: 'qualifier realtime channel error' }), { surface: 'qualifiers.live', severity: 'low' });
+    // Shown at once, reported only when the feed stays down (2169818a): one drop is the network.
+    expect(chReport).not.toHaveBeenCalled();
+    act(() => {
+      for (let i = 1; i < REPORT_AFTER_FAILURES; i += 1) first.handle.status('CHANNEL_ERROR');
+    });
+    expect(chReport).toHaveBeenCalledWith(expect.objectContaining({ message: 'qualifier realtime channel error' }), {
+      surface: 'qualifiers.live',
+      severity: 'low',
+      extra: { status: 'CHANNEL_ERROR', failures: REPORT_AFTER_FAILURES },
+    });
     // Refresh re-reads the page and, the feed being down, opens it again.
     const second = openChannel();
     act(() => result.current.refresh());

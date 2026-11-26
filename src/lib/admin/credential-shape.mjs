@@ -7,7 +7,7 @@
 /**
  * Per-key credential SHAPE validation — one implementation, three consumers.
  *
- *   scripts/check-helm-bridge-env.mjs   deploy-time env check (CI --drift too)
+ *   scripts/checks/check-helm-bridge-env.mjs   deploy-time env check (CI --drift too)
  *   src/lib/admin/sentry-api.ts          runtime reader
  *   src/lib/admin/vercel-api.ts          runtime reader
  *

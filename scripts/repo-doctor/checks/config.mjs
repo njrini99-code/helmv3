@@ -4,7 +4,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { check, Status } from '../result.mjs';
-import { coverage } from '../../check-vercelignore-coverage.mjs';
+import { coverage } from '../../checks/check-vercelignore-coverage.mjs';
 
 export const meta = { id: 'config', title: 'Scripts, Supabase root, deploy model, Vercel upload and cron routes' };
 

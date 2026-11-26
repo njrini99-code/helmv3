@@ -32,7 +32,7 @@ import * as dbObservability from './checks/db-observability.mjs';
 import * as dbLocal from './checks/db-local.mjs';
 import * as nodeVersion from './checks/node-version.mjs';
 import * as deps from './checks/deps.mjs';
-import * as settingsOwnership from '../check-settings-ownership.mjs';
+import * as settingsOwnership from '../checks/check-settings-ownership.mjs';
 import * as worktreeHygiene from './checks/worktree-hygiene.mjs';
 import * as diskHygiene from './checks/disk-hygiene.mjs';
 import * as routines from './checks/routines.mjs';

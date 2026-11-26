@@ -840,7 +840,7 @@
 - Also confirmed with a direct `sqlfluff lint ... --dialect postgres --rules
   core` run against exactly
   `supabase/migrations/20260902160000_postgres_checkpoints_reach_trace_steps.sql`:
-  zero violations, matching what `node scripts/sql-lint-ratchet.mjs`'s
+  zero violations, matching what `node scripts/ratchets/sql-lint-ratchet.mjs`'s
   no-regressions result implied but did not, on its own, prove for this one
   file.
 - End-to-end, local Docker stack (migration applied there via `psql -f`,
@@ -855,10 +855,10 @@
 - Verified, each captured to a file, exit code checked: `npm run test:rls`
   (74/74 files, local Docker stack — 0), `npx vitest run
   src/app/admin/traces src/lib/observability` (9 files / 82 tests — 0),
-  `npm run typecheck` (0), `npm run lint` (0), `node scripts/sql-lint-ratchet.mjs`
+  `npm run typecheck` (0), `npm run lint` (0), `node scripts/ratchets/sql-lint-ratchet.mjs`
   (0 regressions — the new migration file itself lints clean under
   `sqlfluff --dialect postgres --rules core`, zero violations),
-  `node scripts/markdown-lint-ratchet.mjs` (0),
+  `node scripts/ratchets/markdown-lint-ratchet.mjs` (0),
   `node scripts/knowledge/document-inventory.mjs --check` (0),
   `tsx scripts/knowledge/gen-feature-map.ts --check` (0). Not run
   locally: `npm run build` (no `.env.local` in this worktree; CI builds).
@@ -936,8 +936,8 @@
   finding (2) with a note that it is closed by `20260902170000`, and that
   the two should apply no later than each other, ideally in the same batch.
 - Verified, each captured to a file, exit code checked: `npm run test:rls`
-  (74/74 files, local Docker stack — 0), `node scripts/sql-lint-ratchet.mjs`
-  (0 regressions), `node scripts/markdown-lint-ratchet.mjs` (0, re-run after
+  (74/74 files, local Docker stack — 0), `node scripts/ratchets/sql-lint-ratchet.mjs`
+  (0 regressions), `node scripts/ratchets/markdown-lint-ratchet.mjs` (0, re-run after
   the `HELD.md` edit), `npm run typecheck` (0), `npm run lint` (0),
   `node scripts/knowledge/document-inventory.mjs --check` (0, no regen
   needed). Not run locally: `npm run build` (no `.env.local` in this

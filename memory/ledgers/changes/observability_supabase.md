@@ -250,7 +250,7 @@
     `observeEdgeInvoke` into the one `functions.invoke(` call site
     (`push.ts`). One additive metric (`helm.edge_function.failure`).
     Deployment is an OWNER action, not performed.
-  - **B6** (SHA `b04da98a1`): extended `scripts/supabase-error-audit.mjs`
+  - **B6** (SHA `b04da98a1`): extended `scripts/audits/supabase-error-audit.mjs`
     with a report-only Auth/Storage/Realtime/Edge coverage section — zero
     effect on the existing ratchet's exit code.
 - Why: brief §10–13 (service-specific observability), §36–39 (retry/
@@ -399,7 +399,7 @@
   src/test/observability/supabase-service-wiring.test.ts
   src/test/auth/password-reset-observability.test.ts
   src/lib/admin/__tests__/github-feedback-storage-observability.test.ts` —
-  23 files, 375 tests, exit 0. `node scripts/supabase-error-audit.mjs` exit
+  23 files, 375 tests, exit 0. `node scripts/audits/supabase-error-audit.mjs` exit
   0, `baseline 1039, no regression`, Storage observed 6 -> 9.
   Both halves of the wiring contract test were MUTATION-CHECKED rather than
   assumed: renaming one wired action fails it, and turning one observer call

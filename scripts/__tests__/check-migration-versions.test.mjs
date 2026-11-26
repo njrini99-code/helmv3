@@ -2,7 +2,7 @@
 // never executed. Promoted to vitest (issue #1194).
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { analyzeMigrationVersions, versionOf } from '../check-migration-versions.mjs';
+import { analyzeMigrationVersions, versionOf } from '../db/check-migration-versions.mjs';
 
 test('versionOf extracts the leading timestamp segment', () => {
   assert.equal(versionOf('20260624000220_baseball_passport.sql'), '20260624000220');

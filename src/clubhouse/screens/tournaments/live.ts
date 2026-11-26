@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { chReport } from '../../lib/track';
+import { channelDropReporter } from '../../live/channel';
 import { CH_DUR } from '../../lib/motion';
 
 /** A burst of changes (a tournament's three rounds saved together) becomes one re-read, as the calendar's does. */
@@ -32,6 +32,8 @@ export function useSeasonHomeLive(teamId: string, enabled: boolean): void {
       window.clearTimeout(timer);
       timer = window.setTimeout(() => router.refresh(), TOUR_HOME_LIVE_DEBOUNCE_MS);
     };
+    // A drop the channel rejoins from is the network; only an outage reaches the Bridge (2169818a).
+    const reportDrop = channelDropReporter('season home realtime channel error', 'tournaments.home.live');
     const sb = createClient();
     const channel = sb
       .channel(`ch-tour-home-${teamId}`)
@@ -40,11 +42,10 @@ export function useSeasonHomeLive(teamId: string, enabled: boolean): void {
       })
       .subscribe((status) => {
         if (!alive) return;
+        reportDrop(status);
         if (status === 'SUBSCRIBED') {
           if (subscribed) reread();
           subscribed = true;
-        } else if (status === 'CHANNEL_ERROR') {
-          chReport(new Error('season home realtime channel error'), { surface: 'tournaments.home.live', severity: 'low' });
         }
       });
     return () => {

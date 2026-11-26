@@ -36,7 +36,7 @@ import { PanelAllClear, PanelNoData } from './PanelStates';
  * that upstream; these components only take the answer.
  *
  * COLOUR IS NEVER THE ONLY SIGNAL — every stage cell carries its state as a
- * word beside the pill, same rule as `TruthStrip.tsx` and `AttentionQueue`.
+ * word beside the pill, same rule as `AttentionQueue` (and `TruthStrip.tsx`, deleted 2026-11-25).
  */
 
 const STATE_TONE: Readonly<Record<StageFlowState, FwStatusTone>> = {

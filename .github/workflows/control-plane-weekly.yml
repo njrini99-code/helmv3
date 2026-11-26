@@ -18,11 +18,11 @@ name: Control plane weekly
 #                                     gitleaks step on purpose: a secret that
 #                                     was ever committed, anywhere in history,
 #                                     is still a secret.
-#   4. control-plane-verify-static    `node scripts/control-plane-verify.mjs
+#   4. control-plane-verify-static    `node scripts/checks/control-plane-verify.mjs
 #                                     --static` exits 0
 #
 # All four logic + the soft "no PR ever, stale > 30 days" branch listing live
-# in scripts/control-plane-weekly-report.mjs, not inline here — see that
+# in scripts/checks/control-plane-weekly-report.mjs, not inline here — see that
 # file's header. It prints one Markdown report to stdout and exits 1 if any
 # hard check failed; this workflow's job just runs it and posts the report.
 #
@@ -109,7 +109,7 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node scripts/control-plane-weekly-report.mjs | tee /tmp/control-plane-weekly-report.md
+        run: node scripts/checks/control-plane-weekly-report.mjs | tee /tmp/control-plane-weekly-report.md
 
       # `if: always()` deliberately — the whole point of tracking this in ONE
       # issue is that a failure must still be visible. A step gated on

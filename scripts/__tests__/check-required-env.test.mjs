@@ -2,7 +2,7 @@
 // never executed. Promoted to vitest (issue #1194).
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { checkRequiredEnv } from '../check-required-env.mjs';
+import { checkRequiredEnv } from '../checks/check-required-env.mjs';
 
 // What a production build needs on top of Supabase (2026-10-07): the cron
 // secret, a KV/Upstash endpoint and token, a Sentry DSN and upload token.

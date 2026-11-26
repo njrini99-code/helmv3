@@ -5,7 +5,7 @@ import rule from '../../../eslint-rules/no-unchecked-supabase-error.mjs';
 /**
  * A canary for the ratchet itself.
  *
- * The rule is enforced by a COUNT (scripts/supabase-error-audit.mjs), and a
+ * The rule is enforced by a COUNT (scripts/audits/supabase-error-audit.mjs), and a
  * count cannot tell "nothing to find" from "the rule stopped finding". It
  * already reported a file as clean while a shipped bug sat in it: C16, the golf
  * calendar rendering an empty season for a rostered player whose membership

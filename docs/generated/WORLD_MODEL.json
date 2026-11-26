@@ -1714,8 +1714,33 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/check-feature-flags.mjs",
-        "pattern": "scripts/check-feature-flags.mjs",
+        "id": "services:scripts/audits/fail-open-audit.mjs",
+        "pattern": "scripts/audits/fail-open-audit.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/audits/paginated-read-audit.mjs",
+        "pattern": "scripts/audits/paginated-read-audit.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/audits/supabase-error-audit.mjs",
+        "pattern": "scripts/audits/supabase-error-audit.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/checks/check-feature-flags.mjs",
+        "pattern": "scripts/checks/check-feature-flags.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/checks/control-plane-verify.mjs",
+        "pattern": "scripts/checks/control-plane-verify.mjs",
+        "category": "services"
+      },
+      {
+        "id": "services:scripts/checks/lint-ci.mjs",
+        "pattern": "scripts/checks/lint-ci.mjs",
         "category": "services"
       },
       {
@@ -1751,16 +1776,6 @@
       {
         "id": "services:scripts/contracts/**",
         "pattern": "scripts/contracts/**",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/control-plane-verify.mjs",
-        "pattern": "scripts/control-plane-verify.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/fail-open-audit.mjs",
-        "pattern": "scripts/fail-open-audit.mjs",
         "category": "services"
       },
       {
@@ -1804,16 +1819,6 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/lint-ci.mjs",
-        "pattern": "scripts/lint-ci.mjs",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/lint-ratchet.mjs",
-        "pattern": "scripts/lint-ratchet.mjs",
-        "category": "services"
-      },
-      {
         "id": "services:scripts/new-worktree.sh",
         "pattern": "scripts/new-worktree.sh",
         "category": "services"
@@ -1829,8 +1834,8 @@
         "category": "services"
       },
       {
-        "id": "services:scripts/paginated-read-audit.mjs",
-        "pattern": "scripts/paginated-read-audit.mjs",
+        "id": "services:scripts/ratchets/lint-ratchet.mjs",
+        "pattern": "scripts/ratchets/lint-ratchet.mjs",
         "category": "services"
       },
       {
@@ -1866,11 +1871,6 @@
       {
         "id": "services:scripts/sql/strip-demo-seed-tags.sql",
         "pattern": "scripts/sql/strip-demo-seed-tags.sql",
-        "category": "services"
-      },
-      {
-        "id": "services:scripts/supabase-error-audit.mjs",
-        "pattern": "scripts/supabase-error-audit.mjs",
         "category": "services"
       },
       {
@@ -8512,13 +8512,13 @@
     },
     {
       "source": "admin_platform",
-      "target": "services:scripts/check-feature-flags.mjs",
+      "target": "services:scripts/checks/check-feature-flags.mjs",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/check-feature-flags.mjs"
+          "pattern": "scripts/checks/check-feature-flags.mjs"
         }
       ]
     },
@@ -18129,6 +18129,66 @@
     },
     {
       "source": "feature_awareness_system",
+      "target": "services:scripts/audits/fail-open-audit.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/audits/fail-open-audit.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/audits/paginated-read-audit.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/audits/paginated-read-audit.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/audits/supabase-error-audit.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/audits/supabase-error-audit.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/checks/control-plane-verify.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/checks/control-plane-verify.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
+      "target": "services:scripts/checks/lint-ci.mjs",
+      "kind": "feature_service",
+      "evidence": [
+        {
+          "kind": "registry_glob",
+          "path": "memory/registry.yml",
+          "pattern": "scripts/checks/lint-ci.mjs"
+        }
+      ]
+    },
+    {
+      "source": "feature_awareness_system",
       "target": "services:scripts/claude.mjs",
       "kind": "feature_service",
       "evidence": [
@@ -18189,30 +18249,6 @@
     },
     {
       "source": "feature_awareness_system",
-      "target": "services:scripts/control-plane-verify.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/control-plane-verify.mjs"
-        }
-      ]
-    },
-    {
-      "source": "feature_awareness_system",
-      "target": "services:scripts/fail-open-audit.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/fail-open-audit.mjs"
-        }
-      ]
-    },
-    {
-      "source": "feature_awareness_system",
       "target": "services:scripts/knowledge/**",
       "kind": "feature_service",
       "evidence": [
@@ -18261,30 +18297,6 @@
     },
     {
       "source": "feature_awareness_system",
-      "target": "services:scripts/lint-ci.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/lint-ci.mjs"
-        }
-      ]
-    },
-    {
-      "source": "feature_awareness_system",
-      "target": "services:scripts/lint-ratchet.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/lint-ratchet.mjs"
-        }
-      ]
-    },
-    {
-      "source": "feature_awareness_system",
       "target": "services:scripts/new-worktree.sh",
       "kind": "feature_service",
       "evidence": [
@@ -18297,13 +18309,13 @@
     },
     {
       "source": "feature_awareness_system",
-      "target": "services:scripts/paginated-read-audit.mjs",
+      "target": "services:scripts/ratchets/lint-ratchet.mjs",
       "kind": "feature_service",
       "evidence": [
         {
           "kind": "registry_glob",
           "path": "memory/registry.yml",
-          "pattern": "scripts/paginated-read-audit.mjs"
+          "pattern": "scripts/ratchets/lint-ratchet.mjs"
         }
       ]
     },
@@ -18316,18 +18328,6 @@
           "kind": "registry_glob",
           "path": "memory/registry.yml",
           "pattern": "scripts/setup-hooks.mjs"
-        }
-      ]
-    },
-    {
-      "source": "feature_awareness_system",
-      "target": "services:scripts/supabase-error-audit.mjs",
-      "kind": "feature_service",
-      "evidence": [
-        {
-          "kind": "registry_glob",
-          "path": "memory/registry.yml",
-          "pattern": "scripts/supabase-error-audit.mjs"
         }
       ]
     },
