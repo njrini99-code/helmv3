@@ -165,6 +165,8 @@ export interface IngestInput {
 /** Drift rows one session's batch may add; the rest are still in the session's events. */
 export const MAX_DRIFT_ROWS_PER_BATCH = 5;
 const CONTROL_ID = /^CTL-P\d{3}-\d{3,}$/;
+/** The metrics a vital names in `act` (E8, use-signals.ts). */
+const VITAL_ACTS: ReadonlySet<string> = new Set(['INP', 'LCP', 'CLS']);
 
 function clampAt(at: number, now: number): number {
   return at < now - CLOCK_PAST_MS || at > now + CLOCK_FUTURE_MS ? now : at;
@@ -210,7 +212,8 @@ function addHourly(rows: Map<string, HourlyRow>, s: ChSignal, r: ResolvedSignal,
     kind: s.kind,
     outcome: s.outcome ?? '',
     // Only keys the graph knows go into the hourly key: an unknown act, control or code is one bucket, not a new row each.
-    act: r.actionId && s.act ? s.act : s.control && CONTROL_ID.test(s.control) ? s.control : '',
+    // A vital keeps its metric (INP, LCP, CLS): without it the three would merge into one CH-1954 histogram (B09, R-12).
+    act: r.actionId && s.act ? s.act : s.kind === 'vital' && s.act && VITAL_ACTS.has(s.act) ? s.act : s.control && CONTROL_ID.test(s.control) ? s.control : '',
     page_id: s.page,
     role: s.role,
     platform: s.platform,

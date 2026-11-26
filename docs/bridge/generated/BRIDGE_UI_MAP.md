@@ -6,17 +6,42 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 
 | Screen | Name | Route | Codes |
 | --- | --- | --- | --- |
+| B01 | Pulse | /admin | 14 |
 | B02 | Pages | /admin/clubhouse | 14 |
 | B03 | Controls | /admin/clubhouse/controls | 11 |
 | B04 | Actions | /admin/clubhouse/actions | 12 |
 | B05 | Codes | /admin/clubhouse/codes | 14 |
+| B06 | Incidents | /admin/errors | 11 |
+| B07 | Sessions | /admin/clubhouse/sessions | 12 |
+| B08 | People and teams | /admin/clubhouse/people | 10 |
+| B09 | Experience | /admin/clubhouse/experience | 9 |
+| B10 | Releases | /admin/clubhouse/releases | 10 |
 | B11 | Drift | /admin/clubhouse/drift | 8 |
 | B12 | Readiness | /admin/clubhouse/readiness | 13 |
 | B13 | Duet desk | /admin/clubhouse/duet | 12 |
 | B14 | Command palette | ⌘K, every /admin screen | 6 |
 | B15 | Shell | every /admin screen | 7 |
 
-97 codes in all.
+163 codes in all.
+
+## B01 Pulse
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-0101 | Page tile | Opens that page in B02 | `BR.pulse.pageTile` |
+| BR-0102 | Rising row | Opens the B05 code dossier | `BR.pulse.risingRow` |
+| BR-0103 | Action row | Opens the B04 action | `BR.pulse.actionRow` |
+| BR-0104 | Incident row | Opens B06 detail | `BR.pulse.incidentRow` |
+| BR-0105 | Release card | Opens B10 for that release | `BR.pulse.releaseCard` |
+| BR-0106 | Pipe dot | Opens B11 at the pipe panel | `BR.pulse.pipeDot` |
+| BR-0107 | Refresh (r) | Reads again; the screen stays up while it does | `BR.pulse.refresh` |
+| BR-0108 | Copy | A Markdown pulse report | `BR.pulse.copy` |
+| BR-0109 | Pause live | Stops auto-refresh (the existing AutoRefresh) | `BR.pulse.pauseLive` |
+| BR-0110 | Alert row | A rule hit (R-01 to R-12); the same list the digest sends | `BR.pulse.alertRow` |
+| BR-0190 | Loading | Skeleton while the screen reads | `BR.pulse.loading` |
+| BR-0191 | Empty | Nothing to show yet | `BR.pulse.empty` |
+| BR-0192 | Failed | The read failed; Try again | `BR.pulse.failed` |
+| BR-0193 | No signal yet | Live data is not flowing yet (the held migration or the switch) | `BR.pulse.noSignal` |
 
 ## B02 Pages
 
@@ -88,6 +113,83 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-0591 | Empty | Nothing in this scope, with the reason (xx91) | `BR.codes.empty` |
 | BR-0592 | Failed to load | The read failed; Try again re-requests it (xx92) | `BR.codes.failed` |
 | BR-0593 | No signal yet | Live data is not reaching the Bridge yet, so nothing is claimed (xx93) | `BR.codes.noSignal` |
+
+## B06 Incidents
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-0601 | Filter chips | Page · code · action · platform | `BR.incidents.filterChips` |
+| BR-0602 | ID chip | Opens B05 | `BR.incidents.idChip` |
+| BR-0603 | People count | Opens B07 filtered | `BR.incidents.peopleCount` |
+| BR-0604 | Resolve / Reopen | As now, now numbered | `BR.incidents.resolve` |
+| BR-0605 | Send to Duet | A pack to B13 | `BR.incidents.sendToDuet` |
+| BR-0606 | Copy report | As now, now with codes | `BR.incidents.copy` |
+| BR-0607 | Session link | Opens the session (B07) that hit this incident | `BR.incidents.sessionLink` |
+| BR-0690 | Loading | Skeleton while the screen reads | `BR.incidents.loading` |
+| BR-0691 | Empty | Nothing to show yet | `BR.incidents.empty` |
+| BR-0692 | Failed | The read failed; Try again | `BR.incidents.failed` |
+| BR-0693 | No signal yet | Live data is not flowing yet (the held migration or the switch) | `BR.incidents.noSignal` |
+
+## B07 Sessions
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-0701 | Session row | Opens the timeline | `BR.sessions.row` |
+| BR-0702 | Filters | Failure · role · platform · page · person · release | `BR.sessions.filters` |
+| BR-0703 | Mark | Shows its envelope | `BR.sessions.mark` |
+| BR-0704 | ID chip | Opens B05 | `BR.sessions.idChip` |
+| BR-0705 | Replay | Opens Sentry Replay at the moment | `BR.sessions.replay` |
+| BR-0706 | Person | Opens B08 | `BR.sessions.person` |
+| BR-0707 | Reproduce | A pack written as reproduction steps (route, role, taps, state link) | `BR.sessions.reproduce` |
+| BR-0708 | Copy | Copies the session as Markdown | `BR.sessions.copy` |
+| BR-0790 | Loading | Skeleton while the screen reads | `BR.sessions.loading` |
+| BR-0791 | Empty | Nothing to show yet | `BR.sessions.empty` |
+| BR-0792 | Failed | The read failed; Try again | `BR.sessions.failed` |
+| BR-0793 | No signal yet | Live data is not flowing yet (the held migration or the switch) | `BR.sessions.noSignal` |
+
+## B08 People and teams
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-0801 | Session row | Opens B07 | `BR.people.sessionRow` |
+| BR-0802 | Code row | Opens B05 filtered to this person or team | `BR.people.codeRow` |
+| BR-0803 | View as | The existing read-only view-as, audited | `BR.people.viewAs` |
+| BR-0804 | Account | Opens Users & Teams | `BR.people.account` |
+| BR-0805 | Context pack | Everything for this person or team | `BR.people.pack` |
+| BR-0806 | Copy | Copies the person or team as Markdown | `BR.people.copy` |
+| BR-0890 | Loading | Skeleton while the screen reads | `BR.people.loading` |
+| BR-0891 | Empty | Nothing to show yet | `BR.people.empty` |
+| BR-0892 | Failed | The read failed; Try again | `BR.people.failed` |
+| BR-0893 | No signal yet | Live data is not flowing yet (the held migration or the switch) | `BR.people.noSignal` |
+
+## B09 Experience
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-0901 | View rail | Vitals · Frustration · Waits · iOS app vs Safari | `BR.experience.viewRail` |
+| BR-0902 | Page row | Opens B02, Phone view | `BR.experience.pageRow` |
+| BR-0903 | Control row | Opens B03 | `BR.experience.controlRow` |
+| BR-0904 | Compare releases | Two releases side by side | `BR.experience.compareReleases` |
+| BR-0905 | Copy | Copies the experience view as Markdown | `BR.experience.copy` |
+| BR-0990 | Loading | Skeleton while the screen reads | `BR.experience.loading` |
+| BR-0991 | Empty | Nothing to show yet | `BR.experience.empty` |
+| BR-0992 | Failed | The read failed; Try again | `BR.experience.failed` |
+| BR-0993 | No signal yet | Live data is not flowing yet (the held migration or the switch) | `BR.experience.noSignal` |
+
+## B10 Releases
+
+| Code | Label | Does | In code |
+| --- | --- | --- | --- |
+| BR-1001 | Release row | Opens it | `BR.releases.row` |
+| BR-1002 | Compare with | Picks the base release | `BR.releases.compareWith` |
+| BR-1003 | Delta row | Opens B05 or B04 | `BR.releases.deltaRow` |
+| BR-1004 | PR | GitHub | `BR.releases.pr` |
+| BR-1005 | Context pack | A regression pack | `BR.releases.pack` |
+| BR-1006 | Copy | Copies the release diff as Markdown | `BR.releases.copy` |
+| BR-1090 | Loading | Skeleton while the screen reads | `BR.releases.loading` |
+| BR-1091 | Empty | Nothing to show yet | `BR.releases.empty` |
+| BR-1092 | Failed | The read failed; Try again | `BR.releases.failed` |
+| BR-1093 | No signal yet | Live data is not flowing yet (the held migration or the switch) | `BR.releases.noSignal` |
 
 ## B11 Drift
 

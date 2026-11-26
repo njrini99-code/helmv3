@@ -1,4 +1,6 @@
 import { logServerException } from '@/lib/server-error-logger';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
+import { ambientUiSurface, CLUBHOUSE_UI } from '@/lib/observability/ui-surface';
 import { shouldEmit, drainCollapsedCount } from '@/lib/admin/emit-throttle';
 import { scheduleBridgeWrite } from '@/lib/admin/schedule-bridge-write';
 import {
@@ -70,6 +72,26 @@ async function resolveObservedUser(): Promise<{ userId: string | null; userEmail
   }
 }
 
+/**
+ * E9 (Bridge plan §4.2): the server half of a Clubhouse action that failed: how long it ran, the Postgres or
+ * PostgREST code, and the table a message names, so the Bridge can tell the network from RLS from a constraint.
+ * Only for a request serving Clubhouse while the `clubhouse_signals` switch is on; it rides on the row the wrapper
+ * already writes, as `metadata.bridge`. Pure reads (the ambient UI is in memory); never throws.
+ */
+export function clubhouseServerHalf(failure: unknown, startedAt: number): Record<string, unknown> | null {
+  try {
+    if (ambientUiSurface() !== CLUBHOUSE_UI) return null;
+    if (!isFlagEnabled('clubhouse_signals', { skipTelemetry: true })) return null;
+    const f = failure && typeof failure === 'object' ? (failure as { code?: unknown; message?: unknown }) : {};
+    const code = typeof f.code === 'string' && /^[A-Z0-9]{3,10}$/.test(f.code) ? f.code : null;
+    const message = typeof f.message === 'string' ? f.message : '';
+    const table = /(?:table|relation) "?([a-z_][\w.]*)"?/i.exec(message)?.[1] ?? null;
+    return { origin: 'E9', kind: 'action', outcome: 'failure', durationMs: Math.max(0, Math.round(performance.now() - startedAt)), serverCode: code, table };
+  } catch {
+    return null;
+  }
+}
+
 export function withAdminObserved<Args extends unknown[], R>(
   name: string,
   opts: {
@@ -118,6 +140,8 @@ export function withAdminObserved<Args extends unknown[], R>(
     // site changes, so several log lines from one action finally share a key.
     // Nested wrapped actions reuse the outer scope (see runWithRequestContext).
     return runWithRequestContext({ action: name }, async () => {
+    // E9: a clock read only; nothing else happens on the success path.
+    const startedAt = performance.now();
     try {
       if (opts.demoSafe) {
         // Resolve the email ONCE and hand it to the guard, rather than letting
@@ -144,7 +168,9 @@ export function withAdminObserved<Args extends unknown[], R>(
         } catch {
           extraContext = {};
         }
+        const bridge = clubhouseServerHalf(extractActionSoftFailure(result), startedAt);
         await observeActionSoftFailure(result, {
+          ...(bridge ? { metadata: { bridge } } : {}),
           action: name,
           source: 'server_action',
           feature: opts.feature ?? null,
@@ -192,7 +218,11 @@ export function withAdminObserved<Args extends unknown[], R>(
                 playerId: extraContext.playerId ?? null,
                 teamId: extraContext.teamId ?? null,
                 route: extraContext.route ?? null,
-                ...(collapsedCount > 0 ? { metadata: { collapsed_count: collapsedCount } } : {}),
+                ...((): { metadata?: Record<string, unknown> } => {
+                  const bridge = clubhouseServerHalf(err, startedAt);
+                  const metadata = { ...(collapsedCount > 0 ? { collapsed_count: collapsedCount } : {}), ...(bridge ? { bridge } : {}) };
+                  return Object.keys(metadata).length ? { metadata } : {};
+                })(),
               }),
             );
           }

@@ -25,6 +25,9 @@ describe('ADMIN_NAV', () => {
       '/admin/clubhouse/actions',
       '/admin/clubhouse/codes',
       '/admin/clubhouse/readiness',
+      '/admin/clubhouse/sessions',
+      '/admin/clubhouse/experience',
+      '/admin/clubhouse/releases',
       '/admin/clubhouse/drift',
       '/admin/clubhouse/duet',
       '/admin/errors',
@@ -46,10 +49,11 @@ describe('ADMIN_NAV', () => {
       '/admin/engineering',
       '/admin/ben-leah',
     ]);
-    // PR 4: Drift took N, the last free letter; Duet desk has none (undefined),
-    // a deliberate change, because D and Q are retired shortcuts still in use.
+    // Sessions took N, the last free letter; Experience, Releases, Drift and the
+    // Duet desk have none (undefined), a deliberate change: the plan's letters
+    // for them are retired shortcuts still in use.
     expect(ADMIN_NAV.map((e) => e.key)).toEqual([
-      '1', 'H', 'I', 'J', 'C', 'M', 'N', undefined,
+      '1', 'H', 'I', 'J', 'C', 'M', 'N', undefined, undefined, undefined, undefined,
       '3', '0', '8', 'X', 'F', 'T',
       '7', '2', 'U',
       '9', 'K', '4', 'W',
@@ -79,15 +83,26 @@ describe('ADMIN_NAV', () => {
   it('the Clubhouse screens take letters no live or retired shortcut uses', () => {
     const clubhouse = ADMIN_NAV.filter((e) => e.section === 'Clubhouse' && e.href !== '/admin');
     for (const entry of clubhouse) {
-      // A Clubhouse screen with no free letter has no key at all (Duet desk), never a borrowed one.
+      // A Clubhouse screen with no free letter has no key at all, never a borrowed one.
       if (entry.key === undefined) continue;
       expect(entry.key, entry.href).toMatch(/^[A-Z]$/);
       expect(RETIRED_SHORTCUTS[entry.key], `${entry.key} is a retired shortcut`).toBeUndefined();
     }
     expect(hrefForShortcut('C')).toBe('/admin/clubhouse/codes');
     expect(hrefForShortcut('H')).toBe('/admin/clubhouse');
-    expect(hrefForShortcut('N')).toBe('/admin/clubhouse/drift');
-    expect(ADMIN_NAV.filter((e) => e.key === undefined).map((e) => e.href)).toEqual(['/admin/clubhouse/duet']);
+    expect(hrefForShortcut('N')).toBe('/admin/clubhouse/sessions');
+  });
+
+  // PR 3 and PR 4 change this on purpose: a tab may go without a key, but only
+  // when no letter is free. Every key-less tab is a Clubhouse lens, and every
+  // letter is taken by a live tab or a retired shortcut, so giving one a letter
+  // would retrain an operator's hands or break a shortcut they still use.
+  it('leaves a tab without a key only when no letter is free', () => {
+    const keyless = ADMIN_NAV.filter((e) => e.key === undefined).map((e) => e.href);
+    expect(keyless).toEqual(['/admin/clubhouse/experience', '/admin/clubhouse/releases', '/admin/clubhouse/drift', '/admin/clubhouse/duet']);
+    const taken = new Set([...ADMIN_NAV.map((e) => e.key), ...Object.keys(RETIRED_SHORTCUTS)]);
+    const free = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').filter((l) => !taken.has(l));
+    expect(free).toEqual([]);
   });
 
   it('maps shortcut keys to hrefs', () => {
@@ -130,7 +145,7 @@ describe('navEntryForPath (rail highlight and breadcrumbs)', () => {
   });
 
   it('matches on a segment boundary, and /admin owns only itself', () => {
-    expect(navEntryForPath('/admin')?.label).toBe('Overview');
+    expect(navEntryForPath('/admin')?.label).toBe('Pulse');
     expect(navEntryForPath('/admin/users/abc')?.href).toBe('/admin/users');
     expect(navEntryForPath('/admin/users-archive')).toBeNull();
     expect(navEntryForPath('/admin/thread/user/1')).toBeNull();

@@ -5,6 +5,8 @@ import { Surface } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { BridgeGraph } from '@/lib/admin/clubhouse/graph';
 import { clubhouseHref, describeScope, liveRef, type ClubhouseScope } from '@/lib/admin/clubhouse/screens';
+import { describeLive, type LiveScope } from '@/lib/admin/clubhouse/live-scope';
+import type { PipeStatus } from '@/lib/admin/clubhouse/live-model';
 import { TabHeader } from '../../_components/TabHeader';
 import { PanelStale } from '../../_components/PanelStates';
 import { CopyReportButton } from '../../_components/CopyReportButton';
@@ -31,6 +33,7 @@ export function ClubhouseFrame({
   sources,
   actions,
   showScope = true,
+  live,
   children,
 }: {
   title: ReactNode;
@@ -49,13 +52,15 @@ export function ClubhouseFrame({
   sources: readonly string[];
   actions?: ReactNode;
   showScope?: boolean;
+  /** A live lens (PR 3): the pipe as read, the window and platform, and whether a read was cut short. */
+  live?: LiveTruth;
   children: ReactNode;
 }) {
   return (
     <div className="min-w-0 space-y-4">
       <TabHeader title={title} description={question} actions={actions} />
-      <TruthLine graph={graph} scope={scope} noSignalCode={noSignalCode} />
-      {showScope ? <ScopeBar pages={pages} /> : null}
+      <TruthLine graph={graph} scope={scope} noSignalCode={noSignalCode} live={live} />
+      {showScope ? <ScopeBar pages={pages} live={Boolean(live)} /> : null}
       <div className="min-w-0 space-y-5">{children}</div>
       <EvidenceFooter sources={sources} report={report} copyCode={copyCode} />
     </div>
@@ -66,14 +71,30 @@ export function ClubhouseFrame({
  * When it was read, the contract it was read against, the release, and the pipe. The pipe is honest by construction:
  * until signals reach the Bridge it says "No signal yet", never a green dot.
  */
+export interface LiveTruth {
+  pipe: PipeStatus;
+  scope: LiveScope;
+  truncated?: boolean;
+}
+
+const PIPE_TONE: Record<PipeStatus['tone'], string> = {
+  live: 'text-fw-success-ink',
+  silent: 'font-semibold text-fw-danger-ink',
+  off: 'text-text-secondary',
+  'no-signal': 'text-text-secondary',
+  unknown: 'text-fw-warning-ink',
+};
+
 export function TruthLine({
   graph,
   scope,
   noSignalCode,
+  live,
 }: {
   graph: BridgeGraph;
   scope: ClubhouseScope;
   noSignalCode: string;
+  live?: LiveTruth;
 }) {
   const ref = liveRef();
   return (
@@ -86,12 +107,32 @@ export function TruthLine({
       <span aria-hidden>·</span>
       <span>release {ref === 'main' ? 'unstamped' : ref.slice(0, 7)}</span>
       <span aria-hidden>·</span>
-      <span data-br={noSignalCode} className="inline-flex items-center gap-1 text-text-secondary">
-        <RadioTower size={12} aria-hidden />
-        pipe: no signal yet
-      </span>
+      {live ? (
+        <span
+          data-br={live.pipe.tone === 'no-signal' ? noSignalCode : undefined}
+          className={cn('inline-flex items-center gap-1', PIPE_TONE[live.pipe.tone])}
+          title={live.pipe.lastEnvelopeAt ? `Newest envelope ${live.pipe.lastEnvelopeAt}` : undefined}
+        >
+          <RadioTower size={12} aria-hidden />
+          {live.pipe.label}
+        </span>
+      ) : (
+        <span data-br={noSignalCode} className="inline-flex items-center gap-1 text-text-secondary">
+          <RadioTower size={12} aria-hidden />
+          pipe: no signal yet
+        </span>
+      )}
       <span aria-hidden>·</span>
-      <span className="min-w-0 break-words font-fw-sans">{describeScope(scope, graph)}</span>
+      <span className="min-w-0 break-words font-fw-sans">
+        {describeScope(scope, graph)}
+        {live ? ` · ${describeLive(live.scope)}` : null}
+      </span>
+      {live?.truncated ? (
+        <>
+          <span aria-hidden>·</span>
+          <span className="font-fw-sans text-fw-warning-ink">read cut short: newest rows only</span>
+        </>
+      ) : null}
     </p>
   );
 }

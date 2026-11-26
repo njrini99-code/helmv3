@@ -34,6 +34,11 @@ const DETAIL_LEAVES = new Set([
   '/admin/clubhouse/controls/[ctl]',
   '/admin/clubhouse/actions/[act]',
   '/admin/clubhouse/codes/[bridgeId]',
+  '/admin/clubhouse/sessions/[id]',
+  '/admin/clubhouse/releases/[sha]',
+  // B08: a person and a team are reached from a session, an incident or ⌘K; there is no index of people.
+  '/admin/clubhouse/people/[userId]',
+  '/admin/clubhouse/teams/[teamId]',
 ]);
 
 function walkRoutes(dir: string, base = '/admin'): string[] {
@@ -86,7 +91,7 @@ describe('Bridge navigation covers every route', () => {
   });
 
   it('keyboard shortcuts are unique', () => {
-    const keys = ADMIN_NAV.map((e) => e.key);
+    const keys = ADMIN_NAV.map((e) => e.key).filter((k) => k !== undefined);
     expect(new Set(keys).size).toBe(keys.length);
   });
 
