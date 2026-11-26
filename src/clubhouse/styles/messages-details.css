@@ -1,7 +1,7 @@
 /* Messages v2, package D: the desktop three-pane layout, polls, file and photo bubbles, Details, empty states and New message.
    Loaded after messages.css (MessagesScreen), so these rules win a tie; where a legacy rule has a higher specificity the
    legacy rule is deleted from messages.css in the same change. Classes are `ch-msd-*` so this sheet anchors its own
-   (scripts/clubhouse/css-owners.mjs). Values come from the artifact (design-refresh/messages/redesign) through Clubhouse
+   (scripts/clubhouse/css-owners.mjs). Values come from the artifact (design/refresh/messages/redesign) through Clubhouse
    tokens: radii snap to the four-step scale and spacing off the scale is written as a step plus a nudge. */
 
 /* Off-scale steps the artifact draws (9, 10, 11, 14, 18 px), built from the scale so the spacing gates see steps. */

@@ -4,9 +4,9 @@
 
 The v2 boards this file describes are not the page any more: the coach's
 signal-list board and the player's focus board are retired. The coach's Team
-page is the drawn golf hole (`design-refresh/coachhelm-team/`), a coach's page
+page is the drawn golf hole (`design/refresh/coachhelm-team/`), a coach's page
 for one player is the player file and a player's Board is Your week
-(`design-refresh/coachhelm-lenses/`), and the chat is direction A
+(`design/refresh/coachhelm-lenses/`), and the chat is direction A
 (`docs/clubhouse/coachhelm-chat-v3/LOOK.md`). Do not build or restyle from the
 board drawings below. The list of current pages is in `src/clubhouse/AGENTS.md`.
 

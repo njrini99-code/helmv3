@@ -1,7 +1,7 @@
 # Practice checklist
 
-Reference: `design-refresh/practice-plan/redesign/coachhelm-practice.html` and
-`design-refresh/practice-plan/05-SCREENS.md` (S-PRC rows); no owner phone
+Reference: `design/refresh/practice-plan/redesign/coachhelm-practice.html` and
+`design/refresh/practice-plan/05-SCREENS.md` (S-PRC rows); no owner phone
 board, spec `docs/clubhouse/phone/practice.md` (draft)
 Route: `/golf/dashboard/practice` (coach and player, with eight children;
 P017)   Surface tag: `practice` (Sentry `surface=practice.<section>`)

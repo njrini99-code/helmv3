@@ -9,8 +9,8 @@ disagree, the engine wins; each such
 place is listed in "Where this departs from the design pages" with what is built
 instead.
 
-Read with: `design-refresh/coachhelm/AGENT_KIT.md` (the kit), `design-refresh/ask/05..08`,
-`design-refresh/coachhelm/05..08` (quick chat),
+Read with: `design/refresh/coachhelm/AGENT_KIT.md` (the kit), `design/refresh/ask/05..08`,
+`design/refresh/coachhelm/05..08` (quick chat),
 `docs/clubhouse/messages-v2/MOTION.md` (the nearest relative).
 
 IDs: a state is `ST-<moment>.<name>`; a motion is `MO-<moment>-<n>` (MOTION.md).
@@ -107,7 +107,7 @@ Latest key.
 Kept from the approved page: a frosted panel that pours out of the CoachHelm
 key. v3 changes the content it opens on
 and adds the context chip. Geometry and springs stay as
-`design-refresh/coachhelm/07-MOTION.md` (M-KEY-press, M-OPEN,
+`design/refresh/coachhelm/07-MOTION.md` (M-KEY-press, M-OPEN,
 M-CLOSE, M-RETARGET, M-SCRIM, M-CONTENT, M-LIVE).
 
 | State | What is on screen |

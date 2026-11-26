@@ -3,7 +3,7 @@
 ## 2026-11-07 — A named duration for a chart's marks settling
 
 ```text
-Design package: design-refresh/stats/redesign/clubhouse-stats.html
+Design package: design/refresh/stats/redesign/clubhouse-stats.html
 PR/commit:      agent/ch-stats-v2
 Contract IDs:   none new
 Actions:        none new

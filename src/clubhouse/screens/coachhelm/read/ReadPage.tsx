@@ -29,7 +29,7 @@ import { CoachActions, LIVE_READ_WRITES, PlayerActions, READ_HOLD_MS, type ChRea
 import { Cause, Corrections, Measured, Moved, NextReads, Plan, ReadHead, readOrder, ReadsRail, Rounds, Sure, Week, Where } from './parts';
 
 /**
- * One CoachHelm read, in full (7 Nov design, design-refresh/coachhelm-read/redesign): the root-cause read on a player as What, Why,
+ * One CoachHelm read, in full (7 Nov design, design/refresh/coachhelm-read/redesign): the root-cause read on a player as What, Why,
  * Next and When in the green head, the actions directly under it, then the evidence. The phone is one pushed screen with three tabs
  * (Measured, Cause, Rounds); desktop is the Deep dive with this read selected and every section open, a stepper and J and K to move
  * between the player's reads.

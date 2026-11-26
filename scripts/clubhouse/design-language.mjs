@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The token tables in design-refresh/DESIGN_LANGUAGE.md, generated from src/clubhouse/styles/tokens.css.
+ * The token tables in design/refresh/DESIGN_LANGUAGE.md, generated from src/clubhouse/styles/tokens.css.
  *
  * DESIGN_LANGUAGE.md is the Clubhouse design system: the laws and rules are prose, and every value it quotes (page,
  * cards, ink, edges, chart marks, keys, the toggle, the three elevations, radii and type roles) comes from this
@@ -15,7 +15,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import postcss from 'postcss';
 
-export const DOC = 'design-refresh/DESIGN_LANGUAGE.md';
+export const DOC = 'design/refresh/DESIGN_LANGUAGE.md';
 export const TOKENS = 'src/clubhouse/styles/tokens.css';
 const START = '<!-- AUTOGEN:clubhouse-design-tokens:start (node scripts/clubhouse/design-language.mjs; do not edit inside) -->';
 const END = '<!-- AUTOGEN:clubhouse-design-tokens:end -->';

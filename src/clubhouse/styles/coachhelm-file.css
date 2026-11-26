@@ -1,4 +1,4 @@
-/* CoachHelm file. Ported from design-refresh/coachhelm-lenses/redesign/redesign.css; every value is the page's. */
+/* CoachHelm file. Ported from design/refresh/coachhelm-lenses/redesign/redesign.css; every value is the page's. */
 .ch-hf {
   --ch-hf-a-page: transparent;
   --ch-hf-a-card: var(--ch-card-bg);

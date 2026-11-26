@@ -1,6 +1,6 @@
 # Practice: what the build is missing against its design (10 Nov 2026)
 
-Looked at before anything was changed. The design is `design-refresh/practice-plan/redesign/coachhelm-practice.html`
+Looked at before anything was changed. The design is `design/refresh/practice-plan/redesign/coachhelm-practice.html`
 (scenes 4 and 5: the builder and the player) with `05-SCREENS.md`'s S-PRC rows
 for the screens that page does not draw
 (home, library, run, print: "build rule", restyled to `DESIGN_LANGUAGE.md`).

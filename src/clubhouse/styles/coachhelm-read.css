@@ -1,4 +1,4 @@
-/* The CoachHelm read (7 Nov design, design-refresh/coachhelm-read/redesign). The read is drawn in Clubhouse's own parts: the green
+/* The CoachHelm read (7 Nov design, design/refresh/coachhelm-read/redesign). The read is drawn in Clubhouse's own parts: the green
    feature card for its head (as on Home and the Deep dive's phone read), the design system's Surface for every section, the board's
    evidence well and bars, the Deep dive's rows. This file is layout only, on tokens: no colour of its own, no card recipe.
    The lane's prefix is ch-hr (the design page wrote ch-rd, which is the Rounds page's). The shared stylesheets name .ch-hr

@@ -77,7 +77,7 @@ phone's pushed profile), `RosterSkeleton`, `RosterNoTeam` (a coach's or a player
 screen) with `team.ts` (its sort and its "You" line).
 
 Since 2026-11-11 the phone pieces are the classes-roster-home redesign's
-(approved 31 Oct; `design-refresh/classes-roster-home`), its flag removed:
+(approved 31 Oct; `design/refresh/classes-roster-home`), its flag removed:
 `RosterPhoneCrh` (with `RequestsRow`, `RequestsSheetCrh`, `PlayerActionsCrh`),
 `RosterProfileCrh` and, for a player, `TeamRosterPhoneCrh`; the older phone
 files are gone. Desktop added `RosterTeamCard`, `RosterLeaders` (each card names

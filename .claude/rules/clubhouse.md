@@ -23,7 +23,7 @@ rejected the result; this tree exists so that cannot happen again.
   No Tailwind utilities in Clubhouse markup. Each page stylesheet has its own
   class prefix (`.ch-rsu-`, `.ch-cal-ft`): `clubhouse:check` fails when two
   page stylesheets anchor the same class.
-- **Design system:** `design-refresh/DESIGN_LANGUAGE.md` (laws, surfaces, colour, type,
+- **Design system:** `design/refresh/DESIGN_LANGUAGE.md` (laws, surfaces, colour, type,
   the one toggle, charts, banned list). Its token tables are generated from `tokens.css`
   (`node scripts/clubhouse/design-language.mjs`); `clubhouse:check` fails on drift.
 - **Doctrine:**

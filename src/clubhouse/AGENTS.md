@@ -13,7 +13,7 @@ Use live state and code first, then the mapped page CONTRACT, DESIGN and WIRING
 in `docs/clubhouse/pages/P###-*/`, the manifest in `config/clubhouse/pages/`, and
 the September prototypes in `design/handoff/`, except the files its
 [`RETIRED.md`](../../design/handoff/RETIRED.md) lists: those are not the design
-any more. Where `design-refresh/<page>/` exists it replaces the handoff for that
+any more. Where `design/refresh/<page>/` exists it replaces the handoff for that
 page. Runtime values come from `styles/tokens.css`, `styles/auth-tokens.css` and
 `lib/fonts.ts`; handoff files are references, not a reason to restore behavior
 superseded by owner revisions.
@@ -23,7 +23,7 @@ route is labelled in its manifest's `screens`; `clubhouse:check` fails until
 it is.
 The design system (laws, surfaces, colour, type, the one toggle, charts, the
 banned list, and token tables generated from `styles/tokens.css`) is
-[`design-refresh/DESIGN_LANGUAGE.md`](../../design-refresh/DESIGN_LANGUAGE.md).
+[`design/refresh/DESIGN_LANGUAGE.md`](../../design/refresh/DESIGN_LANGUAGE.md).
 `DESIGN.md` at the repo root and `docs/clubhouse/UI_OWNERSHIP.md` index these
 owners. Follow the existing approved design; new phone designs still follow
 the phone-design workflow in `.claude/rules/clubhouse.md`.
@@ -35,7 +35,7 @@ copy any other version; an old address opens the current page.
 
 - Roster: as built in `screens/roster`. Coach desktop opens on the table with its
   sticky panel (owner, premium plan 19 Nov, decision 8; it opened on the cards
-  from commit `9e6db115f3`); the phone follows `design-refresh/classes-roster-home`
+  from commit `9e6db115f3`); the phone follows `design/refresh/classes-roster-home`
   (approved 31 Oct). The "Your players." Roster in `design/handoff/` is retired
   (`design/handoff/RETIRED.md`).
 - Player Home: the 28 Oct version, permanent (commit `dc11bf6b7e`). Do not

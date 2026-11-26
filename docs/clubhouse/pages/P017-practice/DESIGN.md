@@ -3,7 +3,7 @@
 ## Package
 
 ```text
-Source:  design-refresh/practice-plan/ (redesign/coachhelm-practice.html, scenes 4 and 5;
+Source:  design/refresh/practice-plan/ (redesign/coachhelm-practice.html, scenes 4 and 5;
          05-SCREENS.md S-PRC rows for the screens that page does not draw: home, library, run, print)
 Version: 31 Oct 2026 plan, replaced by 05 to 08 (README of the package); redesign package committed 2026-11-04
 Status:  review (no owner board in design/handoff; no owner phone board, phone/practice.md is a draft)
@@ -32,7 +32,7 @@ plan page belong to `screens/coachhelm/plan/**` (P013).
 
 ## Motion, haptics, accessibility
 
-Per `.claude/rules/clubhouse.md` and `design-refresh/practice-plan/07-MOTION.md`.
+Per `.claude/rules/clubhouse.md` and `design/refresh/practice-plan/07-MOTION.md`.
 Reduce Motion and the largest Text Size were captured on Home, the builder and
 Run (GAP.md, round two). Contract rows: CONTRACT.md categories 11 and 18.
 

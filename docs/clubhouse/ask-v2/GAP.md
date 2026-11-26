@@ -1,9 +1,9 @@
 # Ask v2: gap against the owner's design (2026-11-07)
 
 Survey of `agent/ch-ask-v2` (based on `origin/agent/ch-consolidate`) against
-`design-refresh/ask/` (`01-BRIEF`, `ASK_REDESIGN`, `05-SCREENS`, `07-MOTION`,
+`design/refresh/ask/` (`01-BRIEF`, `ASK_REDESIGN`, `05-SCREENS`, `07-MOTION`,
 `08-ACCEPTANCE`) and the owner's latest page
-`design-refresh/ask/redesign/coachhelm-ask.html`. The uncommitted diff to that
+`design/refresh/ask/redesign/coachhelm-ask.html`. The uncommitted diff to that
 page is the document wrapper only (`<html>`, `<body>`); no scene, token or
 "Decided" row changed.
 

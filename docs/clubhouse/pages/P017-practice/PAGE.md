@@ -10,7 +10,7 @@
 | State catalog | [catalog/practice.md](../../catalog/practice.md) |
 | Checklist | [screens/practice.md](../../screens/practice.md) |
 | Phone spec | [phone/practice.md](../../phone/practice.md) |
-| Design boards | [coachhelm-practice.html](../../../../design-refresh/practice-plan/redesign/coachhelm-practice.html) |
+| Design boards | [coachhelm-practice.html](../../../../design/refresh/practice-plan/redesign/coachhelm-practice.html) |
 | Code | [practice](../../../../src/clubhouse/screens/practice) · [practice-home.ts](../../../../src/clubhouse/data/practice-home.ts) · [practice.tsx](../../../../src/clubhouse/routes/practice.tsx) · [practice.css](../../../../src/clubhouse/styles/practice.css) · [practice-gate.ts](../../../../src/clubhouse/routes/practice-gate.ts) · [practice-plan.ts](../../../../src/clubhouse/data/practice-plan.ts) · [practice-library.ts](../../../../src/clubhouse/data/practice-library.ts) · [practice-home-shape.ts](../../../../src/clubhouse/data/practice-home-shape.ts) · [practice-library-shape.ts](../../../../src/clubhouse/data/practice-library-shape.ts) · [PreviewPracticeHome.tsx](../../../../src/clubhouse/preview/PreviewPracticeHome.tsx) · [PreviewPracticeOther.tsx](../../../../src/clubhouse/preview/PreviewPracticeOther.tsx) · [PreviewPracticePlan.tsx](../../../../src/clubhouse/preview/PreviewPracticePlan.tsx) · [PreviewPracticeThread.tsx](../../../../src/clubhouse/preview/PreviewPracticeThread.tsx) · [fixtures-practice-plan.ts](../../../../src/clubhouse/preview/fixtures-practice-plan.ts) · [fixtures-practice-thread.ts](../../../../src/clubhouse/preview/fixtures-practice-thread.ts) · [practice-plans.ts](../../../../src/app/golf/actions/practice-plans.ts) · [practice-publish.ts](../../../../src/app/golf/actions/practice-publish.ts) · [practice-library.ts](../../../../src/app/golf/actions/practice-library.ts) · [practice-db.ts](../../../../src/lib/golf/practice-db.ts) · [practice-errors.ts](../../../../src/lib/golf/practice-errors.ts) · [practice-fanout.ts](../../../../src/lib/golf/practice-fanout.ts) · [model.ts](../../../../src/lib/coachhelm/v3/practice-plan/model.ts) · [library-kinds.ts](../../../../src/lib/coachhelm/v3/practice-plan/library-kinds.ts) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Practice" |
@@ -43,7 +43,7 @@ Implementation:    src/clubhouse/screens/practice (+ the builder under it),
                    routes/practice.tsx, data/practice-{home,plan,library}.ts,
                    styles/practice.css
 Tracker row:       PROGRESS.md, "Practice"
-Design:            design-refresh/practice-plan/redesign/coachhelm-practice.html
+Design:            design/refresh/practice-plan/redesign/coachhelm-practice.html
                    (scenes 4 and 5) with 05-SCREENS.md's S-PRC rows; no owner
                    phone board (phone/practice.md is a draft)
 ```
@@ -57,7 +57,7 @@ file's block (CH-13080 and up), so their Bridge IDs are minted under P013
 they are and this page's CONTRACT.md names them from there.
 
 The server actions and shared libraries use a second numbering, the practice
-design's own `CH-17xxx` codes (`design-refresh/prerequisites/N-00-practice-plan-builder.md`,
+design's own `CH-17xxx` codes (`design/refresh/prerequisites/N-00-practice-plan-builder.md`,
 its copy table). They are error and log codes (`code: 'CH-17001'`,
 `errorCode: 'CH-17001'`), never a `data-ch-code` on an element. 25 distinct
 codes sit in `src/app/golf/actions/practice-*.ts`,

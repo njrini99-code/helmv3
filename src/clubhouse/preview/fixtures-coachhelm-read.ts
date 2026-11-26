@@ -10,7 +10,7 @@ import { CAST, CAST_COACH, type CastPlayer } from './cast';
 import { HELM_PLAYERS, PREVIEW_TOUR, bigNumber, breakBias, penalties, slope } from './fixtures-coachhelm';
 
 /**
- * The read page's sample data, the 7 Nov design page's own set (design-refresh/coachhelm-read/redesign, "Data"): one player per read,
+ * The read page's sample data, the 7 Nov design page's own set (design/refresh/coachhelm-read/redesign, "Data"): one player per read,
  * and every count on a read agrees with every other count on it. Each read is a real row in the shape its generator writes, with the
  * engine's depth beside it, and goes through the real shapers, so the preview can't draw what the page can't.
  *

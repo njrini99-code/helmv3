@@ -3,7 +3,7 @@
 ## 2026-11-04 — One empty state, coins that hold their initials, skeletons you can see
 
 ```text
-Design package: design-refresh/DESIGN_LANGUAGE.md section 9
+Design package: design/refresh/DESIGN_LANGUAGE.md section 9
 PR/commit:      agent/clubhouse-redesign-followups
 Contract IDs:   none new
 Actions:        none new

@@ -1,6 +1,6 @@
 # CoachHelm read v2: build notes (10 Nov 2026)
 
-The read page rebuilt from the owner's 7 Nov design (`design-refresh/coachhelm-read/redesign/coachhelm-read.html`,
+The read page rebuilt from the owner's 7 Nov design (`design/refresh/coachhelm-read/redesign/coachhelm-read.html`,
 artifact SUL5hLtah5MmBd2dkU8mTK). That page wins over the lane's 05 to 08 files
 where they differ. Messages was
 rebuilt the same way; its notes are `docs/clubhouse/messages-v2/`.

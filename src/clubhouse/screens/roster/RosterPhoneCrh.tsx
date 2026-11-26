@@ -53,7 +53,7 @@ import { useCopyText } from './useCopyText';
 const STUB_LABEL = 'Not enough rounds';
 
 /**
- * The phone Roster behind `clubhouse_classes_roster_home_v1` (design-refresh/classes-roster-home 05, 06 7): large title, the team
+ * The phone Roster behind `clubhouse_classes_roster_home_v1` (design/refresh/classes-roster-home 05, 06 7): large title, the team
  * card, leaders, the join requests row, a sticky sort, then Active, Injured and Inactive cards, with the profile pushed over it. Today's
  * RosterPhone stays for flag off and this replaces it whole, so nothing here reaches a flag-off screen.
  */

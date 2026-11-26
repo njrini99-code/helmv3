@@ -5,8 +5,8 @@ Docs only. Nothing here was applied. Read-only SQL ran on **staging**
 queried. Every "production" verdict below is inferred from
 `supabase/migrations/HELD.md` and the migration files, and is marked **per
 HELD.md, live unverified**. Date of audit: 2026-11-07. Design source:
-`design-refresh/messages/redesign/clubhouse-messages.html` (cited `H:<line>`).
-Earlier pass: `design-refresh/messages/03-DATA-CHECKS.md` (still accurate on
+`design/refresh/messages/redesign/clubhouse-messages.html` (cited `H:<line>`).
+Earlier pass: `design/refresh/messages/03-DATA-CHECKS.md` (still accurate on
 most rows; drift noted in "Doc drift").
 
 Viewer in the design is a coach (`ME`). Where a player would see something

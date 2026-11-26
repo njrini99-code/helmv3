@@ -3,7 +3,7 @@
 ## 2026-11-07 — What Coach Home's pass changed outside Home
 
 ```text
-Design package: design-refresh/classes-roster-home
+Design package: design/refresh/classes-roster-home
 PR/commit:      agent/lane-crh
 Contract IDs:   none new
 Actions:        none new

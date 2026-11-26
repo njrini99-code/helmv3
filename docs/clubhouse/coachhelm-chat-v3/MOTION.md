@@ -139,7 +139,7 @@ is in the build report.
 
 ## Moment 1. Summoning and dismissing quick chat (QUICK-CHAT builds)
 
-The geometry and the retarget logic are `design-refresh/coachhelm/07-MOTION.md`
+The geometry and the retarget logic are `design/refresh/coachhelm/07-MOTION.md`
 rows M-KEY-press, M-OPEN, M-SCRIM,
 M-CONTENT, M-CLOSE, M-RETARGET, M-LIVE, M-LIVE-out, M-FULL: kept as written. v3
 adds or changes:
