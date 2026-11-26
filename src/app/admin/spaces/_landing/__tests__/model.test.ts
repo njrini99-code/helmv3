@@ -6,6 +6,7 @@ import {
   bucketWeeks,
   clubhouseToday,
   deskHeadline,
+  plainActivityTitle,
   deskQueue,
   heldCount,
   judgeCard,
@@ -140,7 +141,7 @@ describe('assembleNeeds', () => {
       ['quiet-teams', 1],
     ]);
     expect(n.rows.find((r) => r.key === 'quiet-teams')?.title).toBe('Hampden went quiet this week');
-    expect(n).toMatchObject({ total: 7, unread: 0 });
+    expect(n).toMatchObject({ total: 7, unread: 0, failed: 0 });
   });
   it('a failed read is a row with no count, never a dropped row or a zero; a silent pipe zero is unknown', () => {
     const n = assembleNeeds({
@@ -152,7 +153,7 @@ describe('assembleNeeds', () => {
     });
     expect(n.rows.every((r) => r.count === null)).toBe(true);
     expect(n.rows.map((r) => r.key)).toEqual(['jobs-failing', 'held', 'quiet-teams', 'release-errors', 'clubhouse']);
-    expect(n).toMatchObject({ total: 0, unread: 5 });
+    expect(n).toMatchObject({ total: 0, unread: 5, failed: 4 });
   });
   it.each([
     ['unstamped', null as string | null, [card()]],
@@ -171,7 +172,7 @@ describe('assembleNeeds', () => {
 });
 
 describe('todayHeadline', () => {
-  const needs = { rows: [], total: 0, unread: 0 };
+  const needs = { rows: [], total: 0, unread: 0, failed: 0 };
   const reading = { ok: 8, total: 8 };
   it('thin usage when under a third of teams were active or nobody logged a round', () => {
     expect(usageLine({ total: 27, activeThisWeek: 6, activeNow: 6, wentQuiet: [] }, [4, 0]).second).toBe('Usage is thin.');
@@ -185,7 +186,7 @@ describe('todayHeadline', () => {
       teams: readOk({ total: 27, activeThisWeek: 6, activeNow: 6, wentQuiet: [] }),
       rounds: readOk([4, 0]),
       release: readOk(releaseHealth('a863eeb', [card()])),
-      needs: { rows: [], total: 23, unread: 0 },
+      needs: { rows: [], total: 23, unread: 0, failed: 0 },
       reading,
     });
     expect(h.title).toBe('Helm is up.');
@@ -196,7 +197,7 @@ describe('todayHeadline', () => {
   });
   it('says the release left errors, and never claims usage when every input failed', () => {
     expect(todayHeadline({ teams: readOk({ total: 2, activeThisWeek: 2, activeNow: 2, wentQuiet: [] }), rounds: readOk([1, 1]), release: readOk(releaseHealth('a863eeb', [card({ newFingerprintsSince: 1 })])), needs, reading }).title).toBe('The release left errors.');
-    const blind = todayHeadline({ teams: readFailed('x'), rounds: readFailed('x'), release: readFailed('x'), needs: { rows: [], total: 0, unread: 3 }, reading: { ok: 2, total: 8 } });
+    const blind = todayHeadline({ teams: readFailed('x'), rounds: readFailed('x'), release: readFailed('x'), needs: { rows: [], total: 0, unread: 3, failed: 3 }, reading: { ok: 2, total: 8 } });
     expect(blind.title).toBe('Bridge can’t see much.');
     expect(blind.lede).toContain('Team activity could not be read.');
     expect(blind.lede).toContain('What is waiting on you could not be fully read.');
@@ -206,7 +207,7 @@ describe('todayHeadline', () => {
       now: NOW,
       headline: { title: 'Helm is up.', second: 'Usage is thin.', secondTone: 'watch', lede: 'x' },
       tiles: [{ label: 'Teams active', value: null, sub: 's' }],
-      needs: { rows: [{ key: 'quiet-teams', count: 1, title: 'Hampden went quiet this week', href: '/', tone: 'watch' }], total: 1, unread: 0 },
+      needs: { rows: [{ key: 'quiet-teams', count: 1, title: 'Hampden went quiet this week', href: '/', tone: 'watch' }], total: 1, unread: 0, failed: 0 },
       rounds: [1, 2],
     });
     expect(text).not.toContain('Hampden');
@@ -253,5 +254,18 @@ describe('product, desk', () => {
     // One source unread and the other empty: "nothing found so far", never "at least 0 decisions".
     expect(deskHeadline(0, null)).toMatchObject({ title: 'Nothing found so far.', tone: 'watch' });
     expect(deskHeadline(null, 0).title).toBe('Nothing found so far.');
+  });
+});
+
+describe('plainActivityTitle', () => {
+  it('drops log tags and never shows a user id', () => {
+    expect(plainActivityTitle('[push.sendPushNotification.deliver] [push] no device accepted this new_message for user 52ed0574-4048-4fca-ae84-85cfd2153d52 (3 token(s) tried); previously reported as sent')).toBe(
+      'No device accepted this new message for a user (3 token(s) tried); previously reported as sent',
+    );
+    expect(plainActivityTitle('Player 3d6f80df-2bfd-450c-b368-a6c11e2d4f4b joined Demo University Golf')).toBe('A player joined Demo University Golf');
+    expect(plainActivityTitle('Round 9c79fe92-64d1-49d7-b7c4-caab46c12974 completed')).toBe('Round completed');
+  });
+  it('leaves a plain line alone, and an email as written', () => {
+    expect(plainActivityTitle('admin@helmsportslabs.com signed in')).toBe('admin@helmsportslabs.com signed in');
   });
 });

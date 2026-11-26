@@ -143,13 +143,14 @@ function WhereTab({ where }: { where: WhereModel }) {
     <div className="rl-where-grid">
       <PhoneSchematic where={where} />
       <div style={{ flex: '1 1 260px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div className="bs-eyebrow">The button they pressed</div>
-        <div style={{ fontSize: 20, fontWeight: 600 }}>{where.control?.label ?? where.action?.label ?? 'Not named by the event'}</div>
+        <div className="bs-eyebrow">{where.controlSource === 'last-press' ? 'The last button pressed before it' : 'The button they pressed'}</div>
+        <div style={{ fontSize: 20, fontWeight: 600 }}>{where.control?.label ?? where.action?.label ?? (where.control ? where.control.id : 'Not named by the event')}</div>
         <Facts
           rows={[
             ['Page', <>{where.pageName} · <Link className="bs-link bs-mono" href={clubhouseHref.page(where.page)}>{where.page}</Link></>],
             ['Control', where.control ? <Link className="bs-link bs-mono" href={clubhouseHref.control(where.control.id)}>{where.control.id}</Link> : '—'],
             ['Action', where.action ? <Link className="bs-link bs-mono" href={clubhouseHref.action(where.action.id)}>{where.action.id}</Link> : '—'],
+            ['Save name', where.actName ? <span className="bs-mono">{where.actName}</span> : '—'],
             ['Code in', where.files.length ? <span style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>{where.files.map((f) => <FileLink key={f} path={f} />)}</span> : '—'],
             ['Tables', where.tables.length ? <span className="bs-mono">{where.tables.join(', ')}</span> : '—'],
             ['Docs', where.docs.length ? <span style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px' }}>{where.docs.map((d) => <a key={d.path} className="bs-link" href={githubBlobUrl(d.path, liveRef())} target="_blank" rel="noreferrer">{d.name}</a>)}</span> : '—'],

@@ -292,10 +292,47 @@ export function clubhouseToday(
 // Waiting on you
 // ---------------------------------------------------------------------------
 
+const UUID = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+
+/**
+ * A log line made readable for the Today list: leading [tags] out, user ids as "a user" (never an id on a glance list;
+ * players may be minors) and other ids dropped, snake_case words as words, first letter up, one line.
+ * "[push.sendPushNotification.deliver] [push] no device accepted this new_message for user 52ed…" →
+ * "No device accepted this new message for a user".
+ */
+export function plainActivityTitle(title: string): string {
+  let t = title
+    .replace(/^(\s*\[[^\]]{1,80}\]\s*)+/, '')
+    .replace(new RegExp(`\\b(user|player|coach|for|by)\\s+${UUID.source}`, 'gi'), (_m, w: string) => (/^(for|by)$/i.test(w) ? `${w} a user` : `a ${w.toLowerCase()}`))
+    .replace(new RegExp(`\\s*${UUID.source}`, 'gi'), '')
+    .replace(/\b([a-z]+)_([a-z]+)\b/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+  // An email or handle at the start stays as written.
+  if (!/^\S*@/.test(t)) t = t.charAt(0).toUpperCase() + t.slice(1);
+  return t.length > 140 ? `${t.slice(0, t.lastIndexOf(' ', 138))}…` : t;
+}
+
+/** "2 could not be read", "1 unknown", "1 could not be read, 1 unknown": why the total is only "at least". */
+export function needUnknownWords(n: Pick<Needs, 'unread' | 'failed'>): string {
+  const unknown = n.unread - n.failed;
+  const parts = [n.failed ? `${n.failed} could not be read` : '', unknown ? `${unknown} unknown` : ''].filter(Boolean);
+  return parts.join(', ');
+}
+
+/** Why the release's error count is unknown although the ledger read worked. */
+const RELEASE_UNKNOWN: Partial<Record<ReleaseState, string>> = {
+  unstamped: 'unknown: this deployment carries no release stamp',
+  'outside-ledger': 'unknown: the live release is not in the ledger',
+  gathering: 'unknown yet: the release is under two hours old',
+};
+
 export interface NeedRow {
   key: string;
-  /** `null` when its source could not be read. */
+  /** `null` when the count is not known: its source could not be read, or it answered without a usable number. */
   count: number | null;
+  /** Why a null count is unknown when the read itself worked ("no release stamp"); absent means the read failed. */
+  unknown?: string;
   title: string;
   href: string;
   tone: Tone;
@@ -306,7 +343,10 @@ export interface Needs {
   /** Sum of the rows that read. Every row counts discrete items (a job, a migration, a team, a cause). */
   total: number;
   /** Rows whose source could not be read: the total is then "at least". */
+  /** Rows whose count is null for any reason (failed read or unknown). */
   unread: number;
+  /** Of those, rows whose read failed. The rest are unknown for a stated reason. */
+  failed: number;
 }
 
 export interface NeedsInput {
@@ -346,6 +386,7 @@ export function assembleNeeds(i: NeedsInput): Needs {
     key: 'release-errors',
     // No stamp, no ledger card or still gathering: the count is unknown, so the total reads "at least", never a clean 0.
     count: !release || release.state === 'unstamped' || release.state === 'outside-ledger' || release.state === 'gathering' ? null : release.state === 'new-errors' ? (release.card?.newFingerprintsSince ?? 0) : 0,
+    unknown: !release ? undefined : RELEASE_UNKNOWN[release.state],
     title: 'New error fingerprints since the release',
     href: '/admin/deploys',
     tone: 'bad',
@@ -355,12 +396,14 @@ export function assembleNeeds(i: NeedsInput): Needs {
     key: 'clubhouse',
     // A zero from a pipe that is off or silent is not a zero (R-09).
     count: ch ? (ch.causes > 0 || ch.trusted ? ch.causes : null) : null,
+    unknown: ch && !ch.trusted && ch.causes === 0 ? `unknown (${ch.pipeLabel})` : undefined,
     title: ch && ch.causes > 0 ? `Clubhouse failure causes today · ${plural(ch.people, 'person', 'people')}` : 'Clubhouse failures today',
     href: '/admin/spaces/reliability',
     tone: 'bad',
   });
   const total = rows.reduce((a, r) => a + (r.count ?? 0), 0);
-  return { rows, total, unread: rows.filter((r) => r.count === null).length };
+  const unread = rows.filter((r) => r.count === null);
+  return { rows, total, unread: unread.length, failed: unread.filter((r) => !r.unknown).length };
 }
 
 // ---------------------------------------------------------------------------

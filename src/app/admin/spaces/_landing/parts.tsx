@@ -51,7 +51,7 @@ export function AskList({ needs, br }: { needs: Needs; br: string }) {
             <span className={`bs-ask-count ${r.count === null ? 'bs-tone-muted' : toneClass(r.tone)}`}>{r.count ?? '?'}</span>
             <span>
               {r.title}
-              {r.count === null ? <span className="bs-panel-note"> · could not be read</span> : null}
+              {r.count === null ? <span className="bs-panel-note"> · {r.unknown ?? 'could not be read'}</span> : null}
             </span>
             <Chevron />
           </Link>

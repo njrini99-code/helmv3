@@ -124,3 +124,17 @@ xx90 to xx93 stay the four states (loading, empty, failed, no signal yet).
   A missing column on an applied function stays a failure there.
 - "Still failing?" keys on the code the hourly store counts under (`hourlyCodeOf`: the sent code, else the catalog
   code), and the failure on screen is folded in, so a live-release failure never reads as fixed.
+
+## Wiring check (2026-11-26)
+
+`src/lib/admin/clubhouse/__tests__/wiring.test.ts` runs a failure through every hop with the real code: the phone's
+`chSignal` and beacon body, the route's parse and redaction, `buildIngest`, the SQL function's INSERT (mirrored key for
+key from production's `clubhouse_ingest_signals`), `buildFeed` over the real map, and the explanation. What it found:
+
+- A save with no code of its own arrives as the shell's generic save-failure row and carries no button. The Where tab
+  now names the last button pressed before it on the same page (`lastPressBefore`), says so, and shows the save's
+  name; feed rows fall back to that name.
+- The hourly store keeps no act for an unmapped save, so "still failing?" for a shell-wide catch-all code counts only
+  the failure's page (`isCatchAll`).
+- Today separates "could not be read" from "unknown" (no release stamp, a pipe that cannot vouch): `NeedRow.unknown`,
+  `needUnknownWords`. Its "Since midnight" list shows log lines through `plainActivityTitle` (no [tags], no user ids).
