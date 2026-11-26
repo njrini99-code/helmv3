@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
   if (!ipLimit.durable && shouldPersistAdminTables()) return new NextResponse(null, { status: 204 });
 
   // Clubhouse is signed in: an anonymous post writes no rows, sessions or counts (the server's user, never the client's).
-  let user: { id: string; email?: string | null } | null = null;
+  let user: { id: string; email?: string | null } | null;
   try {
     const supabase = await createClient();
     const { data } = await supabase.auth.getUser();
