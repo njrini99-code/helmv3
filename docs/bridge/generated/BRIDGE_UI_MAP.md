@@ -24,14 +24,14 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | B16 | Today | /admin/spaces/today | 8 |
 | B17 | Teams activity | /admin/spaces/people | 10 |
 | B18 | One team | /admin/spaces/people/[teamId] | 11 |
-| B19 | Error feed | /admin/spaces/reliability | 14 |
+| B19 | Error feed | /admin/spaces/reliability | 15 |
 | B20 | Counting rules | /admin/spaces/reliability/rules | 5 |
-| B21 | Speed | /admin/spaces/reliability/speed | 10 |
+| B21 | Speed | /admin/spaces/reliability/speed | 11 |
 | B22 | Product | /admin/spaces/product | 6 |
 | B23 | Ship | /admin/spaces/ship | 6 |
 | B24 | Desk | /admin/spaces/desk | 6 |
 
-240 codes in all.
+242 codes in all.
 
 ## B01 Pulse
 
@@ -330,6 +330,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-1908 | Fix pack | Copies the fix pack for the code (BR-0509) | `BR.feed.fixPack` |
 | BR-1909 | Replay | Opens the session that hit it (B07) | `BR.feed.replay` |
 | BR-1910 | Copy report | Copies the feed as Markdown | `BR.feed.copy` |
+| BR-1911 | Space tab | Switches between the error feed, How it counts (B20) and Speed (B21) | `BR.feed.spaceTab` |
 | BR-1990 | Loading | Shown while the space reads | `BR.feed.loading` |
 | BR-1991 | Empty | Nothing to show, said plainly | `BR.feed.empty` |
 | BR-1992 | Failed | The read failed; never shown as all clear | `BR.feed.failed` |
@@ -355,6 +356,7 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-2104 | Button row | Opens that action (B04) | `BR.speed.actionRow` |
 | BR-2105 | Database error row | Opens the codes that carried that server code | `BR.speed.dbRow` |
 | BR-2106 | Copy report | Copies the speed table as Markdown | `BR.speed.copy` |
+| BR-2107 | Window switch | Reads the last 24 hours, 7 days or 30 days | `BR.speed.window` |
 | BR-2190 | Loading | Shown while the space reads | `BR.speed.loading` |
 | BR-2191 | Empty | Nothing to show, said plainly | `BR.speed.empty` |
 | BR-2192 | Failed | The read failed; never shown as all clear | `BR.speed.failed` |
