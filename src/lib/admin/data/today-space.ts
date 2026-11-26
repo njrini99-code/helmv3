@@ -1,7 +1,6 @@
 import 'server-only';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { fetchAllRows } from '@/lib/supabase/fetch-all-rows';
-import { assertQueryOk } from '@/lib/admin/data/assert-query-ok';
 import { parseIntegrityRows, type IntegrityRow } from '@/lib/admin/data/jobs';
 import { CRON_REGISTRY, classifyCronStatus, type CronBoardStatus } from '@/lib/admin/cron-registry';
 import { FEATURE_REGISTRY } from '@/lib/admin/feature-registry';
@@ -96,30 +95,35 @@ export async function fetchJobsHealth(now: Date = new Date()): Promise<JobsHealt
   const admin = createAdminClient();
   const [latest, integrityRows] = await Promise.all([
     Promise.all(
-      CRON_REGISTRY.map((entry) =>
-        admin
+      CRON_REGISTRY.map(async (entry) => {
+        const { data, error } = await admin
           .from('background_job_logs')
           .select('status, started_at, metadata')
           .eq('job_type', entry.jobType)
           .order('started_at', { ascending: false })
-          .limit(1),
-      ),
+          .limit(1);
+        // A failed read is that job's "unreadable", never "never ran" (the board below keeps the two apart).
+        return error ? { data: null, error } : { data, error: null };
+      }),
     ),
-    admin
-      .from('admin_events')
-      .select('title, severity, metadata, created_at')
-      .eq('source', 'integrity')
-      .order('created_at', { ascending: false })
-      .limit(50),
+    (async () => {
+      const { data, error } = await admin
+        .from('admin_events')
+        .select('title, severity, metadata, created_at')
+        .eq('source', 'integrity')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw new Error(`spaces.jobs.integrity: ${error.message}`);
+      return data ?? [];
+    })(),
   ]);
-  assertQueryOk(integrityRows, 'spaces.jobs.integrity');
   const board = CRON_REGISTRY.map((entry, i): JobsHealthRow => {
     const res = latest[i];
     if (res?.error) return { jobType: entry.jobType, status: 'never-ran', unreadable: true };
     const last = (res?.data?.[0] ?? null) as { status: string; started_at: string; metadata: unknown } | null;
     return { jobType: entry.jobType, status: classifyCronStatus(entry, last, now), unreadable: false };
   });
-  const integrity = [...parseIntegrityRows((integrityRows.data ?? []) as Parameters<typeof parseIntegrityRows>[0]).values()];
+  const integrity = [...parseIntegrityRows(integrityRows as Parameters<typeof parseIntegrityRows>[0]).values()];
   return { board, integrity };
 }
 

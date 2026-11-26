@@ -5,7 +5,7 @@ import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { readPipe } from '@/lib/admin/clubhouse/live';
 import { CONTEXT_KINDS, EDGE_CASES, ERROR_KINDS, HOURLY_KEY, NEVER_ERROR_OUTCOMES, ruleBook } from '@/lib/admin/clubhouse/rule-book';
 import { Panel, SpaceHeader, SpaceRoot } from '../../_ui/ui';
-import { ReliabilityTabs, TruthLine } from '../_components/shared';
+import { ReliabilityTabs, PipeTruth } from '../_components/shared';
 
 export const metadata: Metadata = { title: 'Reliability · How errors are counted' };
 
@@ -36,9 +36,9 @@ export default async function ReliabilityRulesPage() {
           </>
         }
       />
-      <TruthLine pipe={pipe}>
+      <PipeTruth pipe={pipe}>
         <span>The rules apply whether or not signals are arriving; the pill says whether they are.</span>
-      </TruthLine>
+      </PipeTruth>
 
       <div className="rl-kinds">
         <section className="bs-panel bs-panel-pad">

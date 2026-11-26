@@ -32,7 +32,7 @@ import {
 } from '@/lib/admin/clubhouse/speed';
 import { CopyReportButton } from '@/app/admin/_components/CopyReportButton';
 import { Meter, Panel, Pill, SpaceHeader, SpaceRoot, SpaceState, Stat, type Tone } from '../../_ui/ui';
-import { LinkGroup, ReliabilityTabs, TruthLine } from '../_components/shared';
+import { LinkGroup, ReliabilityTabs, PipeTruth } from '../_components/shared';
 
 export const metadata: Metadata = { title: 'Reliability · Speed' };
 
@@ -119,14 +119,14 @@ export default async function ReliabilitySpeedPage({ searchParams }: { searchPar
         <LinkGroup label="Device" br={BR.speed.device} options={SPEED_DEVICES.map((d) => ({ key: d, label: SPEED_DEVICE_LABEL[d], href: speedHref(scope, { device: d }), active: scope.device === d }))} />
         <LinkGroup label="Window" br={BR.speed.window} options={SPEED_WINDOWS.map((w) => ({ key: w, label: SPEED_WINDOW_LABEL[w], href: speedHref(scope, { w }), active: scope.w === w }))} />
       </div>
-      <TruthLine pipe={pipe}>
+      <PipeTruth pipe={pipe}>
         <span>Field data from real users, last {SPEED_WINDOW_LABEL[scope.w]}; not the W, S and D lab tiers. A p75 reads the upper edge of its bucket, so it can read high.</span>
         {hourly.truncated ? <Pill tone="watch">More hourly rows than one read keeps: the oldest hours are left out</Pill> : null}
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps</Pill> : null}
         <span data-br={BR.speed.copy}>
           <CopyReportButton report={report} variant="labeled" size="sm" label="Copy report" />
         </span>
-      </TruthLine>
+      </PipeTruth>
 
       {!graph ? (
         <SpaceState br={BR.speed.failed} title="The Bridge map could not be read.">Pages and buttons cannot be named without it.</SpaceState>

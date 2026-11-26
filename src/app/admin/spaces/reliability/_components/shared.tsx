@@ -31,7 +31,7 @@ export function PipePill({ pipe }: { pipe: PipeStatus }) {
 }
 
 /** The line under a screen's controls: the pipe, where the numbers come from, and whether a read was cut short. */
-export function TruthLine({ pipe, children }: { pipe: PipeStatus; children?: ReactNode }) {
+export function PipeTruth({ pipe, children }: { pipe: PipeStatus; children?: ReactNode }) {
   return (
     <div className="rl-truth">
       <PipePill pipe={pipe} />

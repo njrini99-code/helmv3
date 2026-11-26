@@ -44,7 +44,7 @@ import { LocalTime } from '@/app/admin/_components/LocalTime';
 import { Pill, RoleBadge, SpaceHeader, SpaceRoot, SpaceState } from '../_ui/ui';
 import { ExpectedNote, WatchControl } from '@/app/admin/clubhouse/_components/CodeNotes';
 import { ErrorDetail, noteBlocker } from './_components/ErrorDetail';
-import { LinkGroup, ReliabilityTabs, TruthLine } from './_components/shared';
+import { LinkGroup, ReliabilityTabs, PipeTruth } from './_components/shared';
 
 export const metadata: Metadata = { title: 'Reliability · Error feed' };
 
@@ -284,7 +284,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
       </div>
 
       {filters}
-      <TruthLine pipe={pipe}>
+      <PipeTruth pipe={pipe}>
         <span>
           {all.length} {all.length === 1 ? 'failure' : 'failures'} {windowWords(scope.w)} · {scope.pf === 'all' ? 'every device' : PLATFORM_WORDS[scope.pf]} · from the session store (clubhouse_session_events), every failure kept
         </span>
@@ -293,7 +293,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
         <span data-br={BR.feed.copy}>
           <CopyReportButton report={feedReport(items, summary, scope.w, pipe.label)} variant="labeled" size="sm" label="Copy report" />
         </span>
-      </TruthLine>
+      </PipeTruth>
 
       {failures.state === 'error' ? (
         <SpaceState br={BR.feed.failed} title="The failures could not be read.">
