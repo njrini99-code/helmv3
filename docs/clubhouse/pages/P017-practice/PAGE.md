@@ -7,6 +7,7 @@
 | --- | --- |
 | Manifest | [P017-practice.json](../../../../config/clubhouse/pages/P017-practice.json) |
 | Page docs | [PAGE](PAGE.md) · [DESIGN](DESIGN.md) · [CONTRACT](CONTRACT.md) · [WIRING](WIRING.md) · [VERIFY](VERIFY.md) · [CHANGELOG](CHANGELOG.md) |
+| State catalog | [catalog/practice.md](../../catalog/practice.md) |
 | Checklist | [screens/practice.md](../../screens/practice.md) |
 | Phone spec | [phone/practice.md](../../phone/practice.md) |
 | Design boards | [coachhelm-practice.html](../../../../design-refresh/practice-plan/redesign/coachhelm-practice.html) |
@@ -53,17 +54,18 @@ Practice has no catalog file of its own. Its 16 catalog rows start "Practice:"
 in [`catalog/coachhelm.md`](../../catalog/coachhelm.md) and are numbered in that
 file's block (CH-13080 and up), so their Bridge IDs are minted under P013
 (namespace 13). CH codes and Bridge IDs are permanent, so the rows stay where
-they are and this page's CONTRACT.md names them from there. P017 mints no Bridge
-IDs of its own (namespace 17 is reserved for it).
+they are and this page's CONTRACT.md names them from there.
 
 The server actions and shared libraries use a second numbering, the practice
 design's own `CH-17xxx` codes (`design-refresh/prerequisites/N-00-practice-plan-builder.md`,
 its copy table). They are error and log codes (`code: 'CH-17001'`,
-`errorCode: 'CH-17001'`), never a `data-ch-code` on an element, and they are not
-catalog rows. 25 distinct codes sit in
-`src/app/golf/actions/practice-*.ts`, `src/lib/golf/practice-{errors,fanout}.ts`
-and `src/lib/coachhelm/v3/practice-plan/model.ts`; `clubhouse:check` reads only
-`src/clubhouse`, so it never sees them.
+`errorCode: 'CH-17001'`), never a `data-ch-code` on an element. 25 distinct
+codes sit in `src/app/golf/actions/practice-*.ts`,
+`src/lib/golf/practice-{errors,fanout}.ts` and
+`src/lib/coachhelm/v3/practice-plan/model.ts`. Since plan D12 (2026-11-24) they
+are P017's own catalog, [`catalog/practice.md`](../../catalog/practice.md), with
+Bridge IDs in namespace 17, and `clubhouse:check` reads all of `src`, so a code
+written anywhere without a catalog row fails it.
 
 The mapping, as of 2026-11-17. "Stated" means a catalog row says so in its own
 text; "same copy" means the catalog row's visible words equal the design's
@@ -111,10 +113,9 @@ boundaries are named in its text), CH-13286 (one part of a page did not load),
 CH-13395 (New plan with no team; also the `NoTeam` code), CH-13895 and CH-13896
 (a block's sheet on a phone; the time ribbon).
 
-Owner decision (open): the design's codes sit in the block `CH-17xxx`, which is
-exactly where the catalog's numbering would put a page numbered 17 (see
-`catalog/README.md`). The next page to start a catalog at 17 would collide with
-codes already in server code. Nothing was renumbered; see the PR's open list.
+Decided (plan D12, 2026-11-24): the design's codes keep the block `CH-17xxx`,
+which is page 17's block, as Practice's own catalog. Nothing was renumbered; the
+next new page starts its catalog at 18.
 
 ## Addresses
 

@@ -12,7 +12,8 @@ import {
 } from '@/lib/error-logging';
 import { getRecovery, requestRecovery } from '@/lib/recovery/client';
 import { useInClubhouse } from '@/clubhouse/shell/context';
-import { RouteErrorView, type RouteErrorViewProps } from '@/clubhouse/ui/Notices';
+import { RouteErrorView, routeErrorWords, type RouteErrorViewProps } from '@/clubhouse/ui/Notices';
+import { chSignal } from '@/clubhouse/lib/signal';
 import { useIsOffline } from '@/clubhouse/ui/Retry';
 
 interface RouteErrorBoundaryProps {
@@ -195,8 +196,20 @@ export function RouteErrorBoundary({
   }, [inClubhouse, offline, isTransient, isGenericLoad, handleRetry]);
 
   useEffect(() => {
+    // E3 (Bridge plan §4.2): inside Clubhouse the crash is counted under its route-error code, and the report below
+    // carries its place so the Bridge stamps that row. Classified by the error alone, as the log is: an offline read
+    // counts under its transient or load code.
+    const signal = inClubhouse
+      ? chSignal({
+          kind: 'crash',
+          code: routeErrorWords(isChunk ? 'chunk' : isStaleAction ? 'stale-action' : isTransient ? 'transient' : isGenericLoad ? 'load' : 'unknown', route).code,
+          message: error.message,
+          reported: true,
+        })
+      : null;
     // Log error to monitoring service
     logError(error, {
+      ...(signal ? { chSignal: signal } : {}),
       component: component || route,
       route,
       digest: error.digest,
@@ -242,7 +255,7 @@ export function RouteErrorBoundary({
       // logError rather than here — the global window handlers hit the same
       // class and must reach the same tier. See capSeverityForSelfRecovering.
     }, (isTransient || isGenericLoad) && !isServer5xx ? 'medium' : 'high');
-  }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, isServer5xx, retryCount]);
+  }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, isServer5xx, retryCount, inClubhouse]);
 
   // Auto-retry for transient errors OR generic load failures. Two guards stop the
   // self-perpetuating retry loop a backgrounded /rounds/new tab created: reset()

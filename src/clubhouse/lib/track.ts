@@ -2,6 +2,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { logError } from '@/lib/error-logging';
+import { currentReportSignal, noteSignalTrail } from './signal';
 
 /**
  * Clubhouse error tracking, client side. Everything funnels into the existing
@@ -22,12 +23,17 @@ export function chReport(
   ctx: { surface: string; action?: string; severity?: ChSeverity; extra?: Record<string, unknown> },
 ): void {
   const err = error instanceof Error ? error : new Error(String(error));
-  logError(err, { ui: 'clubhouse', surface: ctx.surface, component: `clubhouse.${ctx.surface}`, action: ctx.action, ...ctx.extra }, ctx.severity ?? 'medium');
+  // Inside reportingSignal, the row carries the signal it reports, so the Bridge stamps it rather than writing another.
+  const signal = currentReportSignal();
+  const context = { ui: 'clubhouse', surface: ctx.surface, component: `clubhouse.${ctx.surface}`, action: ctx.action, ...ctx.extra };
+  logError(err, signal ? { ...context, chSignal: signal } : context, ctx.severity ?? 'medium');
 }
 
 /** A breadcrumb for user intent, so an error's Sentry trail shows what the coach did first. */
 export function chTrail(message: string, data?: Record<string, string | number | boolean>): void {
   Sentry.addBreadcrumb({ category: 'clubhouse', message, data, level: 'info' });
+  // The same step goes on the Bridge's failure trail (signal.ts), which keeps the last 12.
+  noteSignalTrail(message);
 }
 
 /** Tag the whole session once the Clubhouse shell mounts. */

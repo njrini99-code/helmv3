@@ -40,6 +40,7 @@ import { LightProvider } from './light';
 import { DockProvider, PhoneDock } from './Dock';
 import { PushAsk } from './PushAsk';
 import { useQuietRefresh } from './use-quiet-refresh';
+import { useChSignals } from './use-signals';
 import { QuickChatProvider } from './quick-chat/QuickChatProvider';
 import { CrumbProvider } from './crumbs';
 import { PhoneChromeProvider, PhoneUnderlay, usePhoneChromeState } from './phone-chrome';
@@ -153,6 +154,9 @@ export function ClubhouseFrame({
   // …and every other box that scrolls: lists, panes, a modal's body, a sheet.
   useSmoothWheelEverywhere();
   useEffect(() => chTagSession(), []);
+  // The Bridge's signals (plan §4.2, E6-E8): views, the team switch, vitals, numbered taps and rage clicks. Off unless
+  // the `clubhouse_signals` switch is on.
+  useChSignals({ enabled: shell.signals === true, role, teamId: userData.teamId ?? null, userId: userData.userId ?? null, pathname, search });
   // Arriving from the welcome or onboarding: the curtain holding the fold's last frame lifts now the frame is here.
   useEffect(() => liftHandoffCurtain(), []);
   useReloadFromBackForwardCache();

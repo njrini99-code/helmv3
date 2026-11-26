@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { EmptyShape, type EmptyShapeKind } from './EmptyShape';
 import { Icon } from './Icon';
 import { PageRetry } from './Retry';
+import { StateSignal } from './StateSignal';
 
 /**
  * The honest states every Clubhouse surface needs, kept visually distinct:
@@ -105,6 +106,7 @@ export function EmptyState({
         data-ch-code={code}
         data-ch-state={state}
       >
+        {code && <StateSignal code={code} />}
         <div className="ch-es__copy">
           {glyph &&
             (page && !compact ? (
@@ -153,12 +155,14 @@ export function EmptyState({
   // The route error's anatomy: a page whose one read failed, and a dead end that keeps the whole canvas.
   if (size !== 'section') {
     const glyph = icon ?? (danger ? CircleAlert : undefined);
+    const pageCode = code ?? (danger ? 'CH-1211' : undefined);
     return (
       <section
         className={'ch-empty-page' + (danger ? ' ch-empty-page--danger' : '')}
         role={danger ? 'alert' : undefined}
-        data-ch-code={code ?? (danger ? 'CH-1211' : undefined)}
+        data-ch-code={pageCode}
       >
+        {pageCode && <StateSignal code={pageCode} />}
         <div className="ch-empty-page__in">
           {glyph && (
             <span className="ch-empty-page__art" aria-hidden="true">
@@ -200,6 +204,7 @@ export function EmptyState({
   }
   return (
     <div className={'ch-empty' + (icon ? ' ch-empty--icon' : '') + (compact ? ' ch-empty--compact' : '')} data-ch-code={code}>
+      {code && <StateSignal code={code} />}
       {icon && (
         <span className="ch-empty__icon" aria-hidden="true">
           <Icon icon={icon} size={16} />

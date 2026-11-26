@@ -33,6 +33,8 @@ type RateLimitResult = {
   remaining: number;
   resetAt: number;
   blockedUntil?: number;
+  /** True when the count is shared across instances (Upstash); false for the per-instance in-memory fallback. */
+  durable?: boolean;
 };
 
 // ----- Upstash singleton (lazy) -----
@@ -209,15 +211,15 @@ export async function checkRateLimit(
           resetAt: reset,
           blockedUntil,
         });
-        return { allowed: false, remaining: 0, resetAt: reset, blockedUntil };
+        return { allowed: false, remaining: 0, resetAt: reset, blockedUntil, durable: true };
       }
-      return { allowed: success, remaining, resetAt: reset };
+      return { allowed: success, remaining, resetAt: reset, durable: true };
     } catch {
       // Fall through to in-memory on transient Upstash error
     }
   }
 
-  return checkRateLimitInMemory(identifier, config);
+  return { ...checkRateLimitInMemory(identifier, config), durable: false };
 }
 
 /**

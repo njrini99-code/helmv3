@@ -33,7 +33,8 @@ free number when its catalog is started, added here and in `CATALOG_PAGE`
 | 14 | Recruiting (coach) |
 | 15 | Auth: sign in, welcome, sign up and onboarding (signed out, then new to the team) |
 | 16 | Tournaments (P016: season home, event desk, review, history, link inbox, compare, event form, lineup, live round; coach and player), and the Live rounds rows (P-6: CH-16600 to CH-16677 and CH-16680 to CH-16685, which follow the plan's copy deck, not the kinds below) |
-| 17, 18, … | Pages after these, in the order their catalogs are started. **17 is already spoken for in code**: the practice design's own error and log codes, `CH-17001` to `CH-17505` (25 distinct codes in `src/app/golf/actions/practice-*.ts`, `src/lib/golf/practice-{errors,fanout}.ts` and `src/lib/coachhelm/v3/practice-plan/model.ts`), have the shape of a page 17 catalog but are not catalog rows. P017 Practice has no catalog file (its rows are CH-13080 and up in `coachhelm.md`); `pages/P017-practice/PAGE.md` maps one numbering to the other. Whether page 17's block is released to the next catalog, or Practice's design codes are renumbered, is an owner decision, left open |
+| 17 | Practice (P017): the practice design's own error and log codes, `CH-17001` to `CH-17505`, which the server actions and the plan model write (`src/app/golf/actions/practice-*.ts`, `src/lib/golf/practice-{errors,fanout}.ts`, `src/lib/coachhelm/v3/practice-plan/model.ts`). Registered as they stand (plan D12, 2026-11-24). Practice's screen rows stay in `coachhelm.md` as CH-13080 and up; `pages/P017-practice/PAGE.md` maps one numbering to the other |
+| 18, 19, … | Pages after these, in the order their catalogs are started |
 
 | Second digit | Kind | What it means |
 | --- | --- | --- |

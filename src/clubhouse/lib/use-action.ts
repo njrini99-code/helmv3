@@ -5,6 +5,7 @@ import { friendlyReason } from './friendly-reason';
 
 export { friendlyReason };
 import { chReport, chTrail } from './track';
+import { chSignal, reportingSignal } from './signal';
 import { useDelayedToast, useToast } from '../ui/Toast';
 import { haptic } from './haptics';
 
@@ -54,6 +55,15 @@ const GIVE_UP_HOLD_MS = 10 * 60_000;
 /** The slow notices replace one another: never "Still saving…" beside "This is taking longer than usual". */
 const SLOW_SAVE_KEY = 'ch-slow-save';
 
+/** A Postgres or PostgREST code in a failure's message (`PGRST116`, `code 42501`), for the Bridge's server-code column. */
+export function serverCodeIn(message: string | undefined): string | undefined {
+  if (!message) return undefined;
+  return /\b(PGRST\d{3})\b/.exec(message)?.[1] ?? /\b(?:code|sqlstate)\W{0,3}([0-9][0-9A-Z]{4})\b/i.exec(message)?.[1];
+}
+
+/** How long the Bridge keeps an action's duration at most (the signal envelope's cap). */
+const SIGNAL_DURATION_MAX = 600_000;
+
 /** True when the browser says it has no network. */
 export function isOffline(): boolean {
   return typeof navigator !== 'undefined' && navigator.onLine === false;
@@ -89,7 +99,11 @@ export function useAction<A extends unknown[], T>(
   const run = useCallback(
     async (...args: A): Promise<ActionResult<T>> => {
       if (inFlight.current) {
-        if (stoppedOut.current) toast({ title: 'Your last save hasn’t answered yet', body: 'You’ll see here when it does. Then you can save again.', code: 'CH-1991', replace: SLOW_SAVE_KEY });
+        // E2 (Bridge plan §4.2): only the wait the coach is told about is counted; a double tap is not an outcome.
+        if (stoppedOut.current) {
+          chSignal({ kind: 'action', outcome: 'busy', code: 'CH-1991', act: name });
+          toast({ title: 'Your last save hasn’t answered yet', body: 'You’ll see here when it does. Then you can save again.', code: 'CH-1991', replace: SLOW_SAVE_KEY });
+        }
         return { success: false, error: 'busy' };
       }
       let c = typeof copy === 'function' ? copy(...args) : copy;
@@ -97,11 +111,15 @@ export function useAction<A extends unknown[], T>(
       if ((c.offline ?? isOffline)()) {
         // CH-1903: nothing is sent while offline; say so instead of spinning.
         haptic('error');
-        toast({ tone: 'error', title: `${c.failed}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903', action: { label: 'Try again', run: () => void run(...args) } });
+        chSignal({ kind: 'action', outcome: 'offline', code: 'CH-1903', act: name });
+        toast({ tone: 'error', title: `${c.failed}: you’re offline`, body: 'Reconnect, then try again. Nothing was changed.', code: 'CH-1903', reported: true, action: { label: 'Try again', run: () => void run(...args) } });
         return { success: false, error: 'offline' };
       }
       inFlight.current = true;
       setPending(true);
+      const startedAt = Date.now();
+      const elapsed = () => Math.min(SIGNAL_DURATION_MAX, Math.max(0, Date.now() - startedAt));
+      chSignal({ kind: 'action', outcome: 'start', act: name });
       const stopSlow = delayedToast({ title: 'Still saving…', body: 'This is taking longer than usual. Keep this page open.', code: 'CH-1902', replace: SLOW_SAVE_KEY }, CH_SLOW_SAVE_AFTER);
       // CH-1990 (GAP-S-31): a save still out after 20 seconds offers Cancel. A server action can't be called back, so
       // Cancel stops waiting: the button is free again and what was typed stays (the caller sees a failure, so it keeps
@@ -129,17 +147,47 @@ export function useAction<A extends unknown[], T>(
         );
       };
       offerCancel();
+      const surface = name.split('.')[0] ?? name;
+      // A throw is reported once, when its outcome is told (below), at medium severity, with its signal's place.
+      let thrown: { error: unknown } | null = null;
       const work = (async (): Promise<ActionResult<T>> => {
         try {
           return normalise(await action(...args));
         } catch (err) {
-          chReport(err, { surface: name.split('.')[0] ?? name, action: name });
+          thrown = { error: err };
           return { success: false, error: undefined };
         }
       })();
+      /** Counts how the save ended and reports a failure once, with the signal that names it (E2, Bridge plan §4.2). */
+      const record = (result: ActionResult<T>) => {
+        if (result.success) {
+          chSignal({ kind: 'action', outcome: 'success', code: 'CH-1702', act: name, durationMs: elapsed() });
+          return;
+        }
+        const threw = thrown as { error: unknown } | null;
+        // A handled failure (the action returned success: false) is still tracked, at low severity, unless another
+        // surface owns it (quiet) or it is the busy gate. A quiet one is still counted, and the Bridge keeps its row.
+        const reports = threw != null || (!c.quiet && result.error !== 'busy');
+        const message = threw != null ? (threw.error instanceof Error ? threw.error.message : String(threw.error)) : result.error;
+        const ref = chSignal({
+          kind: 'action',
+          outcome: 'failure',
+          code: c.code ?? 'CH-1703',
+          act: name,
+          durationMs: elapsed(),
+          message: message || 'action failed',
+          serverCode: serverCodeIn(message),
+          reported: reports,
+        });
+        reportingSignal(ref, () => {
+          if (threw != null) chReport(threw.error, { surface, action: name });
+          else if (reports) chReport(new Error(result.error || 'action failed'), { surface, action: name, severity: 'low' });
+        });
+      };
       /** Says how the save ended (the success or the failure pattern), unless another surface owns the outcome. */
       const tell = (result: ActionResult<T>): ActionResult<T> => {
         if (refine) c = refine(result, c);
+        record(result);
         // Another surface owns this outcome (a dialog, the page that took over): nothing to say twice.
         if (c.quiet) return result;
         if (result.success) {
@@ -147,8 +195,6 @@ export function useAction<A extends unknown[], T>(
           haptic('success');
           if (c.done) toast({ title: c.done });
         } else {
-          // A handled failure (the action returned success: false) is still tracked, at low severity.
-          if (result.error !== 'busy') chReport(new Error(result.error || 'action failed'), { surface: name.split('.')[0] ?? name, action: name, severity: 'low' });
           haptic('error');
           toast({
             tone: 'error',
@@ -156,6 +202,7 @@ export function useAction<A extends unknown[], T>(
             body: (refine ? c.hint : undefined) ?? friendlyReason(result.error) ?? c.hint ?? 'Try again.',
             action: c.retry === false ? undefined : { label: c.retry ?? 'Try again', run: () => void run(...args) },
             code: c.code,
+            reported: true,
           });
         }
         return result;
@@ -167,6 +214,7 @@ export function useAction<A extends unknown[], T>(
       setPending(false);
       if (first === 'stopped') {
         chTrail(`action ${name} stopped waiting`);
+        chSignal({ kind: 'action', outcome: 'stopped-waiting', code: 'CH-1991', act: name, durationMs: elapsed() });
         toast({ title: 'Stopped waiting', body: 'Your changes are kept. If it saves after all, you’ll see it here.', code: 'CH-1991', replace: SLOW_SAVE_KEY });
         // Its answer still lands, and is told as any other: saved, or what failed with Try again.
         // The button is free again, but the gate stays shut until that answer lands, so nothing is sent twice.

@@ -297,3 +297,23 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "pgmq" GRANT SELECT ON SE
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "pgmq" GRANT SELECT ON TABLES TO "pg_monitor";
 
 REVOKE ALL ON TABLE "helm_private"."golf_demo_editors" FROM PUBLIC, "anon", "authenticated";
+
+-- Clubhouse Bridge signals: held migration 20261124090000
+-- (clubhouse_bridge_signals.sql), WRITTEN — HOLD — NOT APPLIED in production.
+-- Generated 2026-11-25 by pg_dump of the file applied to a scratch Postgres 16
+-- with stub tables (PR #2611, branch bridge/pr1-spine).
+
+GRANT ALL ON TABLE "public"."bridge_notes" TO "service_role";
+GRANT SELECT ON TABLE "public"."bridge_notes" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."clubhouse_drift" TO "service_role";
+GRANT SELECT ON TABLE "public"."clubhouse_drift" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."clubhouse_session_events" TO "service_role";
+GRANT SELECT ON TABLE "public"."clubhouse_session_events" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."clubhouse_sessions" TO "service_role";
+GRANT SELECT ON TABLE "public"."clubhouse_sessions" TO "authenticated";
+
+GRANT ALL ON TABLE "public"."clubhouse_signal_hourly" TO "service_role";
+GRANT SELECT ON TABLE "public"."clubhouse_signal_hourly" TO "authenticated";

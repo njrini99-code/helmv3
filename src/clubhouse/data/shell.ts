@@ -43,6 +43,11 @@ export interface ChShellData {
    * because the flag registry is server-only. Off or absent: no class RPC is called anywhere and no column is sent.
    */
   classAwareness?: boolean;
+  /**
+   * The `clubhouse_signals` kill switch is on (Bridge plan §4.4): the shell sends its signals to /api/ch/signal. Off or
+   * absent, nothing is queued or sent. Read with the shell because the flag registry is server-only.
+   */
+  signals?: boolean;
 }
 
 /** A shell value whose read can fail without taking anything away: the Resume accessory and the head coach's title. */
@@ -138,7 +143,7 @@ export async function loadPaletteEvents(supabase: Awaited<ReturnType<typeof crea
 }
 
 export async function loadClubhouseShell(teamId: string | undefined, playerId?: string | null, coachId?: string | null): Promise<ChShellData> {
-  if (!teamId) return { pendingJoinRequests: null };
+  if (!teamId) return { pendingJoinRequests: null, signals: isFlagEnabled('clubhouse_signals') };
   const supabase = await createClient();
   // The team's zone is read once and shared: the coach's overdue count needs today's date in it, and runs beside the rest.
   const zoneRead = Promise.resolve(supabase.from('golf_team_settings').select('timezone').eq('team_id', teamId).maybeSingle());
@@ -219,6 +224,7 @@ export async function loadClubhouseShell(teamId: string | undefined, playerId?: 
     askAvailable: askOn,
     helmViews: { playerAsk: true, team: true },
     classAwareness: isFlagEnabled('class_awareness_v1'),
+    signals: isFlagEnabled('clubhouse_signals'),
     course: courseOf(courseRes),
     roundInProgress: round && playerId ? { id: round.id, course: round.course_name?.trim() || 'Your round', hole: round.current_hole ?? null, toPar: toParOf(round.golf_holes ?? []), playerId } : null,
     viewerIsHeadCoach: !!staffRes && !staffRes.error && (staffRes.data ?? []).some((row) => row.role === 'head_coach'),
