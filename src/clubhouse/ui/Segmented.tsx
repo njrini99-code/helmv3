@@ -115,11 +115,11 @@ export function Segmented<V extends string>({
     refs.current[n]?.focus();
   };
   return (
-    <div ref={well} className={`ch-seg ch-well ch-seg--${size}${block ? ' ch-seg--block' : ''}`} role="radiogroup" aria-label={label} onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
+    <div data-ctl="CTL-P000-039" ref={well} className={`ch-seg ch-well ch-seg--${size}${block ? ' ch-seg--block' : ''}`} role="radiogroup" aria-label={label} onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd}>
       {options.map((o, i) => {
         const on = o.value === shown;
         return (
-          <button
+          <button data-ctl="CTL-P000-040"
             key={o.value}
             ref={(el) => {
               refs.current[i] = el;
@@ -161,7 +161,7 @@ export function PillGroup<V extends string>({
   return (
     <div className="ch-pills" role="group" aria-label={label}>
       {options.map((o) => (
-        <button
+        <button data-ctl="CTL-P000-041"
           key={o.value}
           type="button"
           className="ch-pill ch-num"

@@ -191,7 +191,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
           <div className="ipls">
             {worked.map((f, i) =>
               undecided && onSend ? (
-                <button key={f.label} type="button" className="ipl" data-ch-press=".97" style={{ ['--ch-i' as string]: i }} onClick={() => replaceWith(`Change the ${f.label.toLowerCase()} on ${p.summary}`)}>
+                <button data-ctl="CTL-P013-075" key={f.label} type="button" className="ipl" data-ch-press=".97" style={{ ['--ch-i' as string]: i }} onClick={() => replaceWith(`Change the ${f.label.toLowerCase()} on ${p.summary}`)}>
                   <b>{f.value}</b>
                   <span>{f.source}</span>
                 </button>
@@ -228,7 +228,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
                   </span>
                   <span className="tells">{p.publish.tellsLine}</span>
                   {undecided && onSend && (
-                    <Button variant="secondary" size="sm" className="chg" onClick={() => replaceWith(`Change who hears about ${p.summary}`)}>
+                    <Button data-ctl="CTL-P013-076" variant="secondary" size="sm" className="chg" onClick={() => replaceWith(`Change who hears about ${p.summary}`)}>
                       Change
                     </Button>
                   )}
@@ -309,7 +309,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
         </p>
       )}
       {undecided && evidence && (
-        <button type="button" className="ch-ak-evlink" aria-expanded={evidence.open} onClick={evidence.onOpen}>
+        <button data-ctl="CTL-P013-077" type="button" className="ch-ak-evlink" aria-expanded={evidence.open} onClick={evidence.onOpen}>
           See what this is based on
         </button>
       )}
@@ -317,7 +317,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
         <div className="btns">
           {/* Cancel leaves on Confirm but keeps its box, so the primary keeps its place (MO-7-4). */}
           <span className={'cx' + (pressed ? ' is-gone' : '')}>
-            <Button variant="ghost" disabled={pressed || !view.approvalId} onClick={() => answer(false)} data={{ 'data-ch-ask-cancel': '' }}>
+            <Button data-ctl="CTL-P013-078" variant="ghost" disabled={pressed || !view.approvalId} onClick={() => answer(false)} data={{ 'data-ch-ask-cancel': '' }}>
               Cancel
             </Button>
           </span>
@@ -326,7 +326,7 @@ export function ConfirmCard({ view, inlineReceipt, onApprove, onDeny, onSend, fr
               {kind.busy}
             </span>
           ) : (
-            <Button variant="primary" disabled={pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
+            <Button data-ctl="CTL-P013-079" variant="primary" disabled={pressed || !view.approvalId || p.missing.length > 0} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
               {p.publish ? p.action : kind.verb(count)}
             </Button>
           )}
@@ -519,14 +519,14 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
             {late ? 'Too late to undo. It’s saved. Open it to change it.' : undoFailed ? 'Couldn’t undo that. Try again.' : phase.kind === 'undoing' ? 'Undoing…' : closed ? (saving ? 'Saving…' : 'Not saved yet.') : holdLine ? holdLine(secs) : telling ? `Not saved yet. Saves in ${when}, then players are told.` : `Not saved yet. Saves in ${when}.`}
           </span>
           {!closed && phase.kind === 'held' && (
-            <button type="button" className="lk now" onClick={() => void saveNow()}>
+            <button data-ctl="CTL-P013-080" type="button" className="lk now" onClick={() => void saveNow()}>
               Save now and open
               <Icon icon={ArrowUpRight} size={14} />
             </button>
           )}
         </div>
         {!late && !closed && (
-          <Button variant="secondary" size="sm" disabled={phase.kind === 'undoing'} onClick={() => void undo()} aria={{ label: `Undo, ${when} left` }} data={{ 'data-ch-ask-undo': '' }}>
+          <Button data-ctl="CTL-P013-081" variant="secondary" size="sm" disabled={phase.kind === 'undoing'} onClick={() => void undo()} aria={{ label: `Undo, ${when} left` }} data={{ 'data-ch-ask-undo': '' }}>
             Undo
           </Button>
         )}
@@ -549,12 +549,12 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
         </div>
         {stale
           ? onAskAgain && (
-              <Button variant="secondary" size="sm" onClick={onAskAgain} data={{ 'data-ch-ask-again': '' }}>
+              <Button data-ctl="CTL-P013-082" variant="secondary" size="sm" onClick={onAskAgain} data={{ 'data-ch-ask-again': '' }}>
                 Ask again
               </Button>
             )
           : onRetry && (
-              <Button variant="secondary" size="sm" onClick={onRetry}>
+              <Button data-ctl="CTL-P013-083" variant="secondary" size="sm" onClick={onRetry}>
                 Try again
               </Button>
             )}
@@ -578,7 +578,7 @@ export function Receipt({ receipt, idempotencyKey, undoneLine = UNDONE_DEFAULT, 
           {r.status === 'partial' && <span className="sub">{r.partial_failures.join(' ')} Check what was created before you try again.</span>}
         </div>
         {link?.href && (
-          <a className="lk" href={askLinkHref(link.href) ?? link.href} onClick={() => onOpen?.(r)}>
+          <a data-ctl="CTL-P013-084" className="lk" href={askLinkHref(link.href) ?? link.href} onClick={() => onOpen?.(r)}>
             Open
             <Icon icon={ArrowUpRight} size={14} />
           </a>

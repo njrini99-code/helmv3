@@ -321,11 +321,11 @@ function ActionKey({ a, onDone, className }: { a: PeekAction; onDone: () => void
     onDone();
   };
   return a.href ? (
-    <Link href={a.href} className={className} role="menuitem" onClick={pick}>
+    <Link data-ctl="CTL-P000-030" href={a.href} className={className} role="menuitem" onClick={pick}>
       {body}
     </Link>
   ) : (
-    <button type="button" className={className} role="menuitem" onClick={pick}>
+    <button data-ctl="CTL-P000-031" type="button" className={className} role="menuitem" onClick={pick}>
       {body}
     </button>
   );
@@ -462,7 +462,7 @@ function PressPeek({
   return (
     // The click is only the backdrop dismiss; Esc arrives through onCancel.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <dialog
+    <dialog data-ctl="CTL-P000-032"
       ref={ref}
       className="ch-peek"
       aria-label={label}

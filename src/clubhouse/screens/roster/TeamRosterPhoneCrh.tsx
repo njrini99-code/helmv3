@@ -53,7 +53,7 @@ export function TeamRosterPhoneCrh({ data, onRetry }: { data: ChPlayerRoster; on
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Teammates">
             <CrhStateBlock kind="failed" code="CH-3210" title="The roster didn’t load" body={FAILURE_COPY.page}>
-              <Button leftIcon={RotateCw} onClick={onRetry}>
+              <Button data-ctl="CTL-P003-052" leftIcon={RotateCw} onClick={onRetry}>
                 Try again
               </Button>
             </CrhStateBlock>

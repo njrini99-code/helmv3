@@ -18,7 +18,7 @@ export function HowItPlays({ data, who, onHole }: { data: ChCourseHistory['howIt
           {data.rows.map((r) => (
             <li key={r.label}>
               {r.hole != null ? (
-                <button type="button" className="ch-hip__row" onClick={() => onHole(r.hole!)}>
+                <button data-ctl="CTL-P011-032" type="button" className="ch-hip__row" onClick={() => onHole(r.hole!)}>
                   <span>{r.label}</span>
                   <b>
                     <span className="ch-num">{r.value}</span>

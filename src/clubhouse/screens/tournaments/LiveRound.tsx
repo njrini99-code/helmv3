@@ -116,16 +116,16 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
   const primary =
     r.status === 'upcoming' ? (
       nobody ? null : (
-        <Button variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
+        <Button data-ctl="CTL-P016-073" variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
           Go live
         </Button>
       )
     ) : r.status === 'live' ? (
-      <Button variant="primary" leftIcon={Flag} busy={status.pending} onClick={() => setFinishing(true)}>
+      <Button data-ctl="CTL-P016-074" variant="primary" leftIcon={Flag} busy={status.pending} onClick={() => setFinishing(true)}>
         Finish round
       </Button>
     ) : r.status === 'suspended' ? (
-      <Button variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
+      <Button data-ctl="CTL-P016-075" variant="primary" busy={status.pending} onClick={() => void status.run('live')}>
         Resume play
       </Button>
     ) : null;
@@ -141,14 +141,14 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
             { label: 'Suspend, another reason', icon: Pause, onSelect: () => void status.run('suspended_other') },
           ]}
           trigger={(p) => (
-            <Button variant={phone ? 'ghost' : 'secondary'} menu={p} disabled={status.pending}>
+            <Button data-ctl="CTL-P016-076" variant={phone ? 'ghost' : 'secondary'} menu={p} disabled={status.pending}>
               Suspend play
             </Button>
           )}
         />
       )}
       {(r.status === 'final' || r.status === 'official') && (
-        <Button variant="secondary" href={paths.desk(e.id)}>
+        <Button data-ctl="CTL-P016-077" variant="secondary" href={paths.desk(e.id)}>
           Open the event
         </Button>
       )}
@@ -164,7 +164,7 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
         tightAlways
         id={TITLE_ID}
         phone={phone}
-        crumb={phone ? undefined : <TourCrumb href={paths.desk(e.id)}>{e.name}</TourCrumb>}
+        crumb={phone ? undefined : <TourCrumb data-ctl="CTL-P016-078" href={paths.desk(e.id)}>{e.name}</TourCrumb>}
         eyebrow={e.name}
         title={`Round ${r.number}`}
         line={[course, tourDay(r.date, { weekday: 'short', month: 'short', day: 'numeric' })].filter(Boolean).join(' · ')}
@@ -199,7 +199,7 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
         </SectionBoundary>
       )}
       {nobody ? (
-        <EmptyState size="page" kind="first-run" code="CH-16370" title="Nobody is in this round yet" body="Set the lineup, then the lanes show here as scores come in." action={<Button href={paths.lineup(e.id)}>Open the lineup</Button>} />
+        <EmptyState size="page" kind="first-run" code="CH-16370" title="Nobody is in this round yet" body="Set the lineup, then the lanes show here as scores come in." action={<Button data-ctl="CTL-P016-079" href={paths.lineup(e.id)}>Open the lineup</Button>} />
       ) : (
         <div className="ch-tour-live-body">
           <Section id="ch-tour-live-lineup" title="Lineup" meta={`${e.format.counting} of ${e.format.players} count`}>
@@ -258,10 +258,10 @@ function LivePage({ data, phone }: { data: ChTourLiveSnapshot; phone: boolean })
         description="Scores can still be corrected after this. The round counts as final and the next one can start."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setFinishing(false)}>
+            <Button data-ctl="CTL-P016-080" variant="ghost" onClick={() => setFinishing(false)}>
               Keep playing
             </Button>
-            <Button
+            <Button data-ctl="CTL-P016-081"
               variant="primary"
               busy={status.pending}
               onClick={() => {
@@ -353,7 +353,7 @@ function Lane({ lane: l, name, phone, onEnter, onHoles, editable }: { lane: ChTo
   if (phone && editable)
     return (
       <li className={cls + ' is-tap'} data-ch-lane={l.playerId} data-ch-count={l.count}>
-        <button type="button" className="ch-tour-live-lane__tap" onClick={() => onEnter(l)}>
+        <button data-ctl="CTL-P016-082" type="button" className="ch-tour-live-lane__tap" onClick={() => onEnter(l)}>
           {body}
           <span className="ch-sr-only">, {scored ? 'edit score' : 'enter score'}</span>
           <Icon icon={ChevronRight} size={16} className="ch-tour-live-lane__go" />
@@ -367,11 +367,11 @@ function Lane({ lane: l, name, phone, onEnter, onHoles, editable }: { lane: ChTo
       {editable && (
         <div className="ch-tour-live-lane__act">
           {onHoles && (
-            <Button size="sm" variant="secondary" onClick={() => onHoles(l)} aria={{ label: `Score ${name} by hole` }}>
+            <Button data-ctl="CTL-P016-083" size="sm" variant="secondary" onClick={() => onHoles(l)} aria={{ label: `Score ${name} by hole` }}>
               Score by hole
             </Button>
           )}
-          <Button size="sm" variant="secondary" onClick={() => onEnter(l)} aria={{ label: `${scored ? 'Edit' : 'Enter'} score for ${name}` }}>
+          <Button data-ctl="CTL-P016-084" size="sm" variant="secondary" onClick={() => onEnter(l)} aria={{ label: `${scored ? 'Edit' : 'Enter'} score for ${name}` }}>
             {scored ? 'Edit score' : 'Enter score'}
           </Button>
         </div>
@@ -458,14 +458,14 @@ function ScoreSheet({ data, lane, name, onClose, onHoles }: { data: ChTourLiveSn
       footer={
         <>
           {hasScore && (
-            <Button variant="ghost" disabled={write.pending} onClick={() => void write.run(true)}>
+            <Button data-ctl="CTL-P016-085" variant="ghost" disabled={write.pending} onClick={() => void write.run(true)}>
               Clear score
             </Button>
           )}
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P016-086" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={write.pending} onClick={() => void write.run(false)}>
+          <Button data-ctl="CTL-P016-087" variant="primary" busy={write.pending} onClick={() => void write.run(false)}>
             Save score
           </Button>
         </>
@@ -480,7 +480,7 @@ function ScoreSheet({ data, lane, name, onClose, onHoles }: { data: ChTourLiveSn
         }}
       >
         {onHoles && (
-          <Button variant="ghost" size="sm" className="ch-tour-live-sheet__holes" onClick={onHoles}>
+          <Button data-ctl="CTL-P016-088" variant="ghost" size="sm" className="ch-tour-live-sheet__holes" onClick={onHoles}>
             Score hole by hole instead
           </Button>
         )}
@@ -526,7 +526,7 @@ function ScoreSheet({ data, lane, name, onClose, onHoles }: { data: ChTourLiveSn
           </span>
           <input className="ch-input" maxLength={280} value={form.note} onChange={(ev) => set({ note: ev.target.value })} />
         </label>
-        <button type="submit" hidden />
+        <button data-ctl="CTL-P016-089" type="submit" hidden />
       </form>
     </Modal>
   );

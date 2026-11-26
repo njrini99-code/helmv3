@@ -38,7 +38,7 @@ export function Stepper({
   };
   return (
     <div className="ch-stepper" role="group" aria-label={label}>
-      <IconButton icon={Minus} label={`Less ${label.toLowerCase()}`} size="sm" variant="secondary" disabled={value <= min} onClick={() => set(value - step)} />
+      <IconButton data-ctl="CTL-P000-044" icon={Minus} label={`Less ${label.toLowerCase()}`} size="sm" variant="secondary" disabled={value <= min} onClick={() => set(value - step)} />
       <span
         className="ch-stepper__v ch-num"
         role="spinbutton"
@@ -65,7 +65,7 @@ export function Stepper({
         {format(value)}
         {unit && <span className="ch-stepper__u"> {unit}</span>}
       </span>
-      <IconButton icon={Plus} label={`More ${label.toLowerCase()}`} size="sm" variant="secondary" disabled={value >= max} onClick={() => set(value + step)} />
+      <IconButton data-ctl="CTL-P000-045" icon={Plus} label={`More ${label.toLowerCase()}`} size="sm" variant="secondary" disabled={value >= max} onClick={() => set(value + step)} />
     </div>
   );
 }

@@ -317,7 +317,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
               <ul className="qc-starts" aria-label="Starts for this screen" data-late={late ? '' : undefined}>
                 {starts.map((s) => (
                   <li key={s.id}>
-                    <button
+                    <button data-ctl="CTL-P001-049"
                       type="button"
                       className="qc-start"
                       data-ch-press=""
@@ -417,7 +417,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                     ) : (
                       <span className="qc-chip__l">{chip.label}</span>
                     )}
-                    <button type="button" className="qc-chip__x" aria-label="Remove" data-ch-press="" disabled={chat.busy} onClick={dropChip}>
+                    <button data-ctl="CTL-P001-050" type="button" className="qc-chip__x" aria-label="Remove" data-ch-press="" disabled={chat.busy} onClick={dropChip}>
                       <Icon icon={X} size={13} />
                     </button>
                   </Badge>
@@ -438,7 +438,7 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
                 },
               }))}
               trigger={(t) => (
-                <button {...t} type="button" className="cmp__plus" aria-label="Add to your question" data-ch-press="">
+                <button data-ctl="CTL-P001-051" {...t} type="button" className="cmp__plus" aria-label="Add to your question" data-ch-press="">
                   <Ico d="M12 5v14M5 12h14" size={18} />
                 </button>
               )}
@@ -476,16 +476,16 @@ export function QuickChatThread({ chat: useChatImpl, conversationId, initialMess
               }}
             />
             {mic.available && (
-              <button type="button" className={'cmp__mic' + (mic.on ? ' is-on' : '')} aria-label={mic.on ? 'Stop dictating' : 'Dictate'} aria-pressed={mic.on} data-ch-press="" onClick={mic.toggle}>
+              <button data-ctl="CTL-P001-052" type="button" className={'cmp__mic' + (mic.on ? ' is-on' : '')} aria-label={mic.on ? 'Stop dictating' : 'Dictate'} aria-pressed={mic.on} data-ch-press="" onClick={mic.toggle}>
                 <Ico d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3" size={18} />
               </button>
             )}
             {chat.busy ? (
-              <button className="cmp__send stop" type="button" aria-label="Stop" data-ch-press="" onClick={stop}>
+              <button data-ctl="CTL-P001-053" className="cmp__send stop" type="button" aria-label="Stop" data-ch-press="" onClick={stop}>
                 <span className="sq" />
               </button>
             ) : (
-              <button
+              <button data-ctl="CTL-P001-054"
                 className={'cmp__send' + (canSend ? '' : ' off')}
                 type="button"
                 aria-label="Send"

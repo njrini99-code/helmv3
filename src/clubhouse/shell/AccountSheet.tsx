@@ -83,7 +83,7 @@ export function AccountSheet({
   return (
     <Modal open={moreOpen} onClose={closeMore} title="Account" code="CH-1802" id={SHEET_ID} className="ch-acct" fallbackFocus={sectionTitle}>
       {user && (
-        <Link href="/golf/dashboard/settings" className="ch-more__me" onClick={leaveForPage}>
+        <Link data-ctl="CTL-P001-002" href="/golf/dashboard/settings" className="ch-more__me" onClick={leaveForPage}>
           <Avatar name={user.name} size={44} />
           <span className="ch-more__me-t">
             <b>{user.name}</b>{' '}
@@ -96,20 +96,20 @@ export function AccountSheet({
       <div className="ch-more__list">
         {/* A coach's What's new (GAP-R-06): the phone's way to it, as the desktop account menu's row. */}
         {role === 'coach' && (
-          <Link href="/golf/dashboard/whats-new" className="ch-more__row" onClick={leaveForPage}>
+          <Link data-ctl="CTL-P001-003" href="/golf/dashboard/whats-new" className="ch-more__row" onClick={leaveForPage}>
             <span className="ch-more__ic">
               <Icon icon={Sparkles} size={17} />
             </span>
             <span className="ch-more__label">What’s new</span>
           </Link>
         )}
-        <Link href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={leaveForPage}>
+        <Link data-ctl="CTL-P001-004" href="/golf/dashboard/settings#set-help" className="ch-more__row" onClick={leaveForPage}>
           <span className="ch-more__ic">
             <Icon icon={LifeBuoy} size={17} />
           </span>
           <span className="ch-more__label">Help</span>
         </Link>
-        <button type="button" className="ch-more__row" onClick={() => void signOut()} disabled={leaving}>
+        <button data-ctl="CTL-P001-005" type="button" className="ch-more__row" onClick={() => void signOut()} disabled={leaving}>
           <span className="ch-more__ic">
             <Icon icon={LogOut} size={17} />
           </span>

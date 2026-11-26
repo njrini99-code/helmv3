@@ -23,7 +23,7 @@ earlier observations below retain their original date and scope.
 | Checklist | [screens/settings.md](../../screens/settings.md) |
 | Phone spec | [phone/settings.md](../../phone/settings.md) |
 | Design boards | [sidebar.css](../../../../design/handoff/sidebar.css) · [depth.css](../../../../design/handoff/depth.css) |
-| Code | [settings](../../../../src/clubhouse/screens/settings) · [settings.ts](../../../../src/clubhouse/data/settings.ts) · [settings.tsx](../../../../src/clubhouse/routes/settings.tsx) · [settings.css](../../../../src/clubhouse/styles/settings.css) |
+| Code | [settings](../../../../src/clubhouse/screens/settings) · [settings.ts](../../../../src/clubhouse/data/settings.ts) · [settings.tsx](../../../../src/clubhouse/routes/settings.tsx) · [settings.css](../../../../src/clubhouse/styles/settings.css) · [Slider.tsx](../../../../src/clubhouse/ui/Slider.tsx) |
 | Audits | [all audits](../../AUDITS.md) |
 | Tracker | [PROGRESS.md](../../PROGRESS.md), row "Settings" |
 | Screenshot log | [VERIFY.md, Screenshots](VERIFY.md#screenshots) |

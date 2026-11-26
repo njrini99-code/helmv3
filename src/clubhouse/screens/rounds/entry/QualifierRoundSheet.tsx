@@ -52,11 +52,11 @@ export function QualifierRoundSheet({
       code="CH-11518"
       footer={
         <>
-          <Button variant="ghost" onClick={onBack}>
+          <Button data-ctl="CTL-P011-070" variant="ghost" onClick={onBack}>
             Back
           </Button>
           {options.length > 0 && (
-            <Button variant="primary" size="lg" disabled={!canSubmit} onClick={onSubmit}>
+            <Button data-ctl="CTL-P011-071" variant="primary" size="lg" disabled={!canSubmit} onClick={onSubmit}>
               Post round
             </Button>
           )}
@@ -66,7 +66,7 @@ export function QualifierRoundSheet({
       {options.length > 0 ? (
         <Opts>
           {options.map((n) => (
-            <Opt
+            <Opt data-ctl="CTL-P011-072"
               key={n}
               icon={Medal}
               tone={selected === n ? 'primary' : undefined}

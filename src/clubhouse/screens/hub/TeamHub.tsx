@@ -610,7 +610,7 @@ export function TeamHub({
           (a post, a trip, a task, a document; none on a tab whose read failed). The glyph is the plus on every tab
           (visual pass 2026-10-28); the label names what it makes. */}
       {phone && coach && (
-        <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction icon={Plus} label={primary.label} onClick={primary.run} /> : undefined} />
+        <PhoneTop title="Team Hub" start heading={false} action={primary ? <PhoneIconAction data-ctl="CTL-P010-001" icon={Plus} label={primary.label} onClick={primary.run} /> : undefined} />
       )}
       <header className="ch-hb-h" data-canopy-head="tight">
         <div>
@@ -620,7 +620,7 @@ export function TeamHub({
           <span className="ch-hb-muted">{[data.teamName, data.season].filter(Boolean).join(' · ')}</span>
         </div>
         {primary && !phone && (
-          <Button variant="primary" leftIcon={primary.icon} onClick={primary.run}>
+          <Button data-ctl="CTL-P010-002" variant="primary" leftIcon={primary.icon} onClick={primary.run}>
             {primary.label}
           </Button>
         )}
@@ -639,7 +639,7 @@ export function TeamHub({
       {/* CH-10801: real tabs, each controlling its panel. */}
       <div ref={tabsEdges} className="ch-hscroll ch-hb-tabs" role="tablist" aria-label="Team Hub sections">
         {HUB_TABS[data.role].map(([k, l]) => (
-          <button
+          <button data-ctl="CTL-P010-003"
             key={k}
             type="button"
             role="tab"
@@ -678,7 +678,7 @@ export function TeamHub({
                 // offers the other way to start, not a second copy of it.
                 secondaryAction={
                   coach ? (
-                    <Button
+                    <Button data-ctl="CTL-P010-004"
                       leftIcon={Plane}
                       onClick={planTrip}
                     >

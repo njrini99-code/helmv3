@@ -120,7 +120,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
 
   // F-02: the results as a spreadsheet, from Who counted's own section (the teams, then our players and their rounds).
   const exportKey = hasScores && !data.errors.rounds && (
-    <ExportButton
+    <ExportButton data-ctl="CTL-P016-009"
       file={() => resultsCsv(data, isoDay(new Date()))}
       done={(f) => `Results exported · ${resultsCount(f)}`}
       failed={`Couldn’t export ${e.short}’s results`}
@@ -168,34 +168,34 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
       <div className="ch-tour-head__a">
         {/* Link rounds from every event (coach audit, 13 Nov 2026), with this event's waiting rounds, 0 too. */}
         {data.links !== undefined && (
-          <Button leftIcon={Link2} href={paths.links()}>
+          <Button data-ctl="CTL-P016-010" leftIcon={Link2} href={paths.links()}>
             {data.links == null ? 'Link rounds' : `Link rounds (${data.links})`}
           </Button>
         )}
         {e.resultsUrl && !phone && (
-          <a className="ch-tour-desk-link" href={e.resultsUrl} target="_blank" rel="noopener noreferrer">
+          <a data-ctl="CTL-P016-011" className="ch-tour-desk-link" href={e.resultsUrl} target="_blank" rel="noopener noreferrer">
             <Icon icon={ArrowUpRight} size={15} />
             <span>Official results</span>
           </a>
         )}
         {canImport && !phone && (
-          <Button leftIcon={Upload} onClick={() => setImporting(true)}>
+          <Button data-ctl="CTL-P016-012" leftIcon={Upload} onClick={() => setImporting(true)}>
             Import results
           </Button>
         )}
         {e.status !== 'complete' && primary.href !== paths.lineup(e.id) && !phone && (
-          <Button leftIcon={Users} href={paths.lineup(e.id)}>
+          <Button data-ctl="CTL-P016-013" leftIcon={Users} href={paths.lineup(e.id)}>
             Manage lineup
           </Button>
         )}
         {/* P-5 4.11.5: Cancel or Restore tournament, and Stop tracking. */}
         <DeskTrackMenu tournamentId={e.id} name={e.name} track={data.track} />
         {'href' in primary ? (
-          <Button variant="primary" leftIcon={primary.icon} href={primary.href}>
+          <Button data-ctl="CTL-P016-014" variant="primary" leftIcon={primary.icon} href={primary.href}>
             {primary.label}
           </Button>
         ) : (
-          <Button variant="primary" leftIcon={primary.icon} onClick={primary.onClick}>
+          <Button data-ctl="CTL-P016-015" variant="primary" leftIcon={primary.icon} onClick={primary.onClick}>
             {primary.label}
           </Button>
         )}
@@ -232,7 +232,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         id={TITLE_ID}
         phone={phone}
         // The phone bar carries Back (TourPhoneTop); a second crumb under it said the same thing twice.
-        crumb={phone ? undefined : <TourCrumb href={paths.home()} />}
+        crumb={phone ? undefined : <TourCrumb data-ctl="CTL-P016-016" href={paths.home()} />}
         eyebrow={`${tourRange(e.startDate, e.endDate)}${phone ? '' : `, ${e.startDate.slice(0, 4)}`}${course ? ` · ${course.name}` : ''}${course?.tees && !phone ? ` · ${course.tees}` : ''}`}
         title={e.name}
         meta={meta}
@@ -274,7 +274,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
         {tab === 'live' && (
           <Section id="ch-tour-desk-live" title="Live" meta="Scores as they are posted">
             <p className="ch-tour-desk-line">A round is on the course. Scores post here as they come in; the live view follows every group.</p>
-            <Button variant="secondary" leftIcon={Radio} href={paths.live(e.id)}>
+            <Button data-ctl="CTL-P016-017" variant="secondary" leftIcon={Radio} href={paths.live(e.id)}>
               Follow live
             </Button>
           </Section>
@@ -300,7 +300,7 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
             meta={course ? `${course.name} · ${course.tees} · tap a hole for the scorecard` : undefined}
             actions={
               canImport && !phone ? (
-                <Button size="sm" leftIcon={Table2} onClick={() => setEntering(true)}>
+                <Button data-ctl="CTL-P016-018" size="sm" leftIcon={Table2} onClick={() => setEntering(true)}>
                   Enter holes
                 </Button>
               ) : undefined
@@ -326,11 +326,11 @@ function DeskReady({ data, search, phone }: { data: ChTourDeskData; search: ChTo
           <Section id="ch-tour-desk-compare" title="Compare" meta="Players and rounds side by side, with coverage shown">
             <p className="ch-tour-desk-line">Open the comparison with {e.name} already set as one side{data.previous ? `, or against ${data.previous.name}` : ''}.</p>
             <div className="ch-tour-desk-links">
-              <Button variant="secondary" leftIcon={GitCompare} href={paths.compare(e.id)}>
+              <Button data-ctl="CTL-P016-019" variant="secondary" leftIcon={GitCompare} href={paths.compare(e.id)}>
                 Compare {e.short}
               </Button>
               {data.previous && (
-                <Button leftIcon={ArrowRight} href={paths.desk(data.previous.eventId)}>
+                <Button data-ctl="CTL-P016-020" leftIcon={ArrowRight} href={paths.desk(data.previous.eventId)}>
                   {data.previous.name}
                 </Button>
               )}
@@ -366,7 +366,7 @@ function DeskTabs({ tabs, tab, onPick, reviewCount }: { tabs: readonly ChTourDes
   return (
     <div ref={edges} className="ch-hscroll ch-tour-desk-tabs" role="tablist" aria-label="Event sections">
       {tabs.map((t) => (
-        <button
+        <button data-ctl="CTL-P016-021"
           key={t}
           type="button"
           role="tab"
@@ -396,14 +396,14 @@ function CountedTools({ event, round, view, phone, onRound, onView }: { event: C
     <div className="ch-tour-desk-tools">
       <div className="ch-tour-desk-pills" role="group" aria-label="Round">
         {(['all', ...event.rounds.map((r) => r.number)] as const).map((r) => (
-          <button key={r} type="button" className="ch-tour-desk-pill" aria-pressed={round === r} onClick={() => (haptic('select'), onRound(r))}>
+          <button data-ctl="CTL-P016-022" key={r} type="button" className="ch-tour-desk-pill" aria-pressed={round === r} onClick={() => (haptic('select'), onRound(r))}>
             {r === 'all' ? 'All rounds' : phone ? `R${r}` : `Round ${r}`}
           </button>
         ))}
       </div>
       <div className="ch-tour-desk-pills" role="group" aria-label="Show">
         {(['team', 'players'] as const).map((v) => (
-          <button key={v} type="button" className="ch-tour-desk-pill" aria-pressed={view === v} onClick={() => (haptic('select'), onView(v))}>
+          <button data-ctl="CTL-P016-023" key={v} type="button" className="ch-tour-desk-pill" aria-pressed={view === v} onClick={() => (haptic('select'), onView(v))}>
             {v === 'team' ? 'Team' : 'Players'}
           </button>
         ))}
@@ -436,7 +436,7 @@ function NoScores({ event: e, onImport }: { event: ChTourEvent; onImport?: () =>
       body={`Scores show here as rounds are entered${onImport ? ', or import the results file' : ''}. ${state}${e.note ? ` ${e.note}.` : ''}`}
       action={
         onImport ? (
-          <Button leftIcon={Upload} onClick={onImport}>
+          <Button data-ctl="CTL-P016-024" leftIcon={Upload} onClick={onImport}>
             Import results
           </Button>
         ) : undefined
@@ -453,12 +453,12 @@ function FindingCard({ finding: f, onOpen, onEvidence }: { finding: ChTourFindin
       <h3>{f.title}</h3>
       <p>{f.body}</p>
       <div className="ch-tour-desk-fc__a">
-        <button type="button" className="ch-tour-desk-link" onClick={() => onOpen(f.link.tab, f.round)}>
+        <button data-ctl="CTL-P016-025" type="button" className="ch-tour-desk-link" onClick={() => onOpen(f.link.tab, f.round)}>
           {f.link.label}
           <Icon icon={ArrowRight} size={14} />
         </button>
         {f.evidence && (
-          <button type="button" className="ch-tour-desk-link" onClick={() => f.evidence && onEvidence(f.evidence)}>
+          <button data-ctl="CTL-P016-026" type="button" className="ch-tour-desk-link" onClick={() => f.evidence && onEvidence(f.evidence)}>
             Show the rounds
           </button>
         )}

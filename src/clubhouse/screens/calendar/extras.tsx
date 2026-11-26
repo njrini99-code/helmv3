@@ -65,7 +65,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
   );
   return (
     <div className="ch-in">
-      <BackLink className="ch-in__up" onClick={onBack}>
+      <BackLink data-ctl="CTL-P006-090" className="ch-in__up" onClick={onBack}>
         Today
       </BackLink>
       <div className="ch-in__plate" data-tone="champagne">
@@ -104,7 +104,7 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
         <p className="ch-in__quiet">Only you see this block. It keeps your own schedule honest when you plan practice.</p>
       </div>
       <div className="ch-in__sec ch-in__foot">
-        <Button variant="ghost" leftIcon={Trash2} onClick={() => setConfirm(true)}>
+        <Button data-ctl="CTL-P006-091" variant="ghost" leftIcon={Trash2} onClick={() => setConfirm(true)}>
           {e.recurring ? 'Remove the series' : 'Remove busy time'}
         </Button>
       </div>
@@ -117,10 +117,10 @@ export function BusyDetail({ e, now, zoneLabel, onBack, onDeleted }: { e: ChCalE
         description={e.recurring ? 'Every repeat of this block is removed.' : 'This block is removed from your calendar.'}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setConfirm(false)}>
+            <Button data-ctl="CTL-P006-092" variant="ghost" onClick={() => setConfirm(false)}>
               Keep it
             </Button>
-            <Button
+            <Button data-ctl="CTL-P006-093"
               variant="danger"
               feel="warning"
               busy={remove.pending}
@@ -160,18 +160,18 @@ export function LinkedTrip({ eventId, preview }: { eventId: string; preview?: bo
     };
   }, [eventId, preview]);
   if (!trip) return null;
-  return <TripLink id={trip.id} place={trip.destination || trip.event_name || 'the trip'} />;
+  return <TripLink data-ctl="CTL-P006-094" id={trip.id} place={trip.destination || trip.event_name || 'the trip'} />;
 }
 
 /** "View itinerary · Pinehurst", to Team Hub's Travel with that trip scrolled to: for an event's linked trip and a trip of its own. */
-export function TripLink({ id, place }: { id: string; place: string }) {
+export function TripLink({ id, place, 'data-ctl': ctl }: { id: string; place: string; 'data-ctl'?: string }) {
   return (
     <div className="ch-in__fact">
       <Icon icon={Plane} size={15} />
       <div>
         {/* Team Hub's Travel with the trip scrolled to: /travel redirects there in Clubhouse, and a layout's redirect
             can't carry `?trip=`. */}
-        <Link className="ch-in__trip" href={`/golf/dashboard/team-hub?tab=travel&trip=${encodeURIComponent(id)}`}>
+        <Link data-ctl={ctl ?? 'CTL-P006-095'} className="ch-in__trip" href={`/golf/dashboard/team-hub?tab=travel&trip=${encodeURIComponent(id)}`}>
           View itinerary · <b>{place}</b>
           <Icon icon={ArrowRight} size={13} />
         </Link>
@@ -242,10 +242,10 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
       description="Blocks your own calendar. Only you see it."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P006-096" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button
+          <Button data-ctl="CTL-P006-097"
             variant="primary"
             busy={save.pending}
             onClick={() => {
@@ -284,7 +284,7 @@ export function BusySheet({ open, onClose, onSaved, today }: { open: boolean; on
         )}
         <div className="ch-ed__opts" style={{ marginTop: 0 }}>
           <label className="ch-switch">
-            <input type="checkbox" checked={allDay} onChange={(e) => (haptic('select'), setAllDay(e.target.checked))} />
+            <input data-ctl="CTL-P006-098" type="checkbox" checked={allDay} onChange={(e) => (haptic('select'), setAllDay(e.target.checked))} />
             <span className="ch-switch__t" aria-hidden="true" />
             All day
           </label>
@@ -434,7 +434,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
       <div className="ch-in__sechead">
         <b>Files</b>
         {canEdit ? (
-          <Button size="sm" variant="ghost" leftIcon={Paperclip} onClick={() => setPicking(true)}>
+          <Button data-ctl="CTL-P006-099" size="sm" variant="ghost" leftIcon={Paperclip} onClick={() => setPicking(true)}>
             Attach
           </Button>
         ) : (
@@ -458,7 +458,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
               <span className="ch-in__file-ic">
                 <Icon icon={FileText} size={14} />
               </span>
-              <button
+              <button data-ctl="CTL-P006-100"
                 type="button"
                 className="ch-in__file-open"
                 onClick={() => void open.run(f)}
@@ -470,7 +470,7 @@ export function EventFiles({ eventId, teamId, canEdit, preview }: { eventId: str
                 <span>{opening === f.id ? 'Opening…' : [fileSize(f.size), f.note].filter(Boolean).join(' · ')}</span>
               </button>
               {canEdit ? (
-                <IconButton icon={X} size="sm" label={`Remove ${f.title}`} onClick={() => void detach(f)} />
+                <IconButton data-ctl="CTL-P006-101" icon={X} size="sm" label={`Remove ${f.title}`} onClick={() => void detach(f)} />
               ) : (
                 <span />
               )}
@@ -559,10 +559,10 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
       description="From your team’s Documents. Everyone invited can open it."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P006-102" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button
+          <Button data-ctl="CTL-P006-103"
             variant="primary"
             busy={attach.pending}
             disabled={!pick}
@@ -593,7 +593,7 @@ function FilePicker({ open, teamId, eventId, attached, preview, onClose, onAttac
             {list.map((d) => {
               const already = attached.has(d.id);
               return (
-                <button key={d.id} type="button" role="option" aria-selected={pick === d.id} disabled={already} className="ch-pp__row" onClick={() => (haptic('select'), setPick(d.id))}>
+                <button data-ctl="CTL-P006-104" key={d.id} type="button" role="option" aria-selected={pick === d.id} disabled={already} className="ch-pp__row" onClick={() => (haptic('select'), setPick(d.id))}>
                   <span className="ch-in__file-ic">
                     <Icon icon={FileText} size={14} />
                   </span>

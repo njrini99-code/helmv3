@@ -91,7 +91,7 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
         {facts.map((f) => (
           <li key={f.id}>
             <span>{f.text}</span>
-            <Button
+            <Button data-ctl="CTL-P013-087"
               variant="ghost"
               size="sm"
               aria-label={`Remove: ${f.text}`}
@@ -117,20 +117,20 @@ export function AskKnowsPanel({ knows, conversationId }: { knows: NonNullable<Ch
           {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the coach just pressed to add a line */}
           <input autoFocus className="ch-input" aria-label="What CoachHelm should know" placeholder="We practice on Tuesdays" maxLength={280} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Escape' && setAdding(false)} />
           <span className="acts">
-            <Button type="submit" variant="primary" size="sm" disabled={!text.trim()}>
+            <Button data-ctl="CTL-P013-088" type="submit" variant="primary" size="sm" disabled={!text.trim()}>
               Save
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setAdding(false)}>
+            <Button data-ctl="CTL-P013-089" variant="ghost" size="sm" onClick={() => setAdding(false)}>
               Cancel
             </Button>
           </span>
         </form>
       ) : (
-        <button type="button" className="ed" onClick={() => setAdding(true)}>
+        <button data-ctl="CTL-P013-090" type="button" className="ed" onClick={() => setAdding(true)}>
           Edit what it knows
         </button>
       )}
-      <button type="button" className="ed is-quiet" onClick={() => setSeeing(true)}>
+      <button data-ctl="CTL-P013-091" type="button" className="ed is-quiet" onClick={() => setSeeing(true)}>
         What CoachHelm can see
       </button>
       <Modal open={seeing} title="What CoachHelm can see" onClose={() => setSeeing(false)}>

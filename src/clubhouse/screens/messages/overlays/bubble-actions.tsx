@@ -93,7 +93,7 @@ export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChM
 
   return (
     <>
-      <button
+      <button data-ctl="CTL-P007-080"
         ref={(el) => {
           btn.current = el;
           // A badge that was there when its row first drew never pops: without this mark, the first re-render of the row (a send, a
@@ -142,7 +142,7 @@ export function ReactionChip({ api, messageId, r, arriving = false }: { api: ChM
                 ))}
                 {people.length === 0 && <p className="ch-rx__none">{r.count} {r.count === 1 ? "person" : "people"}</p>}
               </div>
-              <button
+              <button data-ctl="CTL-P007-081"
                 type="button"
                 className="ch-rx__act"
                 onClick={() => {
@@ -455,7 +455,7 @@ export function BubbleReactBar({ api, m, picking, act }: { api: ChMessagesApi; m
             const on = reacts.some((x) => x.key === r.key && x.mine);
             return (
               <Tooltip key={r.key}>
-                <button
+                <button data-ctl="CTL-P007-082"
                   type="button"
                   role="menuitem"
                   tabIndex={i === 0 ? 0 : -1}
@@ -511,7 +511,7 @@ export function BubbleHoldLift({
 }) {
   const { liftClose, liftAfter, liftPick, setLifted, reacts, holdRows, actionsBtn } = act;
   const holdRow = (item: (typeof holdRows)[number]) => (
-    <button key={item.label} type="button" role="menuitem" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
+    <button data-ctl="CTL-P007-083" key={item.label} type="button" role="menuitem" className={item.danger ? "is-danger" : undefined} onClick={() => { if (item.onSelect) liftPick(item.onSelect); }}>
       <span>{item.label}</span>
       {item.icon && <Icon icon={item.icon} size={19} />}
     </button>

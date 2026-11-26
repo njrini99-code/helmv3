@@ -39,7 +39,7 @@ export function ClassStatusDetail({
         </div>
         <Switch checked={enabled} onChange={onToggle} label="Use for class status" hideLabel busy={busy} />
       </div>
-      <button type="button" className="ch-ca-panel__link" onClick={onAddExam}>
+      <button data-ctl="CTL-P012-012" type="button" className="ch-ca-panel__link" onClick={onAddExam}>
         <span>Add an exam</span>
         <Icon icon={Plus} size={14} />
       </button>
@@ -50,7 +50,7 @@ export function ClassStatusDetail({
               <span>
                 {e.label || 'Exam'} · {shortDay(e.on)} <span className="ch-num">{timeRange(e.start, e.end, clock)}</span>
               </span>
-              <IconButton icon={Trash2} label={`Remove ${e.label || 'exam'} on ${shortDay(e.on)}`} size="sm" onClick={() => onRemoveExam(e)} />
+              <IconButton data-ctl="CTL-P012-013" icon={Trash2} label={`Remove ${e.label || 'exam'} on ${shortDay(e.on)}`} size="sm" onClick={() => onRemoveExam(e)} />
             </li>
           ))}
         </ul>

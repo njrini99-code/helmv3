@@ -44,15 +44,15 @@ export function AccountPhone({
         {data.profile.error ? (
           <ReadFailed bare what="Your profile" code="CH-8201" onRetry={writes.refresh} />
         ) : (
-          <NavRow label="Name and photo" value={data.profile.value.fullName} onClick={onProfile} />
+          <NavRow data-ctl="CTL-P008-053" label="Name and photo" value={data.profile.value.fullName} onClick={onProfile} />
         )}
       </Group>
       <Group title="Sign in" note={sentTo ? `Check ${sentTo}. Open the link in that inbox to finish the change. If a link also arrives at your current address, open that one too. Your current email works until then.` : "Where GolfHelm sends sign-in links and email notifications. You’ll confirm your current password before changing it."}>
-        <NavRow label="Email" value={data.email ?? 'No email on file'} onClick={onEmail} />
-        <NavRow label="Password" disabled={!data.email} onClick={onPassword} />
+        <NavRow data-ctl="CTL-P008-054" label="Email" value={data.email ?? 'No email on file'} onClick={onEmail} />
+        <NavRow data-ctl="CTL-P008-055" label="Password" disabled={!data.email} onClick={onPassword} />
       </Group>
       <Group>
-        <NavRow
+        <NavRow data-ctl="CTL-P008-056"
           label="Delete account"
           danger
           onClick={() => {
@@ -152,11 +152,11 @@ export function ProfileSheet({
           )}
         </span>
         <div className="ch-setm-photo__acts">
-          <button type="button" className="ch-setm-link" disabled={uploading} onClick={() => file.current?.click()}>
+          <button data-ctl="CTL-P008-057" type="button" className="ch-setm-link" disabled={uploading} onClick={() => file.current?.click()}>
             {uploading ? 'Uploading…' : draft.avatarUrl ? 'Replace photo' : 'Add photo'}
           </button>
           {draft.avatarUrl && !uploading && (
-            <button type="button" className="ch-setm-link is-quiet" onClick={() => setDraft((d) => ({ ...d, avatarUrl: null }))}>
+            <button data-ctl="CTL-P008-058" type="button" className="ch-setm-link is-quiet" onClick={() => setDraft((d) => ({ ...d, avatarUrl: null }))}>
               Remove photo
             </button>
           )}
@@ -199,7 +199,7 @@ export function ProfileSheet({
       {invalid && dirty && <Problem problem={invalid} />}
 
       <Group title="Email" note="Where GolfHelm sends sign-in links and email notifications.">
-        <button type="button" className="ch-setm-row is-nav" onClick={onChangeEmail}>
+        <button data-ctl="CTL-P008-059" type="button" className="ch-setm-row is-nav" onClick={onChangeEmail}>
           <span className="ch-setm-row__l">{data.email ?? 'No email on file'}</span> <span className="ch-setm-row__v is-link">Change</span>
         </button>
       </Group>

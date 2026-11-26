@@ -71,11 +71,11 @@ export function RosterRequests({
             </span>
             <div className="ch-rs-req__act">
               {/* One decision at a time, as on the phone: a click while another is in flight would be refused with no word. */}
-              <Button size="sm" variant="ghost" disabled={busy != null} onClick={() => void decide(r, false)}>
+              <Button data-ctl="CTL-P003-046" size="sm" variant="ghost" disabled={busy != null} onClick={() => void decide(r, false)}>
                 Decline
               </Button>
               {/* Secondary, as on the phone (P003 #5): Invite players stays the screen's one primary. */}
-              <Button size="sm" variant="secondary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
+              <Button data-ctl="CTL-P003-047" size="sm" variant="secondary" disabled={busy != null} onClick={() => void decide(r, true)} feel={null}>
                 Approve
               </Button>
             </div>

@@ -126,7 +126,7 @@ export function SwipeRow({
   };
 
   return (
-    <PresenceRow
+    <PresenceRow data-ctl="CTL-P007-149"
       as="div"
       ref={root}
       className={'ch-swipe' + (className ? ` ${className}` : '')}
@@ -213,8 +213,8 @@ export function SwipeRow({
         e.stopPropagation();
       }}
     >
-      {leading && <SwipeButton side="leading" action={leading} open={open === 'leading'} onRun={() => runSide('leading', 0)} />}
-      {trailing && <SwipeButton side="trailing" action={trailing} open={open === 'trailing'} onRun={() => runSide('trailing', 0)} />}
+      {leading && <SwipeButton data-ctl="CTL-P007-150" side="leading" action={leading} open={open === 'leading'} onRun={() => runSide('leading', 0)} />}
+      {trailing && <SwipeButton data-ctl="CTL-P007-151" side="trailing" action={trailing} open={open === 'trailing'} onRun={() => runSide('trailing', 0)} />}
       <div ref={content} className="ch-swipe__c">
         {children}
       </div>
@@ -222,10 +222,10 @@ export function SwipeRow({
   );
 }
 
-function SwipeButton({ side, action, open, onRun }: { side: SwipeSide; action: SwipeAction; open: boolean; onRun: () => void }) {
+function SwipeButton({ side, action, open, onRun, 'data-ctl': ctl }: { side: SwipeSide; action: SwipeAction; open: boolean; onRun: () => void; 'data-ctl'?: string }) {
   return (
     <div className={`ch-swipe__acts is-${side}`} inert={!open} aria-hidden={!open || undefined}>
-      <button type="button" className={`ch-swipe__act is-${action.tone}`} style={{ minWidth: SWIPE_ACTION_PX }} onClick={onRun}>
+      <button data-ctl={ctl ?? 'CTL-P007-152'} type="button" className={`ch-swipe__act is-${action.tone}`} style={{ minWidth: SWIPE_ACTION_PX }} onClick={onRun}>
         <Icon icon={action.icon} size={18} />
         <span>{action.label}</span>
       </button>

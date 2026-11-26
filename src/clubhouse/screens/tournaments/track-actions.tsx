@@ -160,7 +160,7 @@ export function DeskTrackMenu({ tournamentId, name, track }: { tournamentId: str
 
   return (
     <>
-      <Menu label="Tournament actions" items={items} trigger={(p) => <IconButton icon={Ellipsis} label="Tournament actions" menu={p} disabled={busy} />} />
+      <Menu label="Tournament actions" items={items} trigger={(p) => <IconButton data-ctl="CTL-P016-134" icon={Ellipsis} label="Tournament actions" menu={p} disabled={busy} />} />
       <Modal
         code="CH-16551"
         open={ask === 'cancel'}
@@ -171,10 +171,10 @@ export function DeskTrackMenu({ tournamentId, name, track }: { tournamentId: str
         description={`All ${track.entries} ${track.entries === 1 ? 'round is' : 'rounds are'} struck through for players. Nothing is deleted, so you can restore it.`}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsk(null)}>
+            <Button data-ctl="CTL-P016-135" variant="ghost" onClick={() => setAsk(null)}>
               Keep tournament
             </Button>
-            <Button
+            <Button data-ctl="CTL-P016-136"
               variant="danger"
               onClick={() => {
                 haptic('warning');
@@ -204,15 +204,15 @@ export function DeskTrackMenu({ tournamentId, name, track }: { tournamentId: str
         }
         footer={
           block ? (
-            <Button variant="primary" onClick={() => setAsk(null)}>
+            <Button data-ctl="CTL-P016-137" variant="primary" onClick={() => setAsk(null)}>
               Close
             </Button>
           ) : (
             <>
-              <Button variant="ghost" onClick={() => setAsk(null)}>
+              <Button data-ctl="CTL-P016-138" variant="ghost" onClick={() => setAsk(null)}>
                 Keep tracking
               </Button>
-              <Button
+              <Button data-ctl="CTL-P016-139"
                 variant="danger"
                 busy={busy}
                 onClick={() => {

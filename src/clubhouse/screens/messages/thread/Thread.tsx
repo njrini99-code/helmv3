@@ -140,7 +140,7 @@ export function Thread({
       <header className="ch-ms-th">
         <div className="ch-ms-th__who">
           <span className="ch-ms-back">
-            <IconButton
+            <IconButton data-ctl="CTL-P007-143"
               icon={ChevronLeft}
               label="All conversations"
               onClick={onBack}
@@ -161,10 +161,10 @@ export function Thread({
           </div>
         </div>
         <div className="ch-ms-th__act">
-          <IconButton icon={Search} label="Search in conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
+          <IconButton data-ctl="CTL-P007-144" icon={Search} label="Search in conversation" variant={searching ? "secondary" : "ghost"} pressed={searching} onClick={() => setSearching((v) => !v)} />
           {calendarHref && api.viewer.role === "coach" && (
             <Tooltip>
-              <a
+              <a data-ctl="CTL-P007-145"
                 className="ch-btn ch-btn--ghost ch-iconbtn"
                 href={calendarHref}
                 aria-label="Schedule"
@@ -174,7 +174,7 @@ export function Thread({
             </Tooltip>
           )}
           <Tooltip>
-            <button
+            <button data-ctl="CTL-P007-146"
               type="button"
               className={
                 "ch-btn ch-iconbtn " +

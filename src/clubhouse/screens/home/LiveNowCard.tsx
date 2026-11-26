@@ -94,17 +94,17 @@ export function LiveNowCard({
           </span>
         )}
         {phone ? (
-          <Link href={href} className="ch-lv-card__open" aria-label={LIVE_COPY.openLive} data-ch-code="CH-16603">
+          <Link data-ctl="CTL-P002-050" href={href} className="ch-lv-card__open" aria-label={LIVE_COPY.openLive} data-ch-code="CH-16603">
             <Icon icon={ChevronRight} size={16} />
           </Link>
         ) : (
-          <Button variant="ghost" size="sm" href={href} code="CH-16603">
+          <Button data-ctl="CTL-P002-051" variant="ghost" size="sm" href={href} code="CH-16603">
             {LIVE_COPY.openLive}
           </Button>
         )}
       </header>
       {(variant === 'qualifier' ? [] : events).map((e) => (
-        <Link prefetch={false} key={e.tournamentId} href={`/golf/dashboard/tournaments/${e.tournamentId}/live`} className="ch-lv-eventrow" data-ch-code="CH-16685">
+        <Link data-ctl="CTL-P002-052" prefetch={false} key={e.tournamentId} href={`/golf/dashboard/tournaments/${e.tournamentId}/live`} className="ch-lv-eventrow" data-ch-code="CH-16685">
           <span className="ch-lv-dot" aria-hidden="true" />
           <span>{LIVE_COPY.tournamentLive(e.name)}</span>
           <Icon icon={ChevronRight} size={16} />
@@ -118,7 +118,7 @@ export function LiveNowCard({
         </ul>
       )}
       {more > limit && (
-        <Link href={href} className="ch-lv-card__more" data-ch-code="CH-16606">
+        <Link data-ctl="CTL-P002-053" href={href} className="ch-lv-card__more" data-ch-code="CH-16606">
           {LIVE_COPY.seeAll(more)}
         </Link>
       )}

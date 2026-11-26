@@ -68,7 +68,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
       <div className="ch-hv-tabs is-phone" data-ch-strip="" data-ch-code="CH-13930">
         <div ref={rowEdges} className="ch-hscroll ch-hv-chips" role="group" aria-label="CoachHelm view">
           {views.map((v) => (
-            <button
+            <button data-ctl="CTL-P013-289"
               key={v}
               type="button"
               className="ch-hv-chip"
@@ -83,7 +83,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
             </button>
           ))}
           {development && (
-            <Link className="ch-hv-chip is-link" href={development}>
+            <Link data-ctl="CTL-P013-290" className="ch-hv-chip is-link" href={development}>
               Development
               <Icon icon={ArrowUpRight} size={14} />
             </Link>
@@ -96,7 +96,7 @@ export function PlayerHelmTabs({ active, onGo, coach = false, held = false }: { 
     <div className="ch-hv-tabs" data-ch-strip="" data-ch-code={held ? undefined : 'CH-13930'} inert={held || undefined} aria-hidden={held || undefined}>
       <Segmented<PlayerTab> label="CoachHelm view" value={active} options={views.map((v) => ({ value: v, label: labelOf(v) }))} onChange={(v) => go(v)} />
       {development && (
-        <Button variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
+        <Button data-ctl="CTL-P013-291" variant="ghost" size="sm" href={development} rightIcon={ArrowUpRight} feel="select">
           Development
         </Button>
       )}

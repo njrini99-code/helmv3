@@ -79,7 +79,7 @@ export function CoachPending({ programName, signOut = chSignOut, refresh, initia
       back={null}
       foot={
         <span>
-          Expected to be a player? <Link href="/golf/signup">Sign up with your team code</Link>
+          Expected to be a player? <Link data-ctl="CTL-P015-001" href="/golf/signup">Sign up with your team code</Link>
         </span>
       }
       viewKey={view}
@@ -123,9 +123,9 @@ export function CoachPending({ programName, signOut = chSignOut, refresh, initia
             </AuthNotice>
           </div>
         )}
-        <GateKey idle="Check again" working="Checking…" busy={pending} type="button" onClick={look} code="CH-15961" />
+        <GateKey data-ctl="CTL-P015-002" idle="Check again" working="Checking…" busy={pending} type="button" onClick={look} code="CH-15961" />
         <p className="ch-au-alt">
-          <button type="button" className="ch-au-linkbtn" onClick={() => void out()} disabled={signingOut}>
+          <button data-ctl="CTL-P015-003" type="button" className="ch-au-linkbtn" onClick={() => void out()} disabled={signingOut}>
             {signingOut ? 'Signing out…' : 'Sign out'}
           </button>
         </p>

@@ -296,7 +296,7 @@ export function RoundRuntime({
         <span>
           <b>All holes are in.</b> Review the round, then post it.
         </span>
-        <Button variant="secondary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
+        <Button data-ctl="CTL-P011-077" variant="secondary" size="sm" onClick={() => s.current.setShowFinishConfirm(true)}>
           Review and post
         </Button>
       </div>

@@ -239,7 +239,7 @@ export function FocusActions({ fa, target, missing, where, extra, noDismiss = fa
         <span>
           <b>Insight dismissed.</b> It no longer shows on {where === 'board' ? 'your board' : 'the board'} or on {first}’s. Undo brings it back.
         </span>
-        <Button size="sm" variant="ghost" busy={fa.here('undo', ins.id)} disabled={fa.busy && !fa.here('undo', ins.id)} onClick={() => void fa.undo.run(target)}>
+        <Button data-ctl="CTL-P013-168" size="sm" variant="ghost" busy={fa.here('undo', ins.id)} disabled={fa.busy && !fa.here('undo', ins.id)} onClick={() => void fa.undo.run(target)}>
           {fa.here('undo', ins.id) ? <span data-ch-code="CH-13403">Undoing…</span> : 'Undo'}
         </Button>
       </div>
@@ -273,11 +273,11 @@ export function FocusActions({ fa, target, missing, where, extra, noDismiss = fa
       ) : statusUnknown ? (
         <RefreshNotice code="CH-13207" title="Assign as focus isn’t offered right now" body={`${focusStatusSaid(missing, first)} Dismiss still works. Try again in a moment.`} />
       ) : stale ? null : (
-        <Button variant="primary" leftIcon={propose ? undefined : Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
+        <Button data-ctl="CTL-P013-169" variant="primary" leftIcon={propose ? undefined : Flag} busy={fa.here('assign', ins.id)} disabled={fa.busy && !fa.here('assign', ins.id)} onClick={() => void fa.assign.run(target)}>
           {fa.here('assign', ins.id) ? <span data-ch-code="CH-13403">Assigning…</span> : ins.declined ? 'Propose again' : 'Assign as focus'}
         </Button>
       )}
-      {!noDismiss && <Button
+      {!noDismiss && <Button data-ctl="CTL-P013-170"
         variant="ghost"
         leftIcon={Archive}
         busy={fa.here('dismiss', ins.id)}

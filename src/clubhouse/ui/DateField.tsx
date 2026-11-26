@@ -156,7 +156,7 @@ export function MonthGrid({
     <div className={'ch-df-cal' + (phone ? ' is-phone' : '')}>
       <div className="ch-df-cal__head">
         <Tooltip>
-          <button
+          <button data-ctl="CTL-P000-005"
             type="button"
             className="ch-df-nav"
             aria-label="Previous month"
@@ -174,7 +174,7 @@ export function MonthGrid({
           {formatMonth(cursor)}
         </div>
         <Tooltip>
-          <button
+          <button data-ctl="CTL-P000-006"
             type="button"
             className="ch-df-nav"
             aria-label="Next month"
@@ -206,7 +206,7 @@ export function MonthGrid({
               const day = Number(cell.date.slice(8));
               return (
                 <span key={cell.date} role="gridcell" aria-selected={on} className="ch-df-cal__cell">
-                  <button
+                  <button data-ctl="CTL-P000-007"
                     type="button"
                     data-date={cell.date}
                     tabIndex={cell.date === cursor ? 0 : -1}
@@ -228,12 +228,12 @@ export function MonthGrid({
       {(todayOk || onClear) && (
         <div className="ch-df-cal__foot">
           {todayOk && (
-            <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={() => onPick(today)}>
+            <button data-ctl="CTL-P000-008" type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={() => onPick(today)}>
               Today
             </button>
           )}
           {onClear && (
-            <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={onClear}>
+            <button data-ctl="CTL-P000-009" type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={onClear}>
               Clear
             </button>
           )}

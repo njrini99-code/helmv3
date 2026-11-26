@@ -425,7 +425,7 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
                 {/* A player's Ask keeps no history until HM3 (02 §AK10a), so there is no Chats list to open, as on desktop. */}
                 {!player && (
                   <Tooltip>
-                    <button type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
+                    <button data-ctl="CTL-P013-012" type="button" className="ch-pbar__icon" aria-label="Chats" onClick={() => setDrawer(true)}>
                       <Icon icon={MessagesSquare} size={20} />
                     </button>
                   </Tooltip>
@@ -435,8 +435,8 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
             }
             action={
               <>
-                {data.knows && !player && <PhoneIconAction icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
-                <PhoneIconAction icon={SquarePen} label="New chat" disabled={chat.busy} onClick={newChat} />
+                {data.knows && !player && <PhoneIconAction data-ctl="CTL-P013-013" icon={Settings2} label="Chat settings" onClick={() => setSettingsOpen(true)} />}
+                <PhoneIconAction data-ctl="CTL-P013-014" icon={SquarePen} label="New chat" disabled={chat.busy} onClick={newChat} />
               </>
             }
           />
@@ -473,13 +473,13 @@ function AskChat({ data, useChatImpl, initial, slashFlags }: { data: ChAskData; 
                 <>
                   {!player && (
                     <Tooltip>
-                      <button type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
+                      <button data-ctl="CTL-P013-015" type="button" className="ch-ask-head__btn" aria-label="Show chats" onClick={showChats}>
                         <Icon icon={PanelLeftOpen} size={19} />
                       </button>
                     </Tooltip>
                   )}
                   <Tooltip>
-                    <button type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" aria-disabled={chat.busy || undefined} onClick={newChat}>
+                    <button data-ctl="CTL-P013-016" type="button" className="ch-ask-head__btn is-accent" aria-label="New chat" aria-disabled={chat.busy || undefined} onClick={newChat}>
                       <Icon icon={SquarePen} size={19} />
                     </button>
                   </Tooltip>

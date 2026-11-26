@@ -104,7 +104,7 @@ function DesktopPanel({ title, subtitle, onClose, children }: { title: string; s
           <b>{title}</b>
           <span>{subtitle}</span>
         </span>
-        <IconButton icon={X} label="Close evidence" onClick={onClose} />
+        <IconButton data-ctl="CTL-P013-024" icon={X} label="Close evidence" onClick={onClose} />
       </div>
       {children}
     </aside>

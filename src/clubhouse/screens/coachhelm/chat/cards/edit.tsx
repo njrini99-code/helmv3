@@ -152,11 +152,11 @@ function Field({ field, value, disabled, onChange }: { field: EditableField; val
             // The row's place is its identity: two items may hold the same words.
             <div key={i} className="ch-akc-edit__item">
               <input className="ch-input" aria-label={`${field.label}, ${i + 1}`} value={item} maxLength={field.max_length} disabled={disabled} onChange={(e) => onChange(items.map((x, j) => (j === i ? e.target.value : x)))} />
-              <IconButton icon={X} label={`Remove ${item || `item ${i + 1}`}`} size="sm" disabled={disabled} onClick={() => onChange(items.filter((_, j) => j !== i))} />
+              <IconButton data-ctl="CTL-P013-045" icon={X} label={`Remove ${item || `item ${i + 1}`}`} size="sm" disabled={disabled} onClick={() => onChange(items.filter((_, j) => j !== i))} />
             </div>
           ))}
           {!full && (
-            <Button variant="ghost" size="sm" leftIcon={Plus} disabled={disabled} onClick={() => onChange([...items, ''])}>
+            <Button data-ctl="CTL-P013-046" variant="ghost" size="sm" leftIcon={Plus} disabled={disabled} onClick={() => onChange([...items, ''])}>
               Add one
             </Button>
           )}
@@ -215,10 +215,10 @@ export function EditForm({ fields, busy, error, onSubmit, onClose }: { fields: r
       )}
       {!error && why && changed > 0 && <p className="ch-field__help">{why}</p>}
       <div className="ch-akc-edit__keys">
-        <Button variant="ghost" size="sm" disabled={busy} onClick={onClose}>
+        <Button data-ctl="CTL-P013-047" variant="ghost" size="sm" disabled={busy} onClick={onClose}>
           {changed > 0 ? 'Discard changes' : 'Close'}
         </Button>
-        <Button variant="secondary" size="sm" type="submit" busy={busy} disabled={!busy && (changed === 0 || !!why)}>
+        <Button data-ctl="CTL-P013-048" variant="secondary" size="sm" type="submit" busy={busy} disabled={!busy && (changed === 0 || !!why)}>
           {busy ? 'Updating the card…' : 'Update the card'}
         </Button>
       </div>

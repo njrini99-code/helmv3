@@ -34,7 +34,7 @@ export function PlanIntake({ brief, onSend }: { brief: AskBriefData; onSend: (li
                 {q.options.map((o) => {
                   const on = !!picks[q.id]?.includes(o.id);
                   return (
-                    <button
+                    <button data-ctl="CTL-P013-199"
                       key={o.id}
                       type="button"
                       className={'qo' + (on ? ' on' : '')}
@@ -64,7 +64,7 @@ export function PlanIntake({ brief, onSend }: { brief: AskBriefData; onSend: (li
           </div>
         )}
         <div className="acts is-pad">
-          <Button variant="primary" size="lg" className="is-wide" disabled={!ready} onClick={() => {
+          <Button data-ctl="CTL-P013-200" variant="primary" size="lg" className="is-wide" disabled={!ready} onClick={() => {
               setDone(true);
               onSend(brief.questions.map((q) => q.options.filter((o) => picks[q.id]?.includes(o.id)).map((o) => o.label).join(', ')).join(' · '));
             }}>

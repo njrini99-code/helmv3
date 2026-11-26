@@ -191,7 +191,7 @@ export function TeamHeadActions({ filter, teamName, grid, exportOnly = false }: 
       {!exportOnly && <WindowSwitch value={shown} span={span} onScope={pick} custom={hasRange(filter)} />}
       {/* Never export a half-loaded window: the page passes no grid then. */}
       {grid && grid.length > 0 && (
-        <Button variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">
+        <Button data-ctl="CTL-P004-019" variant="ghost" leftIcon={Download} onClick={() => exportCsv(grid)} className="ch-btn--flush-end">
           Export
         </Button>
       )}
@@ -204,7 +204,7 @@ export function ShowSeason() {
   const [, go] = useScope();
   // The page empty's one primary action (CH-4301, CH-4302).
   return (
-    <Button variant="primary" leftIcon={CalendarRange} onClick={() => go('season')}>
+    <Button data-ctl="CTL-P004-020" variant="primary" leftIcon={CalendarRange} onClick={() => go('season')}>
       Show the season
     </Button>
   );
@@ -711,7 +711,7 @@ function TeamTrend({ data, focus, setFocus }: { data: ChTeamCharts; focus: strin
               </div>
               {sorted.map(({ p, m }) => {
                 return (
-                  <button
+                  <button data-ctl="CTL-P004-021"
                     key={p.id}
                     type="button"
                     className={'ch-sgt__end' + (p.id === focus ? ' is-sel' : '')}
@@ -835,7 +835,7 @@ function LegTrend({
   // The newer half of the weeks against the older half, worded only past its standard error (A1), never first against last.
   const chWords = vals.length < 3 ? null : halvesTone(change, false) === '' ? 'No clear change' : `${change!.delta > 0 ? 'Up' : 'Down'} ${formatFixed(Math.abs(change!.delta))} a round, newer half vs older half`;
   return (
-    <button type="button" className="ch-sgm" aria-pressed={selected} onClick={onSelect}>
+    <button data-ctl="CTL-P004-022" type="button" className="ch-sgm" aria-pressed={selected} onClick={onSelect}>
       <span className="ch-sgm__top">
         <span className="ch-sgm__l">{leg}</span>
         <span className={`ch-sgm__v ch-num ${changeInk(mean)}`}>{mean != null ? formatSigned(mean) : <NoData />}</span>
@@ -966,7 +966,7 @@ function LegGrid({
                   <span>
                     {/* P003-C1: resting on the name shows the player's card; the row still opens their stats. */}
                     <PlayerPeek player={gridPeek(g)} within="[role=cell]">
-                      <Link href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)} {...press(playerHref(g.id))}>
+                      <Link data-ctl="CTL-P004-023" href={playerHref(g.id)} className="ch-lg__a" onFocus={() => setFocus(g.id)} onMouseEnter={() => setFocus(g.id)} {...press(playerHref(g.id))}>
                         <b>{g.name}</b>
                         <LinkPending />
                       </Link>
@@ -981,7 +981,7 @@ function LegGrid({
                   return (
                     <span key={i} role="cell" className={'ch-lg__cell' + (i === li ? ' is-col' : '') + (i === worst ? ' is-worst' : '')}>
                       {/* Q12: the figure opens that player's Game detail for this leg; the row's name link still opens the profile. */}
-                      {v != null && <Link className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
+                      {v != null && <Link data-ctl="CTL-P004-024" className="ch-lg__cl" href={legDetailHref(g.id, data.filter, LEGS_LIST[i]!)} aria-label={`${g.name}, ${LEGS_LIST[i]!.toLowerCase()} ${formatSigned(v)}: open game detail`} />}
                       <span className={'ch-num ' + changeInk(v)}>{v == null ? <NoData /> : formatSigned(v)}</span>
                       <span className="ch-lg__track" aria-hidden="true">
                         {v != null && <i className={'ch-lg__bar ' + changeTone(v, false, 1)} style={bar(v)} />}

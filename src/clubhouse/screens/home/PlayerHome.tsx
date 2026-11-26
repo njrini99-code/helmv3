@@ -142,11 +142,11 @@ function DeskHead({ data, post }: { data: ChPlayerHome; post: string | null }) {
       <span className="ch-h-head__date">{data.todayLabel}</span>
       <h1 className="ch-display">{data.greeting}</h1>
       <div className="ch-h-head__actions">
-        <Button leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)}>
+        <Button data-ctl="CTL-P002-058" leftIcon={MessageSquare} href={messageCoachHref(data.coachUserId)}>
           Message coach
         </Button>
         {post && (
-          <Button variant="primary" leftIcon={Plus} href={post}>
+          <Button data-ctl="CTL-P002-059" variant="primary" leftIcon={Plus} href={post}>
             New round
           </Button>
         )}
@@ -166,7 +166,7 @@ export function DeskNext({ e, frozen }: { e: ChHomeEvent; frozen?: string }) {
   const now = frozen ? new Date(frozen) : ticking;
   const when = whenLabel(e, now);
   return (
-    <Link href={eventHref(e)} className="ch-ph-next">
+    <Link data-ctl="CTL-P002-060" href={eventHref(e)} className="ch-ph-next">
       <span className="ch-ph-next__k">
         <span>
           <Icon icon={TYPE_ICON[e.type]} size={13} />
@@ -215,14 +215,14 @@ function PlayerFirstRun({ data, own }: { data: ChPlayerHome; own?: ReactNode }) 
         body="Your stats start with the first round you post. Your coach’s team updates and your schedule show up here too."
         action={
           start ? (
-            <Button variant="primary" leftIcon={Plus} href={start}>
+            <Button data-ctl="CTL-P002-061" variant="primary" leftIcon={Plus} href={start}>
               New round
             </Button>
           ) : undefined
         }
         secondaryAction={
           classes ? (
-            <Button leftIcon={GraduationCap} href={classes}>
+            <Button data-ctl="CTL-P002-062" leftIcon={GraduationCap} href={classes}>
               Add classes
             </Button>
           ) : undefined

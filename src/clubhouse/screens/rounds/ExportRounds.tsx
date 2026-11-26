@@ -44,7 +44,7 @@ export function ExportRounds({
     return roundsCsv({ rounds, holes, team, name: [...name, isoDay(new Date())] });
   };
   return (
-    <ExportButton
+    <ExportButton data-ctl="CTL-P011-024"
       file={file}
       done={(f) => `Rounds exported · ${plural(f.rows.length, 'round')}`}
       failed="Couldn’t export the rounds"

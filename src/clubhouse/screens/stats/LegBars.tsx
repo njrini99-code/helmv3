@@ -118,7 +118,7 @@ export function LegBars({ rows, baseline, teamName, onOpen }: { rows: LegBarRow[
       )}
       {/* Q12: a pinned leg offers its Game detail section (never while scrubbing, so the target holds still). Inside the chart's box, or the press that takes it would unpin the leg first. */}
       {onOpen && pinnedRow && pinnedRow.value != null && (
-        <button type="button" className="ch-lb__open" onClick={() => onOpen(pinnedRow.label)}>
+        <button data-ctl="CTL-P005-019" type="button" className="ch-lb__open" onClick={() => onOpen(pinnedRow.label)}>
           See {pinnedRow.label.toLowerCase()} in game detail
         </button>
       )}

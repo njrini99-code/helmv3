@@ -314,7 +314,7 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
       </span>
       <h3 className="ch-shs-empty__t">Team rounds didn’t load</h3>
       <p>Every figure would be incomplete, so none is shown.</p>
-      <Button
+      <Button data-ctl="CTL-P004-027"
         variant="secondary"
         size="sm"
         busy={busy || refreshing}
@@ -504,7 +504,7 @@ function TheRound({ data, note, feature = false }: { data: ChTeamStats; note?: s
         })}
       </dl>
       <p className="ch-shs-anote">{roundNote(data, rows.some((f) => f.delta != null), coverage, note)}</p>
-      <HowStatsCountLink />
+      <HowStatsCountLink data-ctl="CTL-P004-028" />
     </ShsCard>
   );
 }
@@ -608,7 +608,7 @@ function TeamGameDetail({ data }: { data: ChTeamStats }) {
           const bar = r.value == null ? null : divergeBar(r.value, 4);
           const on = pin === r.label;
           return (
-            <button key={r.label} type="button" className={`ch-shs-drow${r.total ? ' is-total' : ''}${on ? ' is-pinned' : ''}`} aria-pressed={on} aria-label={`${r.label}: ${formatSigned(r.value)} a round`} onClick={() => setPin(on ? null : r.label)}>
+            <button data-ctl="CTL-P004-029" key={r.label} type="button" className={`ch-shs-drow${r.total ? ' is-total' : ''}${on ? ' is-pinned' : ''}`} aria-pressed={on} aria-label={`${r.label}: ${formatSigned(r.value)} a round`} onClick={() => setPin(on ? null : r.label)}>
               <span className="lab">{r.label}</span>
               <span className="ch-shs-rail">
                 <span className="ch-shs-zero" />

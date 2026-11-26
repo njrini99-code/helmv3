@@ -85,7 +85,7 @@ export function groupRounds(list: ChLibraryRound[], by: Group, q: string): Array
 function GroupHead({ href, name, children }: { href: string | null; name: string; children: ReactNode }) {
   if (!href) return <div className="ch-rd-grp__h">{children}</div>;
   return (
-    <Link prefetch={false} className="ch-rd-grp__h is-link" href={href} aria-label={`${name}: your history here`}>
+    <Link data-ctl="CTL-P011-049" prefetch={false} className="ch-rd-grp__h is-link" href={href} aria-label={`${name}: your history here`}>
       {children}
       <Icon icon={ChevronRight} size={16} className="ch-rd-grp__go" />
     </Link>
@@ -216,7 +216,7 @@ export function RoundsLibrary({
         {/* One primary for one action: the idle card carries Start a round, so the head's New round is for when a round is
             in progress, or the check for one failed (that card is a notice with no Start). */}
         {newHref && !nothing && (current || data.unfinished.error) && (
-          <Button variant="primary" leftIcon={Plus} href={newHref}>
+          <Button data-ctl="CTL-P011-050" variant="primary" leftIcon={Plus} href={newHref}>
             New round
           </Button>
         )}
@@ -235,7 +235,7 @@ export function RoundsLibrary({
           body="Track your first round shot by shot. Your scores, stats and every round you post show up here."
           action={
             newHref ? (
-              <Button variant="primary" leftIcon={Plus} href={newHref}>
+              <Button data-ctl="CTL-P011-051" variant="primary" leftIcon={Plus} href={newHref}>
                 New round
               </Button>
             ) : undefined
@@ -287,12 +287,12 @@ export function RoundsLibrary({
                         </em>
                       </span>
                       <Tooltip>
-                        <button type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
+                        <button data-ctl="CTL-P011-052" type="button" className="ch-rd-more__discard" onClick={() => askDiscard(r)} aria-label={`Discard the round at ${r.course}`}>
                           <Icon icon={Trash2} size={14} />
                         </button>
                       </Tooltip>
                       {href && (
-                        <Link prefetch={false} href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
+                        <Link data-ctl="CTL-P011-053" prefetch={false} href={href} className="ch-rd-more__go" onClick={() => haptic('press')}>
                           {r.readyToSubmit ? 'Post' : 'Continue'}
                         </Link>
                       )}
@@ -329,7 +329,7 @@ export function RoundsLibrary({
                   const full = g.rounds.filter((r) => r.holes === 18 && r.countable !== false && countsTowardAverage(r));
                   return (
                     <section key={g.href ?? g.key} className="ch-rd-grp" aria-label={g.key}>
-                      <GroupHead href={g.href ?? null} name={g.key}>
+                      <GroupHead data-ctl="CTL-P011-054" href={g.href ?? null} name={g.key}>
                         <h2>{g.key}</h2>
                         <span className="ch-rd-grp__rule" />
                         <MonthSpark rounds={g.rounds} />
@@ -350,7 +350,7 @@ export function RoundsLibrary({
                       </GroupHead>
                       <div className="ch-rd-book">
                         {rows.map((r) => (
-                          <RoundRow key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} bind={postedCtx.bind(r)} />
+                          <RoundRow data-ctl="CTL-P011-055" key={r.id} r={r} href={roundsLinks.review(r.id)} onOpen={() => noteOpenedFromLibrary(r.id)} bind={postedCtx.bind(r)} />
                         ))}
                       </div>
                     </section>
@@ -381,11 +381,11 @@ export function RoundsLibrary({
         description={asking ? `Every shot from ${asking.course} on ${shortDay(asking.date)} is deleted. This can’t be undone.` : undefined}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsking(null)}>
+            <Button data-ctl="CTL-P011-056" variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
             {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
-            <Button variant="danger" busy={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
+            <Button data-ctl="CTL-P011-057" variant="danger" busy={discard.pending} feel={null} onClick={() => void confirmDiscard()}>
               {discard.pending ? 'Discarding…' : 'Discard round'}
             </Button>
           </>

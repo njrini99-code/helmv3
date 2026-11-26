@@ -41,7 +41,7 @@ export function PickerSheet<V extends string>({
     <ListSheet open={open} onClose={onClose} title={title}>
       <div className="ch-setm-card" role="radiogroup" aria-label={title}>
         {options.map((o) => (
-          <button
+          <button data-ctl="CTL-P008-093"
             key={o.value}
             type="button"
             role="radio"

@@ -28,7 +28,7 @@ const FORMATS: ReadonlyArray<{ value: 'stroke' | 'scramble' | 'best_ball' | 'wor
 function Stepper({ label, value, onLess, onMore, lessOff, moreOff }: { label: string; value: string; onLess: () => void; onMore: () => void; lessOff?: boolean; moreOff?: boolean }) {
   return (
     <div className="ch-prc-step" role="group" aria-label={label}>
-      <button
+      <button data-ctl="CTL-P017-097"
         type="button"
         aria-label={`Less, ${label}`}
         disabled={lessOff}
@@ -42,7 +42,7 @@ function Stepper({ label, value, onLess, onMore, lessOff, moreOff }: { label: st
       <output className="ch-num" aria-live="polite">
         {value}
       </output>
-      <button
+      <button data-ctl="CTL-P017-098"
         type="button"
         aria-label={`More, ${label}`}
         disabled={moreOff}
@@ -126,7 +126,7 @@ export function BlockFields({ block, body, onChange, onRemove }: { block: PlanBl
         <textarea id={`${id}-n`} className="ch-textarea" rows={2} maxLength={280} value={block.note} onChange={(e) => set({ note: e.target.value })} />
       </div>
       {onRemove && (
-        <Button variant="ghost" leftIcon={Trash2} onClick={onRemove}>
+        <Button data-ctl="CTL-P017-099" variant="ghost" leftIcon={Trash2} onClick={onRemove}>
           Delete block
         </Button>
       )}
@@ -181,7 +181,7 @@ export function BankList({ drills, onPick, onNew, pickLabel }: { drills: ChBankD
   const own = shown.filter((d) => d.source === 'Your bank');
   const lib = shown.filter((d) => d.source === 'GolfHelm');
   const row = (d: ChBankDrill) => (
-    <button key={d.ref} type="button" className="ch-prc-drill" onClick={() => onPick(d)} aria-label={`${pickLabel} ${d.name}`}>
+    <button data-ctl="CTL-P017-100" key={d.ref} type="button" className="ch-prc-drill" onClick={() => onPick(d)} aria-label={`${pickLabel} ${d.name}`}>
       <b>{d.name}</b>
       <span className="ch-num">
         {d.area} · {KIND_LABEL[d.kind]} · {d.minutes} min · {d.source}
@@ -196,7 +196,7 @@ export function BankList({ drills, onPick, onNew, pickLabel }: { drills: ChBankD
       </label>
       <div className="ch-pills" role="group" aria-label="Area">
         {AREAS.map((a) => (
-          <button key={a} type="button" className="ch-pill" aria-pressed={a === area} onClick={() => setArea(a)}>
+          <button data-ctl="CTL-P017-101" key={a} type="button" className="ch-pill" aria-pressed={a === area} onClick={() => setArea(a)}>
             {a}
           </button>
         ))}
@@ -206,7 +206,7 @@ export function BankList({ drills, onPick, onNew, pickLabel }: { drills: ChBankD
       {own.map(row)}
       {lib.length > 0 && <h4>GolfHelm drills</h4>}
       {lib.map(row)}
-      <button type="button" className="ch-prc-add" onClick={onNew}>
+      <button data-ctl="CTL-P017-102" type="button" className="ch-prc-add" onClick={onNew}>
         <Icon icon={Plus} size={14} /> New drill
       </button>
     </div>

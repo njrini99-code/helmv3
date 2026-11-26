@@ -578,7 +578,7 @@ export function DayTimeline({
           </div>
           {!adjusting && <span className="ch-tl__slot" aria-hidden="true" style={{ transform: `translateY(${slotTop}px)`, height: slotH, transition: slotCurve ? `transform ${slotCurve.ms}ms ${easingOf(slotCurve)}` : 'none' }} />}
           {nowVisible && <div className="ch-wk__now" role="separator" aria-label={`Now, ${fmtHour(now.hour, true, clock)}`} style={{ top: (now.hour - from) * PHONE_HH }} />}
-          <div
+          <div data-ctl="CTL-P006-039"
             ref={engine.card}
             className="ch-dd-card ch-tl__card"
             aria-hidden={adjusting ? undefined : true}
@@ -592,10 +592,10 @@ export function DayTimeline({
             </span>
             {adjusting && (
               <>
-                <span className="ch-tl__grip is-top" aria-hidden="true" onPointerDown={(ev) => engine.adjustPointer(ev, 'start')}>
+                <span data-ctl="CTL-P006-040" className="ch-tl__grip is-top" aria-hidden="true" onPointerDown={(ev) => engine.adjustPointer(ev, 'start')}>
                   <i />
                 </span>
-                <span className="ch-tl__grip is-bottom" aria-hidden="true" onPointerDown={(ev) => engine.adjustPointer(ev, 'end')}>
+                <span data-ctl="CTL-P006-041" className="ch-tl__grip is-bottom" aria-hidden="true" onPointerDown={(ev) => engine.adjustPointer(ev, 'end')}>
                   <i />
                 </span>
               </>
@@ -605,10 +605,10 @@ export function DayTimeline({
       </div>
       {adjusting && (
         <div className="ch-tl__bar" role="group" aria-label={`Adjust ${e.title}`}>
-          <Button variant="ghost" onClick={engine.cancel}>
+          <Button data-ctl="CTL-P006-042" variant="ghost" onClick={engine.cancel}>
             Cancel
           </Button>
-          <Button variant="primary" onClick={engine.done}>
+          <Button data-ctl="CTL-P006-043" variant="primary" onClick={engine.done}>
             Done
           </Button>
         </div>

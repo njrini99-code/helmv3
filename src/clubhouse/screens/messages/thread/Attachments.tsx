@@ -16,7 +16,7 @@ function ImageAttachment({ f, from, caption }: { f: ChAttachment; from?: string;
   const [viewing, setViewing] = useState(false);
   if (broken) {
     return (
-      <a className="ch-ms-bub ch-ms-bub--file" data-ch-bubble="" href={f.url ?? undefined} target="_blank" rel="noreferrer">
+      <a data-ctl="CTL-P007-113" className="ch-ms-bub ch-ms-bub--file" data-ch-bubble="" href={f.url ?? undefined} target="_blank" rel="noreferrer">
         <span className="ch-ms-file__ic">
           <Icon icon={FileText} size={16} />
         </span>
@@ -31,14 +31,14 @@ function ImageAttachment({ f, from, caption }: { f: ChAttachment; from?: string;
   return (
     <>
       {/* A photo opens here, in the app; the original is one more tap inside it. */}
-      <button type="button" className="ch-ms-img ch-msd-photo" data-ch-bubble="" aria-label={from ? `Photo from ${from}` : `Open ${f.name}`} onClick={() => setViewing(true)}>
+      <button data-ctl="CTL-P007-114" type="button" className="ch-ms-img ch-msd-photo" data-ch-bubble="" aria-label={from ? `Photo from ${from}` : `Open ${f.name}`} onClick={() => setViewing(true)}>
         {/* A plain img on purpose: a signed storage URL, sized by the thread, not an optimised asset. MSG-220: alt reads "Photo of ..." from the message. */}
         <img src={f.url ?? undefined} alt={caption ? `Photo of ${caption}` : f.name} loading="lazy" decoding="async" onError={() => setBroken(true)} />
       </button>
       <Modal open={viewing} title={f.name} onClose={() => setViewing(false)}>
         <div className="ch-ms-imgview">
           <img src={f.url ?? undefined} alt={f.name} decoding="async" />
-          <a className="ch-ms-imgview__orig" href={f.url ?? undefined} target="_blank" rel="noreferrer">
+          <a data-ctl="CTL-P007-115" className="ch-ms-imgview__orig" href={f.url ?? undefined} target="_blank" rel="noreferrer">
             Open original
           </a>
         </div>
@@ -133,7 +133,7 @@ export function Attachments({
   }, []);
   if (failed) {
     return (
-      <button
+      <button data-ctl="CTL-P007-116"
         type="button"
         className="ch-ms-bub ch-ms-bub--file"
         data-ch-bubble=""
@@ -162,7 +162,7 @@ export function Attachments({
         f.mime.startsWith("image/") && f.url ? (
           <ImageAttachment key={f.id} f={f} from={from} caption={caption} />
         ) : (
-        <a
+        <a data-ctl="CTL-P007-117"
           key={f.id}
           className={"ch-ms-bub ch-ms-bub--file ch-msd-file" + (mine ? " is-mine" : "")}
           data-ch-bubble=""

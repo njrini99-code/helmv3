@@ -47,7 +47,7 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
       <div className="ch-ch-sec__h">
         <h2 id="ch-ch-rounds-h">{title}</h2>
         {canCompare && (
-          <button type="button" className="ch-ch-textbtn" onClick={() => (comparing ? stop() : setComparing(true))}>
+          <button data-ctl="CTL-P011-045" type="button" className="ch-ch-textbtn" onClick={() => (comparing ? stop() : setComparing(true))}>
             {comparing ? 'Cancel' : 'Compare'}
           </button>
         )}
@@ -60,7 +60,7 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
             const why = ok ? null : r.holes === 9 ? 'nine holes' : 'no hole scores';
             return (
               <li key={r.id}>
-                <button
+                <button data-ctl="CTL-P011-046"
                   type="button"
                   role="checkbox"
                   aria-checked={on}
@@ -83,7 +83,7 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
       ) : (
         <div className="ch-rd-book">
           {rounds.map((r) => (
-            <RoundRow key={r.id} r={r} href={reviewHref(r.id)} />
+            <RoundRow data-ctl="CTL-P011-047" key={r.id} r={r} href={reviewHref(r.id)} />
           ))}
         </div>
       )}
@@ -103,7 +103,7 @@ export function RoundsHere({ rounds, cards, title }: { rounds: ChLibraryRound[];
               {picked.length === 2 ? '2 chosen' : `${picked.length} of 2 chosen`}
             </span>
             {pair ? (
-              <Button
+              <Button data-ctl="CTL-P011-048"
                 variant="primary"
                 onClick={() => {
                   setOpen(true);

@@ -341,7 +341,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       {save.status === 'failed' && (
         <>
           {save.error ? `Couldn’t save: ${save.error.message}` : 'Couldn’t save'} ·{' '}
-          <button type="button" onClick={save.retry}>
+          <button data-ctl="CTL-P017-062" type="button" onClick={save.retry}>
             Try again
           </button>
         </>
@@ -351,7 +351,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const staleBar = (save.status === 'stale' || preview?.stale) && (
     <div className="ch-prc-stale" role="alert" data-ch-code="CH-13580">
       <span>Another coach changed this plan.</span>
-      <Button size="sm" onClick={() => (previewing ? undefined : window.location.reload())}>
+      <Button data-ctl="CTL-P017-063" size="sm" onClick={() => (previewing ? undefined : window.location.reload())}>
         Load latest
       </Button>
     </div>
@@ -377,7 +377,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const whenLine = (
     <div className="ch-prb-when">
       <span className="ch-num">{wholeFacts(data.meta)}</span>
-      <Button variant="ghost" size="sm" onClick={() => setMoving(moveFrom())} aria={{ label: 'Change the practice time' }}>
+      <Button data-ctl="CTL-P017-064" variant="ghost" size="sm" onClick={() => setMoving(moveFrom())} aria={{ label: 'Change the practice time' }}>
         Change
       </Button>
     </div>
@@ -395,7 +395,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         setInspector('block');
       } }))}
       trigger={(p) => (
-        <button type="button" {...p} className={'ch-prc-add' + (inline ? ' is-between' : '')}>
+        <button data-ctl="CTL-P017-065" type="button" {...p} className={'ch-prc-add' + (inline ? ' is-between' : '')}>
           <Icon icon={Plus} size={14} /> Add block
         </button>
       )}
@@ -419,12 +419,12 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       }}
     >
       <input className="ch-input" aria-label="What you want" ref={(el) => el?.focus()} value={ask} maxLength={280} placeholder="More pressure, finish on the course…" onChange={(e) => setAsk(e.target.value)} />
-      <Button type="submit" size="sm" disabled={!ask.trim()}>
+      <Button data-ctl="CTL-P017-066" type="submit" size="sm" disabled={!ask.trim()}>
         Send
       </Button>
     </form>
   ) : (
-    <button type="button" className="ch-prc-feat__more" onClick={() => setAsking(true)}>
+    <button data-ctl="CTL-P017-067" type="button" className="ch-prc-feat__more" onClick={() => setAsking(true)}>
       Or tell it what you want
     </button>
   );
@@ -434,7 +434,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       <p>CoachHelm reads the calendar, the last 10 rounds and class times.</p>
       {facts}
       {helper.k === 'failed' && <p className="ch-prc-feat__fail" role="alert">{helper.line}</p>}
-      <Button className="ch-prc-feat__go" onClick={() => startFill()}>
+      <Button data-ctl="CTL-P017-068" className="ch-prc-feat__go" onClick={() => startFill()}>
         {cta}
       </Button>
       {askField}
@@ -453,22 +453,22 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         {saidLine && helper.k === 'running' && <span className="ch-prc-fold__said">{saidLine}</span>}
       </span>
       {helper.k === 'ghosts' && !phone && (
-        <Button size="sm" onClick={() => { setGhosts([]); setHelper({ k: 'dismissed' }); }}>
+        <Button data-ctl="CTL-P017-069" size="sm" onClick={() => { setGhosts([]); setHelper({ k: 'dismissed' }); }}>
           Remove all
         </Button>
       )}
       {helper.k === 'ghosts' && (
-        <Button variant="primary" size="sm" onClick={keepAll}>
+        <Button data-ctl="CTL-P017-070" variant="primary" size="sm" onClick={keepAll}>
           Keep all
         </Button>
       )}
       {helper.k === 'kept' && helper.ids.length > 0 && (
-        <Button size="sm" onClick={undoKept}>
+        <Button data-ctl="CTL-P017-071" size="sm" onClick={undoKept}>
           Undo
         </Button>
       )}
       {helper.k === 'kept' && !phone && (
-        <Button size="sm" onClick={() => setStep('groups')}>
+        <Button data-ctl="CTL-P017-072" size="sm" onClick={() => setStep('groups')}>
           Go to Groups
         </Button>
       )}
@@ -497,15 +497,15 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
               <p>{g.why?.aim || blockSub(g.block)}</p>
             )}
             <div className="ch-prc-gb__a">
-              <Button variant="primary" size="sm" onClick={() => keep(g)} aria={{ label: `Keep ${g.block.title}` }}>
+              <Button data-ctl="CTL-P017-073" variant="primary" size="sm" onClick={() => keep(g)} aria={{ label: `Keep ${g.block.title}` }}>
                 Keep
               </Button>
               {alts.length > 0 && (
-                <Button size="sm" onClick={() => setSwap(g)} aria={{ label: `Swap ${g.block.title}` }}>
+                <Button data-ctl="CTL-P017-074" size="sm" onClick={() => setSwap(g)} aria={{ label: `Swap ${g.block.title}` }}>
                   Swap
                 </Button>
               )}
-              <Button
+              <Button data-ctl="CTL-P017-075"
                 size="sm"
                 aria={{ label: `Remove ${g.block.title}` }}
                 onClick={() => {
@@ -534,7 +534,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         { label: 'Delete', icon: Trash2, danger: true, feel: 'warning', onSelect: () => deleteBlock(b.id) },
       ]}
       trigger={(p) => (
-        <button type="button" {...p} className="ch-prc-more" aria-label={`More for ${b.title}`}>
+        <button data-ctl="CTL-P017-076" type="button" {...p} className="ch-prc-more" aria-label={`More for ${b.title}`}>
           <Icon icon={Ellipsis} size={18} />
         </button>
       )}
@@ -563,7 +563,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
                 }
               }}
             >
-              <button
+              <button data-ctl="CTL-P017-077"
                 type="button"
                 className="ch-prc-block__main"
                 onClick={() => {
@@ -620,8 +620,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   const groupsStep = (
     <div className="ch-prc-groups">
       <div className="ch-prc-groups__a">
-        <Button onClick={() => setSplitOpen(true)}>Split evenly</Button>
-        {body.groups.length < 6 && <Button onClick={() => setBody(addGroup)}>Add group</Button>}
+        <Button data-ctl="CTL-P017-078" onClick={() => setSplitOpen(true)}>Split evenly</Button>
+        {body.groups.length < 6 && <Button data-ctl="CTL-P017-079" onClick={() => setBody(addGroup)}>Add group</Button>}
       </div>
       {!blocks.some((b) => b.kind === 'stations') && <p className="ch-prc-note">Groups are optional for this plan.</p>}
       {body.groups.length === 0 && <p className="ch-prc-note">No groups yet. Split your {plural(body.players.length, 'player')} evenly, or add a group.</p>}
@@ -631,7 +631,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
             <span className="ch-prc-disc" aria-hidden="true">{g.name}</span>
             <b>Group {g.name}</b>
             <span className="ch-num">{plural(g.players.length, 'player')}</span>
-            <button type="button" className="ch-prc-more" aria-label={`Remove Group ${g.name}`} onClick={() => setBody((b) => removeGroup(b, g.id))}>
+            <button data-ctl="CTL-P017-080" type="button" className="ch-prc-more" aria-label={`Remove Group ${g.name}`} onClick={() => setBody((b) => removeGroup(b, g.id))}>
               <Icon icon={Trash2} size={16} />
             </button>
           </header>
@@ -678,7 +678,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           align="start"
           items={items}
           trigger={(t) => (
-            <button type="button" {...t} className="ch-prc-player">
+            <button data-ctl="CTL-P017-081" type="button" {...t} className="ch-prc-player">
               {names.get(p) ?? 'A player'}
             </button>
           )}
@@ -708,11 +708,11 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
               {long && <span className="ch-prc-slot__w ch-num" data-ch-code="CH-13180">Drill runs {d.minutes} min; turn is {s.minutes}.</span>}
             </div>
             {s.drill && (
-              <Button size="sm" variant="ghost" onClick={() => setBody((b) => setSlotDrill(b, s.id, null))} aria={{ label: `Take the drill off ${s.head}` }}>
+              <Button data-ctl="CTL-P017-082" size="sm" variant="ghost" onClick={() => setBody((b) => setSlotDrill(b, s.id, null))} aria={{ label: `Take the drill off ${s.head}` }}>
                 Clear
               </Button>
             )}
-            <Button
+            <Button data-ctl="CTL-P017-083"
               size="sm"
               onClick={() => {
                 setSlot(s.id);
@@ -737,7 +737,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
             <ul className="ch-prc-probs">
               {check.errors.map((p, i) => (
                 <li key={i}>
-                  <button type="button" onClick={() => { if (p.blockId) setSelected(p.blockId); setStep('blocks'); }}>
+                  <button data-ctl="CTL-P017-084" type="button" onClick={() => { if (p.blockId) setSelected(p.blockId); setStep('blocks'); }}>
                     {p.message}
                     <Icon icon={ChevronRight} size={14} />
                   </button>
@@ -756,15 +756,15 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           </ul>
         )}
         <div className="ch-prc-strip__a">
-          <Button onClick={printIt}>Print</Button>
+          <Button data-ctl="CTL-P017-085" onClick={printIt}>Print</Button>
           {data.status === 'draft' && (
-            <Button variant="ghost" onClick={() => setAskDelete(true)}>
+            <Button data-ctl="CTL-P017-086" variant="ghost" onClick={() => setAskDelete(true)}>
               Delete draft
             </Button>
           )}
           {/* A Mac's head already holds Publish, on every step: one key, not two. A phone has no head, so its key is here. */}
           {phone && (
-            <Button variant="primary" disabled={check.errors.length > 0} onClick={() => setConfirm(true)}>
+            <Button data-ctl="CTL-P017-087" variant="primary" disabled={check.errors.length > 0} onClick={() => setConfirm(true)}>
               {publishLabel}
             </Button>
           )}
@@ -816,10 +816,10 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         code="CH-13081"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setConfirm(false)}>
+            <Button data-ctl="CTL-P017-088" variant="ghost" onClick={() => setConfirm(false)}>
               Not yet
             </Button>
-            <Button variant="primary" busy={publishing} onClick={() => void doPublish()}>
+            <Button data-ctl="CTL-P017-089" variant="primary" busy={publishing} onClick={() => void doPublish()}>
               {data.status === 'published' ? 'Republish' : `Publish to ${plural(body.players.length + data.coaches.length, 'person', 'people')}`}
             </Button>
           </>
@@ -893,10 +893,10 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           width={440}
           footer={
             <>
-              <Button variant="ghost" onClick={() => setMoveAsk(false)}>
+              <Button data-ctl="CTL-P017-090" variant="ghost" onClick={() => setMoveAsk(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" onClick={() => void movePractice()}>
+              <Button data-ctl="CTL-P017-091" variant="primary" onClick={() => void movePractice()}>
                 Move practice
               </Button>
             </>
@@ -927,7 +927,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       <PracticeSheet open={!!swap} onClose={() => setSwap(null)} title="Swap drill" actionLabel="Done" onAction={() => setSwap(null)} code="CH-13895">
         <div className="ch-prc-bank">
           {swap && altsOf(swap).map((a) => (
-            <button key={a.ref} type="button" className="ch-prc-drill" onClick={() => pickSwap(swap, a.ref)}>
+            <button data-ctl="CTL-P017-092" key={a.ref} type="button" className="ch-prc-drill" onClick={() => pickSwap(swap, a.ref)}>
               <b>{a.name}</b>
               <span className="ch-num">{kindLabel(a.kind)} · {a.min} min · {a.line}</span>
             </button>
@@ -944,7 +944,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
           back={{ label: 'Practice', onBack: () => void goBack() }}
           title={title}
           titleId="ch-prb-title"
-          action={<PhoneIconAction icon={Printer} label="Print" onClick={printIt} />}
+          action={<PhoneIconAction data-ctl="CTL-P017-093" icon={Printer} label="Print" onClick={printIt} />}
         />
         <div className="ch-prb-sticky">{stepBar}</div>
         {restored && <p className="ch-prc-note" role="status">Restored your changes</p>}
@@ -963,7 +963,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
   return (
     <main className="ch-prc ch-prb is-desk" data-ch="practice-builder" aria-labelledby="ch-prb-title">
       <header className="ch-prb-head">
-        <BackLink onClick={() => void goBack()}>Practice</BackLink>
+        <BackLink data-ctl="CTL-P017-094" onClick={() => void goBack()}>Practice</BackLink>
         <div className="ch-prb-head__t">
           <input id="ch-prb-title" className="ch-prb-title" aria-label="Plan title" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
           {/* One line under the title: when and where, Change, then whether it is saved. */}
@@ -974,8 +974,8 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
         </div>
         <div className="ch-prb-head__steps">{stepBar}</div>
         {ribbonBar}
-        <Button onClick={() => setStep('review')}>Preview</Button>
-        <Button variant="primary" disabled={check.errors.length > 0} onClick={() => setConfirm(true)}>
+        <Button data-ctl="CTL-P017-095" onClick={() => setStep('review')}>Preview</Button>
+        <Button data-ctl="CTL-P017-096" variant="primary" disabled={check.errors.length > 0} onClick={() => setConfirm(true)}>
           {publishLabel}
         </Button>
       </header>

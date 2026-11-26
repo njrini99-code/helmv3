@@ -140,7 +140,7 @@ function Invalid({ message }: { message?: string }) {
       <p className="ch-au-sub">{message ?? 'That invitation link is not valid.'}</p>
       {!/head coach/i.test(message ?? '') && <p className="ch-au-body">Ask your head coach to send a new one.</p>}
       <div className="ch-au-submit">
-        <Button href="/golf/login" variant="primary" size="lg">
+        <Button data-ctl="CTL-P015-035" href="/golf/login" variant="primary" size="lg">
           Go to sign in
         </Button>
       </div>
@@ -231,7 +231,7 @@ function Accept({ preview, program, email, token, writes, returnTo, focusOnMount
       {email !== null && (
         <p className="ch-au-body ch-au-whoami">
           Signed in as <b className="ch-au-who">{email || 'your account'}</b>.{' '}
-          <button type="button" className="ch-au-linkbtn" onClick={switchAccount} data-ch-code="CH-15943">
+          <button data-ctl="CTL-P015-036" type="button" className="ch-au-linkbtn" onClick={switchAccount} data-ch-code="CH-15943">
             Not you?
           </button>
         </p>
@@ -247,15 +247,15 @@ function Accept({ preview, program, email, token, writes, returnTo, focusOnMount
         // CH-15944: an account that belongs to another program. The way out is the one lit key; accepting into the wrong
         // program is not the easy tap: Accept stays, secondary and off, the warning its reason.
         <div className="ch-au-submit ch-au-submit--pair">
-          <Button variant="primary" size="lg" onClick={switchAccount}>
+          <Button data-ctl="CTL-P015-037" variant="primary" size="lg" onClick={switchAccount}>
             Switch account
           </Button>
-          <Button variant="secondary" size="lg" disabled aria={{ describedby: noticeId }}>
+          <Button data-ctl="CTL-P015-038" variant="secondary" size="lg" disabled aria={{ describedby: noticeId }}>
             Accept invitation
           </Button>
         </div>
       ) : (
-        <GateKey idle="Accept invitation" working="Joining…" busy={busy} type="button" onClick={() => void accept()} code="CH-15433" />
+        <GateKey data-ctl="CTL-P015-039" idle="Accept invitation" working="Joining…" busy={busy} type="button" onClick={() => void accept()} code="CH-15433" />
       )}
     </div>
   );
@@ -343,7 +343,7 @@ function Create({ preview, program, token, writes, returnTo, focusOnMount, probl
             code={problem.code}
             action={
               problem.signIn ? (
-                <Button size="sm" href={`/golf/login?returnTo=${encodeURIComponent(returnTo)}`}>
+                <Button data-ctl="CTL-P015-040" size="sm" href={`/golf/login?returnTo=${encodeURIComponent(returnTo)}`}>
                   Go to sign in
                 </Button>
               ) : undefined
@@ -355,7 +355,7 @@ function Create({ preview, program, token, writes, returnTo, focusOnMount, probl
       )}
       <GateKey idle="Create account and join" working="Creating your account…" busy={busy} code="CH-15433" />
       <p className="ch-au-alt">
-        Already have an account? <Link href={`/golf/login?returnTo=${encodeURIComponent(returnTo)}`}>Sign in</Link> and open this link again.
+        Already have an account? <Link data-ctl="CTL-P015-041" href={`/golf/login?returnTo=${encodeURIComponent(returnTo)}`}>Sign in</Link> and open this link again.
       </p>
     </form>
   );
@@ -376,7 +376,7 @@ function Joined({ program, role, focusOnMount, onContinue }: { program: string; 
         {roleLabel(role)} at <b className="ch-au-who">{program}</b>.
       </p>
       <p className="ch-au-body">The team is in your dashboard now.</p>
-      <GateKey idle="Go to your dashboard" working="Opening…" type="button" onClick={onContinue} />
+      <GateKey data-ctl="CTL-P015-042" idle="Go to your dashboard" working="Opening…" type="button" onClick={onContinue} />
     </div>
   );
 }

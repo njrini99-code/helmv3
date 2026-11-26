@@ -239,26 +239,26 @@ export function RoundEditor({
         description={readOnly ? undefined : d.rsvp ? 'Changes notify everyone invited.' : 'Invited players see it on their calendar.'}
         footer={
           readOnly ? (
-            <Button variant="primary" onClick={onClose}>
+            <Button data-ctl="CTL-P006-049" variant="primary" onClick={onClose}>
               Close
             </Button>
           ) : (
             <>
               {canCancel && (
-                <Button variant="ghost" className="ch-red__danger" leftIcon={CircleX} onClick={() => onCancelRound!(event)} disabled={pending}>
+                <Button data-ctl="CTL-P006-050" variant="ghost" className="ch-red__danger" leftIcon={CircleX} onClick={() => onCancelRound!(event)} disabled={pending}>
                   Cancel round
                 </Button>
               )}
               {canRestore && (
-                <Button variant="ghost" leftIcon={RotateCcw} onClick={() => onRestoreRound!(event)} disabled={pending}>
+                <Button data-ctl="CTL-P006-051" variant="ghost" leftIcon={RotateCcw} onClick={() => onRestoreRound!(event)} disabled={pending}>
                   Restore round
                 </Button>
               )}
               <span style={{ marginRight: 'auto' }} />
-              <Button variant="ghost" onClick={requestClose}>
+              <Button data-ctl="CTL-P006-052" variant="ghost" onClick={requestClose}>
                 Cancel
               </Button>
-              <Button variant="primary" busy={pending} onClick={() => void save()}>
+              <Button data-ctl="CTL-P006-053" variant="primary" busy={pending} onClick={() => void save()}>
                 {pending ? 'Saving…' : 'Save changes'}
               </Button>
             </>
@@ -286,7 +286,7 @@ export function RoundEditor({
                   <p id="ch-red-banner-1" className="ch-red__l1">{`Part of ${rl!.name} · ${rl!.caption}`}</p>
                   <p className="ch-red__l2">{banner2}</p>
                 </div>
-                <Button size="sm" rightIcon={ArrowUpRight} onClick={toDesk} aria={{ label: 'Edit tournament, opens Tournaments' }}>
+                <Button data-ctl="CTL-P006-054" size="sm" rightIcon={ArrowUpRight} onClick={toDesk} aria={{ label: 'Edit tournament, opens Tournaments' }}>
                   Edit tournament
                 </Button>
               </div>
@@ -304,12 +304,12 @@ export function RoundEditor({
                     <>
                       <TimeField label="First tee" stepMinutes={1} value={d.tee} onChange={(v) => v && set({ tee: v, end: d.end && d.tee ? shiftHHMM(d.end, teeMinutes(v) - teeMinutes(d.tee)) : d.end })} />
                       <TimeField label="Ends" stepMinutes={5} value={d.end ?? shiftHHMM(d.tee, 300)} min={shiftHHMM(d.tee, 15)} onChange={(v) => v && set({ end: v })} />
-                      <Button size="sm" variant="ghost" onClick={() => set({ tee: null, end: null })}>
+                      <Button data-ctl="CTL-P006-055" size="sm" variant="ghost" onClick={() => set({ tee: null, end: null })}>
                         Clear time
                       </Button>
                     </>
                   ) : (
-                    <Button size="sm" variant="ghost" onClick={() => set({ tee: '08:00', end: '13:00' })}>
+                    <Button data-ctl="CTL-P006-056" size="sm" variant="ghost" onClick={() => set({ tee: '08:00', end: '13:00' })}>
                       Add time
                     </Button>
                   )}
@@ -318,7 +318,7 @@ export function RoundEditor({
               </div>
               {moved && round?.teeSheet && (
                 <label className="ch-switch">
-                  <input type="checkbox" checked={shift} onChange={(ev) => (haptic('select'), setShift(ev.target.checked))} />
+                  <input data-ctl="CTL-P006-057" type="checkbox" checked={shift} onChange={(ev) => (haptic('select'), setShift(ev.target.checked))} />
                   <span className="ch-switch__t" aria-hidden="true" />
                   Move each player’s tee time by the same amount
                 </label>
@@ -348,7 +348,7 @@ export function RoundEditor({
               <div>
                 <div className="ch-in__sechead">
                   <span className="ch-ed__lbl">{peopleError && !people.length ? 'Invite' : `Invite · ${listedCount(d.invited, people)} of ${people.length}`}</span>
-                  <Button size="sm" variant="ghost" onClick={() => set({ invited: allOn ? [] : people.map((p) => p.id).sort() })}>
+                  <Button data-ctl="CTL-P006-058" size="sm" variant="ghost" onClick={() => set({ invited: allOn ? [] : people.map((p) => p.id).sort() })}>
                     {allOn ? 'Clear' : 'Select all'}
                   </Button>
                 </div>
@@ -356,7 +356,7 @@ export function RoundEditor({
                   <div className="ch-ed__inv">
                     {people.map((p) => (
                       <label key={p.id}>
-                        <input
+                        <input data-ctl="CTL-P006-059"
                           type="checkbox"
                           checked={d.invited.includes(p.id)}
                           onChange={() => {
@@ -374,13 +374,13 @@ export function RoundEditor({
                 )}
               </div>
               <label className="ch-switch">
-                <input type="checkbox" checked={d.rsvp} onChange={(ev) => (haptic('select'), set({ rsvp: ev.target.checked }))} />
+                <input data-ctl="CTL-P006-060" type="checkbox" checked={d.rsvp} onChange={(ev) => (haptic('select'), set({ rsvp: ev.target.checked }))} />
                 <span className="ch-switch__t" aria-hidden="true" />
                 Ask players to RSVP
               </label>
             </fieldset>
           )}
-          <button type="submit" hidden />
+          <button data-ctl="CTL-P006-061" type="submit" hidden />
           <span className="ch-sr-only" role="status" aria-live="polite">
             {said}
           </span>
@@ -396,10 +396,10 @@ export function RoundEditor({
         description="Your edits to this round are lost. The round stays as it was."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setDiscard(null)}>
+            <Button data-ctl="CTL-P006-062" variant="ghost" onClick={() => setDiscard(null)}>
               Keep editing
             </Button>
-            <Button variant="danger" onClick={() => discard?.()}>
+            <Button data-ctl="CTL-P006-063" variant="danger" onClick={() => discard?.()}>
               Discard
             </Button>
           </>

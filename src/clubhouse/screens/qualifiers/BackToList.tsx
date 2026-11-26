@@ -11,7 +11,7 @@ export function BackToList({ id, children }: { id?: string; children: string }) 
   const back = useStepBack('list', id ?? '', LIST_HREF);
   return (
     <span onClickCapture={back.onClickCapture}>
-      <Button size="sm" href={LIST_HREF}>
+      <Button data-ctl="CTL-P009-002" size="sm" href={LIST_HREF}>
         {children}
       </Button>
     </span>

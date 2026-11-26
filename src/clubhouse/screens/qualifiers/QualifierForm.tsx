@@ -300,7 +300,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           title={editing ? 'Edit qualifier' : 'New qualifier'}
           back={{ label: 'Cancel', chevron: false, onBack: cancel }}
           action={
-            <PhoneTextAction onClick={() => void submit()} disabled={blocked} busy={pending}>
+            <PhoneTextAction data-ctl="CTL-P009-028" onClick={() => void submit()} disabled={blocked} busy={pending}>
               {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving…' : 'Creating…'}</span> : editing ? 'Save' : 'Create'}
             </PhoneTextAction>
           }
@@ -316,7 +316,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           }
         }}
       >
-        <BackLink href={doneHref}>{editing ? 'Qualifier' : 'Qualifiers'}</BackLink>
+        <BackLink data-ctl="CTL-P009-029" href={doneHref}>{editing ? 'Qualifier' : 'Qualifiers'}</BackLink>
       </div>
       <header className="ch-qf-head" data-canopy-head="tight">
         <div>
@@ -348,7 +348,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
           body="A qualifier needs at least one entrant, so Create waits until players join."
           action={
             inviteHref ? (
-              <Button size="sm" variant="primary" leftIcon={UserPlus} href={inviteHref}>
+              <Button data-ctl="CTL-P009-030" size="sm" variant="primary" leftIcon={UserPlus} href={inviteHref}>
                 Invite players
               </Button>
             ) : undefined
@@ -514,7 +514,7 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
                   </p>
                 </div>
                 {!data.playersError && activeIds.length > 0 && (
-                  <Button size="sm" variant="ghost" onClick={toggleAll}>
+                  <Button data-ctl="CTL-P009-031" size="sm" variant="ghost" onClick={toggleAll}>
                     {allIn ? 'Clear all' : 'Select all'}
                   </Button>
                 )}
@@ -610,10 +610,10 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
               </div>
             </fieldset>
             <div className="ch-qf-formact">
-              <Button variant="ghost" onClick={cancel}>
+              <Button data-ctl="CTL-P009-032" variant="ghost" onClick={cancel}>
                 Cancel
               </Button>
-              <Button type="submit" variant="primary" leftIcon={Check} busy={pending} disabled={blocked}>
+              <Button data-ctl="CTL-P009-033" type="submit" variant="primary" leftIcon={Check} busy={pending} disabled={blocked}>
                 {pending ? <span data-ch-code="CH-09404">{editing ? 'Saving…' : 'Creating…'}</span> : editing ? 'Save changes' : 'Create qualifier'}
               </Button>
             </div>
@@ -632,10 +632,10 @@ export function QualifierForm({ data, writes = LIVE_WRITES }: { data: ChQFormDat
         description={editing ? 'Nothing you changed here has been saved.' : 'The qualifier hasn’t been created.'}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setLeaving(false)}>
+            <Button data-ctl="CTL-P009-034" variant="ghost" onClick={() => setLeaving(false)}>
               Keep editing
             </Button>
-            <Button variant="danger" feel="warning" onClick={() => router.push(doneHref)}>
+            <Button data-ctl="CTL-P009-035" variant="danger" feel="warning" onClick={() => router.push(doneHref)}>
               Discard
             </Button>
           </>
@@ -681,12 +681,12 @@ function RoundCourses({
                   <small>{c ? [c.teeName, c.par != null ? `Par ${c.par}` : null].filter(Boolean).join(' · ') || 'Tees not set' : fallback ? 'The qualifier’s course' : 'Choose one, or set the qualifier’s course above'}</small>
                 </span>
                 <span className="ch-qf-rc__act">
-                  <Button size="sm" variant="ghost" leftIcon={MapPin} onClick={() => onPick(i + 1)}>
+                  <Button data-ctl="CTL-P009-036" size="sm" variant="ghost" leftIcon={MapPin} onClick={() => onPick(i + 1)}>
                     {c ? 'Change' : 'Choose'}{' '}
                     <span className="ch-sr-only">course for round {i + 1}</span>
                   </Button>
                   {c && (
-                    <Button size="sm" variant="ghost" leftIcon={X} onClick={() => onClear(i + 1)}>
+                    <Button data-ctl="CTL-P009-037" size="sm" variant="ghost" leftIcon={X} onClick={() => onClear(i + 1)}>
                       Clear{' '}
                       <span className="ch-sr-only">round {i + 1} course</span>
                     </Button>

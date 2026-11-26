@@ -170,7 +170,7 @@ export function RosterPhoneCrh({
 
   return (
     <main className="ch-rsm ch-rsx" data-ch-crh="on" aria-label="Roster">
-      <PhoneTop title="Roster" start action={!empty ? <PhoneIconAction icon={UserPlus} label="Invite players" onClick={onInvite} /> : undefined} />
+      <PhoneTop title="Roster" start action={!empty ? <PhoneIconAction data-ctl="CTL-P003-030" icon={UserPlus} label="Invite players" onClick={onInvite} /> : undefined} />
       <div className="ch-rsm-page" inert={open ? true : undefined}>
         <header className="ch-rsm-head">
           <LargeTitle as="p" hidden>
@@ -185,7 +185,7 @@ export function RosterPhoneCrh({
         {data.playersError ? (
           <Surface variant="card" level={2} padded={false} title="Players">
             <CrhStateBlock kind="failed" code="CH-3201" title="The roster didn’t load" body={FAILURE_COPY.page}>
-              <Button leftIcon={RotateCw} onClick={onRetry}>
+              <Button data-ctl="CTL-P003-031" leftIcon={RotateCw} onClick={onRetry}>
                 Try again
               </Button>
             </CrhStateBlock>
@@ -193,11 +193,11 @@ export function RosterPhoneCrh({
         ) : empty ? (
           <Surface variant="card" level={2} padded={false} title="Players">
             <CrhStateBlock code="CH-3301" icon={Users} title="No players yet" body="Share your team code or invite by email. Players show here once you approve them.">
-              <Button variant="primary" leftIcon={UserPlus} onClick={onInvite}>
+              <Button data-ctl="CTL-P003-032" variant="primary" leftIcon={UserPlus} onClick={onInvite}>
                 Invite players
               </Button>
               {data.joinCode && (
-                <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
+                <Button data-ctl="CTL-P003-033" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                   Copy team code
                 </Button>
               )}
@@ -293,7 +293,7 @@ export function RosterPhoneCrh({
       <ProfilePresence atRest={arrivedAtRest}>
         {open && (
           <PhoneScreen key={`player-${open.id}`} keyboardAware immersive={false} labelledBy="ch-rsm-prof-title" className="ch-rsm-screen ch-rsx-screen">
-            <PhoneBar back={{ label: 'Roster', onBack: guardedClose }} title={open.name} titleId="ch-rsm-prof-title" action={<PhoneIconAction icon={Ellipsis} label="Player actions" onClick={() => setActing(true)} />} />
+            <PhoneBar back={{ label: 'Roster', onBack: guardedClose }} title={open.name} titleId="ch-rsm-prof-title" action={<PhoneIconAction data-ctl="CTL-P003-034" icon={Ellipsis} label="Player actions" onClick={() => setActing(true)} />} />
             {/* The tab and the app switcher read the player while the profile is up, and "Roster" again as it closes (PLAYER-04). */}
             <DocumentTitle title={open.name} />
             <div className="ch-rsm-scroll" onClickCapture={onProfileClick}>
@@ -353,8 +353,8 @@ export function RosterPhoneCrh({
         description={open ? `Your note about ${open.firstName} hasn’t been saved.` : undefined}
         footer={
           <>
-            <Button onClick={keepEditing}>Keep editing</Button>
-            <Button variant="danger" feel="warning" onClick={discard}>
+            <Button data-ctl="CTL-P003-035" onClick={keepEditing}>Keep editing</Button>
+            <Button data-ctl="CTL-P003-036" variant="danger" feel="warning" onClick={discard}>
               Discard
             </Button>
           </>
@@ -435,7 +435,7 @@ export function RosterRowCrh({
   return (
     <GroupRow twoLine className="ch-rsx-grow">
       <PlayerPeek player={rosterPeek(p)}>
-        <button type="button" className="ch-rsm-row ch-rsx-row" data-ch-roster-row="" data-flip={p.id} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
+        <button data-ctl="CTL-P003-037" type="button" className="ch-rsm-row ch-rsx-row" data-ch-roster-row="" data-flip={p.id} data-ch-code="CH-3806" onClick={() => onOpen(p.id)} {...hold}>
           {/* F-0011 (WCAG 2.5.3): named by its own words, opening with the player it shows, in place of an aria-label that the
               drawn row (the coin's initials, "74.1", "3.2 hcp") never matched; the drawn text stays out of the name. */}
           <span className="ch-sr-only">{label}</span>
@@ -483,7 +483,7 @@ export function RequestsRow({ jr, error, covered, clock, onRetry, onOpen }: { jr
   const names = jr.reqs.slice(0, 2).map((r) => r.name);
   const who = n > 2 ? `${names.join(', ')} and ${n - 2} more` : nameList(names);
   return (
-    <button type="button" className="ch-rsx-req" aria-label={`${n} join ${pluralWord(n, 'request')}: ${who}`} onClick={onOpen}>
+    <button data-ctl="CTL-P003-038" type="button" className="ch-rsx-req" aria-label={`${n} join ${pluralWord(n, 'request')}: ${who}`} onClick={onOpen}>
       <span className="ch-rsx-req__coins" aria-hidden="true">
         {jr.reqs.slice(0, 3).map((r) => (
           <Avatar key={r.id} name={r.name} size="md" year={yearKeyOf(r.gradYear, clock)} />
@@ -533,7 +533,7 @@ export function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { o
       atRest={atRest}
       footer={
         n >= 2 || (jr.approvingAll && n > 0) ? (
-          <Button variant="primary" size="lg" leftIcon={Check} busy={jr.approvingAll} disabled={jr.busy != null && !jr.approvingAll} feel={null} onClick={() => void jr.approveAll()}>
+          <Button data-ctl="CTL-P003-039" variant="primary" size="lg" leftIcon={Check} busy={jr.approvingAll} disabled={jr.busy != null && !jr.approvingAll} feel={null} onClick={() => void jr.approveAll()}>
             {jr.approvingAll ? <span data-ch-code="CH-3403">Approving…</span> : `Approve all ${n}`}
           </Button>
         ) : undefined
@@ -553,10 +553,10 @@ export function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { o
                       <b>{r.name}</b>
                       <span>{yearLineOf(r.gradYear, clock) ?? ' '}</span>
                     </span>
-                    <Button size="sm" busy={jr.busy === r.id} disabled={jr.busy != null && jr.busy !== r.id} onClick={() => void jr.decide(r, false)}>
+                    <Button data-ctl="CTL-P003-040" size="sm" busy={jr.busy === r.id} disabled={jr.busy != null && jr.busy !== r.id} onClick={() => void jr.decide(r, false)}>
                       Decline
                     </Button>
-                    <Button size="sm" variant="primary" busy={jr.busy === r.id} disabled={jr.busy != null && jr.busy !== r.id} feel={null} onClick={() => void jr.decide(r, true)}>
+                    <Button data-ctl="CTL-P003-041" size="sm" variant="primary" busy={jr.busy === r.id} disabled={jr.busy != null && jr.busy !== r.id} feel={null} onClick={() => void jr.decide(r, true)}>
                       Approve
                     </Button>
                   </PresenceRow>
@@ -573,7 +573,7 @@ export function RequestsSheetCrh({ open, atRest, onClose, data, jr, clock }: { o
                 <span>Players join with this code</span>
               </span>
               <b className="ch-rsx-code__v ch-num">{data.joinCode}</b>
-              <Button size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
+              <Button data-ctl="CTL-P003-042" size="sm" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                 Copy
               </Button>
             </div>

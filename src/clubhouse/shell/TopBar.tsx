@@ -88,7 +88,7 @@ export function TopBar({
               {i === crumbs.length - 1 ? (
                 <b aria-current="page">{c}</b>
               ) : href ? (
-                <Link href={href} className="ch-topbar__crumblink">
+                <Link data-ctl="CTL-P001-040" href={href} className="ch-topbar__crumblink">
                   {c}
                 </Link>
               ) : (
@@ -118,7 +118,7 @@ export function TopBar({
         <SearchPill />
         <HelmKey />
         <Bell />
-        <Link
+        <Link data-ctl="CTL-P001-041"
           href={pageSettings ? `/golf/dashboard/settings?section=${pageSettings.section}` : '/golf/dashboard/settings'}
           className={'ch-btn ch-btn--ghost ch-iconbtn ch-topbar__settings' + (pathname.startsWith('/golf/dashboard/settings') ? ' is-on' : '')}
           aria-label={pageSettings?.label ?? 'Settings'}

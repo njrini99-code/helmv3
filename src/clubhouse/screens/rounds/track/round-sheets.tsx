@@ -178,21 +178,21 @@ export function ExitSheet({
               </span>
             )}
           </div>
-          <Button variant="ghost" disabled={discarding} onClick={() => setConfirm(false)}>Keep it</Button>
-          <Button variant="danger" busy={discarding} onClick={onDiscard}>
+          <Button data-ctl="CTL-P011-149" variant="ghost" disabled={discarding} onClick={() => setConfirm(false)}>Keep it</Button>
+          <Button data-ctl="CTL-P011-150" variant="danger" busy={discarding} onClick={onDiscard}>
             {discarding ? 'Discarding…' : 'Discard round'}
           </Button>
         </div>
       ) : (
         <div className="ch-rt-exit__opts">
-          <button type="button" className="ch-rt-xopt is-primary" disabled={busy} onClick={onSave}>
+          <button data-ctl="CTL-P011-151" type="button" className="ch-rt-xopt is-primary" disabled={busy} onClick={onSave}>
             <Icon icon={Bookmark} size={18} />
             <span>
               <b>{saving ? 'Saving…' : 'Save for later'}</b>
               <em>{saving ? 'Keep this screen open.' : 'Continue it from Rounds.'}</em>
             </span>
           </button>
-          <button type="button" className="ch-rt-xopt" disabled={busy} onClick={keep}>
+          <button data-ctl="CTL-P011-152" type="button" className="ch-rt-xopt" disabled={busy} onClick={keep}>
             <Icon icon={CirclePlay} size={18} />
             <span>
               <b>Keep playing</b>
@@ -200,7 +200,7 @@ export function ExitSheet({
             </span>
           </button>
           {roundType && (
-            <button type="button" className="ch-rt-xopt" disabled={busy} onClick={roundType.onChange}>
+            <button data-ctl="CTL-P011-153" type="button" className="ch-rt-xopt" disabled={busy} onClick={roundType.onChange}>
               <Icon icon={Flag} size={18} />
               <span>
                 <b>Change round type</b>
@@ -209,7 +209,7 @@ export function ExitSheet({
             </button>
           )}
           {sharing && (
-            <button type="button" className="ch-rt-xopt" disabled={busy} onClick={sharing.onChange}>
+            <button data-ctl="CTL-P011-154" type="button" className="ch-rt-xopt" disabled={busy} onClick={sharing.onChange}>
               <Icon icon={Eye} size={18} />
               <span>
                 <b>Sharing</b>
@@ -217,7 +217,7 @@ export function ExitSheet({
               </span>
             </button>
           )}
-          <button
+          <button data-ctl="CTL-P011-155"
             type="button"
             className="ch-rt-xopt is-danger"
             onClick={() => {
@@ -287,8 +287,8 @@ export function RoundCompleteSheet({
       code="CH-11508"
       footer={
         <>
-          <Button variant="ghost" onClick={onBack}>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</Button>
-          <button type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
+          <Button data-ctl="CTL-P011-156" variant="ghost" onClick={onBack}>Back to hole {backHole ?? holes[holes.length - 1]?.number ?? ''}</Button>
+          <button data-ctl="CTL-P011-157" type="button" className="ch-btn ch-btn--primary ch-btn--lg" onClick={onSubmit}>
             <span>Post round</span>
             <Icon icon={Send} size={16} />
           </button>
@@ -376,7 +376,7 @@ export function SubmitOverlay({
             {slowHref && (
               <span className="ch-rt-subm__m" data-ch-code="CH-11909">
                 This is taking longer than usual. Your round is saved on this device, and it is waiting in{' '}
-                <a href={slowHref}>Rounds</a>.
+                <a data-ctl="CTL-P011-158" href={slowHref}>Rounds</a>.
               </span>
             )}
           </>
@@ -393,7 +393,7 @@ export function SubmitOverlay({
               Your {score ? `${score.strokes} (${formatToPar(score.toPar)})` : 'round'} at {course} is posted.{coach ? ` ${coach.replace(/ /g, '\u00a0')} can see it now.` : ''}
             </span>
             {reviewHref && (
-              <a className="ch-btn ch-btn--primary ch-btn--lg" href={reviewHref}>
+              <a data-ctl="CTL-P011-159" className="ch-btn ch-btn--primary ch-btn--lg" href={reviewHref}>
                 <span>View round review</span>
                 <Icon icon={ArrowRight} size={16} />
               </a>
@@ -409,9 +409,9 @@ export function SubmitOverlay({
               The round didn&rsquo;t post
             </h2>
             <span className="ch-rt-subm__m">{error ?? 'It’s saved on this device. Try again.'}</span>
-            <Button variant="primary" size="lg" onClick={onRetry}>Try again</Button>
+            <Button data-ctl="CTL-P011-160" variant="primary" size="lg" onClick={onRetry}>Try again</Button>
             {onGoBack && (
-              <Button variant="ghost" onClick={onGoBack}>Go back</Button>
+              <Button data-ctl="CTL-P011-161" variant="ghost" onClick={onGoBack}>Go back</Button>
             )}
           </>
         )}

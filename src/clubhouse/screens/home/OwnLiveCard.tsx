@@ -97,7 +97,7 @@ export function OwnLiveCard({
           ))}
         </dl>
       )}
-      <Button variant="primary" href={href} className="ch-lv-own__resume">
+      <Button data-ctl="CTL-P002-057" variant="primary" href={href} className="ch-lv-own__resume">
         {OWN_COPY.resume}
       </Button>
     </section>

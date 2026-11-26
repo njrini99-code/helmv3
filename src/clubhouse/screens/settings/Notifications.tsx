@@ -113,7 +113,7 @@ function DeliveryCard({
           {native.status === 'granted' || native.status === 'denied' ? (
             <span className="ch-set-pair" data-ch-code="CH-8903">
               {native.openSettings && (
-                <Button size="sm" onClick={native.openSettings}>
+                <Button data-ctl="CTL-P008-018" size="sm" onClick={native.openSettings}>
                   Open iOS Settings
                 </Button>
               )}
@@ -132,7 +132,7 @@ function DeliveryCard({
           <span className="ch-set-pair">
             {/* P008-C3: a test push to this person's own devices (D1-6), once push is on here. */}
             {onDevice && push.test && (
-              <Button size="sm" busy={test.busy} onClick={() => void test.run()}>
+              <Button data-ctl="CTL-P008-019" size="sm" busy={test.busy} onClick={() => void test.run()}>
                 {test.busy ? 'Sending…' : 'Send a test'}
               </Button>
             )}
@@ -225,13 +225,13 @@ function RoutingCard({ initial, writes, emailPaused }: { initial: { prefs: Prefs
       }
       aside={
         <div className="ch-set-bulk">
-          <Button size="sm" variant="ghost" leftIcon={BellOff} disabled={bulkBusy || cellBusy} onClick={() => void bulk(muted('push'), "Couldn’t mute push")}>
+          <Button data-ctl="CTL-P008-020" size="sm" variant="ghost" leftIcon={BellOff} disabled={bulkBusy || cellBusy} onClick={() => void bulk(muted('push'), "Couldn’t mute push")}>
             Mute push
           </Button>
-          <Button size="sm" variant="ghost" disabled={bulkBusy || cellBusy || emailPaused} onClick={() => void bulk(muted('email'), "Couldn’t mute email")}>
+          <Button data-ctl="CTL-P008-021" size="sm" variant="ghost" disabled={bulkBusy || cellBusy || emailPaused} onClick={() => void bulk(muted('email'), "Couldn’t mute email")}>
             Mute email
           </Button>
-          <Button size="sm" variant="ghost" leftIcon={RotateCcw} disabled={bulkBusy || cellBusy} onClick={() => setConfirmReset(true)}>
+          <Button data-ctl="CTL-P008-022" size="sm" variant="ghost" leftIcon={RotateCcw} disabled={bulkBusy || cellBusy} onClick={() => setConfirmReset(true)}>
             Reset
           </Button>
         </div>
@@ -300,10 +300,10 @@ function RoutingCard({ initial, writes, emailPaused }: { initial: { prefs: Prefs
         description="Every update goes back to in app only, with push and email off."
         footer={
           <>
-            <Button variant="secondary" onClick={() => setConfirmReset(false)}>
+            <Button data-ctl="CTL-P008-023" variant="secondary" onClick={() => setConfirmReset(false)}>
               Cancel
             </Button>
-            <Button
+            <Button data-ctl="CTL-P008-024"
               variant="primary"
               onClick={() => {
                 setConfirmReset(false);

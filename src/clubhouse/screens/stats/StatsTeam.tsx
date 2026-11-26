@@ -121,7 +121,7 @@ export function StatsTeam({
           {data.roundsError ? 'Countable rounds only' : (
             <>
               <span className="ch-num">{data.activeCount}</span> active {pluralWord(data.activeCount, 'player')} &middot; countable rounds only &middot;{' '}
-              <HowStatsCountLink />
+              <HowStatsCountLink data-ctl="CTL-P004-016" />
             </>
           )}
         </PageHero>
@@ -303,7 +303,7 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
         bests.map((b) => (
           <div key={b.label} className="ch-best__r">
             <span className="ch-best__k">{b.label}</span>
-            <Link href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <Link data-ctl="CTL-P004-017" href={teamPlayerHref(b.playerId, filter)} className="ch-who" style={{ textDecoration: 'none', color: 'inherit' }}>
               <Avatar name={b.name} id={b.playerId} size={26} />
               <span>
                 <b>{b.name}</b>

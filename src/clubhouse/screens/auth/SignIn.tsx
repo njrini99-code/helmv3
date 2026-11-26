@@ -70,7 +70,7 @@ export function SignIn({
 
   return (
     <AuthFrame screen="signin" phase={phase}>
-      <a className="ch-au-skip" href="#ch-au-form" data-ch-code="CH-15801">
+      <a data-ctl="CTL-P015-026" className="ch-au-skip" href="#ch-au-form" data-ch-code="CH-15801">
         Skip to sign in
       </a>
       <div className="ch-au-photo" aria-hidden="true" data-ch-code="CH-15804" data-dark={dark ? '' : undefined}>
@@ -97,7 +97,7 @@ export function SignIn({
           {/* The App Store build has no marketing home to go back to (the proxy sends "/" straight back here), and no sign-up (Guideline 3.1.1).
               CH-15611: hovered, its chevron leans back the way it goes; pressed, it tints. */}
           {!native && (
-            <Link href="/" className="ch-au-back" aria-label="Back to home" data-ch-code="CH-15905">
+            <Link data-ctl="CTL-P015-027" href="/" className="ch-au-back" aria-label="Back to home" data-ch-code="CH-15905">
               <Icon icon={ChevronLeft} size={16} />
               Home
             </Link>
@@ -152,13 +152,13 @@ export function SignIn({
           <div className="ch-au-foot">
             {!native && (
               <span>
-                New here? <Link href={signupHref}>Create an account</Link>
+                New here? <Link data-ctl="CTL-P015-028" href={signupHref}>Create an account</Link>
               </span>
             )}
             <span className="ch-au-legal">
-              <Link href="/privacy">Privacy</Link>
+              <Link data-ctl="CTL-P015-029" href="/privacy">Privacy</Link>
               <span aria-hidden="true">·</span>
-              <Link href="/terms">Terms</Link>
+              <Link data-ctl="CTL-P015-030" href="/terms">Terms</Link>
             </span>
           </div>
           <div className="ch-au-hsl">

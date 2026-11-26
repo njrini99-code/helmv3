@@ -51,7 +51,7 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
               <span key={s} style={{ ['--ch-i' as string]: i }}>{s}</span>
             ))}
           </div>
-          <button type="button" className="ed" onClick={() => setDone(false)}>
+          <button data-ctl="CTL-P013-069" type="button" className="ed" onClick={() => setDone(false)}>
             Change answers
           </button>
         </div>
@@ -82,7 +82,7 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
         {q.why && <p className="why">{q.why}</p>}
         <div className="opts" role="group" aria-label={q.title}>
           {q.options.map((o) => (
-            <button key={o.id} type="button" className={'opt' + (q.multi ? ' multi' : '')} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
+            <button data-ctl="CTL-P013-070" key={o.id} type="button" className={'opt' + (q.multi ? ' multi' : '')} aria-pressed={chosen.includes(o.id)} onClick={() => toggle(o.id)}>
               <span className="bx" aria-hidden="true">
                 <svg viewBox="0 0 16 16" width="12" height="12" fill="none">
                   <path d="M3.5 8.5l3 3 6-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" pathLength="24" />
@@ -98,19 +98,19 @@ export function BriefCard({ title, questions, onDone }: { title: string; questio
             // eslint-disable-next-line jsx-a11y/no-autofocus -- the coach just asked for this field
             <input autoFocus className="free" aria-label="Anything else?" placeholder="Anything else?" value={free} maxLength={280} onChange={(e) => setFree(e.target.value)} />
           ) : (
-            <button type="button" className="free is-closed" onClick={() => setFreeOpen(true)}>
+            <button data-ctl="CTL-P013-071" type="button" className="free is-closed" onClick={() => setFreeOpen(true)}>
               Anything else?
             </button>
           ))}
       </div>
       <div className="qft">
-        <Button variant="ghost" disabled={at === 0} onClick={() => go(at - 1)}>
+        <Button data-ctl="CTL-P013-072" variant="ghost" disabled={at === 0} onClick={() => go(at - 1)}>
           Back
         </Button>
-        <Button variant="ghost" onClick={finish}>
+        <Button data-ctl="CTL-P013-073" variant="ghost" onClick={finish}>
           Skip, just build
         </Button>
-        <Button variant="primary" className="p" onClick={() => (at === questions.length - 1 ? finish() : go(at + 1))}>
+        <Button data-ctl="CTL-P013-074" variant="primary" className="p" onClick={() => (at === questions.length - 1 ? finish() : go(at + 1))}>
           {at === questions.length - 1 ? 'Build it' : 'Next'}
         </Button>
       </div>

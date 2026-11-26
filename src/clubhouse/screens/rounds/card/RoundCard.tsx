@@ -280,10 +280,10 @@ function ShareSheet({ open, onClose, model, dateIso }: { open: boolean; onClose:
       description="Drawn on this device. It goes nowhere until you choose where."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P011-062" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" leftIcon={Share} onClick={() => void send()} disabled={!file} busy={busy}>
+          <Button data-ctl="CTL-P011-063" variant="primary" leftIcon={Share} onClick={() => void send()} disabled={!file} busy={busy}>
             {canShare ? 'Share' : 'Save image'}
           </Button>
         </>
@@ -366,11 +366,11 @@ export function RoundCard({ review: r, phone, just, settle }: { review: ChRoundR
         </p>
       )}
       <div className="ch-rcard-act">
-        <Button size={phone ? 'lg' : 'md'} leftIcon={Share} onClick={() => setSharing(true)}>
+        <Button data-ctl="CTL-P011-064" size={phone ? 'lg' : 'md'} leftIcon={Share} onClick={() => setSharing(true)}>
           Share card
         </Button>
         {!phone && (
-          <Button variant="ghost" leftIcon={Printer} onClick={() => window.print()}>
+          <Button data-ctl="CTL-P011-065" variant="ghost" leftIcon={Printer} onClick={() => window.print()}>
             Print
           </Button>
         )}

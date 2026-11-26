@@ -90,7 +90,7 @@ export function Modal({
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <dialog
+    <dialog data-ctl="CTL-P000-022"
       ref={ref}
       id={id}
       role={role === 'alertdialog' ? 'alertdialog' : undefined}
@@ -112,14 +112,14 @@ export function Modal({
     >
       {retainContent(open && (
         <div className="ch-modal__panel">
-          <div className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+          <div data-ctl="CTL-P000-023" className="ch-grab" aria-hidden="true" onPointerDown={drag.onPointerDown} />
           {/* A header, so the phone's chrome rules (no text selection under a drag) apply, but no second banner landmark. */}
           {bare ? (
             <h2 id={titleId} tabIndex={-1} className="ch-sr-only">
               {title}
             </h2>
           ) : (
-          <header className="ch-modal__head" role="none" onPointerDown={drag.onPointerDown}>
+          <header data-ctl="CTL-P000-024" className="ch-modal__head" role="none" onPointerDown={drag.onPointerDown}>
             {icon && (
               <span className="ch-modal__icon ch-well-soft">
                 <Icon icon={icon} size={17} />
@@ -133,7 +133,7 @@ export function Modal({
             </div>
             {action && <div className="ch-modal__action">{action}</div>}
             <Tooltip label="Close" shortcut={['Esc']}>
-              <button type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm ch-modal__close" aria-label="Close" onClick={onClose}>
+              <button data-ctl="CTL-P000-025" type="button" className="ch-btn ch-btn--ghost ch-iconbtn ch-btn--sm ch-modal__close" aria-label="Close" onClick={onClose}>
                 <Icon icon={X} size={17} />
               </button>
             </Tooltip>

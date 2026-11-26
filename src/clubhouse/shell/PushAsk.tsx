@@ -29,10 +29,10 @@ export function PushAskSheet({ open, role, asking, onTurnOn, onNotNow }: { open:
       description={`${WHY[role]} You can change this in Settings, under Notifications.`}
       footer={
         <>
-          <Button variant="ghost" disabled={asking} onClick={onNotNow}>
+          <Button data-ctl="CTL-P001-029" variant="ghost" disabled={asking} onClick={onNotNow}>
             Not now
           </Button>
-          <Button variant="primary" disabled={asking} onClick={onTurnOn}>
+          <Button data-ctl="CTL-P001-030" variant="primary" disabled={asking} onClick={onTurnOn}>
             Turn on
           </Button>
         </>

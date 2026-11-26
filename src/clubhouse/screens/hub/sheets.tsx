@@ -101,7 +101,7 @@ function PlayerPicks({
       {players.map((p) => {
         const on = picked.includes(p.id);
         return (
-          <button
+          <button data-ctl="CTL-P010-026"
             key={p.id}
             type="button"
             aria-pressed={on}
@@ -129,7 +129,7 @@ function PickAll({ players, picked, onChange }: { players: ChTeamHub['players'];
   const all = players.every((p) => picked.includes(p.id));
   const kept = picked.filter((x) => !listed.has(x));
   return (
-    <button
+    <button data-ctl="CTL-P010-027"
       type="button"
       className="ch-hb-pickall"
       onClick={() => {
@@ -198,7 +198,7 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
         <ul className="ch-hb-chips" aria-label="Attached documents">
           {chosen.map((f) => (
             <li key={f.id}>
-              <button type="button" className="ch-hb-chip" aria-label={`Remove ${f.title}`} onClick={() => toggle(f.id)}>
+              <button data-ctl="CTL-P010-028" type="button" className="ch-hb-chip" aria-label={`Remove ${f.title}`} onClick={() => toggle(f.id)}>
                 <Icon icon={FileText} size={13} />
                 <span>{f.title}</span>
                 <Icon icon={X} size={13} />
@@ -207,7 +207,7 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
           ))}
         </ul>
       )}
-      <Button size="sm" leftIcon={Paperclip} aria={{ expanded: listing, controls: listId }} onClick={() => setListing((v) => !v)}>
+      <Button data-ctl="CTL-P010-029" size="sm" leftIcon={Paperclip} aria={{ expanded: listing, controls: listId }} onClick={() => setListing((v) => !v)}>
         Attach from Documents
       </Button>
       {listing && (
@@ -216,7 +216,7 @@ function DocumentPicks({ documents, picked, onChange }: { documents: ChTeamHub['
             <div key={f.name} role="group" aria-label={f.name}>
               <span className="ch-hb-dp__f">{f.name}</span>
               {f.files.map((d) => (
-                <button key={d.id} type="button" className="ch-hb-dp__row" aria-pressed={picked.includes(d.id)} aria-label={`${d.title}, ${d.type}`} onClick={() => toggle(d.id)}>
+                <button data-ctl="CTL-P010-030" key={d.id} type="button" className="ch-hb-dp__row" aria-pressed={picked.includes(d.id)} aria-label={`${d.title}, ${d.type}`} onClick={() => toggle(d.id)}>
                   <span className="ch-hb-dp__b">
                     <b>{d.title}</b>
                     <span className="ch-num">{[d.type, d.size, d.date].filter(Boolean).join(' · ')}</span>
@@ -390,10 +390,10 @@ export function ComposeSheet({
       description={edit ? 'Players see the new wording in Team Hub. Who it went to and its attachments stay as posted.' : 'Players see it in Team Hub and the bell.'}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P010-031" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
+          <Button data-ctl="CTL-P010-032" variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
             {pending ? edit ? <span data-ch-code="CH-10406">Saving…</span> : <span data-ch-code="CH-10402">Posting…</span> : edit ? 'Save changes' : 'Post'}
           </Button>
         </>
@@ -434,7 +434,7 @@ export function ComposeSheet({
                   ['pick', 'Choose players'],
                 ] as ReadonlyArray<readonly ['all' | 'pick' | 'travel', string]>
               ).map(([k, l]) => (
-                <button
+                <button data-ctl="CTL-P010-033"
                   key={k}
                   type="button"
                   role="radio"
@@ -654,20 +654,20 @@ export function TripSheet({
       footer={
         <>
           {step > 0 ? (
-            <Button variant="ghost" onClick={back} disabled={pending}>
+            <Button data-ctl="CTL-P010-034" variant="ghost" onClick={back} disabled={pending}>
               Back
             </Button>
           ) : (
-            <Button variant="ghost" onClick={onClose}>
+            <Button data-ctl="CTL-P010-035" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
           )}
           {last ? (
-            <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
+            <Button data-ctl="CTL-P010-036" variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
               {pending ? <span data-ch-code="CH-10403">Saving…</span> : savedId ? 'Update travelers' : 'Publish'}
             </Button>
           ) : (
-            <Button variant="primary" rightIcon={ArrowRight} onClick={next}>
+            <Button data-ctl="CTL-P010-037" variant="primary" rightIcon={ArrowRight} onClick={next}>
               Next: {TRIP_STEPS[after(step)]}
             </Button>
           )}
@@ -696,12 +696,12 @@ export function TripSheet({
             ) : null}
             <div className="ch-hb-evpick" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Event">
               {events.rows.map((e) => (
-                <button key={e.id} type="button" role="radio" aria-checked={v.eventId === e.id} onClick={() => pickEvent(e.id)}>
+                <button data-ctl="CTL-P010-038" key={e.id} type="button" role="radio" aria-checked={v.eventId === e.id} onClick={() => pickEvent(e.id)}>
                   <b>{e.title}</b>
                   <span>{[e.label, e.location].filter(Boolean).join(' · ')}</span>
                 </button>
               ))}
-              <button type="button" role="radio" aria-checked={v.eventId === null} onClick={() => pickEvent(null)}>
+              <button data-ctl="CTL-P010-039" type="button" role="radio" aria-checked={v.eventId === null} onClick={() => pickEvent(null)}>
                 <b>No calendar event</b>
                 <span>A trip on its own; the whole team sees it</span>
               </button>
@@ -751,7 +751,7 @@ export function TripSheet({
               <span className="ch-field__label">Getting there</span>
               <div className="ch-hb-aud" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Getting there">
                 {TRANSPORTS.map(([k, l]) => (
-                  <button
+                  <button data-ctl="CTL-P010-040"
                     key={k}
                     type="button"
                     role="radio"
@@ -801,7 +801,7 @@ export function TripSheet({
           </>
         )}
         {/* Enter in a field submits, which is Next until the last step (a form with several fields needs a submit button for it). */}
-        <button type="submit" hidden />
+        <button data-ctl="CTL-P010-041" type="submit" hidden />
       </form>
     </Modal>
   );
@@ -898,10 +898,10 @@ export function AssignSheet({
       description="Each player checks it off in Team Hub."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P010-042" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
+          <Button data-ctl="CTL-P010-043" variant="primary" busy={pending} feel={null} onClick={() => void submit()}>
             {pending ? <span data-ch-code="CH-10404">Assigning…</span> : 'Assign'}
           </Button>
         </>
@@ -939,7 +939,7 @@ export function AssignSheet({
           )}
         </div>
         {/* Enter in Task or What it's for assigns, as the button does. */}
-        <button type="submit" hidden />
+        <button data-ctl="CTL-P010-044" type="submit" hidden />
       </form>
     </Modal>
   );
@@ -987,11 +987,11 @@ export function ConfirmDelete({
       description={body}
       footer={
         <>
-          <Button variant="ghost" className="ch-hub-del-cancel" onClick={onCancel}>
+          <Button data-ctl="CTL-P010-045" variant="ghost" className="ch-hub-del-cancel" onClick={onCancel}>
             Cancel
           </Button>
           {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
-          <Button variant="danger" busy={pending} feel={null} onClick={onConfirm}>
+          <Button data-ctl="CTL-P010-046" variant="danger" busy={pending} feel={null} onClick={onConfirm}>
             {pending ? 'Deleting…' : action}
           </Button>
         </>

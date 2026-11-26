@@ -87,8 +87,8 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
             <span className="ch-num" aria-live="polite">
               {i + 1} of {rounds.length}
             </span>
-            <IconButton icon={ChevronLeft} label="Previous round" size="sm" feel="select" onClick={() => step(-1)} />
-            <IconButton icon={ChevronRight} label="Next round" size="sm" feel="select" onClick={() => step(1)} />
+            <IconButton data-ctl="CTL-P002-041" icon={ChevronLeft} label="Previous round" size="sm" feel="select" onClick={() => step(-1)} />
+            <IconButton data-ctl="CTL-P002-042" icon={ChevronRight} label="Next round" size="sm" feel="select" onClick={() => step(1)} />
           </div>
         )}
       </div>
@@ -173,18 +173,18 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
                 </div>
                 {roundHref(r.id, mine ? 'player' : 'coach') ? (
                   // The board's "Open recap": the round's own review.
-                  <Button href={roundHref(r.id, mine ? 'player' : 'coach')!} ahead variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                  <Button data-ctl="CTL-P002-043" href={roundHref(r.id, mine ? 'player' : 'coach')!} ahead variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
                     Open recap
                   </Button>
                 ) : mine ? (
                   // The review isn't rebuilt for this role; My stats holds every round.
-                  <Button href={MY_STATS} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                  <Button data-ctl="CTL-P002-044" href={MY_STATS} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
                     My stats
                   </Button>
                 ) : (
                   statsHref(r.playerId) && (
                     // The review isn't rebuilt for this role; this opens the player's stats, and says so.
-                    <Button href={statsHref(r.playerId)!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
+                    <Button data-ctl="CTL-P002-045" href={statsHref(r.playerId)!} variant="ghost" size="sm" rightIcon={ArrowRight} className="ch-h-round__more">
                       {firstName(r.playerName)}’s stats
                     </Button>
                   )
@@ -203,7 +203,7 @@ export function LatestRound({ data, mine = false, lead, covered = false }: { dat
           <ul>
             {rounds.map((x, j) => (
               <li key={x.id}>
-                <button
+                <button data-ctl="CTL-P002-046"
                   type="button"
                   className={'ch-h-rail__item' + (j === i ? ' is-on' : '')}
                   aria-pressed={j === i}

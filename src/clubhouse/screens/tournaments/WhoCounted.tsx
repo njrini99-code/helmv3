@@ -88,7 +88,7 @@ export function WhoCounted({
         return (
           <span role="cell" key={r.number} className="ch-tour-desk-ct__c">
             {pr ? (
-              <button
+              <button data-ctl="CTL-P016-120"
                 type="button"
                 className={'ch-tour-desk-sc ch-num' + (nc ? ' is-nc' : '') + (tie ? ' is-tie' : '') + (pr.shotData ? '' : ' no-shot')}
                 aria-label={`${x.player?.name ?? 'Player'} round ${r.number}: ${scoreWords(pr)}, ${countWords(pr).toLowerCase()}${pr.shotData ? '' : ', scorecard only'}. Open the evidence`}

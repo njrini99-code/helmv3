@@ -72,7 +72,7 @@ export function LiveShareSheet({
       icon={Eye}
       width={440}
       footer={
-        <Button variant="primary" onClick={onClose}>
+        <Button data-ctl="CTL-P011-129" variant="primary" onClick={onClose}>
           Done
         </Button>
       }

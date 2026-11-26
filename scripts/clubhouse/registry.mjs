@@ -665,7 +665,7 @@ function renderRouteMap({ pages, otherRoutes = [] }) {
   return md;
 }
 
-export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [], otherRoutes = [], catalogs = {}, codeIndex = new Map(), surfaceIndex = new Map(), auditFiles = {} }) {
+export function generateDocs({ manifests, bridge, map, tombstones, read, exists, audits = [], otherRoutes = [], catalogs = {}, codeIndex = new Map(), surfaceIndex = new Map(), auditFiles = {}, ledgers = {} }) {
   const pages = [...manifests].sort((a, b) => a.id.localeCompare(b.id));
   const cats = map.categories;
   const out = {};
@@ -734,7 +734,7 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
   out['docs/clubhouse/AUDITS.md'] = renderAudits({ audits, manifests: pages, head: GEN_HEAD });
 
   // The Bridge graph (plan §3): the one file the Bridge screens and the signal route read.
-  out[GRAPH_PATH] = renderGraph(buildBridgeGraph({ manifests: pages, bridge, tombstones, catalogs, codeIndex, surfaceIndex, auditFiles, read, exists }));
+  out[GRAPH_PATH] = renderGraph(buildBridgeGraph({ manifests: pages, bridge, tombstones, catalogs, codeIndex, surfaceIndex, auditFiles, ledgers, read, exists }));
 
   // Each page's PAGE.md carries a generated Related block (links to its docs, code, audits and tracker row).
   for (const m of pages) {
@@ -824,8 +824,13 @@ export function load(root) {
       }
     }
   }
+  // The control ledgers (plan §4.7), kept by clickable-map.mjs --assign; the graph carries them as `controls`.
+  const ledgerDir = 'config/clubhouse/controls';
+  const ledgers = {};
+  if (ex(ledgerDir)) for (const n of readdirSync(join(root, ledgerDir)).sort()) if (/^P\d{3}\.json$/.test(n)) ledgers[n.slice(0, 4)] = JSON.parse(r(`${ledgerDir}/${n}`));
   return {
     manifests,
+    ledgers,
     golfPages: golfPages.sort(),
     otherRoutes: json('config/clubhouse/other-routes.json', []),
     rows: parseCatalogRows(catalogs),

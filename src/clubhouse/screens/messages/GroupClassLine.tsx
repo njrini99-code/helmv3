@@ -25,7 +25,7 @@ export function GroupClassLine({ cls, conv, personOf }: { cls: ChThreadClassDay 
   if (!group || !text || cls?.now == null) return null;
   return (
     <span ref={trigger} className="ch-ms-classline-wrap" data-ch-code="CH-7272">
-      <button type="button" className="ch-ms-classline" onClick={() => setOpen((o) => !o)} aria-haspopup="dialog" aria-expanded={open}>
+      <button data-ctl="CTL-P007-005" type="button" className="ch-ms-classline" onClick={() => setOpen((o) => !o)} aria-haspopup="dialog" aria-expanded={open}>
         <Icon icon={BookOpen} size={12} />
         <span>{text}</span>
         <Icon icon={ChevronRight} size={12} />

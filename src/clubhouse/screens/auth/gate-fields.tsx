@@ -64,7 +64,7 @@ export function PasswordInput({
       spellCheck={false}
       trailing={
         <Tooltip>
-          <button type="button" className="ch-au-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} aria-controls={props.id} onClick={onToggle}>
+          <button data-ctl="CTL-P015-044" type="button" className="ch-au-eye" aria-label={show ? 'Hide password' : 'Show password'} aria-pressed={show} aria-controls={props.id} onClick={onToggle}>
             <Icon icon={Eye} size={16} className="ch-au-eye__show" />
             <Icon icon={EyeOff} size={16} className="ch-au-eye__hide" />
           </button>
@@ -106,10 +106,10 @@ export function PasswordRules({ id, password }: { id: string; password: string }
 }
 
 /** The panel's primary key: the label and its working twin in one cell, so going in flight never reflows it. */
-export function GateKey({ idle, working, busy = false, disabled = false, code, onClick, type = 'submit' }: { idle: string; working: string; busy?: boolean; disabled?: boolean; code?: string; onClick?: () => void; type?: 'submit' | 'button' }) {
+export function GateKey({ idle, working, busy = false, disabled = false, code, onClick, type = 'submit', 'data-ctl': ctl }: { idle: string; working: string; busy?: boolean; disabled?: boolean; code?: string; onClick?: () => void; type?: 'submit' | 'button'; 'data-ctl'?: string }) {
   return (
     <div className="ch-au-submit">
-      <button type={type} className="ch-btn ch-btn--primary ch-btn--lg" disabled={disabled || busy} aria-busy={busy || undefined} data-ch-code={busy ? code : undefined} onClick={onClick}>
+      <button data-ctl={ctl ?? 'CTL-P015-045'} type={type} className="ch-btn ch-btn--primary ch-btn--lg" disabled={disabled || busy} aria-busy={busy || undefined} data-ch-code={busy ? code : undefined} onClick={onClick}>
         <AuthKeyLabel busy={busy} idle={idle} working={working} />
       </button>
     </div>

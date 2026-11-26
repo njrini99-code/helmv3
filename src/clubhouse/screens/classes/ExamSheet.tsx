@@ -56,10 +56,10 @@ export function ExamSheet({
       description={c ? `${c.code || c.name}. It counts as a class while it runs.` : undefined}
       footer={
         <>
-          <Button variant="ghost" disabled={pending} onClick={onClose}>
+          <Button data-ctl="CTL-P012-032" variant="ghost" disabled={pending} onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={pending} disabled={!examComplete(v)} onClick={submit}>
+          <Button data-ctl="CTL-P012-033" variant="primary" busy={pending} disabled={!examComplete(v)} onClick={submit}>
             {pending ? 'Adding…' : 'Add exam'}
           </Button>
         </>
@@ -73,7 +73,7 @@ export function ExamSheet({
           submit();
         }}
       >
-        <button type="submit" hidden />
+        <button data-ctl="CTL-P012-034" type="submit" hidden />
         <div className="ch-field">
           <span className="ch-field__label">Date</span>
           <DateField value={v.on} onChange={(d) => setV((x) => ({ ...x, on: d }))} label="Exam date" today={today} anchor={term && today < term.classesStart ? term.classesStart : undefined} aria-invalid={bad?.field === 'on' ? true : undefined} aria-describedby={bad ? `${id}-err` : undefined} />

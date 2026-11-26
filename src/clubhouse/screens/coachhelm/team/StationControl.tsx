@@ -26,7 +26,7 @@ export function StationControl({
         const v = stations[s].team;
         return (
           // Voice Control (MAC-09): the name starts with the words on the chip, its short name and figure, then the long name.
-          <button
+          <button data-ctl="CTL-P013-248"
             key={s}
             type="button"
             aria-pressed={value === s}
@@ -39,7 +39,7 @@ export function StationControl({
         );
       })}
       {courseTab && (
-        <button type="button" className="cm" data-ch-team-station="course" aria-pressed={value === 'course'} aria-label={`Course, ${words}, course and scoring`} onClick={() => onChange('course')}>
+        <button data-ctl="CTL-P013-249" type="button" className="cm" data-ch-team-station="course" aria-pressed={value === 'course'} aria-label={`Course, ${words}, course and scoring`} onClick={() => onChange('course')}>
           Course{' '}
           <b>{words}</b>
         </button>

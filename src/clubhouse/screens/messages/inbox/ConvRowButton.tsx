@@ -13,7 +13,7 @@ import { personOf } from '../person-of';
 import { PresenceRow } from '../../../ui/ListPresence';
 import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
-export function ConvRowButton({ api, c, onOpen, bind, plain = false }: { api: ChMessagesApi; c: ChConv; onOpen: () => void; bind: ContextMenuBind; plain?: boolean }) {
+export function ConvRowButton({ api, c, onOpen, bind, plain = false, 'data-ctl': ctl }: { api: ChMessagesApi; c: ChConv; onOpen: () => void; bind: ContextMenuBind; plain?: boolean; 'data-ctl'?: string }) {
   const row = {
     type: "button" as const,
     className: "ch-ms-row" + (c.channel ? " is-channel" : "") + (isUnread(c) ? " is-unread" : "") + (api.selectedId === c.id ? " is-sel" : ""),
@@ -87,10 +87,10 @@ export function ConvRowButton({ api, c, onOpen, bind, plain = false }: { api: Ch
     </>
   );
   // On the phone the swipe wrapper is the list's row (its arrivals and departures); the button sits inside it.
-  if (plain) return <button {...row}>{body}</button>;
+  if (plain) return <button data-ctl={ctl ?? 'CTL-P007-071'} {...row}>{body}</button>;
   return (
     // B7: the row itself arrives, leaves and moves (a conversation with a new message slides to the top of its day).
-    <PresenceRow as="button" {...row}>
+    <PresenceRow as="button" data-ctl={ctl} {...row}>
       {body}
     </PresenceRow>
   );

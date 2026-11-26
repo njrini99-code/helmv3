@@ -184,10 +184,10 @@ export function CancelRoundDialog({ event, onClose, onConfirm }: { event: ChCalE
       }
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P006-029" variant="ghost" onClick={onClose}>
             {round ? 'Keep round' : 'Keep tournament'}
           </Button>
-          <Button
+          <Button data-ctl="CTL-P006-030"
             variant="danger"
             onClick={() => {
               // D-70: a destructive confirm is felt as a warning; success follows when the write lands.
@@ -205,7 +205,7 @@ export function CancelRoundDialog({ event, onClose, onConfirm }: { event: ChCalE
         <input className="ch-input" placeholder="Rain, frost, course closed" maxLength={120} value={reason} onChange={(ev) => setReason(ev.target.value)} />
       </label>
       {round && r.roundsCount > 1 && (
-        <Button variant="ghost" size="sm" onClick={() => setScope('tournament')}>
+        <Button data-ctl="CTL-P006-031" variant="ghost" size="sm" onClick={() => setScope('tournament')}>
           Cancel the whole tournament instead
         </Button>
       )}

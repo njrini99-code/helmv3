@@ -44,7 +44,7 @@ export function ClassStatusRow({
     </>
   );
   return onSelect ? (
-    <button type="button" className="ch-ca-row is-button" aria-label={label} onClick={onSelect}>
+    <button data-ctl="CTL-P012-067" type="button" className="ch-ca-row is-button" aria-label={label} onClick={onSelect}>
       {body}
     </button>
   ) : (

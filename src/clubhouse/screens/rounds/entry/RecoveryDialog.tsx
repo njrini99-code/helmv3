@@ -126,7 +126,7 @@ export function RecoveryDialog({
         />
       ) : (
         <Opts>
-          <Opt
+          <Opt data-ctl="CTL-P011-073"
             tone="primary"
             icon={History}
             label={restoring ? 'Restoring…' : 'Restore round'}
@@ -137,7 +137,7 @@ export function RecoveryDialog({
               onRestore();
             }}
           />
-          <Opt icon={Trash2} tone="danger" label="Discard saved shots" hint="Deletes the copy on this device. You’ll be asked first." disabled={restoring} onClick={() => setConfirming(true)} />
+          <Opt data-ctl="CTL-P011-074" icon={Trash2} tone="danger" label="Discard saved shots" hint="Deletes the copy on this device. You’ll be asked first." disabled={restoring} onClick={() => setConfirming(true)} />
         </Opts>
       )}
     </Modal>

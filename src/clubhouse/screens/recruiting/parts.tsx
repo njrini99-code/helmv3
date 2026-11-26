@@ -101,7 +101,7 @@ export function NextStepSection({ p, now, tz, onEdit, level }: { p: ChProspect; 
       <SecHeading level={level}>Next step</SecHeading>
       {line ? (
         <div className="ch-rec-rows">
-          <button type="button" className={'ch-rec-row ch-rec-next' + (late ? ' is-late' : '')} onClick={onEdit}>
+          <button data-ctl="CTL-P014-035" type="button" className={'ch-rec-row ch-rec-next' + (late ? ' is-late' : '')} onClick={onEdit}>
             <Icon icon={CalendarClock} size={17} />
             {value}
             <span className="ch-rec-row__a">Change</span>
@@ -142,7 +142,7 @@ export function EmptyRow({
         <b>{title}</b>
         <span id={more}>{body}</span>
       </span>
-      <button type="button" className="ch-rec-empty__a" onClick={onAction} aria-describedby={more}>
+      <button data-ctl="CTL-P014-036" type="button" className="ch-rec-empty__a" onClick={onAction} aria-describedby={more}>
         {actionLabel}
       </button>
     </div>
@@ -155,14 +155,14 @@ export function ContactRows({ p, hint }: { p: ChProspect; hint?: string | null }
     <>
       <div className="ch-rec-rows">
         {p.email && (
-          <a className="ch-rec-row" href={mailHref(p.email)}>
+          <a data-ctl="CTL-P014-037" className="ch-rec-row" href={mailHref(p.email)}>
             <Icon icon={Mail} size={17} />
             <span className="ch-rec-row__v">{p.email}</span>
             <span className="ch-rec-row__a">Email</span>
           </a>
         )}
         {p.phone && (
-          <a className="ch-rec-row" href={telHref(p.phone)}>
+          <a data-ctl="CTL-P014-038" className="ch-rec-row" href={telHref(p.phone)}>
             <Icon icon={Phone} size={17} />
             <span className="ch-rec-row__v">{p.phone}</span>
             <span className="ch-rec-row__a">Call</span>
@@ -260,7 +260,7 @@ export function CalendarLine({ c, phone = false }: { c: RecCtx; phone?: boolean 
           align={phone ? 'start' : 'end'}
           items={CH_DIVISIONS.map((d) => ({ label: d.label, checked: d.value === division, onSelect: () => setDivision(d.value) }))}
           trigger={(t) => (
-            <button type="button" className="ch-rec-cal__pick" {...t}>
+            <button data-ctl="CTL-P014-039" type="button" className="ch-rec-cal__pick" {...t}>
               {division ? short : 'Choose your division'}
               <Icon icon={ChevronDown} size={14} />
             </button>

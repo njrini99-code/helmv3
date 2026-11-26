@@ -29,7 +29,7 @@ export function BubbleHoverBar({
       {REACTIONS.filter((r) => r.key === "Like" || r.key === "Love" || r.key === "Laugh").map((r) => {
         const on = reacts.some((x) => x.key === r.key && x.mine);
         return (
-          <button
+          <button data-ctl="CTL-P007-119"
             key={r.key}
             type="button"
             aria-label={r.key}
@@ -44,11 +44,11 @@ export function BubbleHoverBar({
         );
       })}
       {onReply && (
-        <button type="button" aria-label="Reply" onClick={onReply}>
+        <button data-ctl="CTL-P007-120" type="button" aria-label="Reply" onClick={onReply}>
           <Icon icon={Reply} size={15} />
         </button>
       )}
-      <button
+      <button data-ctl="CTL-P007-121"
         type="button"
         aria-label="More actions"
         onClick={() => {

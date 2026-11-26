@@ -89,7 +89,7 @@ function EventCard({ e, live, now, today, years }: { e: ChHomeEvent; live: boole
       </span>
       <h2 id="ch-hm-day-t">
         {/* The title opens the event; its press area covers the card, under the actions. */}
-        <Link href={eventHref(e)} className="ch-hm-day__open" onClick={() => chTrail('home open next event')}>
+        <Link data-ctl="CTL-P002-009" href={eventHref(e)} className="ch-hm-day__open" onClick={() => chTrail('home open next event')}>
           {e.title}
         </Link>
       </h2>
@@ -119,19 +119,19 @@ function EventCard({ e, live, now, today, years }: { e: ChHomeEvent; live: boole
       {(nudge || message || directions) && (
         <span className="ch-hm-day__acts">
           {nudge && (
-            <Link href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home nudge')}>
+            <Link data-ctl="CTL-P002-010" href={nudge} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home nudge')}>
               <Icon icon={MessageSquare} size={16} />
               {awaiting.length === 1 ? `Nudge ${firstName(awaiting[0]!.name)}` : `Nudge ${awaiting.length}`}
             </Link>
           )}
           {message && (
-            <Link href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home message invitees')}>
+            <Link data-ctl="CTL-P002-011" href={message} className="ch-hm-day__act is-primary" data-ch-press="" onClick={() => chTrail('home message invitees')}>
               <Icon icon={MessageSquare} size={16} />
               Message
             </Link>
           )}
           {directions && (
-            <a href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="">
+            <a data-ctl="CTL-P002-012" href={directions} className="ch-hm-day__act" target="_blank" rel="noopener noreferrer" data-ch-press="">
               <Icon icon={Navigation} size={16} />
               Directions
             </a>
@@ -157,7 +157,7 @@ function Recap({ rounds, onOpen }: { rounds: ChLatestRound[]; onOpen: (r: ChLate
       <ul className="ch-hm-day__rounds">
         {rounds.map((r) => (
           <li key={r.id}>
-            <button type="button" onClick={() => (haptic('select'), chTrail('home open round'), onOpen(r))}>
+            <button data-ctl="CTL-P002-013" type="button" onClick={() => (haptic('select'), chTrail('home open round'), onOpen(r))}>
               <span>{r.playerName}</span>
               <b className="ch-num">
                 {r.score} <em>{formatToPar(r.toPar)}</em>
@@ -195,7 +195,7 @@ export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEven
       key: e.id,
       at: e.allDay ? -1 : minutesOf(e.startIso, e.timezone),
       node: (
-        <Link href={eventHref(e)} className="ch-hm-tl__a">
+        <Link data-ctl="CTL-P002-014" href={eventHref(e)} className="ch-hm-tl__a">
           <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
           <span className="ch-hm-tl__rail" aria-hidden="true">
             <i className={`is-${e.type}`} />
@@ -235,7 +235,7 @@ export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEven
       key: x.key,
       at: x.at,
       node: x.href ? (
-        <Link href={x.href} className="ch-hm-tl__a">
+        <Link data-ctl="CTL-P002-015" href={x.href} className="ch-hm-tl__a">
           {body}
         </Link>
       ) : (
@@ -250,7 +250,7 @@ export function LaterToday({ todays, cardId, now, extras }: { todays: ChHomeEven
     <section className="ch-hm-sec ch-hm-later" aria-labelledby="ch-hm-later">
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-later">{todayRows ? 'Later today' : 'Coming up'}</h2>
-        <Link href={CALENDAR} className="ch-hm-link">
+        <Link data-ctl="CTL-P002-016" href={CALENDAR} className="ch-hm-link">
           Calendar
         </Link>
       </div>
@@ -415,9 +415,9 @@ export function SinceYouLooked({ rounds, event, changes = NO_CHANGES, onOpenRoun
             </b>
           );
           return c.round ? (
-            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.round.meta.split(' · ').slice(0, 2).join(' · ') || undefined} onClick={() => (haptic('select'), onOpenRound(c.round!))} />
+            <LedgerRow data-ctl="CTL-P002-017" key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.round.meta.split(' · ').slice(0, 2).join(' · ') || undefined} onClick={() => (haptic('select'), onOpenRound(c.round!))} />
           ) : (
-            <LedgerRow key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.meta ? restyleClock(c.meta, clock) : undefined} href={c.href ?? CALENDAR} />
+            <LedgerRow data-ctl="CTL-P002-018" key={c.key} className="ch-hm-since__c" lead={lead} title={c.label} meta={c.meta ? restyleClock(c.meta, clock) : undefined} href={c.href ?? CALENDAR} />
           );
         })}
       </LedgerList>

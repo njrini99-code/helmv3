@@ -164,10 +164,10 @@ export function GoalSheet({ open, onClose }: { open: boolean; onClose: () => voi
       description="A result to chase over the next few weeks. Progress is measured round by round."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={save.pending}>
+          <Button data-ctl="CTL-P005-008" variant="ghost" onClick={onClose} disabled={save.pending}>
             Cancel
           </Button>
-          <Button variant="primary" busy={save.pending} feel={null} onClick={() => void submit()}>
+          <Button data-ctl="CTL-P005-009" variant="primary" busy={save.pending} feel={null} onClick={() => void submit()}>
             {save.pending ? <span data-ch-code="CH-5405">Starting…</span> : 'Start goal'}
           </Button>
         </>
@@ -191,7 +191,7 @@ export function GoalSheet({ open, onClose }: { open: boolean; onClose: () => voi
             Target
           </label>
           {metric.startsWith('sg_') && (
-            <Button
+            <Button data-ctl="CTL-P005-010"
               size="sm"
               variant="secondary"
               aria={{ label: 'Make the target negative', pressed: target.startsWith('-') }}

@@ -19,7 +19,7 @@ export function RulesText({ text }: { text: string }) {
     <>
       <p className={'ch-qf-why ch-qf-rules' + (folded ? ' is-folded' : '')}>{text}</p>
       {long && (
-        <button type="button" className="ch-qf-rules__more" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <button data-ctl="CTL-P009-066" type="button" className="ch-qf-rules__more" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
           {open ? 'Show less' : 'Show all rules'}
         </button>
       )}

@@ -282,7 +282,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
     }
   };
   const list: ChTeamPlayer[] = data.players.list;
-  const teamReads = teamReadsHref ? <TeamReadsLink href={teamReadsHref} /> : null;
+  const teamReads = teamReadsHref ? <TeamReadsLink data-ctl="CTL-P013-260" href={teamReadsHref} /> : null;
   const noRounds = data.teamTotal.rounds === 0;
   const context = data.off ? 'CoachHelm reads the rounds your players post.' : data.roster.count === 0 ? 'No players yet' : noRounds ? `${plural(data.roster.count, 'player')} · no rounds yet this season` : `${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)} · ${plural(readsDrawn(list), 'open read')}`;
   const head = <CoachHelmHead title={data.team.name || 'CoachHelm'} context={context} scope={data.team.name ? `${data.team.name} · ${plural(data.roster.count, 'player')} · ${boardRoundsWords(data.teamTotal)}` : undefined} />;
@@ -372,7 +372,7 @@ export function TeamBoard({ data, courseTab = true, writes = LIVE_COACHHELM_WRIT
           <h4>Add your players to see the team</h4>
         </div>
         <div className="cb">
-          <Button variant="secondary" href={rebuiltHref('/golf/dashboard/roster', 'coach') ?? undefined}>
+          <Button data-ctl="CTL-P013-261" variant="secondary" href={rebuiltHref('/golf/dashboard/roster', 'coach') ?? undefined}>
             Go to Roster
           </Button>
         </div>

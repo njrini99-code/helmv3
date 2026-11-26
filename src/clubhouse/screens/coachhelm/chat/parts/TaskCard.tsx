@@ -172,7 +172,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
         />
       </div>
       {undecided && evidence && (
-        <button type="button" className="ch-ak-evlink" aria-expanded={evidence.open} onClick={evidence.onOpen}>
+        <button data-ctl="CTL-P013-107" type="button" className="ch-ak-evlink" aria-expanded={evidence.open} onClick={evidence.onOpen}>
           See what this is based on
         </button>
       )}
@@ -182,7 +182,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
         <div className="btns">
           {/* The quiet key ("Not now", or the catalogue's own word where Cancel is the action itself) leaves on Confirm but keeps its box, so the working button keeps its place (MO-7-4). */}
           <span className={'cx' + (phase === 'confirming' ? ' is-gone' : '')}>
-            <Button variant="ghost" size="lg" disabled={!!pressed || !view.approvalId || !undecided} onClick={() => answer(false)} data={{ 'data-ch-ask-cancel': '' }}>
+            <Button data-ctl="CTL-P013-108" variant="ghost" size="lg" disabled={!!pressed || !view.approvalId || !undecided} onClick={() => answer(false)} data={{ 'data-ch-ask-cancel': '' }}>
               {copy.dismiss}
             </Button>
           </span>
@@ -191,7 +191,7 @@ export function TaskCard({ view, density = 'full', fresh = false, busy = false, 
               {copy.busy}
             </span>
           ) : (
-            <Button variant="primary" size="lg" disabled={!!pressed || !view.approvalId || p.missing.length > 0 || editOpen} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
+            <Button data-ctl="CTL-P013-109" variant="primary" size="lg" disabled={!!pressed || !view.approvalId || p.missing.length > 0 || editOpen} onClick={() => answer(true)} data={{ 'data-ch-ask-confirm': '' }}>
               {copy.primary}
             </Button>
           )}

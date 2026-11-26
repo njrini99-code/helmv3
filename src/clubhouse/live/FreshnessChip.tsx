@@ -36,7 +36,7 @@ export function FreshnessChip({ feed, failed = false, idle = false, updatedAt, o
     return (
       <span className="ch-lv-chip" data-feed="paused" role="status">
         <span>No signal</span>
-        <button type="button" className="ch-lv-chip__retry" disabled={refreshing} aria-busy={refreshing || undefined} onClick={() => start(async () => void (await onRefresh()))}>
+        <button data-ctl="CTL-P011-001" type="button" className="ch-lv-chip__retry" disabled={refreshing} aria-busy={refreshing || undefined} onClick={() => start(async () => void (await onRefresh()))}>
           <Icon icon={RotateCw} size={13} />
           {refreshing ? 'Trying…' : 'Try again'}
         </button>

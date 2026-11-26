@@ -52,8 +52,8 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null, coachBar 
     return (
       <div className="ch-prc-planacts">
         {phone && <PhoneTop title={plan.title} back={{ label: 'Practice', onBack: back }} />}
-        <Button onClick={print}>Print</Button>
-        <Button busy={sharing} onClick={() => void sharePdf()}>
+        <Button data-ctl="CTL-P013-201" onClick={print}>Print</Button>
+        <Button data-ctl="CTL-P013-202" busy={sharing} onClick={() => void sharePdf()}>
           Share PDF
         </Button>
       </div>
@@ -66,7 +66,7 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null, coachBar 
           {/* G14 (preview grade): the bar held the plan's name alone and cut it ("Short game and pre…"). The page now opens
               on its large title, whole, with the day under it; the bar's title waits under it until the title scrolls up
               (shell/large-title.tsx), and is plain text so the large title is the page's one h1. */}
-          <PhoneTop heading={false} title={plan.title} back={{ label: 'Practice', onBack: back }} action={<PhoneIconAction icon={Printer} label="Print" onClick={print} />} />
+          <PhoneTop heading={false} title={plan.title} back={{ label: 'Practice', onBack: back }} action={<PhoneIconAction data-ctl="CTL-P013-203" icon={Printer} label="Print" onClick={print} />} />
           <header className="ch-prc-h ch-prc-planhead">
             <div>
               <LargeTitle id="ch-prc-plan-title">{plan.title}</LargeTitle>
@@ -76,21 +76,21 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null, coachBar 
         </>
       ) : (
         <>
-          <BackLink onClick={back}>Practice</BackLink>
+          <BackLink data-ctl="CTL-P013-204" onClick={back}>Practice</BackLink>
           <header className="ch-prc-h ch-prc-planhead">
             <div>
               <LargeTitle id="ch-prc-plan-title">{plan.title}</LargeTitle>
               {when && <p className="ch-prc-h__line ch-num">{wholeFacts(when)}</p>}
             </div>
             <div className="ch-prc-h__a">
-              {editHref && <Button href={editHref}>Edit</Button>}
+              {editHref && <Button data-ctl="CTL-P013-205" href={editHref}>Edit</Button>}
               {!coachBar && (
-                <Button busy={sharing} onClick={() => void sharePdf()}>
+                <Button data-ctl="CTL-P013-206" busy={sharing} onClick={() => void sharePdf()}>
                   Share PDF
                 </Button>
               )}
               {!coachBar && (
-                <Button leftIcon={Printer} onClick={print}>
+                <Button data-ctl="CTL-P013-207" leftIcon={Printer} onClick={print}>
                   Print
                 </Button>
               )}
@@ -102,11 +102,11 @@ export function PlanPageActions({ plan, playerPlanId, editHref = null, coachBar 
       {phone && !coachBar && (
         <div className="ch-prc-planacts">
           {editHref && (
-            <Button className="is-fill" href={editHref}>
+            <Button data-ctl="CTL-P013-208" className="is-fill" href={editHref}>
               Edit
             </Button>
           )}
-          <Button className="is-fill" busy={sharing} onClick={() => void sharePdf()}>
+          <Button data-ctl="CTL-P013-209" className="is-fill" busy={sharing} onClick={() => void sharePdf()}>
             Share PDF
           </Button>
         </div>

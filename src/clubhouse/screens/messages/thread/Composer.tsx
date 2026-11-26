@@ -341,19 +341,19 @@ export function Composer({
         <div className="ch-ms-comp__reply is-edit" ref={chipRise}>
           <Icon icon={Pencil} size={18} />
           Editing message
-          <IconButton icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
+          <IconButton data-ctl="CTL-P007-124" icon={X} label="Cancel edit" onClick={() => { setDraft(""); onEditDone?.(); }} />
         </div>
       )}
       {effectiveParent && (
         <div className="ch-ms-comp__reply" ref={chipRise}>
           <Icon icon={Reply} size={18} />
           Replying to {replyName(api, effectiveParent)}
-          <IconButton icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed} />
+          <IconButton data-ctl="CTL-P007-125" icon={X} label="Cancel reply" onClick={() => { setRecoveredParent(null); onClearReply?.(); }} disabled={sending || unconfirmed || checking || checkFailed} />
         </div>
       )}
 
       {resumed && !files.length && <div role="group" className="ch-ms-to" aria-label="Pending attachments">{resumed.filenames.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c"><Icon icon={FileText} size={13} />{name}</span>)}</div>}
-      {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
+      {missingFiles.length > 0 && <div role="status" className="ch-ms-to" aria-label="Attachments to choose again">Choose these files again: {missingFiles.map((name, i) => <span key={`${name}-${i}`} className="ch-ms-to__c">{name}<Tooltip><button data-ctl="CTL-P007-126" type="button" aria-label={`Dismiss ${name}`} onClick={() => setMissingFiles((now) => now.filter((_, j) => j !== i))}><Icon icon={X} size={12} /></button></Tooltip></span>)}</div>}
       {conv.group && api.classDay && <GroupClassLine cls={api.classDay} conv={conv} personOf={(id) => personOf(api, id)} />}
       <AttachChips
         disabled={unconfirmed || checking || checkFailed || closed}
@@ -362,7 +362,7 @@ export function Composer({
       />
       {/* The pill is the field to the finger (F-0021): its own 5px around the 36px field puts the caret in it, so the
           target is the pill's 46, not 36. A keyboard goes to the field itself. */}
-      <div className="ch-ms-comp__field" role="presentation" onClick={(e) => e.target === e.currentTarget && ta.current?.focus()}>
+      <div data-ctl="CTL-P007-127" className="ch-ms-comp__field" role="presentation" onClick={(e) => e.target === e.currentTarget && ta.current?.focus()}>
         <ComposerPlusV2
             api={api}
             conv={conv}
@@ -419,10 +419,10 @@ export function Composer({
         width={400}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setReplacing(null)}>
+            <Button data-ctl="CTL-P007-128" variant="ghost" onClick={() => setReplacing(null)}>
               Keep my draft
             </Button>
-            <Button variant="primary" onClick={() => replacing != null && applySeed(replacing)}>
+            <Button data-ctl="CTL-P007-129" variant="primary" onClick={() => replacing != null && applySeed(replacing)}>
               Replace
             </Button>
           </>

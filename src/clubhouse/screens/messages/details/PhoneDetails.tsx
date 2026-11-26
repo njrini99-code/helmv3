@@ -104,7 +104,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
                 inside a card of the one card style. */}
             {calendarHref && (
               <section className="ch-msp-panel ch-msd-lcard" aria-label="Schedule">
-                <Link className="ch-msp-row is-btn" href={calendarHref}>
+                <Link data-ctl="CTL-P007-048" className="ch-msp-row is-btn" href={calendarHref}>
                   <span className="ch-msp-row__ic">
                     <Icon icon={CalendarPlus} size={16} />
                   </span>

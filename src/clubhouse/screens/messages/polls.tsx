@@ -295,7 +295,7 @@ export function PollCard({
           const lead = leader === o.id;
           return (
             <li key={o.id} role="none">
-              <button
+              <button data-ctl="CTL-P007-095"
                 type="button"
                 role={poll.multi ? "checkbox" : "radio"}
                 aria-checked={on}
@@ -346,12 +346,12 @@ export function PollCard({
             pick through the option's checked state. */}
         <span className="ch-msd-poll__count ch-num">{footWords}</span>
         {!tally && polls?.error ? (
-          <button type="button" className="ch-msd-poll__link" onClick={polls.retry}>
+          <button data-ctl="CTL-P007-096" type="button" className="ch-msd-poll__link" onClick={polls.retry}>
             Retry
           </button>
         ) : (
           tally && (
-            <button type="button" className="ch-msd-poll__link" onClick={() => setVotesOpen(true)}>
+            <button data-ctl="CTL-P007-097" type="button" className="ch-msd-poll__link" onClick={() => setVotesOpen(true)}>
               See votes
             </button>
           )
@@ -426,7 +426,7 @@ function PollVotesModal({
       action={closed ? <span className="ch-ms-pollv__final">Final</span> : undefined}
       footer={
         remind ? (
-          <button type="button" className="ch-msd-draft" onClick={remind.run}>
+          <button data-ctl="CTL-P007-098" type="button" className="ch-msd-draft" onClick={remind.run}>
             Draft a reminder
           </button>
         ) : undefined
@@ -473,10 +473,10 @@ function ClosePollModal({ api, messageId, open, onClose }: { api: ChMessagesApi;
       width={420}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P007-099" variant="ghost" onClick={onClose}>
             Keep open
           </Button>
-          <Button
+          <Button data-ctl="CTL-P007-100"
             variant="primary"
             busy={busy}
             onClick={async () => {
@@ -747,10 +747,10 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
       action={
         (
           <>
-            <button type="button" className="ch-msv-txtbtn is-cancel" onClick={onClose}>
+            <button data-ctl="CTL-P007-101" type="button" className="ch-msv-txtbtn is-cancel" onClick={onClose}>
               Cancel
             </button>
-            <button type="button" className="ch-msv-txtbtn is-strong" disabled={!ready || busy} onClick={() => void send()}>
+            <button data-ctl="CTL-P007-102" type="button" className="ch-msv-txtbtn is-strong" disabled={!ready || busy} onClick={() => void send()}>
               {busy ? "Sending…" : "Send"}
             </button>
           </>
@@ -827,7 +827,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
                     }}
                   />
                   {options.length > POLL_MIN_OPTIONS && o.trim() && (
-                    <IconButton
+                    <IconButton data-ctl="CTL-P007-103"
                       icon={Minus}
                       label={`Remove choice ${i + 1}`}
                       size="sm"
@@ -848,7 +848,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
               no empty spare already waits at the end; it adds a row and moves to it. */}
           {options.length < POLL_MAX_OPTIONS && !(options.length > POLL_MIN_OPTIONS && !options[options.length - 1]!.trim()) && (
             <div className="ch-ms-pollf__add">
-              <Button
+              <Button data-ctl="CTL-P007-104"
                 variant="ghost"
                 size="sm"
                 leftIcon={Plus}
@@ -880,7 +880,7 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
               align="start"
               items={ENDS.map((e) => ({ label: e.label, checked: e.value === ends, onSelect: () => setEnds(e.value) }))}
               trigger={(p) => (
-                <button type="button" className="ch-msv-closes" {...p}>
+                <button data-ctl="CTL-P007-105" type="button" className="ch-msv-closes" {...p}>
                   Closes
                   <b>{ENDS.find((e) => e.value === ends)!.label}</b>
                 </button>
@@ -907,10 +907,10 @@ export function PollSheet({ api, conv, open, onClose }: { api: ChMessagesApi; co
           <div className="ch-ms-pollf__earlier" data-ch-code="CH-7031">
             <InlineNotice title="An earlier copy of this poll was already sent" body="Check the thread. Send this version too?" />
             <div className="ch-ms-pollf__earlierb">
-              <Button variant="secondary" size="sm" onClick={() => void send(true)}>
+              <Button data-ctl="CTL-P007-106" variant="secondary" size="sm" onClick={() => void send(true)}>
                 Send this version
               </Button>
-              <Button
+              <Button data-ctl="CTL-P007-107"
                 variant="primary"
                 size="sm"
                 onClick={() => {
@@ -940,7 +940,7 @@ export function PollButton({ api, conv, disabled }: { api: ChMessagesApi; conv: 
   if (!api.polls || !conv.group) return null;
   return (
     <>
-      <IconButton icon={ListChecks} label="New poll" size="sm" disabled={disabled} onClick={() => setOpen(true)} />
+      <IconButton data-ctl="CTL-P007-108" icon={ListChecks} label="New poll" size="sm" disabled={disabled} onClick={() => setOpen(true)} />
       <PollSheet key={seedKey} api={api} conv={conv} open={open} onClose={() => setOpen(false)} />
     </>
   );

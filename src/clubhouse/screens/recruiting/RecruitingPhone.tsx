@@ -47,7 +47,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
         title="Recruiting"
         start
         // First run and a failed read have no add button on the boards: the page's own action is the way in.
-        action={!nothing && !c.error ? <PhoneIconAction icon={Plus} label="New prospect" onClick={c.startAdd} /> : undefined}
+        action={!nothing && !c.error ? <PhoneIconAction data-ctl="CTL-P014-024" icon={Plus} label="New prospect" onClick={c.startAdd} /> : undefined}
       />
       <div className="ch-recm-page" inert={c.open ? true : undefined}>
         {/* The top bar carries the page's heading; this is the phone's one large title (owner decision 4). */}
@@ -66,7 +66,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
             title="Your prospect list starts here"
             body="Add the golfers you’re watching and move them through Watched, Recruiting, Offered and Committed."
             action={
-              <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
+              <Button data-ctl="CTL-P014-025" variant="primary" leftIcon={Plus} onClick={c.startAdd}>
                 Add your first prospect
               </Button>
             }
@@ -90,7 +90,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
                       align="end"
                       items={c.sorts.map((s) => ({ label: s.label, checked: c.sort === s.value, onSelect: () => c.setSort(s.value) }))}
                       trigger={(t) => (
-                        <button type="button" className="ch-recm-sort" {...t}>
+                        <button data-ctl="CTL-P014-026" type="button" className="ch-recm-sort" {...t}>
                           {c.sorts.find((s) => s.value === c.sort)?.label}
                           <Icon icon={ChevronDown} size={15} />
                         </button>
@@ -101,7 +101,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
                     <ul className="ch-recm-list" data-ch-code="CH-14802">
                       {c.rows.map((p) => (
                         <li key={p.id}>
-                          <button type="button" className="ch-recm-row" onClick={() => c.select(p.id)}>
+                          <button data-ctl="CTL-P014-027" type="button" className="ch-recm-row" onClick={() => c.select(p.id)}>
                             <ProspectAvatar name={p.name} size={36} />
                             <span className="ch-recm-row__b">
                               <b>{p.name}</b>
@@ -131,7 +131,7 @@ export function RecruitingPhone({ c }: { c: RecCtx }) {
               // The board shows no title in the bar; the name is the screen's heading for VoiceOver and is in the hero.
               title={<span className="ch-sr-only">{c.open.name}</span>}
               titleId="ch-recm-det-title"
-              action={<PhoneTextAction onClick={() => c.startEdit(c.open!)}>Edit</PhoneTextAction>}
+              action={<PhoneTextAction data-ctl="CTL-P014-028" onClick={() => c.startEdit(c.open!)}>Edit</PhoneTextAction>}
             />
             <div className="ch-recm-scroll">
               <SectionBoundary surface="recruiting.panel" label="The prospect" code="CH-14203">
@@ -162,7 +162,7 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
           <span>{subtitleOf(p) || 'No class or hometown yet'}</span>
         </span>
       </div>
-      <button type="button" className="ch-recm-stagerow" onClick={onPickStage}>
+      <button data-ctl="CTL-P014-029" type="button" className="ch-recm-stagerow" onClick={onPickStage}>
         <span>Stage</span>
         <StageChip stage={p.stage} />
         <Icon icon={ChevronRight} size={16} />
@@ -171,7 +171,7 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
       {hasContact && (
         <div className={'ch-recm-tiles' + (p.email && p.phone ? '' : ' is-one')}>
           {p.email && (
-            <a className="ch-recm-tile" href={mailHref(p.email)}>
+            <a data-ctl="CTL-P014-030" className="ch-recm-tile" href={mailHref(p.email)}>
               <Icon icon={Mail} size={18} />
               <span className="ch-recm-tile__t">
                 Email{' '}
@@ -180,7 +180,7 @@ function Detail({ p, c, picking, onPickStage }: { p: ChProspect; c: RecCtx; pick
             </a>
           )}
           {p.phone && (
-            <a className="ch-recm-tile" href={telHref(p.phone)}>
+            <a data-ctl="CTL-P014-031" className="ch-recm-tile" href={telHref(p.phone)}>
               <Icon icon={Phone} size={18} />
               <span className="ch-recm-tile__t">
                 Call{' '}
@@ -209,7 +209,7 @@ function StageSheet({ p, onClose, onPick }: { p: ChProspect | null; onClose: () 
           {CH_STAGES.map((s) => {
             const on = p.stage === s.value;
             return (
-              <button
+              <button data-ctl="CTL-P014-032"
                 key={s.value}
                 type="button"
                 role="radio"

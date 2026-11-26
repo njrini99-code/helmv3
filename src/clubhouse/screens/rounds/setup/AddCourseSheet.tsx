@@ -127,16 +127,16 @@ export function AddCourseSheet({
             {issue ?? ['Name and place', 'One tee set', `${filled} of ${count} holes`, 'Ready for this round'][step]}
           </span>
           {step > 0 ? (
-            <button type="button" className="ch-btn ch-btn--ghost" onClick={() => setStep(step - 1)}>
+            <button data-ctl="CTL-P011-102" type="button" className="ch-btn ch-btn--ghost" onClick={() => setStep(step - 1)}>
               <Icon icon={ChevronLeft} size={15} />
               <span>{STEPS[step - 1]}</span>
             </button>
           ) : (
-            <button type="button" className="ch-btn ch-btn--ghost" onClick={close}>
+            <button data-ctl="CTL-P011-103" type="button" className="ch-btn ch-btn--ghost" onClick={close}>
               <span>Cancel</span>
             </button>
           )}
-          <button type="button" className="ch-btn ch-btn--primary" disabled={!!issue} onClick={() => (step < 3 ? setStep(step + 1) : done())}>
+          <button data-ctl="CTL-P011-104" type="button" className="ch-btn ch-btn--primary" disabled={!!issue} onClick={() => (step < 3 ? setStep(step + 1) : done())}>
             <span>{step < 3 ? `Next: ${STEPS[step + 1]}` : 'Use this course'}</span>
             <Icon icon={step < 3 ? ArrowRight : Check} size={15} />
           </button>
@@ -196,7 +196,7 @@ export function AddCourseSheet({
                 <span>Tee colour</span>
                 <div className="ch-rsu-sw" role="radiogroup" aria-label="Tee colour" {...roving}>
                   {COLORS.map(([c, n]) => (
-                    <button
+                    <button data-ctl="CTL-P011-105"
                       key={c}
                       type="button"
                       role="radio"
@@ -344,7 +344,7 @@ function CoursePreview({
         </span>
       )}
       {photo && (
-        <button type="button" className="ch-acs__photo-remove" onClick={onClearPhoto}>
+        <button data-ctl="CTL-P011-106" type="button" className="ch-acs__photo-remove" onClick={onClearPhoto}>
           Remove photo
         </button>
       )}

@@ -122,7 +122,7 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
   const hidden = shut && !sw.open;
   return (
     <>
-      <div className="ch-strip-catch" hidden={!sw.open} aria-hidden="true" onClick={() => sw.setOpen(false)} />
+      <div data-ctl="CTL-P001-032" className="ch-strip-catch" hidden={!sw.open} aria-hidden="true" onClick={() => sw.setOpen(false)} />
       <m.nav
         id="ch-strip"
         className="ch-strip"
@@ -137,7 +137,7 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
             const on = sw.shown?.id === s.id;
             const count = sw.counts[s.id] ?? null;
             return (
-              <Link
+              <Link data-ctl="CTL-P001-033"
                 key={s.id}
                 href={s.href}
                 // The page on screen is never prefetched: that was a second request for its own address (MAC-12, link-prefetch.ts).
@@ -168,7 +168,7 @@ export function SectionStrip({ pathname, role, user }: { pathname: string; role:
           {user && (
             <>
               <span className="ch-strip__sep" aria-hidden="true" />
-              <button
+              <button data-ctl="CTL-P001-034"
                 type="button"
                 className="ch-strip__pill ch-strip__me"
                 aria-haspopup="dialog"

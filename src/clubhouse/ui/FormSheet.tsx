@@ -113,15 +113,15 @@ export function FormSheet({ open, onClose, title, actionLabel = 'Save', onAction
               if (!actionDisabled && !busy) onAction();
             }}
           >
-            <div className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
-            <header className="ch-fsheet-bar" onPointerDown={drag.onPointerDown}>
-              <button type="button" className="ch-fsheet-bar__b" onClick={requestClose}>
+            <div data-ctl="CTL-P000-010" className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+            <header data-ctl="CTL-P000-011" className="ch-fsheet-bar" onPointerDown={drag.onPointerDown}>
+              <button data-ctl="CTL-P000-012" type="button" className="ch-fsheet-bar__b" onClick={requestClose}>
                 Cancel
               </button>
               <h2 id={titleId} className="ch-fsheet-bar__t" tabIndex={-1}>
                 {title}
               </h2>
-              <button
+              <button data-ctl="CTL-P000-013"
                 type="submit"
                 className={'ch-fsheet-bar__b is-action' + (danger ? ' is-danger' : '')}
                 disabled={actionDisabled || busy}
@@ -180,13 +180,13 @@ export function ListSheet({
     <dialog {...dialogProps} className="ch-fsheet-dlg" aria-labelledby={titleId} data-ch-code={code}>
       {retainContent(open && (
         <div className="ch-fsheet">
-          <div className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
-          <header className="ch-fsheet-lbar" onPointerDown={drag.onPointerDown}>
+          <div data-ctl="CTL-P000-014" className="ch-grab ch-grab--hit" aria-hidden="true" onPointerDown={drag.onPointerDown} />
+          <header data-ctl="CTL-P000-015" className="ch-fsheet-lbar" onPointerDown={drag.onPointerDown}>
             <div className="ch-fsheet-lbar__t">
               <h2 id={titleId} tabIndex={-1}>{title}</h2>
               {subtitle && <span>{subtitle}</span>}
             </div>
-            <button type="button" className="ch-fsheet-bar__b is-action" onClick={onClose}>
+            <button data-ctl="CTL-P000-016" type="button" className="ch-fsheet-bar__b is-action" onClick={onClose}>
               Done
             </button>
           </header>
@@ -238,7 +238,7 @@ export function ActionSheet({
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-noninteractive-element-interactions
-    <dialog
+    <dialog data-ctl="CTL-P000-017"
       ref={ref}
       role="alertdialog"
       className="ch-fsheet-act"
@@ -261,12 +261,12 @@ export function ActionSheet({
               {message && <span id={messageId}>{message}</span>}
             </div>
             {actions.map((a) => (
-              <button key={a.label} type="button" className="ch-fsheet-act__btn is-danger" disabled={a.disabled || busy} onClick={a.onClick}>
+              <button data-ctl="CTL-P000-018" key={a.label} type="button" className="ch-fsheet-act__btn is-danger" disabled={a.disabled || busy} onClick={a.onClick}>
                 {a.label}
               </button>
             ))}
           </div>
-          <button type="button" className="ch-fsheet-act__cancel" disabled={busy} onClick={close}>
+          <button data-ctl="CTL-P000-019" type="button" className="ch-fsheet-act__cancel" disabled={busy} onClick={close}>
             {cancelLabel}
           </button>
         </>

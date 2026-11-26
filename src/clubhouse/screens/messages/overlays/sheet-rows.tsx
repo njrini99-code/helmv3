@@ -11,7 +11,7 @@ import { Icon } from '../../../ui/Icon';
 export function SeenSheetRow({ api, m, open, hold }: { api: ChMessagesApi; m: ChMsg; open: () => void; hold?: boolean }) {
   const seen = useSeenBy(api, m);
   if (!seen?.canOpen) return null;
-  return <SheetRow hold={hold} icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
+  return <SheetRow data-ctl="CTL-P007-088" hold={hold} icon={CheckCheck} label={seen.label === "Sent" ? "Not seen yet" : seen.label} onClick={open} />;
 }
 
 /** P-1: a player under (a) sees the count of their own message in the sheet's preview line, never the list. */
@@ -31,24 +31,24 @@ export function PollSheetRows({ id, done, hold }: { id: string; done: () => void
   };
   return (
     <>
-      {a.seeVotes && <SheetRow hold={hold} icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
-      {a.remind && <SheetRow hold={hold} icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
-      {a.close && <SheetRow hold={hold} icon={Lock} label="Close poll" onClick={run(a.close)} />}
-      {a.share && <SheetRow hold={hold} icon={Share} label="Share result" onClick={run(a.share)} />}
+      {a.seeVotes && <SheetRow data-ctl="CTL-P007-089" hold={hold} icon={ListChecks} label="See votes" onClick={run(a.seeVotes)} />}
+      {a.remind && <SheetRow data-ctl="CTL-P007-090" hold={hold} icon={BellRing} label={`Remind ${a.remind.count}`} onClick={run(a.remind.run)} />}
+      {a.close && <SheetRow data-ctl="CTL-P007-091" hold={hold} icon={Lock} label="Close poll" onClick={run(a.close)} />}
+      {a.share && <SheetRow data-ctl="CTL-P007-092" hold={hold} icon={Share} label="Share result" onClick={run(a.share)} />}
     </>
   );
 }
 
-export function SheetRow({ icon, label, onClick, danger, disabled, hold }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean; /** The redesign's glass menu: the word, then the icon (S-MSG.hold). */ hold?: boolean }) {
+export function SheetRow({ icon, label, onClick, danger, disabled, hold, 'data-ctl': ctl }: { icon: typeof Copy; label: string; onClick: () => void; danger?: boolean; disabled?: boolean; /** The redesign's glass menu: the word, then the icon (S-MSG.hold). */ hold?: boolean; 'data-ctl'?: string }) {
   if (hold)
     return (
-      <button type="button" role="menuitem" className={danger ? "is-danger" : undefined} onClick={onClick} disabled={disabled}>
+      <button data-ctl={ctl ?? 'CTL-P007-093'} type="button" role="menuitem" className={danger ? "is-danger" : undefined} onClick={onClick} disabled={disabled}>
         <span>{label}</span>
         <Icon icon={icon} size={19} />
       </button>
     );
   return (
-    <button type="button" className={"ch-msp-row is-btn" + (danger ? " is-danger" : "")} onClick={onClick} disabled={disabled}>
+    <button data-ctl={ctl ?? 'CTL-P007-094'} type="button" className={"ch-msp-row is-btn" + (danger ? " is-danger" : "")} onClick={onClick} disabled={disabled}>
       <span className="ch-msp-row__ic">
         <Icon icon={icon} size={16} />
       </span>

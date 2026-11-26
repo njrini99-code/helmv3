@@ -139,21 +139,21 @@ export function ComposerPlusV2({ api, conv, disabled, onPick }: { api: ChMessage
   const showing = open && !closing;
   return (
     <div ref={root} className="ch-msv-plus">
-      <button ref={key} type="button" className={'ch-msv-plus__key' + (showing ? ' is-open' : '')} aria-label={showing ? 'Close' : 'Add a photo, file or poll'} aria-expanded={showing} aria-haspopup="menu" disabled={disabled} onClick={toggle}>
+      <button data-ctl="CTL-P007-001" ref={key} type="button" className={'ch-msv-plus__key' + (showing ? ' is-open' : '')} aria-label={showing ? 'Close' : 'Add a photo, file or poll'} aria-expanded={showing} aria-haspopup="menu" disabled={disabled} onClick={toggle}>
         <Icon icon={Plus} size={20} />
       </button>
       {open && (
         <div ref={menu} className={"ch-msv-attach" + (closing ? " is-closing" : "")} role="menu" tabIndex={-1} aria-label="Add to the message" onKeyDown={onMenuKey}>
-          <button type="button" role="menuitem" onClick={() => { photos.current?.click(); close(); }}>
+          <button data-ctl="CTL-P007-002" type="button" role="menuitem" onClick={() => { photos.current?.click(); close(); }}>
             <span className="ch-msv-attach__ic is-photos"><Icon icon={ImageIcon} size={17} /></span>
             Photos
           </button>
-          <button type="button" role="menuitem" onClick={() => { files.current?.click(); close(); }}>
+          <button data-ctl="CTL-P007-003" type="button" role="menuitem" onClick={() => { files.current?.click(); close(); }}>
             <span className="ch-msv-attach__ic is-file"><Icon icon={FileText} size={17} /></span>
             File
           </button>
           {canPoll && (
-            <button type="button" role="menuitem" onClick={() => { setPolling(true); close(); }}>
+            <button data-ctl="CTL-P007-004" type="button" role="menuitem" onClick={() => { setPolling(true); close(); }}>
               <span className="ch-msv-attach__ic is-poll"><Icon icon={ListChecks} size={17} /></span>
               Poll
             </button>

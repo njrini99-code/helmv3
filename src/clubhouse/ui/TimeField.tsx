@@ -137,7 +137,7 @@ export function TimeList({
         {slots.map((s) => {
           const on = s === value;
           return (
-            <button
+            <button data-ctl="CTL-P000-048"
               key={s}
               type="button"
               role="option"
@@ -156,7 +156,7 @@ export function TimeList({
       </div>
       {onClear && (
         <div className="ch-tf__foot">
-          <button type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={onClear}>
+          <button data-ctl="CTL-P000-049" type="button" className="ch-btn ch-btn--ghost ch-btn--sm" onClick={onClear}>
             Clear
           </button>
         </div>

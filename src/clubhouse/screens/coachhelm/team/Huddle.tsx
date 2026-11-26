@@ -182,7 +182,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
             </g>
           ))}
           {plotted.map(({ p, at }, i) => (
-            <g
+            <g data-ctl="CTL-P013-245"
               key={p.id}
               className={'hp' + (p.early ? ' early' : '')}
               data-year={coinYear(p.classYear) ?? undefined}

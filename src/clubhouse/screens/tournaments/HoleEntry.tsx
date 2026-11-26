@@ -157,10 +157,10 @@ export function HoleEntry({ open, onClose, data, round: initial }: { open: boole
         className="ch-tour-imp-modal"
         footer={
           <>
-            <Button variant="ghost" onClick={tryClose}>
+            <Button data-ctl="CTL-P016-035" variant="ghost" onClick={tryClose}>
               Cancel
             </Button>
-            <Button variant="primary" leftIcon={Check} busy={save.pending} disabled={!cards.length || anyErrors} onClick={() => void doSave()}>
+            <Button data-ctl="CTL-P016-036" variant="primary" leftIcon={Check} busy={save.pending} disabled={!cards.length || anyErrors} onClick={() => void doSave()}>
               {save.pending ? 'Saving…' : anyErrors ? `Fix ${plural(badCells, 'hole')} to save` : cards.length ? `Save holes for ${plural(players, 'player')}` : 'Nothing to save'}
             </Button>
           </>
@@ -206,11 +206,11 @@ export function HoleEntry({ open, onClose, data, round: initial }: { open: boole
         description={cards.length ? `The holes you typed for ${plural(players, 'player')} aren’t saved.` : 'What you typed isn’t saved.'}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setLeaving(false)}>
+            <Button data-ctl="CTL-P016-037" variant="ghost" onClick={() => setLeaving(false)}>
               Keep typing
             </Button>
             {/* The warning came with the question (D-70): the yes is silent, and the sheet closing answers. */}
-            <Button variant="danger" feel={null} onClick={onClose}>
+            <Button data-ctl="CTL-P016-038" variant="danger" feel={null} onClick={onClose}>
               Leave
             </Button>
           </>

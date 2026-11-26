@@ -63,12 +63,12 @@ function ProfileCard({ data, profile, writes }: { data: ChSettingsData; profile:
           <b>Photo</b>
           <span>A square photo works best. JPEG, PNG or WebP, up to 2 MB.</span>
           <div className="ch-set-photo__acts">
-            <Button size="sm" leftIcon={Camera} busy={uploading} onClick={() => file.current?.click()}>
+            <Button data-ctl="CTL-P008-001" size="sm" leftIcon={Camera} busy={uploading} onClick={() => file.current?.click()}>
               {/* CH-8404: the photo dims and the button says so while it uploads. */}
               {uploading ? 'Uploading…' : f.draft.avatarUrl ? 'Replace photo' : 'Add photo'}
             </Button>
             {f.draft.avatarUrl && !uploading && (
-              <Button size="sm" variant="ghost" onClick={() => f.setDraft((d) => ({ ...d, avatarUrl: null }))}>
+              <Button data-ctl="CTL-P008-002" size="sm" variant="ghost" onClick={() => f.setDraft((d) => ({ ...d, avatarUrl: null }))}>
                 Remove
               </Button>
             )}
@@ -240,20 +240,20 @@ function HelpCard() {
   return (
     <Card id="set-help" title="Help and legal">
       <div className="ch-set-links">
-        <button type="button" className="ch-set-link" onClick={report} disabled={opening}>
+        <button data-ctl="CTL-P008-003" type="button" className="ch-set-link" onClick={report} disabled={opening}>
           <Icon icon={LifeBuoy} size={16} />
           <span>
             <b>Report a problem</b>
             <span>Tell us what went wrong. Screenshots help.</span>
           </span>
         </button>
-        <a className="ch-set-link" href="/privacy" target="_blank" rel="noreferrer">
+        <a data-ctl="CTL-P008-004" className="ch-set-link" href="/privacy" target="_blank" rel="noreferrer">
           <Icon icon={ArrowUpRight} size={16} />
           <span>
             <b>Privacy policy</b>
           </span>
         </a>
-        <a className="ch-set-link" href="/terms" target="_blank" rel="noreferrer">
+        <a data-ctl="CTL-P008-005" className="ch-set-link" href="/terms" target="_blank" rel="noreferrer">
           <Icon icon={ArrowUpRight} size={16} />
           <span>
             <b>Terms of service</b>
@@ -273,7 +273,7 @@ function SessionCard({ writes }: { writes: ChSettingsWrites }) {
   return (
     <Card id="set-session" title="Session">
       <Row label="Sign out" help="Signs you out on this device.">
-        <Button size="sm" leftIcon={LogOut} busy={signingOut} onClick={() => void signOut()}>
+        <Button data-ctl="CTL-P008-006" size="sm" leftIcon={LogOut} busy={signingOut} onClick={() => void signOut()}>
           {signingOut ? 'Signing out…' : 'Sign out'}
         </Button>
       </Row>
@@ -293,7 +293,7 @@ function DangerCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDeleted
     <>
       <Card id="set-danger" title="Danger zone" description="Things that can’t be undone." tone="danger">
         <Row label="Delete account" help="Removes your account and everything tied to it. This can’t be undone.">
-          <Button
+          <Button data-ctl="CTL-P008-007"
             size="sm"
             variant="danger"
             leftIcon={Trash2}
@@ -319,10 +319,10 @@ function DangerCard({ writes, onDeleted }: { writes: ChSettingsWrites; onDeleted
         description="This permanently deletes your account and the data tied to it. This can’t be undone."
         footer={
           <>
-            <Button variant="secondary" disabled={del.pending} onClick={() => setConfirming(false)}>
+            <Button data-ctl="CTL-P008-008" variant="secondary" disabled={del.pending} onClick={() => setConfirming(false)}>
               Keep my account
             </Button>
-            <Button
+            <Button data-ctl="CTL-P008-009"
               variant="danger"
               busy={del.pending} disabled={typed.trim().toLowerCase() !== 'delete'}
               onClick={() => void del.run()}

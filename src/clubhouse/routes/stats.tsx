@@ -82,7 +82,7 @@ export function NotOnTeam({ coach }: { coach: boolean }) {
         action={
           coach ? (
             // The roster is where a coach sees who is on the team now, which is the question this page leaves open.
-            <Button size="sm" href="/golf/dashboard/roster">
+            <Button data-ctl="CTL-P004-001" size="sm" href="/golf/dashboard/roster">
               Back to roster
             </Button>
           ) : undefined

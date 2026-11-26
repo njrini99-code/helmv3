@@ -231,7 +231,7 @@ function RoundRow({ r }: { r: ChDiveRound }) {
   return (
     <li>
       {r.href ? (
-        <Link className="ch-hd-r is-link" href={r.href} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
+        <Link data-ctl="CTL-P013-274" className="ch-hd-r is-link" href={r.href} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
           {body}
           <Icon icon={ChevronRight} size={15} />
         </Link>
@@ -308,7 +308,7 @@ function Where({ id, where }: { id: string; where: ChDiveWhere | null }) {
           return (
             <li key={h.key}>
               {h.href ? (
-                <Link className="ch-hd-where__i is-link" href={h.href} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
+                <Link data-ctl="CTL-P013-275" className="ch-hd-where__i is-link" href={h.href} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}: ${h.what}`}>
                   {body}
                   <Icon icon={ChevronRight} size={15} />
                 </Link>
@@ -409,7 +409,7 @@ function Plan({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepI
         {href && <Icon icon={ChevronRight} size={15} />}
       </>
     );
-    return <li key={kind}>{href ? <Link className="ch-hd-plan__i is-link" href={href}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
+    return <li key={kind}>{href ? <Link data-ctl="CTL-P013-276" className="ch-hd-plan__i is-link" href={href}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
   };
   return (
     <Section id={`${i.base.id}-plan`} title="Where this goes">
@@ -428,7 +428,7 @@ function Plan({ i, failed, covered = false, voice = PLAYER_VOICE }: { i: ChDeepI
           body={w.noPlan}
           action={
             href ? (
-              <Button variant="secondary" size="sm" href={href} rightIcon={Compass} feel="select">
+              <Button data-ctl="CTL-P013-277" variant="secondary" size="sm" href={href} rightIcon={Compass} feel="select">
                 Open Development
               </Button>
             ) : undefined
@@ -499,7 +499,7 @@ function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDe
           where="dive"
           extra={
             message ? (
-              <Link className="ch-hd-msg" href={message}>
+              <Link data-ctl="CTL-P013-278" className="ch-hd-msg" href={message}>
                 <Icon icon={MessageSquare} size={15} />
                 Message {coach.first}
               </Link>
@@ -543,7 +543,7 @@ function Dossier({ i, d, voice = PLAYER_VOICE, fa }: { i: ChDeepInsight; d: ChDe
 function Item({ i, on, onPick, dismissed = false }: { i: ChDeepInsight; on: boolean; onPick: () => void; dismissed?: boolean }) {
   return (
     <li>
-      <button
+      <button data-ctl="CTL-P013-279"
         type="button"
         className={'ch-hd-it is-' + i.stance.cls + (on ? ' is-on' : '')}
         aria-current={on ? 'true' : undefined}
@@ -617,7 +617,7 @@ function Ledger({ list, cleared = [], pickedId, onPick, dismissed }: { list: rea
         </section>
       ))}
       {more > 0 && (
-        <button type="button" className="ch-hd-more" onClick={() => setAll(true)} data-ch-code="CH-13992">
+        <button data-ctl="CTL-P013-280" type="button" className="ch-hd-more" onClick={() => setAll(true)} data-ch-code="CH-13992">
           <span className="ch-num">{more}</span> more cleared
         </button>
       )}
@@ -757,7 +757,7 @@ export function DeepDive({ load, initialId = null, voice = PLAYER_VOICE, writes 
           }
           action={
             startHref ? (
-              <Button variant="primary" leftIcon={Plus} href={startHref.href}>
+              <Button data-ctl="CTL-P013-281" variant="primary" leftIcon={Plus} href={startHref.href}>
                 {startHref.label}
               </Button>
             ) : undefined

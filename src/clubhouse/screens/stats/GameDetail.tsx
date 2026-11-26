@@ -114,7 +114,7 @@ function ReadsLineNow({ reads, area }: { reads: ChStatsReads | undefined; area: 
   if (!r || !parts) return null;
   return (
     <p className="ch-gm__reads">
-      <Link href={r.href} className="ch-gm__reads-a">
+      <Link data-ctl="CTL-P005-004" href={r.href} className="ch-gm__reads-a">
         <span>
           {parts.map((part, i) => (typeof part === 'number' ? <span key={i} className="ch-num">{part}</span> : part))}{' '}
           <span className="ch-gm__reads-go">
@@ -259,7 +259,7 @@ function Sec({
         <ShsCard title="What this counts">
           <Rule how={how}>{rule}</Rule>
           {reads}
-          <HowStatsCountLink />
+          <HowStatsCountLink data-ctl="CTL-P005-005" />
         </ShsCard>
       </section>
     );
@@ -293,7 +293,7 @@ function Sec({
         </dl>
         <Rule how={how}>{rule}</Rule>
         {reads}
-        <HowStatsCountLink />
+        <HowStatsCountLink data-ctl="CTL-P005-006" />
       </div>
       <div className="ch-gm__vis">
         <div className="ch-gm__body">{children}</div>
@@ -547,7 +547,7 @@ export function GameDetail({
       {!only && (
         <nav className="ch-gd__nav" aria-label="Game sections">
           {SECTIONS.map(([id, l]) => (
-            <button key={id} type="button" className="ch-pill" aria-pressed={on === id} onClick={() => jump(id)}>
+            <button data-ctl="CTL-P005-007" key={id} type="button" className="ch-pill" aria-pressed={on === id} onClick={() => jump(id)}>
               {l}
             </button>
           ))}

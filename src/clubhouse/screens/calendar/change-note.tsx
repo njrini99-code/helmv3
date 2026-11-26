@@ -198,7 +198,7 @@ export function ChangeNote({ e, coach = false }: { e: Pick<ChCalEvent, 'change' 
       {hidden ? (
         <p className="ch-change-note__hidden">
           <span>Change hidden on this device.</span>
-          <Button variant="ghost" size="sm" feel={null} className="ch-change-note__again" aria={{ label: 'Show the change again' }} onClick={() => mark.showAgain()}>
+          <Button data-ctl="CTL-P006-032" variant="ghost" size="sm" feel={null} className="ch-change-note__again" aria={{ label: 'Show the change again' }} onClick={() => mark.showAgain()}>
             Show it again
           </Button>
         </p>
@@ -226,13 +226,13 @@ export function ChangeNote({ e, coach = false }: { e: Pick<ChCalEvent, 'change' 
           {(!cancel || message) && (
             <div className="ch-change-note__a">
               {message && (
-                <Button variant="ghost" size="sm" feel={null} href={message} className="ch-change-note__msg" aria={{ label: 'Message players about this change' }}>
+                <Button data-ctl="CTL-P006-033" variant="ghost" size="sm" feel={null} href={message} className="ch-change-note__msg" aria={{ label: 'Message players about this change' }}>
                   <Icon icon={MessageSquare} size={14} />
                   Message players
                 </Button>
               )}
               {!cancel && (
-                <Button variant="ghost" size="sm" feel={null} className="ch-change-note__got" aria={{ label: 'Got it. Hide this change on this device.' }} onClick={hide}>
+                <Button data-ctl="CTL-P006-034" variant="ghost" size="sm" feel={null} className="ch-change-note__got" aria={{ label: 'Got it. Hide this change on this device.' }} onClick={hide}>
                   Got it
                 </Button>
               )}
@@ -287,7 +287,7 @@ export function MovedAwayRow({ g, variant, onOpen }: { g: ChMovedAway; variant: 
   const struck = (text: string) => <WasValue changeId={g.changeId}>{text}</WasValue>;
   if (variant === 'agenda') {
     return (
-      <button type="button" data-print-visible className="ch-ag__row is-away" aria-label={g.aria} onClick={onOpen}>
+      <button data-ctl="CTL-P006-035" type="button" data-print-visible className="ch-ag__row is-away" aria-label={g.aria} onClick={onOpen}>
         <span className="ch-ag__t">{struck(label)}</span>
         <span className="ch-ag__dot is-away" aria-hidden="true" />
         <span style={{ minWidth: 0 }}>
@@ -299,7 +299,7 @@ export function MovedAwayRow({ g, variant, onOpen }: { g: ChMovedAway; variant: 
     );
   }
   return (
-    <button type="button" className="ch-calm-ev ch-calm-ev--away" aria-label={g.aria} onClick={onOpen}>
+    <button data-ctl="CTL-P006-036" type="button" className="ch-calm-ev ch-calm-ev--away" aria-label={g.aria} onClick={onOpen}>
       <span className="ch-calm-ev__t ch-num">{struck(g.fromLabel ? rs(g.fromLabel, clock).replace(/ [AP]M$/, '') : 'All day')}</span>
       <span className="ch-calm-ev__rail" aria-hidden="true">
         <i className="ch-away-ring" />

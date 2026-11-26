@@ -31,7 +31,7 @@ function Frame({ children, wait }: { children: ReactNode; wait?: { chained: bool
     <main className={'ch-hl ch-htr ch-htrd' + (phone ? ' is-phone' : '')} {...mark} data-canopy={phone ? undefined : ''} data-ch={wait ? undefined : 'team-reads'}>
       {phone && <PhoneTop back={{ label: 'CoachHelm', onBack: () => router.push(COACH_BOARD_HREF) }} title="Team reads" titleId={wait ? undefined : 'ch-htrd-title'} />}
       <header className="ch-hl-h ch-htr-h" data-canopy-head={phone ? 'tight' : ''}>
-        {!phone && <BackLink href={COACH_BOARD_HREF}>CoachHelm</BackLink>}
+        {!phone && <BackLink data-ctl="CTL-P013-297" href={COACH_BOARD_HREF}>CoachHelm</BackLink>}
         {phone ? (
           <LargeTitle as="p" className="ch-hl-h__t">
             Team reads
@@ -114,7 +114,7 @@ function Ready({ d }: { d: ChTeamReads }) {
           <ul className="ch-htrd-list">
             {d.improved.map((p) => (
               <li key={p.id}>
-                <Link href={p.href} prefetch={false} className="ch-htrd-row">
+                <Link data-ctl="CTL-P013-298" href={p.href} prefetch={false} className="ch-htrd-row">
                   <span className="ch-htrd-row__t">
                     <b>{p.name}</b>
                     <small className="ch-num">{p.text}</small>
@@ -140,7 +140,7 @@ function Ready({ d }: { d: ChTeamReads }) {
           <ul className="ch-htrd-list is-quiet">
             {d.waiting.map((p) => (
               <li key={p.id}>
-                <Link href={p.href} prefetch={false} className="ch-htrd-row">
+                <Link data-ctl="CTL-P013-299" href={p.href} prefetch={false} className="ch-htrd-row">
                   <span className="ch-htrd-row__t">
                     <b>{p.name}</b>
                     <small className="ch-num">{p.text}</small>
@@ -159,7 +159,7 @@ function Ready({ d }: { d: ChTeamReads }) {
 function PlayerRow({ p }: { p: ChTeamReadsPlayer }) {
   return (
     <li data-ch-htrd-player={p.id}>
-      <Link href={p.href} prefetch={false} className="ch-htrd-row">
+      <Link data-ctl="CTL-P013-300" href={p.href} prefetch={false} className="ch-htrd-row">
         <span className="ch-htrd-row__t">
           <span className="ch-htrd-row__h">
             <b>{p.name}</b>
@@ -176,9 +176,9 @@ function PlayerRow({ p }: { p: ChTeamReadsPlayer }) {
 }
 
 /** The board's way in, drawn only for a team on CoachHelm reads. */
-export function TeamReadsLink({ href }: { href: string }) {
+export function TeamReadsLink({ href, 'data-ctl': ctl }: { href: string; 'data-ctl'?: string }) {
   return (
-    <Link href={href} prefetch={false} className="card ch-htrd-in" data-ch="team-reads-link">
+    <Link data-ctl={ctl ?? 'CTL-P013-301'} href={href} prefetch={false} className="card ch-htrd-in" data-ch="team-reads-link">
       <span className="ch-htrd-row__t">
         <b>Team reads</b>
         <small>What the team shares, said once, and each player’s own read.</small>
