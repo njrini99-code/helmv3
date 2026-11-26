@@ -93,7 +93,7 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
   );
   // One primary per screen: with no events at all the page's empty state carries Add event, so the head leaves it out.
   const add = !empty && (
-    <Button leftIcon={Plus} href={paths.newEvent()}>
+    <Button data-ctl="CTL-P016-108" leftIcon={Plus} href={paths.newEvent()}>
       Add event
     </Button>
   );
@@ -112,7 +112,7 @@ function HomeReady({ data, phone, live }: { data: ChTourHomeData; phone: boolean
             <TourViewSwitch current="home" phone={phone} />
             {/* Link rounds (coach audit, 13 Nov 2026): the inbox existed and nothing opened it. Always here, with its count, 0 too. */}
             {(data.links || data.errors.links) && (
-              <Button leftIcon={Link2} href={paths.links()}>
+              <Button data-ctl="CTL-P016-109" leftIcon={Link2} href={paths.links()}>
                 {data.links ? `Link rounds (${data.links.candidates})` : 'Link rounds'}
               </Button>
             )}
@@ -196,7 +196,7 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
       soon={live || !!closing || e.show === 'today' || (days >= 0 && days <= 1)}
       label={`Up next: ${e.name}`}
       title={
-        <Link href={paths.desk(e.id)} className="ch-tour-home-feat__t">
+        <Link data-ctl="CTL-P016-110" href={paths.desk(e.id)} className="ch-tour-home-feat__t">
           {e.name}
         </Link>
       }
@@ -212,11 +212,11 @@ function NextCard({ event: e, data, phone, today = false, arrived = false }: { e
       }
       foot={
         <>
-          <Button size="sm" variant="primary" leftIcon={act.icon} href={href} className="ch-tour-home-feat__go">
+          <Button data-ctl="CTL-P016-111" size="sm" variant="primary" leftIcon={act.icon} href={href} className="ch-tour-home-feat__go">
             {act.label}
           </Button>
           {!phone && pickLineup && (
-            <Button size="sm" variant="ghost" leftIcon={GitCompare} href={paths.compare(e.id)} className="ch-btn--on-green">
+            <Button data-ctl="CTL-P016-112" size="sm" variant="ghost" leftIcon={GitCompare} href={paths.compare(e.id)} className="ch-btn--on-green">
               Compare lineup options
             </Button>
           )}
@@ -236,7 +236,7 @@ function OtherEvents({ events, data, madeToday, arrived, phone = false }: { even
   return (
     <LedgerList label="Also on the calendar" className="ch-tour-home-others">
       {events.map((e) => (
-        <LedgerRow
+        <LedgerRow data-ctl="CTL-P016-113"
           key={e.id}
           href={paths.desk(e.id)}
           // P-5 M9 (CH-16650): arrived while the page was open, washed once; on a fresh load the caption says it instead.
@@ -296,10 +296,10 @@ function FirstRun({ untracked, newEvent }: { untracked: ChTourSetupGroup[]; newE
         body="Set one up and it shows here with its rounds, lineup and results."
         action={
           <>
-            <Button variant="primary" href={setUpHref(first)}>
+            <Button data-ctl="CTL-P016-114" variant="primary" href={setUpHref(first)}>
               {`Set up ${first.title}`}
             </Button>
-            <Button variant="ghost" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
+            <Button data-ctl="CTL-P016-115" variant="ghost" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
               Add a tournament
             </Button>
           </>
@@ -316,10 +316,10 @@ function FirstRun({ untracked, newEvent }: { untracked: ChTourSetupGroup[]; newE
       body="Add a tournament on the calendar and it shows up here with its rounds, lineup and results."
       action={
         <>
-          <Button variant="primary" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
+          <Button data-ctl="CTL-P016-116" variant="primary" leftIcon={CalendarPlus} href="/golf/dashboard/calendar?new=1&type=tournament">
             Add a tournament
           </Button>
-          <Button variant="ghost" href={newEvent}>
+          <Button data-ctl="CTL-P016-117" variant="ghost" href={newEvent}>
             Plan from here instead
           </Button>
         </>
@@ -346,7 +346,7 @@ function SetUpFromCalendar({ groups, failed, onRetry, retrying }: { groups: ChTo
       ) : (
         <LedgerList label="Untracked tournaments on the calendar" className="ch-tour-home-setup">
           {groups.map((g) => (
-            <LedgerRow
+            <LedgerRow data-ctl="CTL-P016-118"
               key={g.eventIds[0]}
               href={setUpHref(g)}
               lead={
@@ -373,7 +373,7 @@ function NextSeason({ events, data, madeToday, arrived, phone = false }: { event
   const label = `Next season · ${id.slice(0, 4)}–${id.slice(5)}`;
   return (
     <div className="ch-tour-home-next">
-      <button type="button" className="ch-tour-home-next__row" aria-label={`${label} (${events.length})`} aria-expanded={open} aria-controls="ch-tour-home-next-list" onClick={() => setOpen(!open)}>
+      <button data-ctl="CTL-P016-119" type="button" className="ch-tour-home-next__row" aria-label={`${label} (${events.length})`} aria-expanded={open} aria-controls="ch-tour-home-next-list" onClick={() => setOpen(!open)}>
         <span>{label}</span>
         <span className="ch-tour-home-next__n ch-num">{`(${events.length})`}</span>
         <Icon icon={ChevronDown} size={16} className="ch-tour-home-next__chev" />

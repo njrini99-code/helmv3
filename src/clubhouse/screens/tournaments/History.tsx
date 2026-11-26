@@ -103,7 +103,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
             {/* Add event is the head's quiet key on Events, Compare and History alike, on a phone and a desk (owner,
                 11 Nov 2026): the three are one page under one switch, so the key beside it never turns green on one view. */}
             {!empty && (
-              <Button leftIcon={Plus} href={paths.newEvent()}>
+              <Button data-ctl="CTL-P016-031" leftIcon={Plus} href={paths.newEvent()}>
                 Add event
               </Button>
             )}
@@ -118,7 +118,7 @@ function HistoryReady({ data, search, phone }: { data: ChTourHistoryData; search
           title="No results to compare yet"
           body="Once events are finished, the team’s scoring against the course rating shows here, season by season."
           action={
-            <Button variant="primary" leftIcon={Plus} href={paths.newEvent()}>
+            <Button data-ctl="CTL-P016-032" variant="primary" leftIcon={Plus} href={paths.newEvent()}>
               Add event
             </Button>
           }
@@ -215,7 +215,7 @@ function Trend({ points, state, note }: { points: TrendPoint[]; state: ChTourHis
         </svg>
         {points.map((p, i) =>
           p.value == null ? null : (
-            <Link key={p.event.id} href={paths.desk(p.event.id)} className={'ch-tour-rev-dot' + (p.scorecardsOnly ? ' is-cards' : '')} style={{ left: `${trendX(i, n) * 100}%`, top: `${((TOP + trendY(p.value, lo, hi) * SPAN) / H) * 100}%` }} aria-label={label(p)} title={`${p.event.name} · ${p.rounds} rounds · ${p.players} players`}>
+            <Link data-ctl="CTL-P016-033" key={p.event.id} href={paths.desk(p.event.id)} className={'ch-tour-rev-dot' + (p.scorecardsOnly ? ' is-cards' : '')} style={{ left: `${trendX(i, n) * 100}%`, top: `${((TOP + trendY(p.value, lo, hi) * SPAN) / H) * 100}%` }} aria-label={label(p)} title={`${p.event.name} · ${p.rounds} rounds · ${p.players} players`}>
               <i />
             </Link>
           ),
@@ -267,7 +267,7 @@ function TrendBars({ points, data, state, note }: { points: TrendPoint[]; data: 
                   const bar = bars[r.from + k];
                   return (
                     <li key={p.event.id}>
-                      <Link href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
+                      <Link data-ctl="CTL-P016-034" href={paths.desk(p.event.id)} className={'ch-tour-rev-bar' + (p.event.seasonId === current ? ' is-now' : '')} aria-label={label(p)}>
                         <span className="ch-tour-rev-bar__n">{p.event.name}</span>
                         <span className="ch-tour-rev-bar__t" style={{ '--ch-tour-rev-zero': share(zero) } as CSSProperties}>
                           <span className="ch-tour-rev-bar__track">

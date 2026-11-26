@@ -122,9 +122,9 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
   // On a phone a single following event is the green card's foot, not a titled card of one row; two or more keep their card.
   const then = phone && later.length === 1 ? later[0] : undefined;
   const card = next && (
-    <NextCard row={next} today={today} timezone={data.team.timezone} href={paths.player(next.eventId)} phone={phone} then={then && { row: then, href: paths.player(then.eventId) }} />
+    <NextCard data-ctl="CTL-P016-090" row={next} today={today} timezone={data.team.timezone} href={paths.player(next.eventId)} phone={phone} then={then && { row: then, href: paths.player(then.eventId) }} />
   );
-  const rest = later.length > 0 && !then && <LaterRows rows={later} today={today} href={paths.player} />;
+  const rest = later.length > 0 && !then && <LaterRows data-ctl="CTL-P016-091" rows={later} today={today} href={paths.player} />;
   return (
     <TourMain view="player" phone={phone} labelledBy={TITLE_ID} className="ch-tour-pl">
       <TourPhoneTop phone={phone} title="Tournaments" />
@@ -156,7 +156,7 @@ function ListPage({ data, phone }: { data: ChTourPlayerData; phone: boolean }) {
           )}
           {played.length > 0 && (
             <Section id="ch-tour-pl-played" title="Played" meta={phone ? 'Your total, to par' : 'Your own scores, round by round'}>
-              {phone ? <PlayedRows rows={played} href={paths.player} /> : <PlayedTable rows={played} href={paths.player} />}
+              {phone ? <PlayedRows data-ctl="CTL-P016-092" rows={played} href={paths.player} /> : <PlayedTable data-ctl="CTL-P016-093" rows={played} href={paths.player} />}
             </Section>
           )}
         </div>
@@ -175,7 +175,7 @@ function NextCard({ row: x, today, timezone, href, phone, then }: { row: ListRow
   const live = x.show === 'live';
   const days = daysUntil(today, x.startDate);
   return (
-    <FeatureCard
+    <FeatureCard data-ctl="CTL-P016-094"
       className="ch-tour-pl-next"
       href={phone ? undefined : href}
       label={phone ? `Up next: ${x.name}` : undefined}
@@ -184,7 +184,7 @@ function NextCard({ row: x, today, timezone, href, phone, then }: { row: ListRow
       soon={live || (days >= 0 && days <= 1)}
       title={
         phone ? (
-          <Link href={href} className="ch-tour-pl-next__t ch-tour-pl-next__open">
+          <Link data-ctl="CTL-P016-095" href={href} className="ch-tour-pl-next__t ch-tour-pl-next__open">
             {x.name}
             <Icon icon={ChevronRight} size={16} />
           </Link>
@@ -197,7 +197,7 @@ function NextCard({ row: x, today, timezone, href, phone, then }: { row: ListRow
       }
       foot={
         then && (
-          <Link href={then.href} className="ch-tour-pl-next__then">
+          <Link data-ctl="CTL-P016-096" href={then.href} className="ch-tour-pl-next__then">
             <span className="ch-tour-pl-next__then-t">
               <span className="ch-sr-only">Also coming up: </span>
               <b>{then.row.name}</b>
@@ -234,7 +234,7 @@ function LaterRows({ rows, today, href }: { rows: ChTourPlayerData['list']; toda
   return (
     <LedgerList label="Also coming up" className="ch-tour-pl-later">
       {rows.map((x) => (
-        <LedgerRow
+        <LedgerRow data-ctl="CTL-P016-097"
           key={x.eventId}
           href={href(x.eventId)}
           lead={
@@ -268,7 +268,7 @@ function PlayedRows({ rows, href }: { rows: ChTourPlayerData['list']; href: (id:
     <ul className="ch-tour-pl-list">
       {rows.map((x) => (
         <li key={x.eventId}>
-          <Link href={href(x.eventId)} className="ch-tour-pl-row">
+          <Link data-ctl="CTL-P016-098" href={href(x.eventId)} className="ch-tour-pl-row">
             <span className="ch-tour-pl-row__t">
               <b>{x.name}</b>
               <Bits items={[tourRange(x.startDate, x.endDate), x.courseName]} />
@@ -316,7 +316,7 @@ function PlayedTable({ rows, href }: { rows: ChTourPlayerData['list']; href: (id
       {rows.map((x) => (
         <div key={x.eventId} className="ch-tour-pl-res__row" role="row">
           <span role="cell" className="ch-tour-pl-res__name">
-            <Link href={href(x.eventId)} className="ch-tour-pl-res__open">
+            <Link data-ctl="CTL-P016-099" href={href(x.eventId)} className="ch-tour-pl-res__open">
               {x.name}
             </Link>
             <Bits items={[tourRange(x.startDate, x.endDate), x.courseName]} />
@@ -357,7 +357,7 @@ function EventPage({ data, ev, phone }: { data: ChTourPlayerData; ev: ChTourPlay
         tightAlways
         id={TITLE_ID}
         phone={phone}
-        crumb={phone ? undefined : <TourCrumb href={paths.player()} />}
+        crumb={phone ? undefined : <TourCrumb data-ctl="CTL-P016-100" href={paths.player()} />}
         eyebrow={data.team.label}
         title={e.name}
         line={[tourRange(e.startDate, e.endDate), ...courseNames].join(' · ')}
@@ -443,7 +443,7 @@ function MyCard({ me, card }: { me: ChTourPlayerData['me']; card: NonNullable<Ch
         <span className="ch-tour-pl-muted">
           {line.thru === 0 ? 'Nothing scored yet.' : <>Through <span className="ch-num">{line.thru}</span> of <span className="ch-num">{card.holes.length}</span>{line.toPar != null && <> · <ToPar value={line.toPar} /></>}</>}
         </span>
-        <Button variant="primary" onClick={() => setOpen(true)}>
+        <Button data-ctl="CTL-P016-101" variant="primary" onClick={() => setOpen(true)}>
           {line.thru === 0 ? 'Score your round' : line.thru >= card.holes.length ? 'Check your card' : 'Continue your card'}
         </Button>
       </div>
@@ -540,7 +540,7 @@ function Reflection({ ev, started, error }: { ev: ChTourPlayerEvent; started: bo
           </label>
           <div className="ch-tour-pl-reflect__a">
             <span className="ch-tour-pl-muted">{ev.reflection?.updatedAt && !dirty ? 'Saved' : dirty ? 'Not saved yet' : ''}</span>
-            <Button variant="primary" type="submit" busy={save.pending} disabled={!dirty || !text.trim()}>
+            <Button data-ctl="CTL-P016-102" variant="primary" type="submit" busy={save.pending} disabled={!dirty || !text.trim()}>
               Save reflection
             </Button>
           </div>
