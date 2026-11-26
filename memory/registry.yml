@@ -89,9 +89,9 @@ features:
         - scripts/lib/lint-results.mjs
         - scripts/__tests__/lint-results.test.mjs
         - scripts/ratchets/lint-ratchet.mjs
-        - scripts/supabase-error-audit.mjs
-        - scripts/fail-open-audit.mjs
-        - scripts/paginated-read-audit.mjs
+        - scripts/audits/supabase-error-audit.mjs
+        - scripts/audits/fail-open-audit.mjs
+        - scripts/audits/paginated-read-audit.mjs
         - docs/operations/WORKSPACES.md
         - scripts/checks/control-plane-verify.mjs
         - scripts/new-worktree.sh

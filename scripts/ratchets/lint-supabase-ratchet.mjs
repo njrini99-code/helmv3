@@ -3,8 +3,8 @@
  * lint-supabase-ratchet.mjs — combined entry point for the two Supabase
  * lint ratchets D8.3 requires:
  *
- *   (a) helm/no-unchunked-in-filter  -> scripts/supabase-chunk-audit.mjs
- *   (b) helm/no-unchecked-supabase-error -> scripts/supabase-error-audit.mjs
+ *   (a) helm/no-unchunked-in-filter  -> scripts/audits/supabase-chunk-audit.mjs
+ *   (b) helm/no-unchecked-supabase-error -> scripts/audits/supabase-error-audit.mjs
  *       (this rule and its ratchet predate D8; wired in here so
  *       `npm run lint:supabase:ratchet` is the one command that gates both)
  *
@@ -20,7 +20,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const extraArgs = process.argv.slice(2);
 
-const scripts = ['scripts/supabase-chunk-audit.mjs', 'scripts/supabase-error-audit.mjs'];
+const scripts = ['scripts/audits/supabase-chunk-audit.mjs', 'scripts/audits/supabase-error-audit.mjs'];
 
 let failed = false;
 for (const script of scripts) {

@@ -18,7 +18,7 @@ function fixture() {
   mkdirSync(join(root, 'src'));
   mkdirSync(join(root, 'config/baselines'), { recursive: true });
   writeFileSync(join(root, 'src/example.ts'), 'export const example = 1;\n');
-  for (const name of ['checks/lint-ci.mjs', 'ratchets/lint-ratchet.mjs', 'supabase-error-audit.mjs', 'fail-open-audit.mjs', 'paginated-read-audit.mjs', 'lib/lint-results.mjs']) {
+  for (const name of ['checks/lint-ci.mjs', 'ratchets/lint-ratchet.mjs', 'audits/supabase-error-audit.mjs', 'audits/fail-open-audit.mjs', 'audits/paginated-read-audit.mjs', 'lib/lint-results.mjs']) {
     mkdirSync(dirname(join(root, 'scripts', name)), { recursive: true });
     copyFileSync(join(repo, 'scripts', name), join(root, 'scripts', name));
   }
@@ -149,7 +149,7 @@ describe('existing gate semantics', () => {
     const index = ['supabase-error', 'fail-open', 'paginated-read'].indexOf(name);
     const rule = AUDIT_RULES[index];
     const baseline = join(f.root, `config/baselines/.${name}-baseline.json`);
-    const run = () => f.run(`${name}-audit.mjs`);
+    const run = () => f.run(`audits/${name}-audit.mjs`);
     const withTotal = (count) => f.report([f.file('src/example.ts', Array.from({ length: count }, () => diagnostic(rule))), f.file('scripts/example.mjs', [diagnostic(rule)])]);
     writeFileSync(baseline, JSON.stringify({ total: 2 }));
     withTotal(2);
@@ -165,7 +165,7 @@ describe('existing gate semantics', () => {
     const regression = run();
     expect(regression.status).toBe(1);
     expect(regression.stderr).toContain('REGRESSION:');
-    expect(f.run(`${name}-audit.mjs`, ['--update']).status).toBe(0);
+    expect(f.run(`audits/${name}-audit.mjs`, ['--update']).status).toBe(0);
     expect(JSON.parse(readFileSync(baseline, 'utf8')).total).toBe(3);
   });
 });

@@ -25,9 +25,9 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadResults, sourceFile } from './lib/lint-results.mjs';
+import { loadResults, sourceFile } from '../lib/lint-results.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASELINE_PATH = resolve(ROOT, 'config/baselines/.supabase-error-baseline.json');
 const RULE = 'helm/no-unchecked-supabase-error';
 const UPDATE = process.argv.includes('--update');

@@ -369,7 +369,7 @@ anywhere (the intended call sites — `golf.ts`'s `save_partial_round_atomic`/
   here rather than duplicating this content.
 - `memory/ledgers/changes/observability_supabase.md` — the change ledger
   for this track, one entry per deliverable (B1–B6) with commit SHAs.
-- `scripts/supabase-error-audit.mjs` — the report-only coverage audit (B6)
+- `scripts/audits/supabase-error-audit.mjs` — the report-only coverage audit (B6)
   that measures how much of this file's own wiring claims are actually
   true against the live tree.
 - active (platform infrastructure, not a product feature — same reasoning

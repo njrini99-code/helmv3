@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * fail-open-audit.mjs — ratchet for helm/no-empty-collection-on-error.
+ * paginated-read-audit.mjs — ratchet for helm/no-unchecked-paginated-read.
  *
  * WHAT THIS COUNTS, AND WHAT IT DOES NOT CLAIM
  *
@@ -21,18 +21,18 @@
  * down means either fixing it or marking it deliberate with an
  * eslint-disable and a reason — both of which turn an accident into a choice.
  *
- *   npm run audit:fail-open             # check (exit 1 on regression)
- *   npm run audit:fail-open -- --update # re-baseline
+ *   npm run audit:paginated-reads             # check (exit 1 on regression)
+ *   npm run audit:paginated-reads -- --update # re-baseline
  */
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadResults, sourceFile } from './lib/lint-results.mjs';
+import { loadResults, sourceFile } from '../lib/lint-results.mjs';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const BASELINE_PATH = resolve(ROOT, 'config/baselines/.fail-open-baseline.json');
-const RULE = 'helm/no-empty-collection-on-error';
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
+const BASELINE_PATH = resolve(ROOT, 'config/baselines/.paginated-read-baseline.json');
+const RULE = 'helm/no-unchecked-paginated-read';
 const UPDATE = process.argv.includes('--update');
 
 let results;
@@ -40,7 +40,7 @@ try {
   results = loadResults(ROOT, ['src', '--rule', JSON.stringify({ [RULE]: 'warn' })])
     .filter((file) => sourceFile(ROOT, file));
 } catch (error) {
-  console.error('fail-open-audit: could not obtain ESLint results. Aborting rather than reporting a false 0.', error.message);
+  console.error('paginated-read-audit: could not obtain ESLint results. Aborting rather than reporting a false 0.', error.message);
   process.exit(1);
 }
 
@@ -63,7 +63,7 @@ if (total === 0 && !UPDATE && existsSync(BASELINE_PATH)) {
   const prior = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8')).total ?? 0;
   if (prior > 0) {
     console.error(
-      `fail-open-audit: found 0 but the baseline is ${prior}. That is far more likely to be a rule ` +
+      `paginated-read-audit: found 0 but the baseline is ${prior}. That is far more likely to be a rule ` +
         'that failed to load than a repo that fixed them all. Failing loudly.',
     );
     process.exit(1);
@@ -71,7 +71,7 @@ if (total === 0 && !UPDATE && existsSync(BASELINE_PATH)) {
 }
 
 const top = [...byArea.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12);
-console.log(`empty-collection-on-error: ${total}`);
+console.log(`unchecked paginated reads: ${total}`);
 for (const [area, n] of top) console.log(`  ${String(n).padStart(4)}  ${area}`);
 
 if (UPDATE) {
@@ -81,7 +81,7 @@ if (UPDATE) {
 }
 
 if (!existsSync(BASELINE_PATH)) {
-  console.error('fail-open-audit: no baseline. Run with --update to create one.');
+  console.error('paginated-read-audit: no baseline. Run with --update to create one.');
   process.exit(1);
 }
 
@@ -90,15 +90,15 @@ const baseline = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8')).total ?? 0;
 if (total < baseline) {
   console.error(
     `\nSLACK: ${total} against a baseline of ${baseline}. Lock the paydown in:\n` +
-      '  npm run audit:fail-open -- --update\n' +
-      'and commit config/baselines/.fail-open-baseline.json alongside the fix.',
+      '  npm run audit:paginated-reads -- --update\n' +
+      'and commit config/baselines/.paginated-read-baseline.json alongside the fix.',
   );
   process.exit(1);
 }
 
 if (total > baseline) {
   console.error(
-    `\nREGRESSION: ${total} empty-collection-on-error sites, baseline is ${baseline}.\n` +
+    `\nREGRESSION: ${total} unchecked paginated reads, baseline is ${baseline}.\n` +
       'A guard that answers a FAILED READ with the same value that means "allow" cannot be\n' +
       'told apart from permission — not by the code, and not by the person reading it.\n' +
       'Return null (or throw) so the caller decides, or add an eslint-disable saying why\n' +

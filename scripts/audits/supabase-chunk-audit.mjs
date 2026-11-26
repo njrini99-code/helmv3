@@ -2,7 +2,7 @@
 /**
  * supabase-chunk-audit.mjs — ratchet for helm/no-unchunked-in-filter.
  *
- * Same shape as scripts/supabase-error-audit.mjs and the same reason for
+ * Same shape as scripts/audits/supabase-error-audit.mjs and the same reason for
  * existing as a standalone script rather than a hard lint rule: turning
  * `helm/no-unchunked-in-filter` on in the shared eslint config would fail
  * `npm run lint` (--max-warnings 0) on every existing `.in()` call site that
@@ -15,8 +15,8 @@
  * `.in()` id filter. Existing call sites are paid down over time by running
  * with --update after fixing them.
  *
- *   node scripts/supabase-chunk-audit.mjs            # check (exit 1 on regression)
- *   node scripts/supabase-chunk-audit.mjs --update    # re-baseline after paying down
+ *   node scripts/audits/supabase-chunk-audit.mjs            # check (exit 1 on regression)
+ *   node scripts/audits/supabase-chunk-audit.mjs --update    # re-baseline after paying down
  */
 
 import { execFileSync } from 'node:child_process';
@@ -24,7 +24,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const BASELINE_PATH = resolve(ROOT, 'config/baselines/.supabase-chunk-baseline.json');
 const RULE = 'helm/no-unchunked-in-filter';
 const UPDATE = process.argv.includes('--update');
