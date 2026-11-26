@@ -523,7 +523,7 @@ export function renderPackMarkdown(pack: ContextPack): string {
     '## 6. How to reproduce',
     '',
     `- Routes: ${pack.reproduce.routes.join(', ') || 'none'}`,
-    `- Roles: ${pack.reproduce.roles.join(', ') || 'signed out'}`,
+    `- Roles: ${pack.reproduce.roles.join(', ') || (pack.target.page ? 'signed out' : 'not one page: see the sessions in the evidence')}`,
     `- Preview: ${pack.reproduce.preview ?? 'none for this page'} (a local dev server; not served in production)`,
     ...pack.reproduce.steps.map((step, i) => `- Step ${i + 1}: ${step}`),
     `- Browser: ${pack.reproduce.browser}`,

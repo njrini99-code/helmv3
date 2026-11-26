@@ -66,9 +66,16 @@ building them, each with its reason.
   table or column (42P01, PGRST205, 42703, PGRST204) reads "No signal yet", never
   zero.
 - **The pack's live parts are pluggable.** `PackLiveSource` readers, each "No
-  signal yet" by default, replaced by id (`withSources`). PR 4 ships the
-  `admin_events` reader; PR 3's live layer adds the rest without editing
-  `pack.ts`.
+  signal yet" by default, replaced by id (`withSources`). `pack-server.ts`
+  registers the `admin_events` reader and the live lenses' readers (counters,
+  envelopes, sessions, release, rules: `livePackSources`, one snapshot read per
+  pack, pure matching in `pack-live.ts`); `bridgePackSources` is the one list
+  the Duet desk and the door both use.
+- **Pack targets** (2026-11-25 follow-up): page, control, action, code, finding
+  (`F-0001`), release (`rel:<sha>`), person (`user:<uuid>`) and team
+  (`team:<uuid>`). The live-only kinds are prefixed because bare digits are a
+  Bridge ID, and a person or team pack names its subject by pseudonym unless
+  names were asked for.
 - **D7 in packs.** People are `u-` plus a SHA-256 prefix of the user id, teams
   `t-` likewise; "Include names" adds the email.
 - **D9, the Duet door.** `GET /api/admin/clubhouse/duet/{packs,drift}` (the

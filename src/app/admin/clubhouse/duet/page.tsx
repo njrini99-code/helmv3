@@ -191,10 +191,14 @@ function Preview({ pack, markdown }: { pack: ContextPack; markdown: string }) {
             <span className="font-fw-mono tabular-nums">{pack.read.length}</span> documents
           </Part>
           <Part n="6" title="How to reproduce">
-            {pack.reproduce.routes[0] ?? 'no route'} · {pack.reproduce.roles.join(', ') || 'signed out'}
+            {pack.target.page
+              ? `${pack.reproduce.routes[0] ?? 'no route'} · ${pack.reproduce.roles.join(', ') || 'signed out'}`
+              : 'Not one page: the sessions in the evidence'}
+            {pack.reproduce.steps.length ? ` · ${pack.reproduce.steps.length} steps` : ''}
           </Part>
           <Part n="7" title="Done means">
             {pack.done.codes.length ? `${pack.done.codes.length} codes stop firing; ` : ''}
+            {pack.done.checks.map((c) => `${c}; `).join('')}
             {pack.done.gates.join(', ')} green
           </Part>
           <Part n="·" title="People">

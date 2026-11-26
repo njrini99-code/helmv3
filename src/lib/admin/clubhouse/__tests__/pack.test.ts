@@ -182,7 +182,11 @@ describe('live-only and finding packs', () => {
     expect(pack.contractRows.ids).toEqual([]);
     expect(pack.reproduce).toMatchObject({ routes: [], preview: null, steps: [] });
     expect(pack.done.checks[0]).toContain('release abcdef1');
-    expect(renderPackMarkdown(pack)).toContain('## 7. Done means');
+    const md = renderPackMarkdown(pack);
+    expect(md).toContain('## 7. Done means');
+    // No page means no single role: the paste must not claim the subject is signed out.
+    expect(md).toContain('- Roles: not one page: see the sessions in the evidence');
+    expect(md).not.toContain('- Roles: signed out');
   });
 
   it('a finding pack carries the finding, its files, its repro as steps and a re-audit check', async () => {

@@ -1515,7 +1515,7 @@ line, the truth line, the scope bar, the body, the evidence footer.
 | B05 Codes | `/admin/clubhouse/codes`, `/[bridgeId]` | Shift+C | graph |
 | B11 Drift | `/admin/clubhouse/drift` | Shift+N | graph; `clubhouse_drift` |
 | B12 Readiness | `/admin/clubhouse/readiness` | Shift+M | graph |
-| B13 Duet desk | `/admin/clubhouse/duet` | none | graph; `admin_events` Bridge columns |
+| B13 Duet desk | `/admin/clubhouse/duet` | none | graph; `admin_events` Bridge columns; the live snapshot (`clubhouse_signal_hourly`, `clubhouse_sessions`, `clubhouse_session_events`) |
 | B14 ⌘K | every screen | ⌘K | `GET /api/admin/clubhouse/search` |
 
 The plan's letters (P, O, A, G, D, Q, S, Y, E, V) are retired shortcuts
@@ -1530,14 +1530,28 @@ yet" on 42P01, PGRST205, 42703 or PGRST204, never zero. "Copy as JSON" exports
 
 **B13 Duet desk** (`src/lib/admin/clubhouse/pack.ts`) builds the §9.1 context
 pack (Markdown with one `bridge-pack/v1` JSON block) for a page, control,
-action or code. The contract, code, reading, reproduction and done parts come
-from the graph. The evidence comes from `PackLiveSource` readers, each "No
-signal yet" by default: `adminEventsPackSource` (`pack-server.ts`) reads the
-`admin_events` Bridge columns, and PR 3's live layer adds its readers by id
-with `withSources`. People are pseudonymous (`u-` + a SHA-256 prefix) unless
-"Include names" is ticked (D7). The dossiers' "Context pack" controls and ⌘K
-`>pack <target>` open it. The queue (Mark sent, Verify after release, Archive)
-waits on `bridge_notes` in the held migration.
+action, code or finding (`F-0001`), or for a release (`rel:<sha>`), a person
+(`user:<uuid>`) or a team (`team:<uuid>`). The contract, code, reading,
+reproduction and done parts come from the graph (a finding pack adds the
+finding, its repro as `reproduce.steps` and a re-audit line in `done.checks`).
+The evidence comes from `PackLiveSource` readers, each "No signal yet" by
+default, all registered by `bridgePackSources` (`pack-server.ts`), which the
+desk and the door share: `adminEventsPackSource` reads the `admin_events`
+Bridge columns, and `livePackSources` reads one live snapshot per pack for the
+counts and their split, three envelopes with trails, the failing sessions, the
+release it started in (for a release: what is new or rising against the one
+before) and the rules firing; the matching is pure in `pack-live.ts`. People
+are pseudonymous (`u-` + a SHA-256 prefix, teams `t-`) unless "Include names"
+is ticked (D7); a person or team pack's own subject is pseudonymous too. The
+dossiers' "Context pack" controls, B08's person and team pack, B10's
+Regression pack, B12's "Send as a pack" and ⌘K `>pack <target>` open it. The
+queue (Mark sent, Verify after release, Archive) waits on `bridge_notes` in
+the held migration.
+
+B04's "Sessions" opens B07 with `?act=ACT-…`: the sessions whose kept events
+ran the action (`readSessionIdsForAction`; only sessions with a failure keep
+events). Every live lens's truth-line pipe, and Pulse's Pipe dot (BR-0106),
+opens B11's pipe panel at `/admin/clubhouse/drift?pipe=1#pipe`.
 
 ### The pipe
 
