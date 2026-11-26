@@ -136,8 +136,12 @@ export function classifyDeployFreshness(input: DeployFreshnessInput): DeployFres
  * `VERCEL_GIT_COMMIT_SHA` is the sha of the running deployment, and this runs
  * inside that deployment, so it needs no API token to know what production is.
  */
-export async function fetchDeployFreshness(now: Date = new Date()): Promise<DeployFreshness> {
-  const deployedSha = process.env.VERCEL_GIT_COMMIT_SHA;
+export async function fetchDeployFreshness(
+  now: Date = new Date(),
+  // A caller that knows the release stamp passes it: `vercel deploy` from the CLI leaves VERCEL_GIT_COMMIT_SHA empty
+  // and stamps NEXT_PUBLIC_SENTRY_RELEASE instead (AGENTS.md "Production"). The Bridge spaces pass `liveRef()`'s SHA.
+  deployedSha: string | undefined = process.env.VERCEL_GIT_COMMIT_SHA,
+): Promise<DeployFreshness> {
   if (!deployedSha) {
     return classifyDeployFreshness({ deployedSha: undefined, behindBy: null, deployedAt: null, now });
   }
