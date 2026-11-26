@@ -156,7 +156,7 @@ export const BR = {
     copy: 'BR-1209',
     ...states('12'),
   },
-  /** B11 Drift (PR 4). */
+  /** B11 Drift. */
   drift: {
     listTab: 'BR-1101',
     row: 'BR-1102',
@@ -165,7 +165,7 @@ export const BR = {
     pipePanel: 'BR-1104',
     ...states('11'),
   },
-  /** B13 Duet desk (PR 4). */
+  /** B13 Duet desk. */
   duet: {
     packRow: 'BR-1301',
     copy: 'BR-1302',

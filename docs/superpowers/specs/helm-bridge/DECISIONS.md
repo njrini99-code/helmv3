@@ -91,3 +91,7 @@ building them, each with its reason.
 - **B13's queue** (Mark sent, Verify after release, Archive) renders as pending
   controls until `bridge_notes` exists (held migration 20261124090000). No
   `'use server'` surface was added in PR 4.
+- **The cross-sport overview stays on `/admin` (owner, 2026-11-25).** It sits
+  below B01 Pulse and does not move to Health, which overrides plan §11's "the
+  cross-sport pieces move to Health". `/admin` keeps its URL and key 1; Health
+  is unchanged.

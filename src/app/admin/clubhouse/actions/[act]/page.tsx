@@ -181,7 +181,7 @@ export default async function ClubhouseActionDossier({
         <Section title="Why it failed">
           <NoSignal code={BR.actions.noSignal} what="Failures grouped by server code and by the server half" />
           <div className="mt-2">
-            <PendingControl code={BR.actions.failureReason} label="Open in Incidents" arrives="Each failure reason opens Incidents filtered to it once failures are counted." />
+            <PendingControl code={BR.actions.failureReason} label="Open in Incidents" arrives="Each failure reason opens Incidents filtered to it once failures are counted, which needs the signal tables and the admin_events Bridge columns from the held migration 20261124090000." />
           </div>
         </Section>
         <Section title="Controls that run it" className="lg:col-span-2">

@@ -29,7 +29,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /**
  * B08, a team (plan §8): the people active, the page wall for this team alone, and its worst codes, for when one team
  * has a bad day that doesn't show in the totals. Hourly counters carry no team, so the wall is read from the team's
- * sessions with a failure; held features and the season stage join with PR 4.
+ * sessions with a failure. Held features and the season stage are not read here yet: no Bridge table carries them.
  */
 export default async function ClubhouseTeamPage({ params, searchParams }: { params: Promise<{ teamId: string }>; searchParams?: Promise<SearchParams> }) {
   await requireSuperAdmin();

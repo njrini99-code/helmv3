@@ -16,8 +16,8 @@ import { NewIncidents, PulseBody } from './PulseBody';
 
 /**
  * B01 Pulse (plan §8): "Is Clubhouse OK right now, and if not, where?" Rules first, then the page wall, what is rising,
- * the actions slipping, the newest incidents and what the live release changed. It mounts at the top of /admin; the
- * cross-sport overview stays below it until PR 4 moves it to Health.
+ * the actions slipping, the newest incidents and what the live release changed. It mounts at the top of /admin, and
+ * the cross-sport overview stays below it there (owner decision, plan §11: it does not move to Health).
  */
 export async function ClubhousePulse({ searchParams }: { searchParams?: SearchParams }) {
   const read = readClubhouse(searchParams);

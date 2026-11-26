@@ -166,8 +166,8 @@ function Dossier({
       actions={
         <>
           <ForceState page={entry.page as PageId} code={BR.codes.forceState} />
-          <PendingControl code={BR.codes.markExpected} label="Mark expected…" arrives="Marking a firing as normal needs signals and their store, which arrive with PR 3." />
-          <PendingControl code={BR.codes.watch} label="Watch" arrives="Watching pins a code to Pulse and the digest, which land with PR 3." />
+          <PendingControl code={BR.codes.markExpected} label="Mark expected…" arrives="Marking a firing as normal needs the Bridge notes table (bridge_notes), which arrives with the held migration 20261124090000." />
+          <PendingControl code={BR.codes.watch} label="Watch" arrives="Watching pins a code to Pulse and the digest; the watch list needs the Bridge notes table (bridge_notes), which arrives with the held migration 20261124090000." />
           <PackLink code={BR.codes.pack} target={String(id)} />
         </>
       }

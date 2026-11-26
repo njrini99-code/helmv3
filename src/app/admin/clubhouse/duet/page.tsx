@@ -26,7 +26,7 @@ export const metadata: Metadata = { title: 'Duet desk' };
 
 export const dynamic = 'force-dynamic';
 
-const QUEUE_PENDING = 'The queue keeps packs in bridge_notes, which arrives with held migration 20261124090000.';
+const QUEUE_PENDING = 'Needs the Bridge notes table (bridge_notes), which keeps the queue and arrives with the held migration 20261124090000.';
 
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 

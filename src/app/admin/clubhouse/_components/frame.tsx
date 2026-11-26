@@ -241,8 +241,9 @@ export function GraphUnavailable({ code, title, retryHref }: { code: string; tit
 }
 
 /**
- * A control the plan numbers whose screen lands later (the context pack goes to B13, PR 4). It renders, carries its
- * code and says when it arrives, rather than vanishing: a control that disappears can't be learned.
+ * A control the plan numbers that cannot work yet, because its store does not exist (Mark expected, Watch and the
+ * Duet queue wait for bridge_notes in the held migration 20261124090000). It renders, carries its code and says what
+ * it waits for, rather than vanishing: a control that disappears can't be learned.
  */
 export function PendingControl({ code, label, arrives }: { code: string; label: string; arrives: string }) {
   return (

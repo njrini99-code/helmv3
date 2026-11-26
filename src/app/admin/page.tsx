@@ -273,8 +273,8 @@ export default async function AdminOverviewPage({
 
       {/* B01 Pulse (bridge plan §8) leads: Clubhouse first. It carries the
           page's header (the frame's TabHeader). The cross-sport overview
-          below stays here until PR 4 moves it to Health (plan §11); moving it
-          now would change Health in the same PR as the live lenses. */}
+          stays below it, on /admin: the owner decided it does not move to
+          Health (plan §11; DECISIONS.md, 2026-11-25). */}
       <PanelBoundary title="Clubhouse Pulse" skeleton={<ScreenSkeleton code={BR.pulse.loading} rows={6} />}>
         <ClubhousePulse searchParams={sp} />
       </PanelBoundary>

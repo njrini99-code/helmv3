@@ -35,7 +35,7 @@ export interface AdminNavEntry {
   /**
    * '1'-'9', '0' or a Shift+letter. Absent only where no letter is free: every
    * unused letter is either live or a retired shortcut operators still use
-   * (RETIRED_SHORTCUTS), so Experience and Releases (PR 3) have none yet.
+   * (RETIRED_SHORTCUTS), so Experience, Releases, Drift and the Duet desk have none yet.
    */
   key?: string;
   // 'More' — an OWNER-DECIDED deprioritized group: still fully wired (URL,
@@ -63,7 +63,8 @@ export interface AdminNavEntry {
  * URLs and keys are unchanged by the regrouping. */
 export const ADMIN_NAV: readonly AdminNavEntry[] = [
   // CLUBHOUSE — "is Clubhouse doing what its contract says" (plan §7.1).
-  // '/admin' is B01 Pulse (PR 3); its URL and key '1' are unchanged. The
+  // '/admin' is B01 Pulse, with the cross-sport overview below it (it stays
+  // there; it does not move to Health). Its URL and key '1' are unchanged. The
   // bottom bar, the tab title and this rail name it one way.
   { label: 'Pulse', href: '/admin', key: '1', section: 'Clubhouse', description: 'Is Clubhouse OK right now, and if not, where; the cross-sport overview below', meta: 'B01' },
   { label: 'Pages', href: '/admin/clubhouse', key: 'H', section: 'Clubhouse', description: 'The 17 pages against their contracts', meta: 'B02' },
@@ -71,7 +72,7 @@ export const ADMIN_NAV: readonly AdminNavEntry[] = [
   { label: 'Actions', href: '/admin/clubhouse/actions', key: 'J', section: 'Clubhouse', description: 'Each press: handler, tables and outcomes', meta: 'B04' },
   { label: 'Codes', href: '/admin/clubhouse/codes', key: 'C', section: 'Clubhouse', description: 'Every Bridge ID and CH- code, one dossier each', meta: 'B05' },
   { label: 'Readiness', href: '/admin/clubhouse/readiness', key: 'M', section: 'Clubhouse', description: 'How finished Clubhouse is, by its own gates', meta: 'B12' },
-  // The live lenses (PR 3), then Drift and the Duet desk (PR 4). N is the one
+  // The live lenses, then Drift and the Duet desk. N is the one
   // letter no live or retired shortcut holds, and Sessions is the lens reached
   // for most, so it takes N. The plan's S, E, V, D and Q are retired shortcuts
   // (RETIRED_SHORTCUTS): reusing one would silently retrain an operator's hands,

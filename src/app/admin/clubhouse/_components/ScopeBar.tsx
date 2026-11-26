@@ -37,7 +37,8 @@ const RESET_ON_CHANGE = ['p'];
  * slice and moving between Clubhouse screens keeps it (every screen link is built with `withScope`). Native selects:
  * one tap on a phone opens the system picker, and they work with a keyboard as they are.
  *
- * Window, platform, release and team need signals; they join the bar with the live lenses (PR 3).
+ * On a live lens (`live`) the bar adds the window and the platform. Release and team are not scope: they are their own
+ * screens (B10, B08) and sessions filters.
  */
 export function ScopeBar({ pages, live = false }: { pages: readonly ScopeBarPage[]; live?: boolean }) {
   const router = useRouter();
