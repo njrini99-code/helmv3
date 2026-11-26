@@ -24,7 +24,7 @@ const EDIT_RESULTS = ['fairway', 'rough', 'sand', 'green', 'hole', 'other'] as c
 /** A radio row: a dot, a title and its line. */
 function Choice({ checked, title, detail, onPick }: { checked: boolean; title: string; detail?: string; onPick: () => void }) {
   return (
-    <button
+    <button data-ctl="CTL-P011-162"
       type="button"
       role="radio"
       aria-checked={checked}
@@ -89,8 +89,8 @@ export function PenaltySheet({
       code="CH-11503"
       footer={
         <>
-          <Button variant="ghost" onClick={close}>Cancel</Button>
-          <Button variant="primary" disabled={!penaltyType} onClick={onConfirm}>Add 1 stroke</Button>
+          <Button data-ctl="CTL-P011-163" variant="ghost" onClick={close}>Cancel</Button>
+          <Button data-ctl="CTL-P011-164" variant="primary" disabled={!penaltyType} onClick={onConfirm}>Add 1 stroke</Button>
         </>
       }
     >
@@ -134,8 +134,8 @@ export function UnsavedSheet({ open, onStay, onDiscard }: { open: boolean; onSta
       code="CH-11504"
       footer={
         <>
-          <Button variant="ghost" onClick={onStay}>Stay</Button>
-          <Button variant="danger" onClick={onDiscard}>
+          <Button data-ctl="CTL-P011-165" variant="ghost" onClick={onStay}>Stay</Button>
+          <Button data-ctl="CTL-P011-166" variant="danger" onClick={onDiscard}>
             Leave without it
           </Button>
         </>
@@ -214,18 +214,18 @@ export function EditShotSheet({
       footer={
         showDeleteConfirm ? (
           <>
-            <Button variant="ghost" disabled={saving} onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}>Keep it</Button>
+            <Button data-ctl="CTL-P011-167" variant="ghost" disabled={saving} onClick={() => dispatch({ type: 'HIDE_DELETE_CONFIRM' })}>Keep it</Button>
             {/* CH-11707: deleting a shot is a warning (a danger Button warns as it is pressed). */}
-            <Button variant="danger" busy={saving} onClick={onDelete}>
+            <Button data-ctl="CTL-P011-168" variant="danger" busy={saving} onClick={onDelete}>
               {saving ? 'Deleting…' : 'Delete shot'}
             </Button>
           </>
         ) : (
           <>
-            <Button variant="ghost" className="ch-rt-danger" leftIcon={Trash2} disabled={saving} onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}>Delete</Button>
+            <Button data-ctl="CTL-P011-169" variant="ghost" className="ch-rt-danger" leftIcon={Trash2} disabled={saving} onClick={() => dispatch({ type: 'SHOW_DELETE_CONFIRM' })}>Delete</Button>
             <span className="ch-rt-grow" />
-            <Button variant="ghost" disabled={saving} onClick={onClose}>Cancel</Button>
-            <Button variant="primary" busy={saving} disabled={issue?.severity === 'block'} onClick={save}>
+            <Button data-ctl="CTL-P011-170" variant="ghost" disabled={saving} onClick={onClose}>Cancel</Button>
+            <Button data-ctl="CTL-P011-171" variant="primary" busy={saving} disabled={issue?.severity === 'block'} onClick={save}>
               {saving ? 'Saving…' : issue?.severity === 'confirm' ? 'Save anyway' : 'Save shot'}
             </Button>
           </>
@@ -330,7 +330,7 @@ export function EditShotSheet({
                       <i />
                     </span>
                   ) : (
-                    <button key={v} type="button" role="radio" aria-checked={form.approachMissDirection === v} onClick={() => update({ approachMissDirection: v })}>
+                    <button data-ctl="CTL-P011-172" key={v} type="button" role="radio" aria-checked={form.approachMissDirection === v} onClick={() => update({ approachMissDirection: v })}>
                       {l}
                     </button>
                   ),
@@ -353,7 +353,7 @@ export function EditShotSheet({
                   <em>What happened</em>
                   <div className="ch-rt-tags" role="group" aria-label="How the putt missed">
                     {PUTT_TAGS.map(([tag, label]) => (
-                      <button key={tag} type="button" aria-pressed={form.puttMissTags.includes(tag)} onClick={() => update({ puttMissTags: togglePuttMissTag(form.puttMissTags, tag) })}>
+                      <button data-ctl="CTL-P011-173" key={tag} type="button" aria-pressed={form.puttMissTags.includes(tag)} onClick={() => update({ puttMissTags: togglePuttMissTag(form.puttMissTags, tag) })}>
                         {label}
                       </button>
                     ))}

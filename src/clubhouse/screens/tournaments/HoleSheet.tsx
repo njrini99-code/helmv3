@@ -104,7 +104,7 @@ export function HoleSheet({
       title={`${name}, ${roundLabel}`}
       description={line.thru ? `Through ${line.thru} of ${holes.length}.` : `${holes.length} holes. Tap a hole, then the strokes.`}
       footer={
-        <Button variant="primary" onClick={close}>
+        <Button data-ctl="CTL-P016-040" variant="primary" onClick={close}>
           Done
         </Button>
       }
@@ -113,7 +113,7 @@ export function HoleSheet({
         <div className="ch-tour-live-hs" data-ch-hole-sheet="">
           <div className="ch-tour-live-hs__strip" role="group" aria-label="Holes">
             {merged.map((h) => (
-              <button
+              <button data-ctl="CTL-P016-041"
                 key={h.n}
                 type="button"
                 className={'ch-tour-live-hs__h' + (h.n === cur ? ' is-cur' : '') + (h.strokes != null ? ' is-done' : '')}
@@ -142,7 +142,7 @@ export function HoleSheet({
           </div>
           <div className="ch-tour-live-hs__choices" role="group" aria-label={`Strokes on hole ${hole.n}`}>
             {strokeChoices(hole.par).map((s) => (
-              <button
+              <button data-ctl="CTL-P016-042"
                 key={s}
                 type="button"
                 className={'ch-tour-live-hs__c' + (hole.strokes === s ? ' is-on' : '')}
@@ -156,7 +156,7 @@ export function HoleSheet({
             ))}
           </div>
           {hole.strokes != null && (
-            <Button variant="ghost" size="sm" disabled={write.pending} onClick={() => void write.run(hole.n, hole.par, null)}>
+            <Button data-ctl="CTL-P016-043" variant="ghost" size="sm" disabled={write.pending} onClick={() => void write.run(hole.n, hole.par, null)}>
               Clear hole {hole.n} ({formatToPar(hole.strokes - hole.par)})
             </Button>
           )}

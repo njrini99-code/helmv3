@@ -145,7 +145,7 @@ function SetupRows({ roster }: { roster: string | null }) {
         { icon: CalendarPlus, title: 'Add your season', sub: 'Practices, qualifiers and tournaments', href: '/golf/dashboard/calendar?new=1' },
         { icon: Flag, title: 'Post the first round', sub: 'Stats fill in from there', href: '/golf/dashboard/rounds' },
       ].map((r) => (
-        <Link key={r.title} href={r.href} className="ch-hm-setup__r" data-ch-press="">
+        <Link data-ctl="CTL-P002-003" key={r.title} href={r.href} className="ch-hm-setup__r" data-ch-press="">
           <span className="ch-hm-setup__ic">
             <Icon icon={r.icon} size={18} />
           </span>

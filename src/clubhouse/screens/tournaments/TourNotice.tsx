@@ -25,7 +25,7 @@ export function TourNotice({ kind, coach = true, title = 'Tournaments', phone: f
   const paths = useTourPaths();
   if (kind === 'failed') return <TourFailed view="home" phone={phone} id={TITLE_ID} eyebrow="Tournaments" title={title} />;
   const back = (label: string) => (
-    <Button size="sm" href={paths.home()}>
+    <Button data-ctl="CTL-P016-107" size="sm" href={paths.home()}>
       {label}
     </Button>
   );

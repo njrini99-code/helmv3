@@ -58,7 +58,7 @@ function LinkInboxPage({ data, phone }: { data: ChTourLinksData; phone: boolean 
     <TourMain view="links" phone={phone} labelledBy={TITLE_ID} className={'ch-tour-rev ch-tour-links'}>
       <TourPhoneTop phone={phone} title="Link rounds" back={{ label: 'Tournaments', href: paths.home() }} />
       {/* The phone's back label already says Tournaments, as on New event (F-0054). */}
-      <TourHead tightAlways id={TITLE_ID} phone={phone} crumb={phone ? undefined : <TourCrumb href={paths.home()} />} eyebrow={phone ? undefined : 'Tournaments'} title="Link rounds" line={LINE} />
+      <TourHead tightAlways id={TITLE_ID} phone={phone} crumb={phone ? undefined : <TourCrumb data-ctl="CTL-P016-067" href={paths.home()} />} eyebrow={phone ? undefined : 'Tournaments'} title="Link rounds" line={LINE} />
       <div className="ch-tour-links-body">
         <Section id="ch-tour-links-rounds" title="Rounds to link" meta={data.errors.candidates ? undefined : `${rows.length} ${pluralWord(rows.length, 'round')}${data.dismissed ? ` · ${data.dismissed} dismissed` : ''}`}>
           {data.errors.candidates ? (
@@ -81,7 +81,7 @@ function LinkInboxPage({ data, phone }: { data: ChTourLinksData; phone: boolean 
                   <span>
                     {player(m.playerId)?.name ?? 'A player'} <span className="ch-tour-links-muted">· {eventName(m.eventId)} · R{m.roundNumber}</span>
                   </span>
-                  <Button size="sm" href={paths.live(m.eventId)}>
+                  <Button data-ctl="CTL-P016-068" size="sm" href={paths.live(m.eventId)}>
                     Enter a score
                   </Button>
                 </li>
@@ -170,7 +170,7 @@ function LinkRow({
   );
 
   const linkButton = (
-    <Button variant="secondary" size="sm" busy={link.pending} disabled={!roundEventId || dismiss.pending} onClick={() => void link.run()}>
+    <Button data-ctl="CTL-P016-069" variant="secondary" size="sm" busy={link.pending} disabled={!roundEventId || dismiss.pending} onClick={() => void link.run()}>
       Link round
     </Button>
   );
@@ -196,7 +196,7 @@ function LinkRow({
         )}
         {start ? (
           <details className="ch-tour-links-row__more">
-            <summary className="ch-tour-links-row__to">
+            <summary data-ctl="CTL-P016-070" className="ch-tour-links-row__to">
               <span className="ch-tour-links-muted">
                 Links to <b>{eventName(eventId)}</b>
                 {pickedRound ? <span className="ch-tour-links-muted"> · {roundOption(pickedRound, (d) => tourDay(d))}</span> : null}
@@ -207,7 +207,7 @@ function LinkRow({
           </details>
         ) : (
           <details className="ch-tour-links-row__more">
-            <summary className="ch-tour-links-row__to">
+            <summary data-ctl="CTL-P016-071" className="ch-tour-links-row__to">
               <span className="ch-tour-links-row__n ch-tour-links-row__chg">Link to an event…</span>
             </summary>
             {pickers}
@@ -217,7 +217,7 @@ function LinkRow({
       </div>
       <div className="ch-tour-links-row__act">
         {start && linkButton}
-        <Button variant="ghost" size="sm" busy={dismiss.pending} disabled={link.pending} onClick={() => void dismiss.run()}>
+        <Button data-ctl="CTL-P016-072" variant="ghost" size="sm" busy={dismiss.pending} disabled={link.pending} onClick={() => void dismiss.run()}>
           Not a tournament round
         </Button>
       </div>

@@ -68,7 +68,7 @@ export function HoleReview({
           <span>
             <b>Hole {hole.number} didn&rsquo;t save.</b> Your shots are kept on this device. {isOffline() ? 'Reconnect, then try again.' : 'Try again to move on.'}
           </span>
-          <Button
+          <Button data-ctl="CTL-P011-127"
             variant="secondary"
             size="sm"
             onClick={() => {
@@ -87,7 +87,7 @@ export function HoleReview({
       <ol className="ch-rt-rs-list">
         {shots.map((s, i) => (
           <li key={s.id ?? `${s.shotNumber}-${i}`}>
-            <button type="button" className="ch-rt-rs" disabled={saving} aria-label={`Change shot ${s.shotNumber}: ${shotTitle(s)}, ${shotLine(s, pref)}`} onClick={() => onEditShot(s)}>
+            <button data-ctl="CTL-P011-128" type="button" className="ch-rt-rs" disabled={saving} aria-label={`Change shot ${s.shotNumber}: ${shotTitle(s)}, ${shotLine(s, pref)}`} onClick={() => onEditShot(s)}>
               <span className={'ch-rt-rs__n ' + lieClass(s)} aria-hidden="true">
                 {s.isPenalty ? 'P' : s.shotNumber}
               </span>

@@ -87,7 +87,7 @@ export function Sidebar({
               {items.map((i) => {
                 const count = badgeCount(i, badges, shell);
                 return (
-                  <Link
+                  <Link data-ctl="CTL-P001-035"
                     key={i.id}
                     href={i.href}
                     // The page on screen is never prefetched (MAC-12, link-prefetch.ts).
@@ -174,7 +174,7 @@ function IdentityMenu({ userData, headCoach, teams = [] }: { userData: GolfUserD
       align="start"
       items={items}
       trigger={(t) => (
-        <button
+        <button data-ctl="CTL-P001-036"
           ref={t.ref}
           type="button"
           className="ch-identity"

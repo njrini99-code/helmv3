@@ -79,7 +79,7 @@ export function Rail({ api, onNew }: { api: ChMessagesApi; onNew: () => void }) 
         <div className="ch-ms-rail__title">
           <h1>Messages</h1>
           <Tooltip>
-            <button type="button" className="ch-msv-new" aria-label="New message" onClick={onNew}>
+            <button data-ctl="CTL-P007-075" type="button" className="ch-msv-new" aria-label="New message" onClick={onNew}>
               <Icon icon={SquarePen} size={19} />
             </button>
           </Tooltip>

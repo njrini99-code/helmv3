@@ -315,8 +315,8 @@ function Priorities({ p, onChange }: { p: Phil; onChange: (order: PriorityKey[])
             <span>{PRIORITY_LABEL[k].hint}</span>
           </span>
           <span className="ch-set-rank__acts">
-            <IconButton icon={ArrowUp} size="sm" label={`Move ${PRIORITY_LABEL[k].label} up`} disabled={i === 0} onClick={() => move(k, -1)} />
-            <IconButton icon={ArrowDown} size="sm" label={`Move ${PRIORITY_LABEL[k].label} down`} disabled={i === order.length - 1} onClick={() => move(k, 1)} />
+            <IconButton data-ctl="CTL-P008-010" icon={ArrowUp} size="sm" label={`Move ${PRIORITY_LABEL[k].label} up`} disabled={i === 0} onClick={() => move(k, -1)} />
+            <IconButton data-ctl="CTL-P008-011" icon={ArrowDown} size="sm" label={`Move ${PRIORITY_LABEL[k].label} down`} disabled={i === order.length - 1} onClick={() => move(k, 1)} />
           </span>
         </li>
       ))}
@@ -378,10 +378,10 @@ function PowerCard({ initial, writes }: { initial: ChCoachHelmSettings; writes: 
         description="Insights, predictions and patterns stop appearing on your pages. You can turn it back on here any time."
         footer={
           <>
-            <Button variant="secondary" onClick={() => setConfirmOff(false)}>
+            <Button data-ctl="CTL-P008-012" variant="secondary" onClick={() => setConfirmOff(false)}>
               Keep it on
             </Button>
-            <Button
+            <Button data-ctl="CTL-P008-013"
               variant="primary"
               onClick={() => {
                 setConfirmOff(false);

@@ -58,7 +58,7 @@ function Tile({ id, title, aside, span, dark, className, focusable, children }: 
 }
 
 /** A tile's way on: a quiet text button with an arrow, never a second primary. */
-function More({ children, onClick, href }: { children: ReactNode; onClick?: () => void; href?: string }) {
+function More({ children, onClick, href, 'data-ctl': ctl }: { children: ReactNode; onClick?: () => void; href?: string; 'data-ctl'?: string }) {
   const body = (
     <>
       {children}
@@ -66,11 +66,11 @@ function More({ children, onClick, href }: { children: ReactNode; onClick?: () =
     </>
   );
   return href ? (
-    <Link className="ch-hw-more" href={href}>
+    <Link data-ctl={ctl ?? 'CTL-P010-051'} className="ch-hw-more" href={href}>
       {body}
     </Link>
   ) : (
-    <button type="button" className="ch-hw-more" onClick={onClick}>
+    <button data-ctl={ctl ?? 'CTL-P010-052'} type="button" className="ch-hw-more" onClick={onClick}>
       {body}
     </button>
   );
@@ -148,14 +148,14 @@ export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit,
         aside={
           trips.length > 1 ? (
             <span className="ch-hw-pager">
-              <button type="button" aria-label="Previous trip" disabled={i === 0} onClick={() => page(i - 1)}>
+              <button data-ctl="CTL-P010-053" type="button" aria-label="Previous trip" disabled={i === 0} onClick={() => page(i - 1)}>
                 <Icon icon={ChevronLeft} size={15} />
               </button>
               {/* Not a live region: the turn is said once, below (GAP-H-20). */}
               <span className="ch-num">
                 {i + 1} of {trips.length}
               </span>
-              <button type="button" aria-label="Next trip" disabled={i === trips.length - 1} onClick={() => page(i + 1)}>
+              <button data-ctl="CTL-P010-054" type="button" aria-label="Next trip" disabled={i === trips.length - 1} onClick={() => page(i + 1)}>
                 <Icon icon={ChevronRight} size={15} />
               </button>
             </span>
@@ -209,9 +209,9 @@ export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit,
             </span>
           )}
           <span className="ch-hw-trip__a">
-            <More onClick={onOpenTravel}>Itinerary</More>
+            <More data-ctl="CTL-P010-055" onClick={onOpenTravel}>Itinerary</More>
             {coach && onEdit && (
-              <Button size="sm" variant="primary" leftIcon={Pencil} onClick={() => onEdit(t)}>
+              <Button data-ctl="CTL-P010-056" size="sm" variant="primary" leftIcon={Pencil} onClick={() => onEdit(t)}>
                 Edit trip
               </Button>
             )}
@@ -251,9 +251,9 @@ export function TripTile({ trips: teamTrips, role, days, error, covered, onEdit,
         {/* GAP-H-25: "No trips planned" is the coach's phrase; a player is told about the team's travel. */}
         <span className="ch-hw-you">{away ? `Team away · ${away.name} · ${keepTokens(away.dates)}` : ev ? (coach ? 'No trips planned' : 'No team travel coming up') : ''}</span>
         <span className="ch-hw-trip__a">
-          {ev && day && <More href={`/golf/dashboard/calendar?date=${day.date}&event=${ev.id}`}>Open event</More>}
+          {ev && day && <More data-ctl="CTL-P010-057" href={`/golf/dashboard/calendar?date=${day.date}&event=${ev.id}`}>Open event</More>}
           {coach && onPlan && (
-            <Button size="sm" variant="primary" leftIcon={Plane} onClick={onPlan}>
+            <Button data-ctl="CTL-P010-058" size="sm" variant="primary" leftIcon={Plane} onClick={onPlan}>
               Plan a trip
             </Button>
           )}
@@ -298,7 +298,7 @@ export function WeekTile({ week, role, rsvps, replies, covered, span = 5 }: {
     .slice(0, 3);
   const rsvpFor = (id: string) => (rsvps.error ? null : (rsvps.rows.find((r) => r.eventId === id) ?? null));
   return (
-    <Tile id="ch-hw-week" title="Next 7 days" span={span} focusable={coach} aside={!week.error && <More href="/golf/dashboard/calendar">Calendar</More>}>
+    <Tile id="ch-hw-week" title="Next 7 days" span={span} focusable={coach} aside={!week.error && <More data-ctl="CTL-P010-059" href="/golf/dashboard/calendar">Calendar</More>}>
       {week.error ? (
         <RefreshNotice code="CH-10201" title="The next 7 days didn’t load." body={FAILURE_COPY.page} covered={covered} />
       ) : quiet || !day ? (
@@ -309,7 +309,7 @@ export function WeekTile({ week, role, rsvps, replies, covered, span = 5 }: {
           body={coach ? 'Events you add show here, with who has replied.' : 'Team events show here as your coaches add them.'}
           action={
             coach ? (
-              <Button size="sm" leftIcon={Plus} href="/golf/dashboard/calendar?new=1">
+              <Button data-ctl="CTL-P010-060" size="sm" leftIcon={Plus} href="/golf/dashboard/calendar?new=1">
                 Create event
               </Button>
             ) : undefined
@@ -353,7 +353,7 @@ export function WeekTile({ week, role, rsvps, replies, covered, span = 5 }: {
                   return (
                     <li key={e.id}>
                       <time className="ch-num">{clk(e.time)}</time>
-                      <Link href={`/golf/dashboard/calendar?date=${day.date}&event=${e.id}`}>
+                      <Link data-ctl="CTL-P010-061" href={`/golf/dashboard/calendar?date=${day.date}&event=${e.id}`}>
                         <b>
                           {e.title}
                           {r?.mandatory && <span className="ch-hb-req">Required</span>}
@@ -384,7 +384,7 @@ export function WeekTile({ week, role, rsvps, replies, covered, span = 5 }: {
               <ol>
                 {later.map(({ e, d, i }) => (
                   <li key={e.id}>
-                    <button type="button" onClick={() => pick(i)}>
+                    <button data-ctl="CTL-P010-062" type="button" onClick={() => pick(i)}>
                       <time className="ch-num">
                         {d.weekday} {d.day}
                       </time>
@@ -486,7 +486,7 @@ function Owed({ row, onOpen }: { row: ChHubLedgerRow; onOpen: (tab: ChHubTab) =>
               </li>
             ))}
           </ul>
-          {tab && <More onClick={() => onOpen(tab)}>{tab === 'ann' ? 'Announcements' : 'Tasks'}</More>}
+          {tab && <More data-ctl="CTL-P010-063" onClick={() => onOpen(tab)}>{tab === 'ann' ? 'Announcements' : 'Tasks'}</More>}
         </div>
       ))}
     </div>
@@ -551,7 +551,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
             ].filter(Boolean);
             return (
               <li key={r.id} className={open === r.id ? 'is-open' : undefined}>
-                <button type="button" aria-expanded={open === r.id} aria-controls={open === r.id ? panel(r.id) : undefined} onClick={() => toggle(r.id)}>
+                <button data-ctl="CTL-P010-064" type="button" aria-expanded={open === r.id} aria-controls={open === r.id ? panel(r.id) : undefined} onClick={() => toggle(r.id)}>
                   <b>{r.name}</b>
                   <span className={'ch-num' + (late(r) ? ' is-warn' : '')}>
                     {parts.length ? parts.join(' · ') : 'All square'}
@@ -579,7 +579,7 @@ export function WaitingOn({ rows, pulse, playersError, onOpen }: {
             <tr>
               {COLUMNS.map(([k, label]) => (
                 <th key={k} scope="col" aria-sort={ariaSort(k)}>
-                  <button type="button" className={sort.key === k ? 'is-on' : undefined} onClick={() => by(k)}>
+                  <button data-ctl="CTL-P010-065" type="button" className={sort.key === k ? 'is-on' : undefined} onClick={() => by(k)}>
                     {label}
                     {k === 'rounds' && <small> 30 d</small>}
                   </button>
@@ -608,7 +608,7 @@ function LedgerRow({ r, panelId, open, onToggle, late, onOpen }: { r: ChHubLedge
     <>
       <tr className={open ? 'is-open' : undefined}>
         <th scope="row">
-          <button type="button" aria-expanded={open} aria-controls={open ? panelId : undefined} onClick={onToggle}>
+          <button data-ctl="CTL-P010-066" type="button" aria-expanded={open} aria-controls={open ? panelId : undefined} onClick={onToggle}>
             <Icon icon={ChevronDown} size={14} />
             {r.name}
           </button>
@@ -703,7 +703,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
               <span className="ch-hw-discs__k">Not yet</span>
               <div role="group" aria-label={`Who hasn’t ${verb} it`}>
                 {names.map((n) => (
-                  <button
+                  <button data-ctl="CTL-P010-067"
                     key={n}
                     type="button"
                     aria-pressed={who === n}
@@ -728,7 +728,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
       ) : null}
       <div className="ch-hw-post__f">
         {!coach && a.needAck && <Acknowledgement a={a} acked={acked} pending={pending} onAck={onAck} />}
-        <More onClick={onOpenPosts}>{coach ? 'Open post' : 'All announcements'}</More>
+        <More data-ctl="CTL-P010-068" onClick={onOpenPosts}>{coach ? 'Open post' : 'All announcements'}</More>
       </div>
     </Tile>
   );
@@ -750,7 +750,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
   const soon = [...open].sort((a, b) => (a.status === 'overdue' ? 0 : 1) - (b.status === 'overdue' ? 0 : 1) || (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999')).slice(0, 3);
   const total = figures ? figures.done + figures.left : 0;
   return (
-    <Tile id="ch-hw-tasks" title="Tasks" span={5} aside={!data.error && data.rows.length > 0 && <More onClick={onOpenTasks}>All tasks</More>}>
+    <Tile id="ch-hw-tasks" title="Tasks" span={5} aside={!data.error && data.rows.length > 0 && <More data-ctl="CTL-P010-069" onClick={onOpenTasks}>All tasks</More>}>
       {data.error ? (
         <RefreshNotice code="CH-10203" title="Tasks didn’t load." body={FAILURE_COPY.page} covered={covered} />
       ) : !data.rows.length ? (
@@ -760,7 +760,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
           title="No tasks assigned"
           body="Assign a task and see who has done it."
           action={
-            <Button size="sm" leftIcon={Plus} onClick={onAssign}>
+            <Button data-ctl="CTL-P010-070" size="sm" leftIcon={Plus} onClick={onAssign}>
               Assign a task
             </Button>
           }
@@ -797,7 +797,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
             <ol className="ch-hw-tlist">
               {soon.map((t) => (
                 <li key={t.id}>
-                  <button type="button" onClick={() => onFocus(t)}>
+                  <button data-ctl="CTL-P010-071" type="button" onClick={() => onFocus(t)}>
                     <span>
                       <b>{t.title}</b>
                       <em className={'ch-num' + (t.status === 'overdue' ? ' is-warn' : '')}>{t.status === 'overdue' ? `Overdue · ${t.due}` : (t.due ?? 'No date')}</em>
@@ -827,7 +827,7 @@ export function TasksTile({ data, figures, isDone, covered, onAssign, onFocus, o
 function QueueTask({ t, d, pending, onToggle }: { t: ChHubTask; d: boolean; pending: boolean; onToggle: (t: ChHubTask, nextDone: boolean) => Promise<ServerResult> }) {
   const save = useTaskSave(d, onToggle);
   return (
-    <button type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} disabled={pending} aria-busy={pending} onClick={() => void save.run(t, !d)}>
+    <button data-ctl="CTL-P010-072" type="button" className="ch-hb-check" aria-pressed={d} aria-label={`${t.title}${d ? ', done' : ''}`} disabled={pending} aria-busy={pending} onClick={() => void save.run(t, !d)}>
       {d && <Icon icon={Check} size={13} />}
     </button>
   );
@@ -923,7 +923,7 @@ export function QueueTile({ items, left, failed, covered, replies, isPending, on
         </ol>
       )}
       {items.length > QUEUE_SHOWN && (
-        <button type="button" className="ch-hw-more ch-hw-q__all" aria-expanded={all} onClick={() => setAll((x) => !x)}>
+        <button data-ctl="CTL-P010-073" type="button" className="ch-hw-more ch-hw-q__all" aria-expanded={all} onClick={() => setAll((x) => !x)}>
           {all ? 'Show fewer' : `Show all ${items.length}`}
           <Icon icon={ChevronDown} size={13} />
         </button>
@@ -946,7 +946,7 @@ export function FilesTile({ data, opening, covered, onOpen, onOpenDocs }: {
   // flattening them listed the first folder's files. A stable sort on when each file's date is; an unknown one goes last.
   const files = data.folders.flatMap((f) => f.files.map((x) => ({ ...x, folder: f.name }))).sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''));
   return (
-    <Tile id="ch-hw-files" title="Files" span={5} aside={!data.error && files.length > 4 && <More onClick={onOpenDocs}>{`All ${files.length}`}</More>}>
+    <Tile id="ch-hw-files" title="Files" span={5} aside={!data.error && files.length > 4 && <More data-ctl="CTL-P010-074" onClick={onOpenDocs}>{`All ${files.length}`}</More>}>
       {data.error ? (
         <RefreshNotice code="CH-10204" title="Documents didn’t load." body="Your files are safe. Try again." covered={covered} />
       ) : !files.length ? (
@@ -955,7 +955,7 @@ export function FilesTile({ data, opening, covered, onOpen, onOpenDocs }: {
         <ul className="ch-hw-files">
           {files.slice(0, 4).map((f) => (
             <li key={f.id}>
-              <button type="button" onClick={() => onOpen(f)} aria-busy={opening === f.id}>
+              <button data-ctl="CTL-P010-075" type="button" onClick={() => onOpen(f)} aria-busy={opening === f.id}>
                 <span className="ch-hw-files__ty" aria-hidden="true">
                   {f.type}
                 </span>

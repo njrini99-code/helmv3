@@ -314,15 +314,15 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
         className="ch-tour-imp-modal"
         footer={
           step === 'done' ? (
-            <Button variant="primary" onClick={close}>
+            <Button data-ctl="CTL-P016-044" variant="primary" onClick={close}>
               Done
             </Button>
           ) : step === 'check' ? (
             <>
-              <Button variant="ghost" feel={worked ? 'warning' : null} onClick={() => (worked ? setRestarting(true) : startOver())}>
+              <Button data-ctl="CTL-P016-045" variant="ghost" feel={worked ? 'warning' : null} onClick={() => (worked ? setRestarting(true) : startOver())}>
                 Start over
               </Button>
-              <Button variant="primary" leftIcon={Check} busy={save.pending} disabled={nothing} onClick={() => void doSave()}>
+              <Button data-ctl="CTL-P016-046" variant="primary" leftIcon={Check} busy={save.pending} disabled={nothing} onClick={() => void doSave()}>
                 {saveLabel}
               </Button>
             </>
@@ -348,7 +348,7 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
               <b>{FAIL[fail].title}</b>
               <p>{FAIL[fail].body}</p>
               <div className="ch-tour-imp-err__a">
-                <Button
+                <Button data-ctl="CTL-P016-047"
                   variant="primary"
                   onClick={() => {
                     setTab('file');
@@ -357,7 +357,7 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
                 >
                   Choose another file
                 </Button>
-                <Button
+                <Button data-ctl="CTL-P016-048"
                   variant="ghost"
                   leftIcon={ClipboardPaste}
                   onClick={() => {
@@ -413,7 +413,7 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
               {tab === 'file' ? (
                 <>
                   {/* The drop zone is a real button, so the keyboard opens the file picker too. */}
-                  <button
+                  <button data-ctl="CTL-P016-049"
                     type="button"
                     className={'ch-tour-imp-drop' + (over ? ' is-over' : '')}
                     onClick={() => fileRef.current?.click()}
@@ -471,7 +471,7 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
                       Paste the results first.
                     </span>
                   )}
-                  <Button variant="primary" onClick={readPaste}>
+                  <Button data-ctl="CTL-P016-050" variant="primary" onClick={readPaste}>
                     Read results
                   </Button>
                 </div>
@@ -489,11 +489,11 @@ export function ImportResults({ open, onClose, data }: { open: boolean; onClose:
         description="The choices you made on this file are let go, and nothing is saved."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setRestarting(false)}>
+            <Button data-ctl="CTL-P016-051" variant="ghost" onClick={() => setRestarting(false)}>
               Keep checking
             </Button>
             {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
-            <Button variant="danger" feel={null} onClick={startOver}>
+            <Button data-ctl="CTL-P016-052" variant="danger" feel={null} onClick={startOver}>
               Start over
             </Button>
           </>
@@ -563,7 +563,7 @@ function CheckView({
           <b>{source.name}</b>
           <span>{sheetLine}</span>
         </p>
-        <Button
+        <Button data-ctl="CTL-P016-053"
           size="sm"
           variant="ghost"
           leftIcon={SlidersHorizontal}

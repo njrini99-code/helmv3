@@ -34,7 +34,7 @@ export const RULE_WINDOW: Record<ChWindow, string> = {
 export function How({ children }: { children: ReactNode }) {
   return (
     <details className="ch-gm-how">
-      <summary>How this is measured</summary>
+      <summary data-ctl="CTL-P005-052">How this is measured</summary>
       <p>{children}</p>
     </details>
   );
@@ -81,7 +81,7 @@ export function More({ children }: { children: ReactNode }) {
   if (open) return <div className="ch-gm__body">{children}</div>;
   return (
     <details className="ch-gx-more">
-      <summary>More detail</summary>
+      <summary data-ctl="CTL-P005-053">More detail</summary>
       <div className="ch-gm__body">{children}</div>
     </details>
   );

@@ -108,7 +108,7 @@ export function SaveAsPracticeSheet({
         />
       ) : (
         <Opts>
-          <Opt
+          <Opt data-ctl="CTL-P011-082"
             tone="primary"
             icon={Target}
             label={pending === 'practice' ? 'Saving as practice…' : 'Save as practice round'}
@@ -119,9 +119,9 @@ export function SaveAsPracticeSheet({
               onSaveAsPractice();
             }}
           />
-          {onSaveForLater && <Opt icon={Bookmark} label={pending === 'save' ? 'Saving…' : 'Save for later'} hint="Continue it from Rounds." disabled={busy} onClick={onSaveForLater} />}
-          <Opt icon={ArrowLeft} label="Go back" hint="Back to your scorecard." disabled={busy} onClick={onGoBack} />
-          {onDiscard && <Opt icon={Trash2} tone="danger" label="Discard round" hint="Deletes every shot. You’ll be asked first." disabled={busy} onClick={() => setConfirming(true)} />}
+          {onSaveForLater && <Opt data-ctl="CTL-P011-083" icon={Bookmark} label={pending === 'save' ? 'Saving…' : 'Save for later'} hint="Continue it from Rounds." disabled={busy} onClick={onSaveForLater} />}
+          <Opt data-ctl="CTL-P011-084" icon={ArrowLeft} label="Go back" hint="Back to your scorecard." disabled={busy} onClick={onGoBack} />
+          {onDiscard && <Opt data-ctl="CTL-P011-085" icon={Trash2} tone="danger" label="Discard round" hint="Deletes every shot. You’ll be asked first." disabled={busy} onClick={() => setConfirming(true)} />}
         </Opts>
       )}
     </Modal>

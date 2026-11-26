@@ -63,10 +63,10 @@ export function StatusConfirm({
       }
       footer={
         <>
-          <Button variant="ghost" disabled={pending} onClick={onCancel}>
+          <Button data-ctl="CTL-P003-048" variant="ghost" disabled={pending} onClick={onCancel}>
             Cancel
           </Button>
-          <Button
+          <Button data-ctl="CTL-P003-049"
             variant="primary"
             busy={pending}
             onClick={() => {

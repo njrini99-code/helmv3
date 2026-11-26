@@ -176,7 +176,7 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
       {!phone && (
         <div className="ch-tour-cmp-presets" role="group" aria-label="Comparison presets">
           {presets.map((p) => (
-            <button key={p.key} type="button" className="ch-tour-cmp-pre" aria-pressed={preset?.key === p.key} onClick={() => (haptic('select'), commit({ A: p.a, B: p.b }))}>
+            <button data-ctl="CTL-P016-001" key={p.key} type="button" className="ch-tour-cmp-pre" aria-pressed={preset?.key === p.key} onClick={() => (haptic('select'), commit({ A: p.a, B: p.b }))}>
               {p.label}
             </button>
           ))}
@@ -194,7 +194,7 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
               </section>
             ))}
           </div>
-          <Button variant="primary" leftIcon={SlidersHorizontal} onClick={() => (haptic('press'), setEditing(true))}>
+          <Button data-ctl="CTL-P016-002" variant="primary" leftIcon={SlidersHorizontal} onClick={() => (haptic('press'), setEditing(true))}>
             Edit comparison
           </Button>
         </>
@@ -203,8 +203,8 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
           <div className="ch-tour-cmp-scopes">
             <ScopeCard side="a" scope={A} summary={sumA} target={target === 'a'} names={names} players={data.players} finished={finished} range={range} onChange={(n) => setSide('a', n)} />
             <div className="ch-tour-cmp-swap">
-              <IconButton icon={ArrowLeftRight} label="Swap sides" onClick={swap} />
-              <IconButton icon={RotateCcw} label="Reset to preset" onClick={reset} />
+              <IconButton data-ctl="CTL-P016-003" icon={ArrowLeftRight} label="Swap sides" onClick={swap} />
+              <IconButton data-ctl="CTL-P016-004" icon={RotateCcw} label="Reset to preset" onClick={reset} />
             </div>
             <ScopeCard side="b" scope={B} summary={sumB} target={target === 'b'} names={names} players={data.players} finished={finished} range={range} onChange={(n) => setSide('b', n)} />
           </div>
@@ -224,7 +224,7 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
       <div className="ch-tour-cmp-groups">
         <div ref={groupEdges} className="ch-tour-cmp-groups__row ch-hscroll" role="tablist" aria-label="Metric group">
           {GROUPS.map((g) => (
-            <button key={g.id} type="button" role="tab" id={`ch-tour-cmp-tab-${g.id}`} aria-selected={group === g.id} aria-controls="ch-tour-cmp-panel" tabIndex={group === g.id ? 0 : -1} onClick={() => pickGroup(g.id)} onKeyDown={(e: KeyboardEvent<HTMLElement>) => groupKeys(e)}>
+            <button data-ctl="CTL-P016-005" key={g.id} type="button" role="tab" id={`ch-tour-cmp-tab-${g.id}`} aria-selected={group === g.id} aria-controls="ch-tour-cmp-panel" tabIndex={group === g.id ? 0 : -1} onClick={() => pickGroup(g.id)} onKeyDown={(e: KeyboardEvent<HTMLElement>) => groupKeys(e)}>
               {g.label}
             </button>
           ))}
@@ -260,7 +260,7 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
             actions={
               <>
                 <TourViewSwitch current="compare" phone={phone} />
-                <Button leftIcon={Plus} href={paths.newEvent()}>
+                <Button data-ctl="CTL-P016-006" leftIcon={Plus} href={paths.newEvent()}>
                   Add event
                 </Button>
               </>
@@ -276,7 +276,7 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
         title="Edit comparison"
         description="A and B are set separately"
         footer={
-          <Button variant="primary" onClick={() => (haptic('success'), setEditing(false))}>
+          <Button data-ctl="CTL-P016-007" variant="primary" onClick={() => (haptic('success'), setEditing(false))}>
             Show comparison
           </Button>
         }
@@ -284,7 +284,7 @@ function CompareReady({ data, search, phone, embedded }: { data: ChTourCompareDa
         <div className="ch-tour-cmp-edit">
           <div className="ch-tour-cmp-pres" role="group" aria-label="Presets">
             {presets.map((p) => (
-              <button key={p.key} type="button" className="ch-tour-cmp-pre" aria-pressed={preset?.key === p.key} onClick={() => (haptic('select'), commit({ A: p.a, B: p.b }))}>
+              <button data-ctl="CTL-P016-008" key={p.key} type="button" className="ch-tour-cmp-pre" aria-pressed={preset?.key === p.key} onClick={() => (haptic('select'), commit({ A: p.a, B: p.b }))}>
                 {p.label}
               </button>
             ))}

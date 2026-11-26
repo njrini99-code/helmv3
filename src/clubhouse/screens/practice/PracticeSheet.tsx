@@ -23,10 +23,10 @@ export function PracticeSheet(props: FormSheetProps) {
       code={code}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P017-058" variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant={danger ? 'danger' : 'primary'} busy={busy} disabled={actionDisabled} onClick={onAction}>
+          <Button data-ctl="CTL-P017-059" variant={danger ? 'danger' : 'primary'} busy={busy} disabled={actionDisabled} onClick={onAction}>
             {actionLabel}
           </Button>
         </>

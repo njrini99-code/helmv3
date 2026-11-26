@@ -97,7 +97,7 @@ export function WhyAudit({ lines, code = 'CH-13991' }: { lines: readonly ChAudit
   if (!lines || lines.length === 0) return null;
   return (
     <div className="ch-hl-audit" data-ch-code={code}>
-      <button type="button" className="ch-hl-why" aria-expanded={open} aria-controls={`${id}-audit`} onClick={() => setOpen((v) => !v)}>
+      <button data-ctl="CTL-P013-007" type="button" className="ch-hl-why" aria-expanded={open} aria-controls={`${id}-audit`} onClick={() => setOpen((v) => !v)}>
         <span>Why do you think so?</span>
         <Icon icon={open ? ChevronUp : ChevronDown} size={15} />
       </button>

@@ -214,7 +214,7 @@ export function Welcome({ data, navigate }: { data: ChWelcome; /** The preview a
             )}
           </div>
           <div className="ch-au-wl-cta">
-            <Button variant="primary" size="lg" rightIcon={ArrowRight} feel={null} onClick={proceed}>
+            <Button data-ctl="CTL-P015-043" variant="primary" size="lg" rightIcon={ArrowRight} feel={null} onClick={proceed}>
               Continue
             </Button>
             {/* P015-B3: on the phone the welcome goes on by itself; a gilt hairline draws across Continue over the time

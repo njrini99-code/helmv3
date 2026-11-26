@@ -450,7 +450,7 @@ export function Where({ d, failed = false }: { d: ChReadDetail; /** The rounds t
           return (
             <li key={h.key}>
               {h.href ? (
-                <Link className="ch-hd-r is-link" href={h.href} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}`}>
+                <Link data-ctl="CTL-P013-235" className="ch-hd-r is-link" href={h.href} aria-label={`Review the round on ${h.date}${h.course ? ` at ${h.course}` : ''}, hole ${h.hole}`}>
                   {body}
                   <Icon icon={ChevronRight} size={15} />
                 </Link>
@@ -484,7 +484,7 @@ function RoundRow({ r, note }: { r: ChDiveRound; note?: string | null }) {
   return (
     <li>
       {r.href ? (
-        <Link className="ch-hd-r is-link" href={r.href} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
+        <Link data-ctl="CTL-P013-236" className="ch-hd-r is-link" href={r.href} aria-label={`Review the round on ${r.date}${r.course ? ` at ${r.course}` : ''}`}>
           {body}
           <Icon icon={ChevronRight} size={15} />
         </Link>
@@ -539,7 +539,7 @@ export function Sure({ d, voice, pictures }: { d: ChReadDetail; voice: ChViewVoi
     <div className="ch-hr-sec" data-ch-read-sec="sure">
       <Surface padded={false}>
         <div className="ch-hr-surecard">
-          <button type="button" className="ch-hl-why ch-hr-surekey" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
+          <button data-ctl="CTL-P013-237" type="button" className="ch-hl-why ch-hr-surekey" aria-expanded={open} aria-controls={id} onClick={() => setOpen((v) => !v)}>
             <span>How sure is this{s.word ? ` · ${s.word}` : ''}</span>
             <Icon icon={ChevronDown} size={15} />
           </button>
@@ -612,7 +612,7 @@ export function Plan({ d, voice, failed, proposed, removed = false }: { d: ChRea
         {href && <Icon icon={ChevronRight} size={15} />}
       </>
     );
-    return <li key={key}>{href ? <Link className="ch-hd-plan__i is-link" href={href}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
+    return <li key={key}>{href ? <Link data-ctl="CTL-P013-238" className="ch-hd-plan__i is-link" href={href}>{body}</Link> : <div className="ch-hd-plan__i">{body}</div>}</li>;
   };
   const focusLabel = coach ? (focus?.fromThis ? 'Focus made from this read' : 'Focus on the same stat') : b.assigned === 'proposed' ? 'Suggested focus' : 'Your focus';
   return (
@@ -666,7 +666,7 @@ export function NextReads({ view, current, voice, hrefOf }: { view: ChReadView; 
       <Surface padded={false}>
         <div className="ch-hr-list">
           {rows.map((r) => (
-            <Link key={r.id} className="ch-hl-row" href={hrefOf(r.id)}>
+            <Link data-ctl="CTL-P013-239" key={r.id} className="ch-hl-row" href={hrefOf(r.id)}>
               <span className={'ch-hl-row__d is-' + r.cls} aria-hidden="true" />
               <span className="ch-hl-row__b">
                 <em>{r.category}</em>
@@ -709,7 +709,7 @@ export function ReadsRail({ view, current, voice, hrefOf, said }: { view: ChRead
               const now = said(r.id);
               return (
                 <li key={r.id}>
-                  <Link className={'ch-hd-it is-' + (now === 'Assigned' ? 'done' : r.cls) + (r.id === current ? ' is-on' : '')} href={hrefOf(r.id)} replace scroll={false} aria-current={r.id === current ? 'true' : undefined}>
+                  <Link data-ctl="CTL-P013-240" className={'ch-hd-it is-' + (now === 'Assigned' ? 'done' : r.cls) + (r.id === current ? ' is-on' : '')} href={hrefOf(r.id)} replace scroll={false} aria-current={r.id === current ? 'true' : undefined}>
                     <span className="ch-hd-it__d" aria-hidden="true" />
                     <span className="ch-hd-it__b">
                       <b className="ch-num">{r.title}</b>

@@ -35,20 +35,20 @@ export function HomeActions({ teamChatId, phone = false }: { teamChatId: string 
   if (phone)
     return (
       <div className="ch-ph-acts">
-        <Button size="lg" href={chat} leftIcon={MessageSquare} feel="press">
+        <Button data-ctl="CTL-P002-019" size="lg" href={chat} leftIcon={MessageSquare} feel="press">
           Message team
         </Button>
-        <Button size="lg" href={NEW_EVENT} variant="primary" leftIcon={Plus}>
+        <Button data-ctl="CTL-P002-020" size="lg" href={NEW_EVENT} variant="primary" leftIcon={Plus}>
           New event
         </Button>
       </div>
     );
   return (
     <div className="ch-h-head__actions">
-      <Button href={chat} leftIcon={MessageSquare}>
+      <Button data-ctl="CTL-P002-021" href={chat} leftIcon={MessageSquare}>
         Message team
       </Button>
-      <Button href={NEW_EVENT} variant="primary" leftIcon={Plus} kbd="N">
+      <Button data-ctl="CTL-P002-022" href={NEW_EVENT} variant="primary" leftIcon={Plus} kbd="N">
         New event
       </Button>
     </div>

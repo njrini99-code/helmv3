@@ -25,11 +25,11 @@ export function ClubhouseNotFound({ thing, back }: { /** "This plan", "This dril
         body="It may have been deleted, or the link is wrong. Everything else is where you left it."
         action={
           back ? (
-            <Button variant="primary" leftIcon={ChevronLeft} href={back.href}>
+            <Button data-ctl="CTL-P001-025" variant="primary" leftIcon={ChevronLeft} href={back.href}>
               {back.label}
             </Button>
           ) : (
-            <Button variant="primary" leftIcon={House} href="/golf/dashboard">
+            <Button data-ctl="CTL-P001-026" variant="primary" leftIcon={House} href="/golf/dashboard">
               Back to Home
             </Button>
           )

@@ -93,7 +93,7 @@ export function CoursePicker({
       action={
         course || !onAddCourse ? undefined : (
           // The phone head says "Add" so the title stays on one line at 390; the name stays whole.
-          <Button size="sm" leftIcon={Plus} aria={{ label: 'Add a course' }} onClick={onAddCourse}>
+          <Button data-ctl="CTL-P011-107" size="sm" leftIcon={Plus} aria={{ label: 'Add a course' }} onClick={onAddCourse}>
             {phone ? 'Add' : 'Add a course'}
           </Button>
         )
@@ -159,7 +159,7 @@ function CourseList({
                 (rounds-setup.css, a scroll-driven animation on the compositor; still with reduced motion or Animations off). */}
             <div className="ch-cpk-list">
               {g.courses.map((c) => (
-                <button
+                <button data-ctl="CTL-P011-108"
                   key={c.id}
                   type="button"
                   className="ch-cpk"
@@ -208,7 +208,7 @@ function TeeList({ course, listTees, onBack, onPick, canAdd }: { course: ChSetup
   const longest = Math.max(1, ...tees.map((t) => t.yards ?? 0));
   return (
     <div className="ch-rsu-pick">
-      <BackLink onClick={onBack}>Courses</BackLink>
+      <BackLink data-ctl="CTL-P011-109" onClick={onBack}>Courses</BackLink>
       <h4 className="ch-rsu-teek">Choose your tees</h4>
       {load.state === 'loading' && (
         // The tees on their way: a quiet space the height of a tee, no shimmer (owner, 2026-10-16). Usually never seen,
@@ -226,7 +226,7 @@ function TeeList({ course, listTees, onBack, onPick, canAdd }: { course: ChSetup
       {!!tees.length && (
         <div className="ch-rsu-tees">
           {tees.map((t) => (
-            <button
+            <button data-ctl="CTL-P011-110"
               key={t.id}
               type="button"
               className="ch-rsu-tee"

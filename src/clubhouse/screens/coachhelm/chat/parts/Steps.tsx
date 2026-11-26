@@ -127,7 +127,7 @@ export function Steps({ steps, active, seconds, waiting = false, stopped = false
   const shown = open || fold !== 'none';
   return (
     <div className={'work' + (shown && fold !== 'closing' ? ' open' : '')}>
-      <button
+      <button data-ctl="CTL-P013-106"
         type="button"
         className="sum"
         aria-expanded={open}

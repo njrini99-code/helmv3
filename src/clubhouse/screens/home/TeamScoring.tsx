@@ -147,7 +147,7 @@ export function TeamScoring({ form, phone }: { form: ChTeamForm; phone: boolean 
   );
   const stats = rebuiltHref('/golf/dashboard/stats');
   const more = stats && (
-    <Button variant="ghost" rightIcon={ArrowRight} href={stats} className="ch-ph-card__more ch-btn--flush-end">
+    <Button data-ctl="CTL-P002-071" variant="ghost" rightIcon={ArrowRight} href={stats} className="ch-ph-card__more ch-btn--flush-end">
       Team stats
     </Button>
   );

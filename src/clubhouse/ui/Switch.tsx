@@ -71,7 +71,7 @@ export function Switch({
     if (d.on !== checked) onChange(d.on);
   };
   return (
-    <label
+    <label data-ctl="CTL-P000-046"
       onPointerDown={onDown}
       onPointerMove={onMove}
       onPointerUp={onUp}
@@ -89,7 +89,7 @@ export function Switch({
         e.stopPropagation();
       }}
       className={'ch-switch' + (disabled ? ' is-disabled' : '') + (busy ? ' is-busy' : '')} htmlFor={id} data-ch-code={busy ? busyCode : undefined}>
-      <input
+      <input data-ctl="CTL-P000-047"
         id={id}
         type="checkbox"
         role="switch"

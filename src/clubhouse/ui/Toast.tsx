@@ -433,7 +433,7 @@ function ToastCard({
     },
   };
   return (
-    <m.div
+    <m.div data-ctl="CTL-P000-050"
       ref={ref}
       layout={!reduced}
       className={'ch-toast' + (t.tone === 'error' ? ' ch-toast--error' : '')}
@@ -465,7 +465,7 @@ function ToastCard({
         {t.body && <span className="ch-toast__body">{t.body}</span>}
       </span>
       {t.action && (
-        <button
+        <button data-ctl="CTL-P000-051"
           type="button"
           className="ch-toast__action"
           onClick={() => {
@@ -479,7 +479,7 @@ function ToastCard({
         </button>
       )}
       <Tooltip label="Dismiss notification">
-        <button type="button" className="ch-toast__close" aria-label="Dismiss notification" onClick={close}>
+        <button data-ctl="CTL-P000-052" type="button" className="ch-toast__close" aria-label="Dismiss notification" onClick={close}>
           <Icon icon={X} size={14} />
         </button>
       </Tooltip>

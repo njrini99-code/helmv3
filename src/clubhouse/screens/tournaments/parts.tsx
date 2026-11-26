@@ -115,9 +115,9 @@ export function TourViewSwitch({ current, phone }: { current: 'home' | 'compare'
 }
 
 /** "‹ Tournaments": back to the season from an event's own pages. */
-export function TourCrumb({ href, children = 'Tournaments' }: { href: string; children?: ReactNode }) {
+export function TourCrumb({ href, children = 'Tournaments', 'data-ctl': ctl }: { href: string; children?: ReactNode; 'data-ctl'?: string }) {
   return (
-    <Link href={href} className="ch-tour-crumb">
+    <Link data-ctl={ctl ?? 'CTL-P016-133'} href={href} className="ch-tour-crumb">
       <Icon icon={ChevronLeft} size={15} />
       {children}
     </Link>

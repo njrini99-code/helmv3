@@ -221,7 +221,7 @@ export function Onboard({ start = 'intro', seed = {}, preview = false, fixedHour
             {!issued && !f.d.accountMade ? (
               <div className="ch-ox-signin">
                 <span>Already a member?</span>
-                <Link href={signInTo}>Sign in</Link>
+                <Link data-ctl="CTL-P015-055" href={signInTo}>Sign in</Link>
               </div>
             ) : (
               <span />

@@ -89,7 +89,7 @@ export function Opt({
   onClick: () => void;
 }) {
   return (
-    <button type="button" className={'ch-rt-xopt' + (tone ? ` is-${tone}` : '')} disabled={disabled} onClick={onClick}>
+    <button data-ctl="CTL-P011-086" type="button" className={'ch-rt-xopt' + (tone ? ` is-${tone}` : '')} disabled={disabled} onClick={onClick}>
       <Icon icon={icon} size={18} />
       <span>
         <b>{label}</b>
@@ -146,10 +146,10 @@ export function DiscardConfirm({
           </span>
         )}
       </div>
-      <Button variant="ghost" size="sm" disabled={busy} onClick={onKeep}>
+      <Button data-ctl="CTL-P011-087" variant="ghost" size="sm" disabled={busy} onClick={onKeep}>
         {keepLabel}
       </Button>
-      <Button
+      <Button data-ctl="CTL-P011-088"
         variant="danger"
         size="sm"
         busy={busy}

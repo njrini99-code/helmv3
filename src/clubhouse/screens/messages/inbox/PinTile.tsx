@@ -23,7 +23,7 @@ export function PinTile({ api, c, place }: { api: ChMessagesApi; c: ChConv; plac
   return (
     <>
       <div className="ch-msv-pinw" data-place={place}>
-        <button type="button" className="ch-msv-pin" onClick={open} {...ctx.bind(c)}>
+        <button data-ctl="CTL-P007-073" type="button" className="ch-msv-pin" onClick={open} {...ctx.bind(c)}>
           {typers?.length ? (
             <span className="ch-msv-bubblet">
               <TypingMini label={typingLabel(api, typers)} />
@@ -41,7 +41,7 @@ export function PinTile({ api, c, place }: { api: ChMessagesApi; c: ChConv; plac
           <span className="ch-msv-pin__l">{pinLabel(c)}</span>
         </button>
         <span className="ch-sr-only ch-sr-only--focusable">
-          <button type="button" onClick={(e) => ctx.openAt(c, e.currentTarget)}>
+          <button data-ctl="CTL-P007-074" type="button" onClick={(e) => ctx.openAt(c, e.currentTarget)}>
             Actions for {c.title}
           </button>
         </span>

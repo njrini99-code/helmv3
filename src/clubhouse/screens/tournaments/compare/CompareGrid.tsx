@@ -106,7 +106,7 @@ function Value({
   const empty = f.state === "none";
   const text = empty ? null : figureText(def, f.result.value);
   return (
-    <button
+    <button data-ctl="CTL-P016-121"
       type="button"
       className={
         "ch-tour-cmp-v" +
@@ -300,7 +300,7 @@ export function CompareGrid({
         })}
       </div>
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- a focusable separator is the ARIA window splitter: the arrows resize it */}
-      <div
+      <div data-ctl="CTL-P016-122"
         className={"ch-tour-cmp-div" + (drag ? " is-drag" : "")}
         role="separator"
         aria-orientation="vertical"
@@ -331,7 +331,7 @@ export function CompareGrid({
         <span className="ch-tour-cmp-split">
           {pct} / {100 - pct}
           {split !== 0.5 && (
-            <button
+            <button data-ctl="CTL-P016-123"
               type="button"
               className="ch-tour-cmp-link"
               onClick={() => onSplit(0.5)}

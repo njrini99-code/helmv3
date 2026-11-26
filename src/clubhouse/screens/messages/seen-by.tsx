@@ -87,7 +87,7 @@ export function SeenByReceipt({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg
     <>
       {" · "}
       {open ? (
-        <button type="button" className="ch-ms-seen is-open" aria-label={name} data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
+        <button data-ctl="CTL-P007-109" type="button" className="ch-ms-seen is-open" aria-label={name} data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
           {words}
         </button>
       ) : (
@@ -126,7 +126,7 @@ export function HoldSeenRow({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; 
   return (
     <>
       <hr />
-      <button type="button" role="menuitem" className="ch-msv-seenrow" onClick={onOpen}>
+      <button data-ctl="CTL-P007-110" type="button" role="menuitem" className="ch-msv-seenrow" onClick={onOpen}>
         <span className="ch-msv-seenrow__t">
           Seen by
           <Icon icon={Eye} size={19} />
@@ -153,7 +153,7 @@ export function SeenByPill({ api, m, onOpen }: { api: ChMessagesApi; m: ChMsg; o
   const faces = seen.canOpen ? <SeenFaces api={api} ids={seen.s.seen} size={16} max={5} /> : null;
   return open ? (
     // Named by its own text, not an aria-label (F-21, WCAG 2.5.3): the faces' initials made the visible text and the label differ.
-    <button type="button" className="ch-msv-seen" data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
+    <button data-ctl="CTL-P007-111" type="button" className="ch-msv-seen" data-ch-code="CH-7608" onClick={(e) => open(e.currentTarget)}>
       {faces}
       <span className="ch-sr-only">{name}</span>
       <span aria-hidden="true">{words}</span>

@@ -110,7 +110,7 @@ export function CorrectionChips({ c, held = null, onHeld, code = 'CH-13970' }: {
         <p className="ch-hl-cx__done" role="status">
           {answerLine(answer)}
         </p>
-        <button
+        <button data-ctl="CTL-P013-002"
           type="button"
           className="ch-hl-cx__chg"
           aria-label="Change your answer on this read"
@@ -133,7 +133,7 @@ export function CorrectionChips({ c, held = null, onHeld, code = 'CH-13970' }: {
       </p>
       <div className="ch-hl-cx__chips" role="group" aria-labelledby={`${id}-k`}>
         {c.kinds.map((k) => (
-          <button
+          <button data-ctl="CTL-P013-003"
             key={k}
             type="button"
             className={'ch-hl-cx__c' + (k === 'not_this' && picking ? ' is-on' : '')}
@@ -153,11 +153,11 @@ export function CorrectionChips({ c, held = null, onHeld, code = 'CH-13970' }: {
       </div>
       <div id={`${id}-why`} className="ch-hl-cx__why" role="group" aria-label="Why not this read" hidden={!picking}>
         {CORRECTION_REASONS.map((r) => (
-          <button key={r} type="button" className="ch-hl-cx__c is-reason" aria-label={`Not this: ${REASON[r].toLowerCase()}`} onClick={() => void record('not_this', r)}>
+          <button data-ctl="CTL-P013-004" key={r} type="button" className="ch-hl-cx__c is-reason" aria-label={`Not this: ${REASON[r].toLowerCase()}`} onClick={() => void record('not_this', r)}>
             {REASON[r]}
           </button>
         ))}
-        <button type="button" className="ch-hl-cx__chg" aria-label="Not this, with no reason" onClick={() => void record('not_this', null)}>
+        <button data-ctl="CTL-P013-005" type="button" className="ch-hl-cx__chg" aria-label="Not this, with no reason" onClick={() => void record('not_this', null)}>
           No reason
         </button>
       </div>
@@ -167,7 +167,7 @@ export function CorrectionChips({ c, held = null, onHeld, code = 'CH-13970' }: {
         </p>
       )}
       {changing && (
-        <button type="button" className="ch-hl-cx__chg" aria-label="Keep your answer on this read" onClick={() => setChanging(false)}>
+        <button data-ctl="CTL-P013-006" type="button" className="ch-hl-cx__chg" aria-label="Keep your answer on this read" onClick={() => setChanging(false)}>
           Keep my answer
         </button>
       )}

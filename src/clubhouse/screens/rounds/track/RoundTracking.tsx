@@ -272,7 +272,7 @@ export function RoundTracking(props: RoundTrackingProps) {
       <main className="ch-rt" data-ui="clubhouse">
         <header className="ch-rt-top">
           {onExit ? (
-            <button type="button" className="ch-rt-pill" data-ch-press="" onClick={onExit}>
+            <button data-ctl="CTL-P011-130" type="button" className="ch-rt-pill" data-ch-press="" onClick={onExit}>
               <Icon icon={X} size={16} />
               <span>Exit</span>
             </button>
@@ -292,7 +292,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             )}
           </div>
           {onOpenScorecard ? (
-            <button type="button" className="ch-rt-pill ch-rt-pill--card" data-ch-press="" onClick={onOpenScorecard} aria-label="Scorecard">
+            <button data-ctl="CTL-P011-131" type="button" className="ch-rt-pill ch-rt-pill--card" data-ch-press="" onClick={onOpenScorecard} aria-label="Scorecard">
               <Icon icon={Table2} size={16} />
               <span className="ch-rt-pill__l">Scorecard</span>
               <span className="ch-rt-pill__s" aria-hidden="true">
@@ -318,7 +318,7 @@ export function RoundTracking(props: RoundTrackingProps) {
             {/* The map and the shot log are sections (GAP-S-10): a drawing that throws is named in place and scoring goes on.
                 Never ShotEntry, whose card and keys must always be there. Keyed by hole, so the next hole draws afresh. */}
             <SectionBoundary key={hole.number} surface="rounds.track.map" label="The hole map" code="CH-11291">
-            <button type="button" className="ch-rt-hero__map" aria-haspopup="dialog" aria-label={`Course view of hole ${hole.number}`} onClick={() => setCourseOpen(true)}>
+            <button data-ctl="CTL-P011-132" type="button" className="ch-rt-hero__map" aria-haspopup="dialog" aria-label={`Course view of hole ${hole.number}`} onClick={() => setCourseOpen(true)}>
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="wide" />
               <HoleMap hole={hole} shots={t.shotHistory} pending={!holedOut} frame="tall" />
             </button>

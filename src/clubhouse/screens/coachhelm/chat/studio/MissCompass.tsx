@@ -82,7 +82,7 @@ export function MissCompass({ block, shots, compact }: { block: MissPatternBlock
     const n = count(d);
     const on = picked === d;
     return (
-      <button
+      <button data-ctl="CTL-P013-113"
         key={d}
         ref={(el) => {
           cells.current.set(d, el);
@@ -172,7 +172,7 @@ function ShotList({ direction, count, rows, cap, headId, onAsk, onClose }: { dir
         <h4 id={headId}>
           {plural(count, 'shot')} missed {saidDirection(direction)}
         </h4>
-        <button type="button" className="ch-aks-compass__close" aria-label="Close the shots" data-ch-press="" onClick={onClose}>
+        <button data-ctl="CTL-P013-114" type="button" className="ch-aks-compass__close" aria-label="Close the shots" data-ch-press="" onClick={onClose}>
           <Icon icon={X} size={16} />
         </button>
       </header>
@@ -189,7 +189,7 @@ function ShotList({ direction, count, rows, cap, headId, onAsk, onClose }: { dir
           const where = s.player ? [when, s.course].filter(Boolean).join(' · ') : s.course;
           return (
             <li key={s.id}>
-              <a className="ch-aks-compass__shot" href={shotRoundHref(s.round_id)} aria-label={`Open the round: ${s.player ? `${s.player}, ` : ''}${when}${s.course ? `, ${s.course}` : ''}${said ? `, ${said}` : ''}`} data-ch-press="">
+              <a data-ctl="CTL-P013-115" className="ch-aks-compass__shot" href={shotRoundHref(s.round_id)} aria-label={`Open the round: ${s.player ? `${s.player}, ` : ''}${when}${s.course ? `, ${s.course}` : ''}${said ? `, ${said}` : ''}`} data-ch-press="">
                 <span className="ch-aks-compass__when">
                   <b>{s.player ?? when}</b>
                   {where && <small>{where}</small>}
@@ -209,7 +209,7 @@ function ShotList({ direction, count, rows, cap, headId, onAsk, onClose }: { dir
 function AskKey({ onAsk }: { onAsk: () => boolean }) {
   return (
     <div className="ch-aks-compass__ask">
-      <Button variant="secondary" onClick={() => onAsk()}>
+      <Button data-ctl="CTL-P013-116" variant="secondary" onClick={() => onAsk()}>
         Ask about these shots
       </Button>
     </div>

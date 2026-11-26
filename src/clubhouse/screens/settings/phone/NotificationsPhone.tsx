@@ -107,13 +107,13 @@ function DeliveryPhone({
             onChange={(v) => void togglePush(v)}
           />
           {/* P008-C3: a test push to this person's own devices (D1-6), once push is on here. */}
-          {push.status === 'subscribed' && push.test && <ActionRow label={test.busy ? 'Sending a test…' : 'Send a test'} disabled={test.busy} onClick={() => void test.run()} />}
+          {push.status === 'subscribed' && push.test && <ActionRow data-ctl="CTL-P008-064" label={test.busy ? 'Sending a test…' : 'Send a test'} disabled={test.busy} onClick={() => void test.run()} />}
         </Group>
       )}
 
       <Group title="Email and push" note={offHere ? 'Push is off on this device; push choices still apply to your other devices.' : undefined}>
         {DELIVERY_GROUPS.map((g) => (
-          <NavRow key={g.id} label={g.label} value={summary(g)} onClick={() => setKind(g.id)} />
+          <NavRow data-ctl="CTL-P008-065" key={g.id} label={g.label} value={summary(g)} onClick={() => setKind(g.id)} />
         ))}
       </Group>
 
@@ -192,7 +192,7 @@ function NativePushGroup({ push }: { push: ChNativePush }) {
           value={on ? 'On' : 'Off'}
           help={on ? 'Turn it off in iOS Settings.' : 'Notifications are off for GolfHelm in iOS Settings. Turn them on there, then come back.'}
         />
-        {push.openSettings && <ActionRow label="Open iOS Settings" onClick={push.openSettings} />}
+        {push.openSettings && <ActionRow data-ctl="CTL-P008-066" label="Open iOS Settings" onClick={push.openSettings} />}
       </Group>
     );
   }
@@ -250,7 +250,7 @@ function RoutingPhone({ initial, writes, emailPaused }: { initial: { prefs: Pref
     <>
       <Group title="CoachHelm updates" note="Quiet mode pauses these updates. Round reviews and goals your coach assigns are always delivered.">
         {ROUTING_GROUPS.map((g) => (
-          <NavRow key={g.label} label={g.label} value={summary(g.categories)} onClick={() => setKind(g.label)} />
+          <NavRow data-ctl="CTL-P008-067" key={g.label} label={g.label} value={summary(g.categories)} onClick={() => setKind(g.label)} />
         ))}
         <SwitchRow label="Quiet mode for CoachHelm" checked={r.quiet} busy={r.pending.has('quiet')} onChange={r.flipQuiet} />
       </Group>

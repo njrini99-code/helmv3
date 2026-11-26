@@ -91,7 +91,7 @@ export function PlayerLane({ lane, density, now, hours, change, reduced, selecte
   );
 
   const hit = onOpen ? (
-    <button
+    <button data-ctl="CTL-P011-002"
       type="button"
       className="ch-lv-hit"
       aria-label={label}

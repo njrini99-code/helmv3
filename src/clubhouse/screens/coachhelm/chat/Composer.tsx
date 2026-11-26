@@ -391,7 +391,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
       }))}
       trigger={(t) => (
         <Tooltip>
-          <button type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
+          <button data-ctl="CTL-P013-017" type="button" className="ch-ask-cmp__round" aria-label="Add to your question" data-ch-press="" {...t}>
             <Icon icon={Plus} size={18} />
           </button>
         </Tooltip>
@@ -403,7 +403,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
   // ink disc and the stop square come up under it; when the turn ends the square goes and the arrow comes back from below.
   const send = (
     <Tooltip>
-      <button
+      <button data-ctl="CTL-P013-018"
         type="button"
         className={'ch-ask-cmp__send' + (busy ? ' is-stop' : '') + (hasRun ? ' has-run' : '')}
         aria-label={busy ? 'Stop generating' : 'Send'}
@@ -465,7 +465,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
         <div className="ch-ask-cmp__bar" data-ch-code="CH-13821">
           {plus}
           {hero && !phone && (
-            <button type="button" className="ch-ask-cmp__chip" onClick={() => openPlayers(true)}>
+            <button data-ctl="CTL-P013-019" type="button" className="ch-ask-cmp__chip" onClick={() => openPlayers(true)}>
               <Icon icon={AtSign} size={15} />
               Players
             </button>
@@ -479,7 +479,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
                 ...ASK_RANGES.map((r) => ({ label: r.label, checked: range === r.id, onSelect: () => setRange(r.id) })),
               ]}
               trigger={(t) => (
-                <button type="button" className={'ch-ask-cmp__chip' + (range ? ' is-set' : '')} {...t}>
+                <button data-ctl="CTL-P013-020" type="button" className={'ch-ask-cmp__chip' + (range ? ' is-set' : '')} {...t}>
                   <Icon icon={CalendarDays} size={15} />
                   {range ? ASK_RANGES.find((r) => r.id === range)?.label : 'Any dates'}
                 </button>
@@ -489,7 +489,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
           <span className="ch-ask-cmp__grow" />
           {(!hero || phone) && (
             <Tooltip>
-              <button
+              <button data-ctl="CTL-P013-021"
                 type="button"
                 className="ch-ask-cmp__round is-quiet"
                 aria-label="Mention a player or stat"
@@ -509,7 +509,7 @@ export function AskComposer({ seed, scopeOf, variant, phone, players, busy, fail
           <div className="ch-ask-pick" data-ch-code="CH-13821" onMouseDown={(e) => e.preventDefault()}>
             <div className="ch-ask-pick__list" role="listbox" aria-label="Commands">
               {slashes.map((c, i) => (
-                <button key={c.command} type="button" role="option" aria-selected={i === slashActive} data-selected={i === slashActive ? 'true' : undefined} className="ch-ask-pick__row" onClick={() => pickSlash(c)}>
+                <button data-ctl="CTL-P013-022" key={c.command} type="button" role="option" aria-selected={i === slashActive} data-selected={i === slashActive ? 'true' : undefined} className="ch-ask-pick__row" onClick={() => pickSlash(c)}>
                   <span className="ch-ask-pick__name">{c.command}</span>
                   <span>{c.label}</span>
                 </button>

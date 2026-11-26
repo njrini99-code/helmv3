@@ -132,7 +132,7 @@ export function TeamHole({
           const moreAt = slots[room - 1];
           return (
             <g key={s}>
-              <g
+              <g data-ctl="CTL-P013-262"
                 className={'stn' + tone + (station === s ? ' on' : '')}
                 data-ch-team-station={s}
                 role="button"
@@ -174,7 +174,7 @@ export function TeamHole({
                 );
               })}
               {over && moreAt && (
-                <g
+                <g data-ctl="CTL-P013-263"
                   className="scn is-more"
                   data-ch-team-more={s}
                   role="button"

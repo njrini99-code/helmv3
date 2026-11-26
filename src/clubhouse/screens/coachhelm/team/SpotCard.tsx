@@ -39,7 +39,7 @@ function BarRow({ player, station, teamValue, scales, onPlayer }: { player: ChTe
   );
   if (v == null)
     return (
-      <button type="button" className="br tapp" data-p={player.id} onClick={() => onPlayer(player.id)}>
+      <button data-ctl="CTL-P013-246" type="button" className="br tapp" data-p={player.id} onClick={() => onPlayer(player.id)}>
         {name}{' '}
         <span className="bmiss">{leg.missing ?? <span className="ch-sr-only">not measured</span>}</span>
         <span className="bv is-none" aria-hidden="true">—</span>
@@ -47,7 +47,7 @@ function BarRow({ player, station, teamValue, scales, onPlayer }: { player: ChTe
     );
   const loss = v < 0;
   return (
-    <button type="button" className="br tapp is-row" data-p={player.id} data-early={player.early || undefined} onClick={() => onPlayer(player.id)}>
+    <button data-ctl="CTL-P013-247" type="button" className="br tapp is-row" data-p={player.id} data-early={player.early || undefined} onClick={() => onPlayer(player.id)}>
       {name}{' '}
       <span className="bt">
         <i className="z" />

@@ -142,12 +142,12 @@ function PeekBody({
         {(messageHref || planHref) && (
           <div className="ch-rs-peek__quick">
             {messageHref && (
-              <Button size="md" leftIcon={MessageSquare} href={messageHref}>
+              <Button data-ctl="CTL-P003-026" size="md" leftIcon={MessageSquare} href={messageHref}>
                 Message
               </Button>
             )}
             {planHref && (
-              <Button size="md" leftIcon={undefined} href={planHref}>
+              <Button data-ctl="CTL-P003-027" size="md" leftIcon={undefined} href={planHref}>
                 Schedule 1:1
               </Button>
             )}
@@ -173,7 +173,7 @@ function PeekBody({
 
       {profileHref && (
         <div className="ch-rs-peek__foot">
-          <Button variant="secondary" rightIcon={undefined} href={profileHref}>
+          <Button data-ctl="CTL-P003-028" variant="secondary" rightIcon={undefined} href={profileHref}>
             Open full profile
           </Button>
         </div>
@@ -207,7 +207,7 @@ export function HelmPanel({ p, helm }: { p: ChRosterPlayer; helm: ChRosterHelm }
       <div className="ch-rsm-panel__h">
         <b id={`helm-${p.id}`}>CoachHelm</b>
         {href && (
-          <Link href={href} className="ch-rsm-panel__link" {...press(href)}>
+          <Link data-ctl="CTL-P003-029" href={href} className="ch-rsm-panel__link" {...press(href)}>
             View insights <Icon icon={ArrowRight} size={14} />
           </Link>
         )}

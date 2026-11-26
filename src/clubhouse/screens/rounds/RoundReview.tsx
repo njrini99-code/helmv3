@@ -169,7 +169,7 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
           <th scope="col">{label}</th>
           {holes.map((h) => (
             <th key={h.n} scope="col">
-              <button type="button" className={h.n === sel ? 'is-sel' : undefined} aria-pressed={h.n === sel} aria-label={`Hole ${h.n}`} onClick={pick(h.n)}>
+              <button data-ctl="CTL-P011-033" type="button" className={h.n === sel ? 'is-sel' : undefined} aria-pressed={h.n === sel} aria-label={`Hole ${h.n}`} onClick={pick(h.n)}>
                 {h.n}
               </button>
             </th>
@@ -190,7 +190,7 @@ function ReviewNine({ label, holes, sel, onPick }: { label: 'Out' | 'In'; holes:
           {holes.map((h) => (
             // The board makes the score the target too: a tap on it selects the hole. Pointer only; the hole number
             // above is the same choice as a button for the keyboard and a screen reader.
-            <td key={h.n} data-hole={h.n} className={h.n === sel ? 'is-sel' : undefined} onClick={pick(h.n)}>
+            <td data-ctl="CTL-P011-034" key={h.n} data-hole={h.n} className={h.n === sel ? 'is-sel' : undefined} onClick={pick(h.n)}>
               <ScoreMark score={h.score} par={h.par} size="sm" />
             </td>
           ))}
@@ -269,13 +269,13 @@ function HoleCard({
         </div>
         <div className="ch-rv-step">
           <Tooltip>
-            <button type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
+            <button data-ctl="CTL-P011-035" type="button" data-ch-press="" onClick={() => onStep(-1)} disabled={hole.n <= 1} aria-label="Previous hole">
               <Icon icon={ChevronLeft} size={16} />
             </button>
           </Tooltip>
           <ScoreMark score={hole.score} par={hole.par} />
           <Tooltip>
-            <button type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
+            <button data-ctl="CTL-P011-036" type="button" data-ch-press="" onClick={() => onStep(1)} disabled={hole.n >= count} aria-label="Next hole">
               <Icon icon={ChevronRight} size={16} />
             </button>
           </Tooltip>
@@ -287,7 +287,7 @@ function HoleCard({
             {before.who ? `${before.who} here before` : 'Here before'}: {formatFixed(hole.par + before.avg, 1)} average · {before.n} times
           </p>
           {before.href && (
-            <Link className="ch-rv-before__go" href={before.href}>
+            <Link data-ctl="CTL-P011-037" className="ch-rv-before__go" href={before.href}>
               Hole {hole.n} at {before.course}
             </Link>
           )}
@@ -368,7 +368,7 @@ function ChangeRoundType({ roundId, edit }: { roundId: string; edit: ChReviewTyp
   return (
     <>
       <span className="ch-rv-type" data-ch-code="CH-11522">
-        <Button size="sm" variant="ghost" leftIcon={Flag} onClick={() => setOpen(true)}>
+        <Button data-ctl="CTL-P011-038" size="sm" variant="ghost" leftIcon={Flag} onClick={() => setOpen(true)}>
           Change round type
         </Button>
       </span>
@@ -443,7 +443,7 @@ function RoundDebrief({ debrief: d }: { debrief: ChDebrief }) {
         )}
       </dl>
       {why && (
-        <Link href={why} className="ch-rv-debrief__why">
+        <Link data-ctl="CTL-P011-039" href={why} className="ch-rv-debrief__why">
           Why?
           <Icon icon={ChevronRight} size={14} />
         </Link>
@@ -605,7 +605,7 @@ export function RoundReview({
     <main className={'ch-rv' + (phone ? ' is-phone' : '')} aria-labelledby="ch-rv-title" data-canopy={phone ? undefined : ''}>
       {phone && <PhoneTop heading={false} title="Round" back={{ label: fromHome ? 'Home' : coach && !fromList ? 'Stats' : 'Rounds', onBack: () => goBack() }} />}
       {!phone && (
-        <Link
+        <Link data-ctl="CTL-P011-040"
           href={back.href}
           className="ch-rv-back"
           onClick={(e) => {
@@ -631,7 +631,7 @@ export function RoundReview({
               <span>{[r.tee, r.teeFacts].filter(Boolean).join(' · ')}</span>
             </span>
           )}
-          <CourseLink review={r} coach={coach} />
+          <CourseLink data-ctl="CTL-P011-041" review={r} coach={coach} />
         </div>
         <div className="ch-rv-hero__s">
           {/* Where a team round row's score lands over the push (E-6, lib/share-morph.ts). */}
@@ -806,7 +806,7 @@ export function RoundReview({
               <div className="ch-rzcost">
                 {costly.map((c) => (
                   <div key={c.n} className="ch-rzcost__r">
-                    <button
+                    <button data-ctl="CTL-P011-042"
                       type="button"
                       onClick={() => {
                         haptic('select');

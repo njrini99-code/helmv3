@@ -157,7 +157,7 @@ export function CoursePicker({
                 title={`No courses match “${q.trim()}”`}
                 body="Use the name as it is, or search again."
                 action={
-                  <Button
+                  <Button data-ctl="CTL-P009-003"
                     variant="secondary"
                     onClick={() => {
                       haptic('select');
@@ -175,7 +175,7 @@ export function CoursePicker({
                 {(recentFirst && !q.trim() ? withHeads(courses) : courses.map((c) => ({ c, head: null as string | null }))).map(({ c, head }) => (
                   <div key={c.id} role="listitem">
                     {head && <p className="ch-qf-picker__head">{head}</p>}
-                    <button type="button" className="ch-qf-picker__row" onClick={() => chooseCourse(c)}>
+                    <button data-ctl="CTL-P009-004" type="button" className="ch-qf-picker__row" onClick={() => chooseCourse(c)}>
                       <span>
                         <b>{c.name}</b>
                         {c.place && <small>{c.place}</small>}
@@ -190,7 +190,7 @@ export function CoursePicker({
         ) : (
           <>
             <div>
-              <Button
+              <Button data-ctl="CTL-P009-005"
                 size="sm"
                 variant="ghost"
                 leftIcon={ChevronLeft}
@@ -204,7 +204,7 @@ export function CoursePicker({
               </Button>
             </div>
             {allowNoTee && (
-              <button
+              <button data-ctl="CTL-P009-006"
                 type="button"
                 className="ch-qf-picker__row"
                 onClick={() => {
@@ -233,7 +233,7 @@ export function CoursePicker({
               <div className="ch-qf-picker__list" role="list" aria-label="Tees">
                 {tees.map((t) => (
                   <div key={t.id} role="listitem">
-                    <button
+                    <button data-ctl="CTL-P009-007"
                       type="button"
                       className="ch-qf-picker__row"
                       onClick={() => {

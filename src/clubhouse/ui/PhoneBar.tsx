@@ -127,7 +127,7 @@ export function PhoneBarParts({ back, title, lead = false, start = false, action
   return (
     <>
       {back && (
-        <button
+        <button data-ctl="CTL-P000-033"
           type="button"
           className={'ch-pbar__back' + (back.label ? '' : ' is-bare') + (chevron ? '' : ' is-text')}
           onClick={back.onBack}
@@ -169,18 +169,19 @@ export function PhoneBar(props: ChPhoneBarParts) {
 }
 
 /** A 44px icon action in the top bar. */
-export function PhoneIconAction({ icon, label, onClick, pressed, disabled }: { icon: LucideIcon; label: string; onClick: () => void; pressed?: boolean; disabled?: boolean }) {
+export function PhoneIconAction({ icon, label, onClick, pressed, disabled, 'data-ctl': ctl }: { icon: LucideIcon; label: string; onClick: () => void; pressed?: boolean; disabled?: boolean; 'data-ctl'?: string }) {
   return (
-    <button type="button" className="ch-pbar__icon" aria-label={label} aria-pressed={pressed} aria-disabled={disabled || undefined} onClick={() => !disabled && onClick()}>
+    <button data-ctl={ctl} type="button" className="ch-pbar__icon" aria-label={label} aria-pressed={pressed} aria-disabled={disabled || undefined} onClick={() => !disabled && onClick()}>
       <Icon icon={icon} size={20} />
     </button>
   );
 }
 
 /** A text action in the top bar ("Next", "Create group", "Post"). Inert, in tertiary ink, while `disabled`. */
-export function PhoneTextAction({ children, onClick, disabled, busy }: { children: ReactNode; onClick: () => void; disabled?: boolean; busy?: boolean }) {
+export function PhoneTextAction({ children, onClick, disabled, busy, 'data-ctl': ctl }: { children: ReactNode; onClick: () => void; disabled?: boolean; busy?: boolean; 'data-ctl'?: string }) {
   return (
     <button
+      data-ctl={ctl}
       type="button"
       className="ch-pbar__text"
       onClick={() => !(disabled || busy) && onClick()}

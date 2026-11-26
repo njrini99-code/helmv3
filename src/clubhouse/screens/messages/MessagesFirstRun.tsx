@@ -20,13 +20,13 @@ export function MessagesFirstRun({ onNew, teamName, onTeam }: { coach: boolean; 
       title="No conversations yet"
       body={`Message a player, a coach or the whole team. Everything stays inside ${teamName ?? 'your team'}.`}
       action={
-        <Button variant="primary" leftIcon={SquarePen} onClick={onNew}>
+        <Button data-ctl="CTL-P007-007" variant="primary" leftIcon={SquarePen} onClick={onNew}>
           Start a conversation
         </Button>
       }
       secondaryAction={
         onTeam ? (
-          <Button variant="ghost" onClick={onTeam}>
+          <Button data-ctl="CTL-P007-008" variant="ghost" onClick={onTeam}>
             Message the team
           </Button>
         ) : undefined

@@ -90,7 +90,7 @@ export function LiveSortMenu({ v }: { v: LiveViewState }) {
         label="Sort and settings"
         items={items}
         trigger={(p) => (
-          <button type="button" className="ch-lv-sort" {...p}>
+          <button data-ctl="CTL-P011-010" type="button" className="ch-lv-sort" {...p}>
             <Icon icon={ArrowDownUp} size={14} />
             <span>{LIVE_COPY.sortLabel(v.sort)}</span>
           </button>
@@ -105,7 +105,7 @@ export function UpdatedPill({ v }: { v: LiveViewState }) {
   if (v.live.pending <= 0) return null;
   return (
     <span className="ch-lv-pillwrap" role="status">
-      <button type="button" className="ch-lv-pill" onClick={v.live.applyPending}>
+      <button data-ctl="CTL-P011-011" type="button" className="ch-lv-pill" onClick={v.live.applyPending}>
         {plural(v.live.pending, 'update')}
       </button>
     </span>

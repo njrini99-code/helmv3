@@ -28,7 +28,7 @@ export function UpNext({ e, now, children, kicker }: { e: ChHomeEvent; now: Date
   const when = whenLabel(e, now);
   const people = e.invitees ?? [];
   return (
-    <Link href={eventHref(e)} className="ch-hm-next" onClick={() => chTrail('home open next event')}>
+    <Link data-ctl="CTL-P002-073" href={eventHref(e)} className="ch-hm-next" onClick={() => chTrail('home open next event')}>
       <span className="ch-hm-next__k">
         <span className="ch-hm-next__type">
           <Icon icon={TYPE_ICON[e.type]} size={13} />

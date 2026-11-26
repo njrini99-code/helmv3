@@ -112,17 +112,17 @@ export function ProposalRow({ p, writes, quiet = false }: { p: ChProposal; write
           {/* Optional: the reason goes to the coach who proposed it, in Messages (wave 7, decision C). Not offered when who that is
               didn't load: never a guess at the coach. */}
           {answered === 'declined' && p.coachUserId && (
-            <Button size="sm" variant="ghost" leftIcon={MessageSquare} href={messageCoachHref(p.coachUserId)}>
+            <Button data-ctl="CTL-P013-008" size="sm" variant="ghost" leftIcon={MessageSquare} href={messageCoachHref(p.coachUserId)}>
               Tell coach why
             </Button>
           )}
         </span>
       ) : (
         <span className="ch-hl-prop__a" role="group" aria-label={`Answer ${p.title}`}>
-          <Button size="sm" variant={quiet ? 'secondary' : 'primary'} feel="press" busy={accept.pending} disabled={decline.pending} onClick={() => void accept.run()}>
+          <Button data-ctl="CTL-P013-009" size="sm" variant={quiet ? 'secondary' : 'primary'} feel="press" busy={accept.pending} disabled={decline.pending} onClick={() => void accept.run()}>
             {accept.pending ? <span data-ch-code="CH-13404">Accepting…</span> : 'Accept'}
           </Button>
-          <Button size="sm" variant="ghost" busy={decline.pending} disabled={accept.pending} onClick={holdDecline}>
+          <Button data-ctl="CTL-P013-010" size="sm" variant="ghost" busy={decline.pending} disabled={accept.pending} onClick={holdDecline}>
             {decline.pending ? <span data-ch-code="CH-13404">Declining…</span> : 'Decline'}
           </Button>
         </span>

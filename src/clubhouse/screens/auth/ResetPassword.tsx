@@ -308,7 +308,7 @@ function NewPassword({
       <GateKey idle="Save password" working="Saving…" busy={busy} code="CH-15431" />
       <p className="ch-au-alt">
         Remembered it?{' '}
-        <Link href="/golf/login" onClick={onSignIn}>
+        <Link data-ctl="CTL-P015-022" href="/golf/login" onClick={onSignIn}>
           Sign in
         </Link>
       </p>
@@ -338,7 +338,7 @@ function Saved({ email, focusOnMount, onContinue }: { email: string; focusOnMoun
         )}
       </p>
       <p className="ch-au-body">For your security, your other devices were signed out.</p>
-      <GateKey idle="Continue to GolfHelm" working="Opening…" type="button" onClick={onContinue} />
+      <GateKey data-ctl="CTL-P015-023" idle="Continue to GolfHelm" working="Opening…" type="button" onClick={onContinue} />
     </div>
   );
 }

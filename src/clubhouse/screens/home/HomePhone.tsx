@@ -156,7 +156,7 @@ export function UpNextRow({ e, now }: { e: ChHomeEvent; now: Date | null }) {
   const t = useChClockText();
   const when = whenLabel(e, now);
   return (
-    <Link href={eventHref(e)} className="ch-hm-nextrow" onClick={() => chTrail('home open next event')}>
+    <Link data-ctl="CTL-P002-030" href={eventHref(e)} className="ch-hm-nextrow" onClick={() => chTrail('home open next event')}>
       <span className="ch-hm-nextrow__ic" aria-hidden="true">
         <Icon icon={TYPE_ICON[e.type]} size={16} />
       </span>
@@ -197,7 +197,7 @@ function NoEvents() {
       </div>
       <div className="ch-hm-none__q">
         {QUICK.map((t) => (
-          <NewEventLink key={t} href={newEventHref(t)} type={t} className="ch-hm-none__chip">
+          <NewEventLink data-ctl="CTL-P002-031" key={t} href={newEventHref(t)} type={t} className="ch-hm-none__chip">
             <Icon icon={TYPE_ICON[t]} size={13} />
             {TYPE_LABEL[t]}
           </NewEventLink>
@@ -232,7 +232,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
         <span>{canPlan ? 'Players can still post rounds from the course.' : 'A good day to play a round.'}</span>
       </span>
       {canPlan && !quiet && (
-        <Button size="sm" leftIcon={Plus} href={newEventHref()}>
+        <Button data-ctl="CTL-P002-032" size="sm" leftIcon={Plus} href={newEventHref()}>
           Plan
         </Button>
       )}
@@ -243,7 +243,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
         const mark = live || e.id === next;
         return (
           <li key={e.id} className={'ch-hm-tl__r' + (past ? ' is-past' : '') + (mark ? ' is-now' : '')}>
-            <Link href={eventHref(e)} className="ch-hm-tl__a">
+            <Link data-ctl="CTL-P002-033" href={eventHref(e)} className="ch-hm-tl__a">
               <span className="ch-hm-tl__t ch-num">{e.allDay ? 'All day' : t12(e.startLabel).replace(/\s?[AP]M$/, '')}</span>
               <span className="ch-hm-tl__rail" aria-hidden="true">
                 <i className={`is-${e.type}`} />
@@ -281,7 +281,7 @@ export function Today({ list, now, failed, quiet, canPlan = true, inline = false
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-today">Today</h2>
         {list.length > 0 && (
-          <Link href={CALENDAR} className="ch-hm-link">
+          <Link data-ctl="CTL-P002-034" href={CALENDAR} className="ch-hm-link">
             Calendar
           </Link>
         )}
@@ -304,7 +304,7 @@ export function WeekStrip({ days, note, children, calendar = false, rounds }: { 
       <div className="ch-hm-sec__h">
         <h2 id="ch-hm-week">This week</h2>
         {calendar && (
-          <Link className="ch-hm-link" href={CALENDAR}>
+          <Link data-ctl="CTL-P002-035" className="ch-hm-link" href={CALENDAR}>
             Calendar
           </Link>
         )}
@@ -362,13 +362,13 @@ export function CrhFailedCard({ id, title, href, link, code, what, body }: { id:
       <div className="ch-hm-sec__h">
         <h2 id={id}>{title}</h2>
         {href && (
-          <Link href={href} className="ch-hm-link">
+          <Link data-ctl="CTL-P002-036" href={href} className="ch-hm-link">
             {link}
           </Link>
         )}
       </div>
       <CrhStateBlock kind="failed" code={code} title={what} body={body}>
-        <Button leftIcon={RotateCw} busy={refreshing} onClick={refresh}>
+        <Button data-ctl="CTL-P002-037" leftIcon={RotateCw} busy={refreshing} onClick={refresh}>
           Try again
         </Button>
       </CrhStateBlock>
@@ -450,18 +450,18 @@ function RoundSheet({ round, holesError, onClose }: { round: ChLatestRound | nul
         (message || recap || stats || helm) && (
           <>
             {message && (
-              <Button leftIcon={MessageSquare} href={message}>
+              <Button data-ctl="CTL-P002-038" leftIcon={MessageSquare} href={message}>
                 Message
               </Button>
             )}
             {/* The board's "Round recap": the round's own review; the player's stats when it isn't rebuilt. */}
             {recap ? (
-              <Button variant="primary" rightIcon={ArrowRight} href={recap} ahead>
+              <Button data-ctl="CTL-P002-039" variant="primary" rightIcon={ArrowRight} href={recap} ahead>
                 Round recap
               </Button>
             ) : (
               stats && (
-                <Button variant="primary" leftIcon={ChartColumn} href={stats}>
+                <Button data-ctl="CTL-P002-040" variant="primary" leftIcon={ChartColumn} href={stats}>
                   Player stats
                 </Button>
               )

@@ -20,7 +20,7 @@ const HomeEventEditor = dynamic(loadEditor, { ssr: false });
  * wait (nothing for 150 ms). With no inputs (not a coach, a failed read) it goes to Calendar's `?new=1` as before, and a
  * modified click or a middle click keeps the link's own behaviour.
  */
-export function NewEventLink({ href, type, className, onTap, children }: { href: string; type?: ChCalType; className: string; onTap?: () => void; children: ReactNode }) {
+export function NewEventLink({ href, type, className, onTap, children, 'data-ctl': ctl }: { href: string; type?: ChCalType; className: string; onTap?: () => void; children: ReactNode; 'data-ctl'?: string }) {
   const router = useRouter();
   const inputs = useRef<Promise<ChEventEditorInputs | null> | null>(null);
   const [open, setOpen] = useState<{ seed: EditorSeed; inputs: ChEventEditorInputs } | null>(null);
@@ -58,7 +58,7 @@ export function NewEventLink({ href, type, className, onTap, children }: { href:
 
   return (
     <>
-      <Link href={href} className={className} data-ch-press="" aria-busy={busy === 'skeleton' || undefined} onPointerDown={warm} onFocus={warm} onClick={onClick}>
+      <Link data-ctl={ctl ?? 'CTL-P002-054'} href={href} className={className} data-ch-press="" aria-busy={busy === 'skeleton' || undefined} onPointerDown={warm} onFocus={warm} onClick={onClick}>
         {children}
       </Link>
       {open && (

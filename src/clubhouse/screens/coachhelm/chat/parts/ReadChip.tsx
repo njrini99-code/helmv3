@@ -49,7 +49,7 @@ export function ReadChip({ read, n, onSources, onOpen, selected = false }: { rea
   const stats = readStatsHref(read);
   if (onOpen)
     return (
-      <button
+      <button data-ctl="CTL-P013-092"
         type="button"
         className={'cite' + (selected ? ' on' : '')}
         aria-pressed={selected}
@@ -65,7 +65,7 @@ export function ReadChip({ read, n, onSources, onOpen, selected = false }: { rea
     );
   return (
     <span className="cite-wrap">
-      <button ref={btn} type="button" className={'cite' + (open ? ' on' : '')} aria-label={`Source ${n}: ${read.chip}`} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((v) => !v)}>
+      <button data-ctl="CTL-P013-093" ref={btn} type="button" className={'cite' + (open ? ' on' : '')} aria-label={`Source ${n}: ${read.chip}`} aria-expanded={open} aria-haspopup="dialog" onClick={() => setOpen((v) => !v)}>
         {n}
       </button>
       {/* A chip sits inside the answer's paragraph, so every box in here is a span: a div or a list in a <p> is invalid HTML. */}
@@ -83,12 +83,12 @@ export function ReadChip({ read, n, onSources, onOpen, selected = false }: { rea
           {(stats || onSources) && (
             <span className="cpop-f">
               {stats && (
-                <Link prefetch={false} href={stats}>
+                <Link data-ctl="CTL-P013-094" prefetch={false} href={stats}>
                   Open in Stats
                 </Link>
               )}
               {onSources && (
-                <button
+                <button data-ctl="CTL-P013-095"
                   type="button"
                   onClick={() => {
                     setOpen(false);

@@ -210,7 +210,7 @@ export function ShotEntry(p: ShotEntryProps) {
       <div className="ch-rt-note is-warn" data-ch-code="CH-11102">
         <Icon icon={TriangleAlert} size={15} />
         <span>{issue.message}</span>
-        <Button variant="secondary" size="sm" onClick={() => setConfirmedKey(key)}>Confirm</Button>
+        <Button data-ctl="CTL-P011-133" variant="secondary" size="sm" onClick={() => setConfirmedKey(key)}>Confirm</Button>
       </div>
     )
   ) : null;
@@ -276,7 +276,7 @@ export function ShotEntry(p: ShotEntryProps) {
                     <div className="ch-rt-sec__h">
                       <span>{followLabel}</span>
                       {p.isPutting && <em className="ch-rt-hint">Optional</em>}
-                      <button type="button" className="ch-rt-pick" aria-label={`${resultLabel}: ${result ? resultWord(result, !!p.isPutting) : 'none'}. Change`} onClick={() => setChangingAt(shotKey)}>
+                      <button data-ctl="CTL-P011-134" type="button" className="ch-rt-pick" aria-label={`${resultLabel}: ${result ? resultWord(result, !!p.isPutting) : 'none'}. Change`} onClick={() => setChangingAt(shotKey)}>
                         <b>{result ? resultWord(result, !!p.isPutting) : RESULT_LABEL.fairway}</b>
                         <span>Change</span>
                       </button>
@@ -302,7 +302,7 @@ export function ShotEntry(p: ShotEntryProps) {
                                 <i />
                               </span>
                             ) : (
-                              <button
+                              <button data-ctl="CTL-P011-135"
                                 key={v}
                                 type="button"
                                 role="radio"
@@ -323,7 +323,7 @@ export function ShotEntry(p: ShotEntryProps) {
                     {p.isPutting && (
                       <div className="ch-rt-tags" role="group" aria-label="How the putt missed">
                         {PUTT_TAGS.map(([tag, label]) => (
-                          <button
+                          <button data-ctl="CTL-P011-136"
                             key={tag}
                             type="button"
                             aria-pressed={p.puttMissTags.includes(tag)}
@@ -390,7 +390,7 @@ export function ShotEntry(p: ShotEntryProps) {
                 <em>{unitWord}</em>
                 <div className="ch-rt-quick" role="group" aria-label="Quick distances">
                   {quickPicks(afterUnit === 'feet' ? (p.isPutting ? 'putt' : 'feet') : p.isTeeShot ? 'tee' : 'approach', p.pref).map((q) => (
-                    <button
+                    <button data-ctl="CTL-P011-137"
                       key={q}
                       type="button"
                       aria-pressed={p.distanceAfterShot === String(q)}
@@ -419,7 +419,7 @@ export function ShotEntry(p: ShotEntryProps) {
               // The putt's read, one optional row under the leave distance (owner, 2026-11-11): closed until the player opens
               // it, then open on every putt for the rest of the round. Closed, it still says what the putt carries.
               <section className={'ch-rt-sec ch-rt-read' + (p.puttReadOpen ? ' is-open' : '')} aria-label="Break and slope">
-                <button
+                <button data-ctl="CTL-P011-138"
                   ref={readRow}
                   type="button"
                   className="ch-rt-read__h"
@@ -472,7 +472,7 @@ export function ShotEntry(p: ShotEntryProps) {
           </p>
         )}
         <div className="ch-rt-bar__row">
-          <button
+          <button data-ctl="CTL-P011-139"
             type="button"
             className="ch-rt-bar__i"
             data-ch-press=""
@@ -483,11 +483,11 @@ export function ShotEntry(p: ShotEntryProps) {
             <Icon icon={Undo2} size={18} />
             <span>Undo</span>
           </button>
-          <button type="button" className="ch-rt-bar__i" data-ch-press="" disabled={!!review} aria-label="Add penalty stroke" onClick={p.onAddPenalty}>
+          <button data-ctl="CTL-P011-140" type="button" className="ch-rt-bar__i" data-ch-press="" disabled={!!review} aria-label="Add penalty stroke" onClick={p.onAddPenalty}>
             <Icon icon={FlagTriangleRight} size={18} />
             <span>Penalty</span>
           </button>
-          <button
+          <button data-ctl="CTL-P011-141"
             type="button"
             className={'ch-btn ch-btn--primary ch-btn--lg ch-rt-bar__go' + (goBlocked ? ' is-blocked' : '')}
             disabled={review ? !review.action || review.action.disabled : !canRecord}
@@ -520,7 +520,7 @@ function TapIn({ plan, pref, onTapIn }: { plan: TapInPlan; pref: DistancePrefere
   const words = tapInWords(plan, pref);
   return (
     <div className="ch-rt-tapin" data-ch-code="CH-11913">
-      <button
+      <button data-ctl="CTL-P011-142"
         type="button"
         className="ch-btn ch-btn--ghost ch-btn--sm"
         aria-label={words.label}
@@ -568,9 +568,9 @@ export function UndoConfirm({ shots, saving, error, dispatch, onUndo }: { shots:
           </span>
         )}
       </div>
-      <Button variant="ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>Keep it</Button>
+      <Button data-ctl="CTL-P011-143" variant="ghost" onClick={() => dispatch({ type: 'HIDE_UNDO_CONFIRM' })}>Keep it</Button>
       {/* CH-11707: removing a shot is a warning (a danger Button warns as it is pressed). */}
-      <Button variant="danger" busy={saving} onClick={onUndo}>
+      <Button data-ctl="CTL-P011-144" variant="danger" busy={saving} onClick={onUndo}>
         {saving ? 'Undoing…' : 'Undo'}
       </Button>
     </div>

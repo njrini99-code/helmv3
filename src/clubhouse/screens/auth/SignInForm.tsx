@@ -266,13 +266,13 @@ export function SignInForm({
   };
   // CH-15920: the href stays today's reset page, for a new tab and for no JavaScript; a plain click opens the panel's.
   const forgot = (cls: string, ref?: RefObject<HTMLAnchorElement | null>) => (
-    <Link ref={ref} href="/golf/forgot-password" className={`ch-au-forgot ${cls}`} onClick={openForgot}>
+    <Link data-ctl="CTL-P015-031" ref={ref} href="/golf/forgot-password" className={`ch-au-forgot ${cls}`} onClick={openForgot}>
       Forgot password?
     </Link>
   );
 
   return (
-    <form
+    <form data-ctl="CTL-P015-032"
       ref={formRef}
       className="ch-au-form"
       onSubmit={handleSubmit}
@@ -354,7 +354,7 @@ export function SignInForm({
             />
             {/* CH-15805: a named, pressed-state button with a hit area past 44px. CH-15610: the eye turns, crossfading to its slashed state. */}
             <Tooltip>
-              <button type="button" className="ch-au-eye" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="golf-signin-password" onClick={() => setShowPassword((v) => !v)}>
+              <button data-ctl="CTL-P015-033" type="button" className="ch-au-eye" aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} aria-controls="golf-signin-password" onClick={() => setShowPassword((v) => !v)}>
                 <Icon icon={Eye} size={16} className="ch-au-eye__show" />
                 <Icon icon={EyeOff} size={16} className="ch-au-eye__hide" />
               </button>
@@ -377,7 +377,7 @@ export function SignInForm({
         </div>
       )}
       <div className="ch-au-submit" ref={submitRowRef}>
-        <button ref={submitRef} type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={!hydrated || busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15402' : undefined}>
+        <button data-ctl="CTL-P015-034" ref={submitRef} type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={!hydrated || busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15402' : undefined}>
           <AuthKeyLabel busy={busy} idle="Sign in" working="Signing in…" />
         </button>
       </div>

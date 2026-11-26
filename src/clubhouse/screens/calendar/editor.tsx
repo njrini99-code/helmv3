@@ -170,7 +170,7 @@ function FindTime({
             <span className="ch-lanes__who">{people.get(pid)?.name.split(' ')[0] ?? 'Player'}</span>
             {/* A pointer shortcut to place the time; the keyboard moves it with the band, the lane's slider. */}
             {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- see above */}
-            <div
+            <div data-ctl="CTL-P006-068"
               className="ch-lane"
               ref={i === 0 ? ref : undefined}
               onPointerDown={(e) => {
@@ -197,7 +197,7 @@ function FindTime({
                 );
               })}
               {i === 0 ? (
-                <span
+                <span data-ctl="CTL-P006-069"
                   className="ch-lane__b is-prop ch-cal-ft__band"
                   style={{ left: `${pct(win[0])}%`, width: `${pct(win[1]) - pct(win[0])}%` }}
                   role="slider"
@@ -666,10 +666,10 @@ export function EventEditor({
             <span className="ch-in__quiet" style={{ marginRight: 'auto' }}>
               {invited.length ? (rsvp ? 'Attendees will be notified' : 'No notification sent') : 'No one invited yet'}
             </span>
-            <Button variant="ghost" onClick={requestClose}>
+            <Button data-ctl="CTL-P006-070" variant="ghost" onClick={requestClose}>
               Cancel
             </Button>
-            <Button variant="primary" busy={save.pending} onClick={() => void submit()}>
+            <Button data-ctl="CTL-P006-071" variant="primary" busy={save.pending} onClick={() => void submit()}>
               {save.pending ? (tracked ? (base ? 'Setting up…' : 'Creating…') : base ? 'Saving…' : 'Publishing…') : primary}
             </Button>
 
@@ -770,7 +770,7 @@ export function EventEditor({
             <div className="ch-ed__opts">
               <label className="ch-switch">
                 {/* A series edit carries no All day (editRecurringEvent has none): flipping it there would move every time to midnight. */}
-                <input type="checkbox" checked={allDay} disabled={series && scope !== 'this'} onChange={(e) => (haptic('select'), setAllDay(e.target.checked))} />
+                <input data-ctl="CTL-P006-072" type="checkbox" checked={allDay} disabled={series && scope !== 'this'} onChange={(e) => (haptic('select'), setAllDay(e.target.checked))} />
                 <span className="ch-switch__t" aria-hidden="true" />
                 All day
               </label>
@@ -832,7 +832,7 @@ export function EventEditor({
               <span className="ch-ed__lbl" style={{ margin: 0 }}>
                 {peopleError && !people.length ? 'Invite' : `Invite · ${listedCount(invited, people)} of ${people.length}`}
               </span>
-              <Button size="sm" variant="ghost" onClick={() => setInvited(allOn ? [] : people.map((p) => p.id))}>
+              <Button data-ctl="CTL-P006-073" size="sm" variant="ghost" onClick={() => setInvited(allOn ? [] : people.map((p) => p.id))}>
                 {allOn ? 'Clear' : 'Select all'}
               </Button>
             </div>
@@ -840,7 +840,7 @@ export function EventEditor({
               <div className="ch-ed__inv">
                 {people.map((p) => (
                   <label key={p.id}>
-                    <input
+                    <input data-ctl="CTL-P006-074"
                       type="checkbox"
                       checked={invited.includes(p.id)}
                       onChange={() => {
@@ -866,7 +866,7 @@ export function EventEditor({
           </div>
           <div>
             <label className="ch-switch">
-              <input type="checkbox" checked={rsvp} onChange={(e) => (haptic('select'), setRsvp(e.target.checked))} aria-describedby="ch-ed-rsvp-help" />
+              <input data-ctl="CTL-P006-075" type="checkbox" checked={rsvp} onChange={(e) => (haptic('select'), setRsvp(e.target.checked))} aria-describedby="ch-ed-rsvp-help" />
               <span className="ch-switch__t" aria-hidden="true" />
               Require RSVP
             </label>
@@ -934,7 +934,7 @@ export function EventEditor({
           </>
           )}
         </div>
-        <button type="submit" hidden />
+        <button data-ctl="CTL-P006-076" type="submit" hidden />
         {/* CH-6840 to CH-6842: the section's polite lines (opened, rounds changed or reordered, Escape while creating). */}
         <span className="ch-sr-only" role="status" aria-live="polite" data-ch-code="CH-6841">
           {said}
@@ -951,10 +951,10 @@ export function EventEditor({
       description={`${base ? 'Your edits to this event are lost. The event stays as it was.' : 'Nothing has been published yet. What you entered is lost.'}${tourDirty ? ' The tournament details you entered are lost too.' : ''}`}
       footer={
         <>
-          <Button variant="ghost" onClick={() => setDiscarding(false)}>
+          <Button data-ctl="CTL-P006-077" variant="ghost" onClick={() => setDiscarding(false)}>
             Keep editing
           </Button>
-          <Button
+          <Button data-ctl="CTL-P006-078"
             variant="danger"
             onClick={() => {
               setDiscarding(false);
@@ -1005,10 +1005,10 @@ export function CancelEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       }
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P006-079" variant="ghost" onClick={onClose}>
             Keep event
           </Button>
-          <Button
+          <Button data-ctl="CTL-P006-080"
             variant="danger"
             feel="warning"
             busy={cancel.pending}
@@ -1062,10 +1062,10 @@ export function DeleteEvent({ event, onClose, onDone }: { event: ChCalEvent | nu
       description="Every reply and attendance record for it is erased. This can’t be undone."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button data-ctl="CTL-P006-081" variant="ghost" onClick={onClose}>
             Keep event
           </Button>
-          <Button variant="danger" feel="warning" busy={remove.pending} onClick={() => void remove.run()}>
+          <Button data-ctl="CTL-P006-082" variant="danger" feel="warning" busy={remove.pending} onClick={() => void remove.run()}>
             {remove.pending ? 'Deleting…' : 'Delete permanently'}
           </Button>
         </>
@@ -1209,7 +1209,7 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
     { type: 'personal', name: 'My schedule', desc: role === 'coach' ? 'Events you run and your busy time' : 'Events you’re invited to and your classes' },
   ];
   return (
-    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button variant="primary" onClick={onClose}>Done</Button>}>
+    <Modal open={open} onClose={onClose} width={560} icon={Rss} title="Add to your calendar app" description="One-way: changes in Helm appear in Apple, Google or Outlook within an hour. Edits made there don’t come back." footer={<Button data-ctl="CTL-P006-083" variant="primary" onClick={onClose}>Done</Button>}>
       {failed ? (
         <InlineNotice code="CH-6206" title="Your calendar links didn’t load." body="Try again." onRetry={() => setAttempt((a) => a + 1)} />
       ) : !feeds ? (
@@ -1230,11 +1230,11 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                   {f && <code>{f.url.replace(/^https?:/, 'webcal:')}</code>}
                 </div>
                 {f ? (
-                  <Button size="sm" leftIcon={Copy} onClick={() => void copy(f)}>
+                  <Button data-ctl="CTL-P006-084" size="sm" leftIcon={Copy} onClick={() => void copy(f)}>
                     Copy link
                   </Button>
                 ) : (
-                  <Button
+                  <Button data-ctl="CTL-P006-085"
                     size="sm"
                     disabled={busy}
                     onClick={() => void create.run(r.type)}
@@ -1247,10 +1247,10 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                     <b>{ask.title(r.name)}</b>
                     <p>{ask.body}</p>
                     <div className="ch-feed__acts">
-                      <Button size="sm" variant="ghost" onClick={() => setAsking(null)}>
+                      <Button data-ctl="CTL-P006-086" size="sm" variant="ghost" onClick={() => setAsking(null)}>
                         Keep link
                       </Button>
-                      <Button size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} busy={busy} onClick={() => confirm(r.type, asking.kind)}>
+                      <Button data-ctl="CTL-P006-087" size="sm" variant={asking.kind === 'remove' ? 'danger' : 'primary'} busy={busy} onClick={() => confirm(r.type, asking.kind)}>
                         {ask.go}
                       </Button>
                     </div>
@@ -1258,10 +1258,10 @@ export function SubscribeSheet({ open, onClose, role }: { open: boolean; onClose
                 ) : (
                   f && (
                     <div className="ch-feed__acts">
-                      <Button size="sm" variant="ghost" leftIcon={RotateCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
+                      <Button data-ctl="CTL-P006-088" size="sm" variant="ghost" leftIcon={RotateCw} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'new' })}>
                         New link
                       </Button>
-                      <Button size="sm" variant="ghost" leftIcon={Trash2} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'remove' })}>
+                      <Button data-ctl="CTL-P006-089" size="sm" variant="ghost" leftIcon={Trash2} disabled={busy} onClick={() => setAsking({ type: r.type, kind: 'remove' })}>
                         Remove
                       </Button>
                     </div>

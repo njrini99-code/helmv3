@@ -35,7 +35,7 @@ export function MissPattern({ block }: { block: MissPatternBlock }) {
           const deg = ANGLE[w.direction] ?? 0;
           const ask = () => askAbout(`${said(w.direction)} misses, ${w.count} shots`);
           return (
-            <g
+            <g data-ctl="CTL-P013-131"
               key={w.direction}
               className="ch-aks-miss__key"
               role="button"
@@ -92,7 +92,7 @@ export function SeasonCompare({ block }: { block: SeasonCompareBlock }) {
   const both = !!t && !!l;
   const row = (name: string, band: NonNullable<SeasonCompareBlock['this_season']> | null, now: boolean) => (
     <li>
-      <button type="button" className={'ch-aks-season__row ch-aks-ask is-key' + (now ? ' is-now' : '')} data-ch-press="" onClick={() => askAbout(`${name.toLowerCase()}${band ? `, ${fmt(band.mean)}` : ''}`)}>
+      <button data-ctl="CTL-P013-132" type="button" className={'ch-aks-season__row ch-aks-ask is-key' + (now ? ' is-now' : '')} data-ch-press="" onClick={() => askAbout(`${name.toLowerCase()}${band ? `, ${fmt(band.mean)}` : ''}`)}>
         <span className="ch-aks-season__name">
           {name}
           {band && <small className="ch-num">{band.n} rounds</small>}
@@ -137,7 +137,7 @@ export function HoleStrip({ block }: { block: HoleStripBlock }) {
       {nines.map((nine) => (
         <div key={nine[0]!.hole_number} className="ch-aks-strip__nine">
           {nine.map((h) => (
-            <button type="button" key={h.hole_number} className={'ch-aks-strip__hole' + (h.to_par != null && h.to_par < 0 ? ' is-under' : '')} data-ch-press="" onClick={() => askAbout(`hole ${h.hole_number}`)}>
+            <button data-ctl="CTL-P013-133" type="button" key={h.hole_number} className={'ch-aks-strip__hole' + (h.to_par != null && h.to_par < 0 ? ' is-under' : '')} data-ch-press="" onClick={() => askAbout(`hole ${h.hole_number}`)}>
               <small className="ch-num">{h.hole_number}</small>
               <b className="ch-num">{h.to_par == null ? '—' : h.to_par > 0 ? `+${h.to_par}` : h.to_par === 0 ? 'E' : `−${Math.abs(h.to_par)}`}</b>
             </button>

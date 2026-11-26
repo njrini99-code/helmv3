@@ -74,7 +74,7 @@ export function CoachQueue({ queue, covered = false, phone = false }: { queue: C
                 ·
               </span>
             )}
-            <Link prefetch={false} href={p.href} className={`${base}__a ch-num`} title={p.title}>
+            <Link data-ctl="CTL-P002-007" prefetch={false} href={p.href} className={`${base}__a ch-num`} title={p.title}>
               {p.text}
             </Link>
           </Fragment>
@@ -112,7 +112,7 @@ export function CoachQueueCards({ queue, covered = false }: { queue: ChCoachQueu
         <ul className="ch-h-qc__list">
           {parts.map((p) => (
             <li key={p.key}>
-              <Link prefetch={false} href={p.href} className="ch-h-qc__a" title={p.title} aria-label={p.text} data-ch-press="">
+              <Link data-ctl="CTL-P002-008" prefetch={false} href={p.href} className="ch-h-qc__a" title={p.title} aria-label={p.text} data-ch-press="">
                 <span className="ch-h-qc__n ch-num">{p.count}</span>
                 <span className="ch-h-qc__l">{p.label}</span>
                 <span className="ch-h-qc__v">

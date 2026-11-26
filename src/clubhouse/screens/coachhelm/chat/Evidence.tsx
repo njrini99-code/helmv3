@@ -132,7 +132,7 @@ function Reads({ block, roster }: { block: Extract<AskEvidence, { kind: 'reads' 
         return (
           <li key={r.id}>
             {href ? (
-              <Link href={href} className="ch-th-reads__r">
+              <Link data-ctl="CTL-P013-023" href={href} className="ch-th-reads__r">
                 {body}
                 <Icon icon={ChevronRight} size={15} />
               </Link>

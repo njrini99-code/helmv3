@@ -444,10 +444,10 @@ export function Roster({ data }: { data: ChRoster; }) {
         description={removing ? `Remove ${removing.name} from ${teamRef}? They can rejoin later with the team code.` : undefined}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setRemoving(null)}>
+            <Button data-ctl="CTL-P003-003" variant="ghost" onClick={() => setRemoving(null)}>
               {removing ? `Keep ${removing.firstName}` : 'Keep player'}
             </Button>
-            <Button
+            <Button data-ctl="CTL-P003-004"
               variant="danger"
               busy={remove.pending}
               feel="warning"
@@ -536,13 +536,13 @@ export function Roster({ data }: { data: ChRoster; }) {
         </div>
         <div className="ch-rs-head__act">
           {players.length > 0 && (
-            <Button variant="secondary" leftIcon={Download} onClick={exportCsv}>
+            <Button data-ctl="CTL-P003-005" variant="secondary" leftIcon={Download} onClick={exportCsv}>
               Export
             </Button>
           )}
           {/* One primary per screen: the page empty state (CH-3301) carries Invite players while there's nobody. */}
           {(players.length > 0 || data.playersError) && (
-            <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
+            <Button data-ctl="CTL-P003-006" variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
               Invite players
             </Button>
           )}
@@ -596,13 +596,13 @@ export function Roster({ data }: { data: ChRoster; }) {
           title="No players yet"
           body="Players fill this list themselves: they join with your team code or invite link, and you can remove anyone here."
           action={
-            <Button variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
+            <Button data-ctl="CTL-P003-007" variant="primary" leftIcon={UserPlus} onClick={() => setInvite(true)}>
               Invite players
             </Button>
           }
           secondaryAction={
             data.joinCode ? (
-              <Button leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
+              <Button data-ctl="CTL-P003-008" leftIcon={Copy} onClick={() => void copy(data.joinCode!, 'Team code')}>
                 Copy team code
               </Button>
             ) : undefined
@@ -645,7 +645,7 @@ export function Roster({ data }: { data: ChRoster; }) {
                 width={200}
                 items={sortOptions.map((o) => ({ label: o.label, checked: sortBy === o.value, onSelect: () => setSort(o.value) }))}
                 trigger={(t) => (
-                  <Button size="sm" rightIcon={ChevronDown} menu={t} aria={{ label: 'Sort players, by ' + sortLabel }}>
+                  <Button data-ctl="CTL-P003-009" size="sm" rightIcon={ChevronDown} menu={t} aria={{ label: 'Sort players, by ' + sortLabel }}>
                     {'Sort: ' + sortLabel}
                   </Button>
                 )}
@@ -776,7 +776,7 @@ function RosterList({
       sortDirection: ROSTER_SORT_DIRECTION.name,
       className: 'ch-rs-who__cell',
       cell: (p) => (
-        <button
+        <button data-ctl="CTL-P003-010"
           type="button"
           className="ch-rs-who"
           onClick={() => (onSelect ? onSelect(p.id) : openProfile(p.id))}
@@ -847,7 +847,7 @@ function RosterList({
       id: 'actions',
       header: <span className="ch-sr-only">Actions</span>,
       align: 'end',
-      cell: (p) => <Menu label={'Actions for ' + p.name} items={menuFor(p)} trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={'Actions for ' + p.name} menu={t} />} />,
+      cell: (p) => <Menu label={'Actions for ' + p.name} items={menuFor(p)} trigger={(t) => <IconButton data-ctl="CTL-P003-011" icon={Ellipsis} size="sm" label={'Actions for ' + p.name} menu={t} />} />,
     },
   ];
   return (
@@ -859,12 +859,12 @@ function RosterList({
             code={q.trim() ? 'CH-3302' : 'CH-3303'}
             title={q.trim() ? `No players match “${q.trim()}”` : show === 'inactive' ? 'No inactive players.' : 'No active players.'}
             body={show === 'all' ? 'Search matches player names.' : `Only ${show} players are in view.`}
-            action={<Button onClick={onShowEveryone}>Show everyone</Button>}
+            action={<Button data-ctl="CTL-P003-012" onClick={onShowEveryone}>Show everyone</Button>}
           />
         ) : view === 'faces' ? (
           <div className="ch-rs-faces">
             {rows.map((p) => (
-              <button
+              <button data-ctl="CTL-P003-013"
                 key={p.id}
                 type="button"
                 className={'ch-rs-face ch-lift' + ((onSelect ? selected : sel) === p.id ? ' is-sel' : '') + (p.status === 'inactive' ? ' is-off' : '')}
@@ -1021,14 +1021,14 @@ function InviteModal({
       icon={UserPlus}
       title="Invite players"
       description={`Players who sign up with the team code or open the invite link join ${teamName} right away. Players already on GolfHelm who enter the code in Settings send a request you approve.`}
-      footer={<Button variant="primary" onClick={onClose}>Done</Button>}
+      footer={<Button data-ctl="CTL-P003-014" variant="primary" onClick={onClose}>Done</Button>}
     >
       {code ? (
         <div className="ch-rs-inv">
           <div className="ch-rs-inv__code ch-well-soft">
             <span>Team code</span>
             <b className="ch-num">{code}</b>
-            <Button size="sm" leftIcon={Copy} onClick={() => void copy(code, 'Team code')}>
+            <Button data-ctl="CTL-P003-015" size="sm" leftIcon={Copy} onClick={() => void copy(code, 'Team code')}>
               Copy
             </Button>
           </div>
@@ -1046,11 +1046,11 @@ function InviteModal({
                   onFocus={(e) => e.currentTarget.select()}
                 />
                 {canShare ? (
-                  <Button variant="primary" leftIcon={Share} onClick={() => void share()}>
+                  <Button data-ctl="CTL-P003-016" variant="primary" leftIcon={Share} onClick={() => void share()}>
                     Share
                   </Button>
                 ) : (
-                  <Button variant="primary" leftIcon={Copy} onClick={() => void copy(link, 'Invite link')}>
+                  <Button data-ctl="CTL-P003-017" variant="primary" leftIcon={Copy} onClick={() => void copy(link, 'Invite link')}>
                     Copy
                   </Button>
                 )}
@@ -1074,7 +1074,7 @@ function InviteModal({
           title="There’s no team code yet"
           body="Make one in Settings, then invite players here."
           action={
-            <Button size="sm" href="/golf/dashboard/settings?section=team">
+            <Button data-ctl="CTL-P003-018" size="sm" href="/golf/dashboard/settings?section=team">
               Open team settings
             </Button>
           }

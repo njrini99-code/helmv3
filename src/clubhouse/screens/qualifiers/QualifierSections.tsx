@@ -62,7 +62,7 @@ export function LiveChip({ view }: { view: LiveFeedView }) {
     return (
       <span className="ch-qf-feed" data-feed="paused" role="status">
         <Badge tone="warning">{at ? `Paused · standings from ${at}` : 'Paused'}</Badge>
-        <button
+        <button data-ctl="CTL-P009-038"
           type="button"
           className="ch-qf-feed__refresh"
           disabled={refreshing}

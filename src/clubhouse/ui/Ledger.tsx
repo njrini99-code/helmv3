@@ -19,6 +19,8 @@ interface KitProps {
   /** The accessible name (`aria-label`). A row that opens something is named by its own words; give it one only when they
    * don't say enough, and open it with them (F-0011, WCAG 2.5.3 Label in Name). */
   label?: string;
+  /** The caller's control id (CTL-P###-NNN, spec §4.7), written on the row's link or button. */
+  'data-ctl'?: string;
 }
 
 const cx = (base: string, className?: string) => base + (className ? ` ${className}` : '');
@@ -51,6 +53,7 @@ export function LedgerRow({
   className,
   code,
   label,
+  'data-ctl': ctl,
 }: KitProps & {
   lead?: ReactNode;
   title: ReactNode;
@@ -97,11 +100,11 @@ export function LedgerRow({
   return (
     <li className="ch-lgr__item" aria-label={href || onClick ? undefined : label}>
       {href ? (
-        <Link prefetch={false} href={href} className={cls} data-ch-code={code} aria-label={label} onClick={onClick} onPointerDown={onPointerDown} data-ch-ahead={ahead}>
+        <Link prefetch={false} href={href} className={cls} data-ch-code={code} data-ctl={ctl} aria-label={label} onClick={onClick} onPointerDown={onPointerDown} data-ch-ahead={ahead}>
           {body}
         </Link>
       ) : onClick ? (
-        <button type="button" className={cls} data-ch-code={code} aria-label={label} onClick={onClick}>
+        <button type="button" className={cls} data-ch-code={code} data-ctl={ctl} aria-label={label} onClick={onClick}>
           {body}
         </button>
       ) : (
@@ -155,6 +158,7 @@ export function FeatureCard({
   className,
   code,
   label,
+  'data-ctl': ctl,
 }: KitProps & {
   kicker: ReactNode;
   chip?: ReactNode;
@@ -179,13 +183,13 @@ export function FeatureCard({
   );
   if (href)
     return (
-      <Link href={href} className={cx('ch-feat is-link', className)} data-ch-code={code} aria-label={label} onClick={onClick}>
+      <Link href={href} className={cx('ch-feat is-link', className)} data-ch-code={code} data-ctl={ctl} aria-label={label} onClick={onClick}>
         {body}
       </Link>
     );
   if (onClick)
     return (
-      <button type="button" className={cx('ch-feat is-link', className)} data-ch-code={code} aria-label={label} onClick={onClick}>
+      <button type="button" className={cx('ch-feat is-link', className)} data-ch-code={code} data-ctl={ctl} aria-label={label} onClick={onClick}>
         {body}
       </button>
     );

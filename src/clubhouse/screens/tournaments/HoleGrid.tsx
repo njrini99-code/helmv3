@@ -74,7 +74,7 @@ export function HoleGrid({
     const d = s == null ? null : s - par;
     return (
       <span key={i} role="cell" className={'ch-tour-desk-hg__c' + (disputed ? ' is-disputed' : '')}>
-        <button type="button" className="ch-tour-desk-hg__cell" onClick={() => onOpen(r)} aria-label={`${name(r.playerId)?.name ?? 'Player'} hole ${i + 1}: ${s ?? 'no score'}, par ${par}${disputed ? ', disputed' : ''}. Open the evidence`}>
+        <button data-ctl="CTL-P016-039" type="button" className="ch-tour-desk-hg__cell" onClick={() => onOpen(r)} aria-label={`${name(r.playerId)?.name ?? 'Player'} hole ${i + 1}: ${s ?? 'no score'}, par ${par}${disputed ? ', disputed' : ''}. Open the evidence`}>
           {mode === 'to-par' ? (
             <span className={'ch-num ch-tour-desk-hg__tp' + (d != null && d < 0 ? ' ch-tour-under' : '')}>{d == null ? <NoData /> : formatToPar(d)}</span>
           ) : (

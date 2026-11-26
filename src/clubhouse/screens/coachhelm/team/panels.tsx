@@ -39,7 +39,7 @@ function Head({ lead, name, line, onClose }: { lead: React.ReactNode; name: stri
         {/* GAP-H-24: no line is no row, never an empty one under the name. */}
         {line && <span>{line}</span>}
       </span>
-      <button type="button" className="xb" aria-label="Close" onClick={onClose}>
+      <button data-ctl="CTL-P013-264" type="button" className="xb" aria-label="Close" onClick={onClose}>
         <Icon icon={X} size={16} />
       </button>
     </div>
@@ -261,14 +261,14 @@ export function ReadPanel({
         <div className="acts" data-acts="">
           <FocusActions propose fa={fa} target={{ playerId: player.id, first: player.first, ins: read }} missing={missing} where="board" noDismiss={!dismissible} />
           {ask && (
-            <Button variant="ghost" href={ask}>
+            <Button data-ctl="CTL-P013-265" variant="ghost" href={ask}>
               Ask about this
             </Button>
           )}
         </div>
       )}
       {href && (
-        <Link className="lk" href={href}>
+        <Link data-ctl="CTL-P013-266" className="lk" href={href}>
           Open the full read <Chevron />
         </Link>
       )}
@@ -286,7 +286,7 @@ export function PlayerPanel({ player, onClose }: { player: ChTeamPlayer; onClose
   return (
     <>
       <Head lead={<Coin player={player} />} name={player.name} line={line} onClose={onClose} />
-      <Link className="lk" href={playerFileHref(player.id)}>
+      <Link data-ctl="CTL-P013-267" className="lk" href={playerFileHref(player.id)}>
         Open {player.first}’s page <Chevron />
       </Link>
     </>
@@ -338,7 +338,7 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose, story = null
             if (!p) return null;
             const dd = Math.round((x.value - x.season) * 10) / 10;
             return (
-              <button type="button" className="cp tapp" key={x.id} onClick={() => onPlayer(x.id)} aria-label={`${p.name}: ${toPar(x.value)} a round here from ${x.rounds} ${pluralWord(x.rounds, 'round', 'rounds')}, season ${toPar(x.season)}`}>
+              <button data-ctl="CTL-P013-268" type="button" className="cp tapp" key={x.id} onClick={() => onPlayer(x.id)} aria-label={`${p.name}: ${toPar(x.value)} a round here from ${x.rounds} ${pluralWord(x.rounds, 'round', 'rounds')}, season ${toPar(x.season)}`}>
                 <Coin player={p} small />
                 <span className="n">
                   <b>{p.first}</b>
@@ -385,7 +385,7 @@ export function CourseSheet({ row, data, onPlayer, onRead, onClose, story = null
         </section>
       )}
       {story && (
-        <button type="button" className="lk" onClick={story.open}>
+        <button data-ctl="CTL-P013-269" type="button" className="lk" onClick={story.open}>
           Read the story from {story.when} at {row.name} <Chevron />
         </button>
       )}
@@ -399,7 +399,7 @@ export function GonePanel({ onClose }: { onClose: () => void }) {
   return (
     <>
       <Head lead={null} name="This read isn’t on the board anymore" line="It may have been resolved, or the player has left the team." onClose={onClose} />
-      <Button variant="ghost" size="lg" onClick={onClose}>
+      <Button data-ctl="CTL-P013-270" variant="ghost" size="lg" onClick={onClose}>
         Close
       </Button>
     </>

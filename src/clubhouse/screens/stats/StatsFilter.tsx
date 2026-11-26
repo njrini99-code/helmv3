@@ -103,7 +103,7 @@ export function StatsFilter({
   return (
     <section className={'ch-sf' + (phone ? ' is-phone' : '')} aria-label="Round filter">
       <div className="ch-sf__bar">
-        <button type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" data-ch={hook} onClick={() => setOpen(true)}>
+        <button data-ctl="CTL-P004-005" type="button" className={'ch-btn ch-btn--ghost ch-btn--sm ch-sf__open' + (phone ? '' : ' ch-btn--flush-start')} aria-haspopup="dialog" data-ch={hook} onClick={() => setOpen(true)}>
           <Icon icon={SlidersHorizontal} size={14} />
           <span>Filter</span>
           {chips.length > 0 && <span role="img" className="ch-sf__n ch-num" aria-label={`${chips.length} on`}>{chips.length}</span>}
@@ -112,7 +112,7 @@ export function StatsFilter({
           <ul className="ch-sf__chips" aria-label="Active filters">
             {chips.map((c) => (
               <li key={c.key}>
-                <button
+                <button data-ctl="CTL-P004-006"
                   type="button"
                   className="ch-sf__chip"
                   aria-label={`Remove filter: ${c.label}`}
@@ -129,7 +129,7 @@ export function StatsFilter({
           </ul>
         )}
         {active && (
-          <button
+          <button data-ctl="CTL-P004-007"
             type="button"
             className="ch-sf__clear"
             aria-label="Clear filters"
@@ -197,7 +197,7 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
         title="No rounds match these filters."
         body="Try a wider time, fewer round types, or clear the filters to see every round again."
         action={
-          <Button leftIcon={X} onClick={onClear}>
+          <Button data-ctl="CTL-P004-008" leftIcon={X} onClick={onClear}>
             Clear filters
           </Button>
         }
@@ -212,7 +212,7 @@ export function FilterEmpty({ code, onClear, page = false }: { code: string; onC
         title="No rounds match these filters."
         body="Try a wider time, fewer round types, or clear the filters to see every round again."
         action={
-          <Button size="sm" onClick={onClear}>
+          <Button data-ctl="CTL-P004-009" size="sm" onClick={onClear}>
             Clear filters
           </Button>
         }
@@ -310,7 +310,7 @@ function FilterSheet({
       width={600}
       footer={
         <>
-          <Button
+          <Button data-ctl="CTL-P004-010"
             variant="ghost"
             onClick={() => {
               setDraft(clearFilters(draft));
@@ -323,7 +323,7 @@ function FilterSheet({
           >
             Clear
           </Button>
-          <Button variant="primary" onClick={apply}>
+          <Button data-ctl="CTL-P004-011" variant="primary" onClick={apply}>
             Done
           </Button>
         </>
@@ -333,11 +333,11 @@ function FilterSheet({
         <div className="ch-sf-sec" role="group" aria-labelledby={`${uid}-type`}>
           <h3 id={`${uid}-type`}>Round type</h3>
           <div className="ch-pills">
-            <button type="button" className="ch-pill ch-num" aria-pressed={draft.types.length === 0} onClick={() => setType('all')}>
+            <button data-ctl="CTL-P004-012" type="button" className="ch-pill ch-num" aria-pressed={draft.types.length === 0} onClick={() => setType('all')}>
               All
             </button>
             {ROUND_KINDS.map((k) => (
-              <button key={k} type="button" className="ch-pill ch-num" aria-pressed={draft.types.includes(k)} onClick={() => setType(k)}>
+              <button data-ctl="CTL-P004-013" key={k} type="button" className="ch-pill ch-num" aria-pressed={draft.types.includes(k)} onClick={() => setType(k)}>
                 {KIND_LABEL[k]}
               </button>
             ))}
@@ -348,7 +348,7 @@ function FilterSheet({
           <h3 id={`${uid}-holes`}>Holes</h3>
           <div className="ch-pills">
             {HOLES.map((h) => (
-              <button
+              <button data-ctl="CTL-P004-014"
                 key={h.value}
                 type="button"
                 className="ch-pill ch-num"
@@ -430,7 +430,7 @@ function FilterSheet({
           <h3 id={`${uid}-pick`}>Pick rounds</h3>
           <div className="ch-pills">
             {MODES.map((m) => (
-              <button
+              <button data-ctl="CTL-P004-015"
                 key={m.value}
                 type="button"
                 className="ch-pill ch-num"

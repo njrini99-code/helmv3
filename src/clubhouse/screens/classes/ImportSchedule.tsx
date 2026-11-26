@@ -236,15 +236,15 @@ export function ImportSchedule({
         width={620}
         footer={
           done ? (
-            <Button variant="primary" onClick={close}>
+            <Button data-ctl="CTL-P012-035" variant="primary" onClick={close}>
               View classes
             </Button>
           ) : step === 'review' ? (
             <>
-              <Button variant="ghost" feel={askFirst ? 'warning' : null} onClick={() => (askFirst ? setRestarting(true) : startOver())}>
+              <Button data-ctl="CTL-P012-036" variant="ghost" feel={askFirst ? 'warning' : null} onClick={() => (askFirst ? setRestarting(true) : startOver())}>
                 Start over
               </Button>
-              <Button variant="primary" leftIcon={Check} busy={importing} disabled={!rows.length} onClick={() => void onImport(rows)}>
+              <Button data-ctl="CTL-P012-037" variant="primary" leftIcon={Check} busy={importing} disabled={!rows.length} onClick={() => void onImport(rows)}>
                 {importing ? 'Importing…' : `Import ${plural(rows.length, 'class', 'classes')}`}
               </Button>
             </>
@@ -282,11 +282,11 @@ export function ImportSchedule({
               <p>{fail.message}</p>
               <div className="ch-cl-err__a">
                 {fail.kind === 'offline' && last.current ? (
-                  <Button variant="primary" onClick={() => void run(last.current!)}>
+                  <Button data-ctl="CTL-P012-038" variant="primary" onClick={() => void run(last.current!)}>
                     Try again
                   </Button>
                 ) : fail.kind === 'notSchedule' || fail.kind === 'tooLarge' || fail.kind === 'unsupported' ? (
-                  <Button
+                  <Button data-ctl="CTL-P012-039"
                     variant="primary"
                     onClick={() => {
                       setTab('file');
@@ -296,7 +296,7 @@ export function ImportSchedule({
                     Choose another file
                   </Button>
                 ) : null}
-                <Button
+                <Button data-ctl="CTL-P012-040"
                   variant={fail.kind === 'fault' || fail.kind === 'none' ? 'primary' : 'ghost'}
                   onClick={() => {
                     setTab('paste');
@@ -362,7 +362,7 @@ export function ImportSchedule({
                           )}
                         </span>
                         <Tooltip>
-                          <button type="button" className="ch-cl-rv__x" aria-label={`Remove ${r.code || r.name}`} onClick={() => setRows((xs) => xs.filter((x) => x.key !== r.key))}>
+                          <button data-ctl="CTL-P012-041" type="button" className="ch-cl-rv__x" aria-label={`Remove ${r.code || r.name}`} onClick={() => setRows((xs) => xs.filter((x) => x.key !== r.key))}>
                             <Icon icon={Trash2} size={14} />
                           </button>
                         </Tooltip>
@@ -390,7 +390,7 @@ export function ImportSchedule({
               {tab === 'file' ? (
                 <>
                   {/* CH-12805: the drop zone is a real button, so the keyboard opens the file picker too. */}
-                  <button
+                  <button data-ctl="CTL-P012-042"
                     type="button"
                     className={'ch-cl-drop' + (over ? ' is-over' : '')}
                     onClick={() => fileRef.current?.click()}
@@ -452,7 +452,7 @@ export function ImportSchedule({
                       Paste your schedule text first.
                     </span>
                   )}
-                  <Button
+                  <Button data-ctl="CTL-P012-043"
                     variant="primary"
                     leftIcon={Sparkles}
                     onClick={() => {
@@ -480,11 +480,11 @@ export function ImportSchedule({
         description={`The ${pluralWord(rows.length, 'class', `${rows.length} classes`)} you reviewed ${pluralWord(rows.length, 'is', 'are')} let go, and nothing is imported.`}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setRestarting(false)}>
+            <Button data-ctl="CTL-P012-044" variant="ghost" onClick={() => setRestarting(false)}>
               Keep reviewing
             </Button>
             {/* The warning came with the question (D-70): the yes is silent, and the result answers. */}
-            <Button variant="danger" feel={null} onClick={startOver}>
+            <Button data-ctl="CTL-P012-045" variant="danger" feel={null} onClick={startOver}>
               Start over
             </Button>
           </>
@@ -559,7 +559,7 @@ function ImportedView({
         {/* A class that can't be on the calendar yet is a button to its form, where what's missing is added. */}
         {imported.classes.map((c) =>
           onEdit && calendarGap(c) != null ? (
-            <button key={c.id} type="button" className={`ch-cl-t-${c.tone}`} aria-label={`Open ${c.code || c.name} to add what’s missing`} onClick={() => onEdit(c)}>
+            <button data-ctl="CTL-P012-046" key={c.id} type="button" className={`ch-cl-t-${c.tone}`} aria-label={`Open ${c.code || c.name} to add what’s missing`} onClick={() => onEdit(c)}>
               <Icon icon={Pencil} size={12} />
               {c.code || c.name}
             </button>

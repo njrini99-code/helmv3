@@ -143,7 +143,7 @@ export function PhoneNewMessage({
                 <b id="ch-msp-new-quick">Quick groups</b>
               </header>
               <div>
-                <button type="button" className="ch-msp-row is-btn" onClick={onAnnounce}>
+                <button data-ctl="CTL-P007-049" type="button" className="ch-msp-row is-btn" onClick={onAnnounce}>
                   <span className="ch-msp-row__ic is-round">
                     <Icon icon={Megaphone} size={16} />
                   </span>
@@ -154,7 +154,7 @@ export function PhoneNewMessage({
                   <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />
                 </button>
                 {players.length > 0 && (
-                  <button
+                  <button data-ctl="CTL-P007-050"
                     type="button"
                     className="ch-msp-row is-btn"
                     onClick={() => pick([...players, ...coaches].map((p) => p.userId), api.teamName ?? "Whole team")}
@@ -172,7 +172,7 @@ export function PhoneNewMessage({
                   </button>
                 )}
                 {seniors.length > 0 && (
-                  <button type="button" className="ch-msp-row is-btn" onClick={() => pick(seniors.map((p) => p.userId), "Seniors")}>
+                  <button data-ctl="CTL-P007-051" type="button" className="ch-msp-row is-btn" onClick={() => pick(seniors.map((p) => p.userId), "Seniors")}>
                     <span className="ch-msp-row__ic is-round">
                       <Icon icon={UserRound} size={16} />
                     </span>
@@ -195,7 +195,7 @@ export function PhoneNewMessage({
         titleId="ch-msp-new-title"
         action={
           (coach && to.length > 0) ? (
-            <PhoneTextAction onClick={() => void go()} disabled={!to.length} busy={busy}>
+            <PhoneTextAction data-ctl="CTL-P007-052" onClick={() => void go()} disabled={!to.length} busy={busy}>
               {busy ? "Starting…" : group ? "Create group" : "Next"}
             </PhoneTextAction>
           ) : undefined
@@ -207,7 +207,7 @@ export function PhoneNewMessage({
         </span>
         <div className="ch-msp-to__f">
           {to.map((id) => (
-            <button key={id} type="button" className="ch-msp-tok ch-msd-tok" ref={(el) => void pop(el, 0.8, { once: true, fade: true })} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
+            <button data-ctl="CTL-P007-053" key={id} type="button" className="ch-msp-tok ch-msd-tok" ref={(el) => void pop(el, 0.8, { once: true, fade: true })} aria-label={`Remove ${personOf(api, id)?.name ?? "person"}`} onClick={() => toggle(id)}>
               <Avatar name={personOf(api, id)?.name ?? FORMER_MEMBER} id={personOf(api, id)?.playerId ?? id} size={22} />
               {(personOf(api, id)?.name ? firstName(personOf(api, id)!.name) : FORMER_MEMBER)}
               <Icon icon={X} size={12} />
@@ -274,7 +274,7 @@ export function PhoneNewMessage({
               {people.map((p) => {
                 const on = to.includes(p.userId);
                 return (
-                  <button key={p.userId} type="button" role="option" aria-selected={on} className={"ch-msp-row is-btn ch-msd-sug" + (matches(p.name) ? "" : " is-dim")} onClick={() => toggle(p.userId)}>
+                  <button data-ctl="CTL-P007-054" key={p.userId} type="button" role="option" aria-selected={on} className={"ch-msp-row is-btn ch-msd-sug" + (matches(p.name) ? "" : " is-dim")} onClick={() => toggle(p.userId)}>
                     <Avatar name={p.name} id={p.playerId ?? p.userId} size="md" />
                     <span className="ch-msp-row__b">
                       <b>{p.name}</b>
@@ -299,8 +299,8 @@ export function PhoneNewMessage({
       <footer ref={footer} className="ch-ms-comp" hidden={!to.length}>
         <AttachChips files={files} onRemove={(i) => setFiles(files.filter((_, j) => j !== i))} />
         {/* As the thread's composer: a tap on the pill's own edge puts the caret in the field (F-0021). */}
-        <div className="ch-ms-comp__field" role="presentation" onClick={(e) => e.target === e.currentTarget && box.current?.focus()}>
-          <AttachButton phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />
+        <div data-ctl="CTL-P007-055" className="ch-ms-comp__field" role="presentation" onClick={(e) => e.target === e.currentTarget && box.current?.focus()}>
+          <AttachButton data-ctl="CTL-P007-056" phone disabled={!to.length} onPick={(picked) => setFiles(addFiles(files, picked))} />
           <textarea
             ref={box}
             rows={1}
@@ -313,7 +313,7 @@ export function PhoneNewMessage({
             // Return adds a line, as in the thread; Send sends.
             enterKeyHint="enter"
           />
-          <button
+          <button data-ctl="CTL-P007-057"
             type="button"
             className={"ch-ms-send" + (to.length && (draft.trim() || files.length) && !busy ? " is-ready" : "")}
             onClick={() => void go()}

@@ -58,7 +58,7 @@ export function EventLiveRow({ e }: { e: ChCalEvent }) {
   const n = useEventLiveCount(e);
   if (n < 1) return null;
   return (
-    <Link href={eventLiveHref(e)} className="ch-lv-evrow" data-ch-code="CH-16640">
+    <Link data-ctl="CTL-P006-145" href={eventLiveHref(e)} className="ch-lv-evrow" data-ch-code="CH-16640">
       <span className="ch-lv-dot" aria-hidden="true" />
       <span>{LIVE_COPY.eventRow(n)}</span>
       <Icon icon={ChevronRight} size={16} />

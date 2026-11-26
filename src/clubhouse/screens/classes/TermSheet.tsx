@@ -95,10 +95,10 @@ export function TermSheet({
       initialFocus={editing ? undefined : `[id="${id}-label"]`}
       footer={
         <>
-          <Button variant="ghost" disabled={save.pending} onClick={onClose}>
+          <Button data-ctl="CTL-P012-062" variant="ghost" disabled={save.pending} onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="primary" busy={save.pending} disabled={!complete} onClick={() => void submit()}>
+          <Button data-ctl="CTL-P012-063" variant="primary" busy={save.pending} disabled={!complete} onClick={() => void submit()}>
             {save.pending ? 'Saving…' : 'Save dates'}
           </Button>
         </>
@@ -112,7 +112,7 @@ export function TermSheet({
           void submit();
         }}
       >
-        <button type="submit" hidden />
+        <button data-ctl="CTL-P012-064" type="submit" hidden />
         <div className="ch-field">
           <label htmlFor={`${id}-label`} className="ch-field__label">
             Term name

@@ -399,9 +399,9 @@ function JumpPanel({ anchor, today, view, trigger, onPick, onClose }: { anchor: 
           {monthName(month)} {yearOf(month)}
         </span>
         <span className="ch-cal-jump__nav">
-          <IconButton icon={ChevronLeft} label="Previous month" size="sm" onClick={() => setMonth(addMonths(month, -1))} />
-          <IconButton icon={ChevronRight} label="Next month" size="sm" onClick={() => setMonth(addMonths(month, 1))} />
-          <IconButton icon={X} label="Close" size="sm" onClick={() => onClose(true)} />
+          <IconButton data-ctl="CTL-P006-001" icon={ChevronLeft} label="Previous month" size="sm" onClick={() => setMonth(addMonths(month, -1))} />
+          <IconButton data-ctl="CTL-P006-002" icon={ChevronRight} label="Next month" size="sm" onClick={() => setMonth(addMonths(month, 1))} />
+          <IconButton data-ctl="CTL-P006-003" icon={X} label="Close" size="sm" onClick={() => onClose(true)} />
         </span>
       </div>
       <div className="ch-cal-jump__grid">
@@ -411,7 +411,7 @@ function JumpPanel({ anchor, today, view, trigger, onPick, onClose }: { anchor: 
           </span>
         ))}
         {monthCells(month).map(({ date, out }) => (
-          <button
+          <button data-ctl="CTL-P006-004"
             key={date}
             type="button"
             className={'ch-cal-jump__d' + (out ? ' is-out' : '') + (date === today ? ' is-today' : '') + (range.has(date) ? ' is-range' : '')}
@@ -473,7 +473,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
       {/* SWP-03 (WCAG 2.5.3 Label in Name): named by its words, "Everyone Team schedule · 6 players", then what it does. An
           aria-label ("People: Everyone") named it in other words than its face (the faces' initials, the label and the
           line under it), which axe and Voice Control could not match. The faces are for the eye. */}
-      <button ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open}>
+      <button data-ctl="CTL-P006-005" ref={trigger} type="button" className={'ch-pp__trigger' + (chosen.length ? ' is-on' : '')} onClick={() => setOpen(!open)} aria-haspopup="dialog" aria-expanded={open}>
         <span className="ch-pp__stack" aria-hidden="true">
           {stack.map((p) => (
             <Avatar key={p.id} name={p.name} id={p.id} size={26} />
@@ -488,7 +488,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
         <Icon icon={ChevronsUpDown} size={14} />
       </button>
       {chosen.length > 0 && (
-        <Button size="sm" onClick={() => setSel([])}>
+        <Button data-ctl="CTL-P006-006" size="sm" onClick={() => setSel([])}>
           Clear
         </Button>
       )}
@@ -496,7 +496,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
         {open && (
         <Pop panel={popover} className="ch-pp__pop" label="Choose people" style={placement}>
           <SearchField className="ch-pp__search" value={q} onChange={setQ} placeholder="Find a player" label="Find a player" />
-          <button type="button" className="ch-pp__row" aria-pressed={!chosen.length} onClick={() => (haptic('select'), setSel([]))}>
+          <button data-ctl="CTL-P006-007" type="button" className="ch-pp__row" aria-pressed={!chosen.length} onClick={() => (haptic('select'), setSel([]))}>
             <span className="ch-pp__all">
               <Icon icon={Users} size={14} />
             </span>
@@ -511,7 +511,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
             {list.map((p) => {
               const on = sel.includes(p.id);
               return (
-                <button key={p.id} type="button" className="ch-pp__row" aria-pressed={on} onClick={() => tog(p.id)}>
+                <button data-ctl="CTL-P006-008" key={p.id} type="button" className="ch-pp__row" aria-pressed={on} onClick={() => tog(p.id)}>
                   <Avatar name={p.name} id={p.id} size="sm" />
                   <span className="ch-pp__name">
                     <b>{p.name}</b>
@@ -525,7 +525,7 @@ function PeoplePicker({ people, sel, setSel }: { people: ChCalendarData['people'
           </div>
           <div className="ch-pp__foot">
             <span>{chosen.length > 1 ? 'Overlaps show where schedules collide' : 'Pick two or more to compare'}</span>
-            <Button size="sm" variant="primary" onClick={() => close(true)}>
+            <Button data-ctl="CTL-P006-009" size="sm" variant="primary" onClick={() => close(true)}>
               Done
             </Button>
           </div>
@@ -1255,7 +1255,7 @@ function CalendarBody({
       )}
       <header className="ch-cal-mast" data-canopy-head="tight">
         <div className="ch-cal-mast__l">
-          <button ref={jumpBtn} type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
+          <button data-ctl="CTL-P006-010" ref={jumpBtn} type="button" className="ch-cal-title" onClick={() => setJump(!jump)} aria-expanded={jump} aria-haspopup="dialog" aria-label={`${title.main}${title.year ? ` ${title.year}` : ''}. Jump to a date`}>
             <h1>{title.main}</h1>
             {/* F-0011: the space is not drawn (the title is a flex row) but keeps "October 2026" apart for the name to match it. */}
             {title.year && (
@@ -1288,17 +1288,17 @@ function CalendarBody({
         </div>
         <div className="ch-cal-tools">
           {away && (
-            <Button size="sm" leftIcon={CalendarCheck} onClick={goToday}>
+            <Button data-ctl="CTL-P006-011" size="sm" leftIcon={CalendarCheck} onClick={goToday}>
               Today
             </Button>
           )}
           <Menu
             label="More calendar actions"
             items={moreItems}
-            trigger={(p) => <IconButton icon={Ellipsis} variant="secondary" label="More" menu={p} />}
+            trigger={(p) => <IconButton data-ctl="CTL-P006-012" icon={Ellipsis} variant="secondary" label="More" menu={p} />}
           />
           {coach && (
-            <Button variant="primary" leftIcon={Plus} kbd="N" onClick={() => setEditor({ event: null, date: view === 'day' ? anchor : undefined })}>
+            <Button data-ctl="CTL-P006-013" variant="primary" leftIcon={Plus} kbd="N" onClick={() => setEditor({ event: null, date: view === 'day' ? anchor : undefined })}>
               New event
             </Button>
           )}
@@ -1309,8 +1309,8 @@ function CalendarBody({
         <div className="ch-cal-viewctl">
           {/* P006 D6: List (the agenda) keeps the arrows' place (hidden, out of reach), so the toolbar doesn't shift as views change. */}
           <span className={'ch-cal-step' + (view === 'agenda' ? ' is-off' : '')} inert={view === 'agenda'} aria-hidden={view === 'agenda' || undefined}>
-            <IconButton icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
-            <IconButton icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
+            <IconButton data-ctl="CTL-P006-014" icon={ChevronLeft} label={`Previous ${view === 'agenda' ? 'month' : view}`} onClick={() => step(-1)} />
+            <IconButton data-ctl="CTL-P006-015" icon={ChevronRight} label={`Next ${view === 'agenda' ? 'month' : view}`} onClick={() => step(1)} />
           </span>
           <Segmented<ChCalView> redraws
             label="View"
@@ -1327,7 +1327,7 @@ function CalendarBody({
         </div>
         {coach && data.people.length > 0 && <PeoplePicker people={data.people} sel={sel} setSel={setSel} />}
         {view === 'week' && !data.eventsError && attention.count > 0 && (
-          <Button variant="ghost" className="ch-cal-attn ch-num" onClick={toAttention}>
+          <Button data-ctl="CTL-P006-016" variant="ghost" className="ch-cal-attn ch-num" onClick={toAttention}>
             {attention.heading} · {attention.count}
           </Button>
         )}

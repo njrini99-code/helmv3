@@ -42,12 +42,12 @@ function LibraryHead({ tab, title, actionLabel, onAction }: { tab: PracticeTab; 
   const phone = useChPhone();
   return (
     <>
-      {phone && <PhoneTop start heading={false} title={title} action={actionLabel && onAction ? <PhoneIconAction icon={Plus} label={actionLabel} onClick={onAction} /> : undefined} />}
+      {phone && <PhoneTop start heading={false} title={title} action={actionLabel && onAction ? <PhoneIconAction data-ctl="CTL-P017-008" icon={Plus} label={actionLabel} onClick={onAction} /> : undefined} />}
       <header className="ch-prc-h">
         <LargeTitle id="ch-prc-title">{title}</LargeTitle>
         {!phone && actionLabel && onAction && (
           <div className="ch-prc-h__a">
-            <Button variant="primary" leftIcon={Plus} onClick={onAction}>
+            <Button data-ctl="CTL-P017-009" variant="primary" leftIcon={Plus} onClick={onAction}>
               {actionLabel}
             </Button>
           </div>
@@ -59,11 +59,11 @@ function LibraryHead({ tab, title, actionLabel, onAction }: { tab: PracticeTab; 
 }
 
 /** `tagged` shows the GolfHelm chip; the GolfHelm section's heading already says it, so only the team's own list asks (L-011). */
-function DrillRowLink({ d, tagged = true }: { d: ChDrillRow; tagged?: boolean }) {
+function DrillRowLink({ d, tagged = true, 'data-ctl': ctl }: { d: ChDrillRow; tagged?: boolean; 'data-ctl'?: string }) {
   const facts = [d.areaLabel, d.kind ? KIND_WORD[d.kind] : null, d.minutes != null ? hours(d.minutes) : null, d.players].filter(Boolean).join(' · ');
   return (
     <li>
-      <Link href={`/golf/dashboard/practice/drills/${d.id}`} className="ch-prc-row">
+      <Link data-ctl={ctl ?? 'CTL-P017-010'} href={`/golf/dashboard/practice/drills/${d.id}`} className="ch-prc-row">
         <span className="ch-prc-row__m">
           <span className="ch-prc-row__top">
             <b>{d.name}</b>
@@ -98,11 +98,11 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
       <div className="ch-prc-find">
         <SearchField value={q} onChange={setQ} placeholder="Search drills" label="Search drills" />
         <div ref={areaEdges} className="ch-hscroll ch-pills ch-prc-areas" role="group" aria-label="Area">
-          <button type="button" className="ch-pill" aria-pressed={area === 'all'} onClick={() => setArea('all')}>
+          <button data-ctl="CTL-P017-011" type="button" className="ch-pill" aria-pressed={area === 'all'} onClick={() => setArea('all')}>
             All
           </button>
           {AREAS.map(([v, label]) => (
-            <button key={v} type="button" className="ch-pill" aria-pressed={area === v} onClick={() => setArea(v)}>
+            <button data-ctl="CTL-P017-012" key={v} type="button" className="ch-pill" aria-pressed={area === v} onClick={() => setArea(v)}>
               {label}
             </button>
           ))}
@@ -114,7 +114,7 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
           title={q.trim() ? `No drills match “${q.trim()}”` : 'No drills here yet'}
           body={q.trim() ? 'Try another word, or save it as a new drill.' : 'New drills you save show up here.'}
           action={
-            <Button variant="primary" onClick={() => setCreating(true)}>
+            <Button data-ctl="CTL-P017-013" variant="primary" onClick={() => setCreating(true)}>
               New drill
             </Button>
           }
@@ -124,13 +124,13 @@ export function DrillsPage({ teamId, team, library, preview = false }: { teamId:
           <section className="ch-prc-sec" aria-label="Your drills">
             <h2>Your drills</h2>
             <SectionBoundary surface="practice.drills.team" label="Your drills" code="CH-13204">
-              {mine.length ? <ul className="ch-prc-list is-drills">{mine.map((d) => <DrillRowLink key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{team.length ? 'None in this area.' : 'None yet. Copy a GolfHelm drill, or add your own.'}</p>}
+              {mine.length ? <ul className="ch-prc-list is-drills">{mine.map((d) => <DrillRowLink data-ctl="CTL-P017-014" key={d.id} d={d} />)}</ul> : <p className="ch-prc-none">{team.length ? 'None in this area.' : 'None yet. Copy a GolfHelm drill, or add your own.'}</p>}
             </SectionBoundary>
           </section>
           <section className="ch-prc-sec" aria-label="GolfHelm drills">
             <h2>GolfHelm drills</h2>
             <SectionBoundary surface="practice.drills.library" label="GolfHelm drills" code="CH-13204">
-              {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink key={d.id} d={d} tagged={false} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
+              {theirs.length ? <ul className="ch-prc-list is-drills">{theirs.map((d) => <DrillRowLink data-ctl="CTL-P017-015" key={d.id} d={d} tagged={false} />)}</ul> : <p className="ch-prc-none">{area === 'bunker' || area === 'fitness' ? `No GolfHelm drills for ${AREA_WORDS[area]} yet.` : 'None in this area.'}</p>}
             </SectionBoundary>
           </section>
         </>
@@ -211,13 +211,13 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
         <div className="ch-prc-h__a is-page">
           {team ? (
             <>
-              <Button onClick={() => setArchiving(true)}>Archive</Button>
-              <Button variant="primary" onClick={() => setEditing(true)}>
+              <Button data-ctl="CTL-P017-016" onClick={() => setArchiving(true)}>Archive</Button>
+              <Button data-ctl="CTL-P017-017" variant="primary" onClick={() => setEditing(true)}>
                 Edit
               </Button>
             </>
           ) : (
-            <Button variant="primary" busy={busy} onClick={() => void copy()}>
+            <Button data-ctl="CTL-P017-018" variant="primary" busy={busy} onClick={() => void copy()}>
               Add to your drills
             </Button>
           )}
@@ -308,10 +308,10 @@ export function DrillPage({ teamId, drill, preview = false }: { teamId: string; 
         width={420}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setArchiving(false)}>
+            <Button data-ctl="CTL-P017-019" variant="ghost" onClick={() => setArchiving(false)}>
               Keep
             </Button>
-            <Button variant="danger" busy={busy} onClick={() => void archive()}>
+            <Button data-ctl="CTL-P017-020" variant="danger" busy={busy} onClick={() => void archive()}>
               Archive
             </Button>
           </>
@@ -390,7 +390,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
           title="No saved groups yet"
           body="Save a group once, and any plan can use it."
           action={
-            <Button variant="primary" onClick={() => open('new')}>
+            <Button data-ctl="CTL-P017-021" variant="primary" onClick={() => open('new')}>
               New group
             </Button>
           }
@@ -400,7 +400,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
         <ul className="ch-prc-cards">
           {groups.map((g) => (
             <li key={g.id}>
-              <button type="button" className="ch-prc-gcard" data-ch-press=".97" onClick={() => open(g)}>
+              <button data-ctl="CTL-P017-022" type="button" className="ch-prc-gcard" data-ch-press=".97" onClick={() => open(g)}>
                 <b>{g.name}</b>
                 <span className="ch-prc-faces" aria-hidden="true">
                   {g.playerIds.slice(0, 8).map((id) => (
@@ -432,7 +432,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
             {roster.map((p) => (
               <li key={p.id}>
                 <label>
-                  <input type="checkbox" checked={picked.includes(p.id)} onChange={(e) => {
+                  <input data-ctl="CTL-P017-023" type="checkbox" checked={picked.includes(p.id)} onChange={(e) => {
                   const on = e.target.checked;
                   setPicked((list) => (on ? [...list, p.id] : list.filter((x) => x !== p.id)));
                 }} />
@@ -443,7 +443,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
             ))}
           </ul>
           {editing && editing !== 'new' && (
-            <Button variant="ghost" onClick={() => setDeleting(true)}>
+            <Button data-ctl="CTL-P017-024" variant="ghost" onClick={() => setDeleting(true)}>
               Delete group
             </Button>
           )}
@@ -457,10 +457,10 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
         width={420}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setDeleting(false)}>
+            <Button data-ctl="CTL-P017-025" variant="ghost" onClick={() => setDeleting(false)}>
               Keep
             </Button>
-            <Button variant="danger" busy={busy} onClick={() => void remove()}>
+            <Button data-ctl="CTL-P017-026" variant="danger" busy={busy} onClick={() => void remove()}>
               Delete
             </Button>
           </>
@@ -555,13 +555,13 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
           <ul className="ch-prc-cards">
             {PLAN_STARTERS.map((s) => (
               <li key={s.id} className="ch-prc-card ch-prc-tmpl">
-                <button type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(s.id)}>
+                <button data-ctl="CTL-P017-027" type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(s.id)}>
                   <b>{s.name}</b>
                   <span className="ch-num">Session · {hours(s.minutes)}</span>
                   <small>{s.line}</small>
                   <BodyGlance body={s.body} />
                 </button>
-                <Menu label={`${s.name}: more`} align="end" trigger={(p) => <IconButton icon={Ellipsis} size="sm" label={`${s.name}: more`} menu={p} />} items={[{ label: 'Use', onSelect: () => startFrom(s.id) }, { label: 'Duplicate to your templates', onSelect: () => void duplicate({ name: s.name, minutes: s.minutes, body: s.body, kind: 'session' }) }]} />
+                <Menu label={`${s.name}: more`} align="end" trigger={(p) => <IconButton data-ctl="CTL-P017-028" icon={Ellipsis} size="sm" label={`${s.name}: more`} menu={p} />} items={[{ label: 'Use', onSelect: () => startFrom(s.id) }, { label: 'Duplicate to your templates', onSelect: () => void duplicate({ name: s.name, minutes: s.minutes, body: s.body, kind: 'session' }) }]} />
               </li>
             ))}
           </ul>
@@ -581,7 +581,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
           <ul className="ch-prc-cards">
             {mine.map((t) => (
               <li key={t.id} className="ch-prc-card ch-prc-tmpl">
-                <button type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(t.id)}>
+                <button data-ctl="CTL-P017-029" type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(t.id)}>
                   <b>{t.name}</b>
                   <span className="ch-num">{t.kind === 'block' ? 'Block' : t.kind === 'week' ? 'Week' : 'Session'}{t.minutes ? ` · ${hours(t.minutes)}` : ''}</span>
                   <BodyGlance body={t.body} />
@@ -589,7 +589,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
                 <Menu
                   label={`${t.name}: more`}
                   align="end"
-                  trigger={(p) => <IconButton icon={Ellipsis} size="sm" label={`${t.name}: more`} menu={p} />}
+                  trigger={(p) => <IconButton data-ctl="CTL-P017-030" icon={Ellipsis} size="sm" label={`${t.name}: more`} menu={p} />}
                   items={[
                     { label: 'Use', onSelect: () => startFrom(t.id) },
                     { label: 'Duplicate', onSelect: () => void duplicate({ name: `${t.name} copy`, minutes: t.minutes ?? 60, body: t.body, kind: t.kind === 'block' ? 'block' : 'session' }) },
@@ -627,10 +627,10 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
         width={420}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setDeleting(null)}>
+            <Button data-ctl="CTL-P017-031" variant="ghost" onClick={() => setDeleting(null)}>
               Keep
             </Button>
-            <Button variant="danger" busy={busy} onClick={() => void remove()}>
+            <Button data-ctl="CTL-P017-032" variant="danger" busy={busy} onClick={() => void remove()}>
               Delete
             </Button>
           </>

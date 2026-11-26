@@ -93,7 +93,7 @@ export function Measure({ m }: { m: ChMeasure }) {
           </div>
           {(m.measured || m.floor) && (
             <details className="ch-hg-m__how">
-              <summary>
+              <summary data-ctl="CTL-P013-284">
                 <span>How it is measured</span>
                 <Icon icon={ChevronDown} size={15} />
               </summary>

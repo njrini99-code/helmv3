@@ -80,7 +80,7 @@ export function FeatureCard({
   return (
     // A tap anywhere on the card opens the read; the title is the real button, so the actions aren't nested in one.
     // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions -- the title button is the keyboard path
-    <section
+    <section data-ctl="CTL-P013-158"
       className="feat tap"
       data-ch-hf-read="top"
       data-ch="file-feature"
@@ -100,7 +100,7 @@ export function FeatureCard({
         <div className="feat__k">{playerKicker(stage, coach)}</div>
       )}
       <h3 className="feat__t">
-        <button type="button" className="feat__open ch-num" aria-label={`Open the read: ${b.title}`} onClick={onOpen}>
+        <button data-ctl="CTL-P013-159" type="button" className="feat__open ch-num" aria-label={`Open the read: ${b.title}`} onClick={onOpen}>
           {b.title}
         </button>
       </h3>
@@ -183,7 +183,7 @@ export function EarlyFeature({ lens, first, rounds, toGo }: { lens: FileLens; fi
 /** A coach's feature actions, by stage (06 §6). */
 export function CoachActions({ stage, first, assigning, disabled, messageHref, canAssign, onAssign }: { stage: ChFileStage; first: string; assigning: boolean; disabled: boolean; messageHref: string; canAssign: boolean; onAssign: () => void }) {
   const message = (
-    <Button variant="ghost" size="lg" className="ch-btn--on-green" href={messageHref} leftIcon={MessageSquare}>
+    <Button data-ctl="CTL-P013-160" variant="ghost" size="lg" className="ch-btn--on-green" href={messageHref} leftIcon={MessageSquare}>
       Message {first}
     </Button>
   );
@@ -210,7 +210,7 @@ export function CoachActions({ stage, first, assigning, disabled, messageHref, c
   return (
     <>
       {canAssign && (
-        <Button data={{ 'data-ch-hf-assign': '' }} variant="secondary" size="lg" disabled={assigning || disabled} busy={assigning || undefined} onClick={onAssign} leftIcon={Flag}>
+        <Button data-ctl="CTL-P013-161" data={{ 'data-ch-hf-assign': '' }} variant="secondary" size="lg" disabled={assigning || disabled} busy={assigning || undefined} onClick={onAssign} leftIcon={Flag}>
           {assigning ? 'Assigning' : 'Assign as focus'}
         </Button>
       )}
@@ -425,7 +425,7 @@ export function SgCard({ sg, who, standingHref }: { sg: ChFileSg; who: string; s
         {standingHref && (
           <>
             {' '}
-            <Link className="lnk" href={standingHref}>
+            <Link data-ctl="CTL-P013-162" className="lnk" href={standingHref}>
               {sg.standing ? `Full standing, ${sg.standing.toLowerCase()}` : 'Full standing'}
             </Link>
           </>
@@ -441,7 +441,7 @@ function readRow(d: ChDeepInsight, lens: FileLens, assigned: boolean, onOpen: (i
   const area = AREA[d.area] ?? 'Course and scoring';
   const firm = lens === 'player' ? d.base.evidence.read?.word : d.firmness;
   return (
-    <button type="button" className="r r--chip" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
+    <button data-ctl="CTL-P013-163" type="button" className="r r--chip" key={d.base.id} data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
       <Badge tone={CHIP_TONE[tone] ?? 'neutral'}>{stance.word}</Badge>
       <span className="r__t">
         <b className="l2 ch-num">{d.base.title}</b>
@@ -490,7 +490,7 @@ export function ReadsCard({ cards, lens, fa, onOpen, moreLine }: { cards: ChFile
                 <span className="r__t">
                   <b className="ch-num">Dismissed: {x.title}</b>
                 </span>
-                <button
+                <button data-ctl="CTL-P013-164"
                   type="button"
                   className="lnk"
                   data-ch-hf-undo=""
@@ -521,7 +521,7 @@ export function WorkingCard({ list, onOpen }: { list: ChDeepInsight[]; onOpen: (
     <section className="card" aria-labelledby="ch-hf-working">
       <CardHead id="ch-hf-working" title="What’s working" meta="Top strength" />
       <div className="rows">
-        <button type="button" className="r r--chip" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
+        <button data-ctl="CTL-P013-165" type="button" className="r r--chip" data-ch-hf-read={d.base.id} onClick={() => onOpen(d.base.id)}>
           <Badge tone="positive">Working</Badge>
           <span className="r__t">
             <b className="l2 ch-num">{d.base.title}</b>
@@ -562,7 +562,7 @@ export function IntentCard({ intent, first, onEdit }: { intent: ChFileIntent | n
             </dl>
           </div>
           <p className="card__n ch-num">
-            <button type="button" className="lnk ch-hf-44" data-ch-hf-intent-edit="" onClick={onEdit}>
+            <button data-ctl="CTL-P013-166" type="button" className="lnk ch-hf-44" data-ch-hf-intent-edit="" onClick={onEdit}>
               Edit plan
             </button>
           </p>
@@ -572,7 +572,7 @@ export function IntentCard({ intent, first, onEdit }: { intent: ChFileIntent | n
           <p className="cb-p">
             Not set yet. Until you set one, CoachHelm treats {first} as <b>Develop</b> with <b>Balanced</b> alerts.
           </p>
-          <Button data={{ 'data-ch-hf-intent-edit': '' }} variant="secondary" size="lg" onClick={onEdit}>
+          <Button data-ctl="CTL-P013-167" data={{ 'data-ch-hf-intent-edit': '' }} variant="secondary" size="lg" onClick={onEdit}>
             Set a plan
           </Button>
         </div>

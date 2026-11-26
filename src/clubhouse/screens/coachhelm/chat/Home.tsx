@@ -58,7 +58,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
             // A focus area with no outcome yet has no dot, and no empty 8px slot holding its words off the edge.
             const dot = l.trend ? DOT[l.trend] : undefined;
             return (
-              <button type="button" className="rw" data-ch-ask-source="" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
+              <button data-ctl="CTL-P013-032" type="button" className="rw" data-ch-ask-source="" key={l.text} disabled={!l.ask} onClick={() => l.ask && onAsk(l.ask)}>
                 {dot && <i className={dot} />}
                 <span>{l.text}</span>
               </button>
@@ -71,7 +71,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
           <b>Since Monday</b>
           {findings.slice(0, 3).map((f) => (
             // "Tap any line to ask" holds for every line: a finding with no question of its own asks about its headline.
-            <button type="button" className="rw" data-ch-ask-source="" key={f.id} onClick={() => onAsk(f.ask ?? `${f.headline}. What’s behind it, and what should I do?`)}>
+            <button data-ctl="CTL-P013-033" type="button" className="rw" data-ch-ask-source="" key={f.id} onClick={() => onAsk(f.ask ?? `${f.headline}. What’s behind it, and what should I do?`)}>
               <i className={DOT[String(f.tone)] ?? 'is-flat'} />
               <span>{f.headline}</span>
             </button>
@@ -84,7 +84,7 @@ export function AskHomeV2({ data, phone, heroComposer, onAsk, focus }: { data: C
     <ul className="sugg" aria-label="Questions to start with">
       {data.suggestions.slice(0, 4).map((s) => (
         <li key={s.id}>
-          <button
+          <button data-ctl="CTL-P013-034"
             type="button"
             data-ch-ask-source=""
             data-ch-code="CH-13721"

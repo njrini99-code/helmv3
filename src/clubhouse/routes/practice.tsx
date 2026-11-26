@@ -33,7 +33,7 @@ import '../styles/practice.css';
 
 const OFF = (
   <main className="ch-page" data-ch="practice">
-    <EmptyState size="page" title="Practice isn’t on yet" body="Practice plans aren’t on for your team yet. Your practices are on the Calendar." action={<Button href="/golf/dashboard/calendar">Go to Calendar</Button>} />
+    <EmptyState size="page" title="Practice isn’t on yet" body="Practice plans aren’t on for your team yet. Your practices are on the Calendar." action={<Button data-ctl="CTL-P017-001" href="/golf/dashboard/calendar">Go to Calendar</Button>} />
   </main>
 );
 /**

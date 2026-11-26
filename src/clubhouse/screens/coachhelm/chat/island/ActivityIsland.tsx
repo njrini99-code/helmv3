@@ -110,7 +110,7 @@ export function StepRow({ step, onOpen }: { step: IslandStep; onOpen?: (ref: str
         {step.ms !== null && step.state === 'done' && <span className="ms ch-num">{elapsedWords(step.ms / 1000)}</span>}
         {opens && <Icon icon={ChevronRight} size={15} className="go" />}
       </span>
-      {opens && <button type="button" className="op" data-ch-press="" aria-label={`${step.label}${step.detail ? `, ${step.detail}` : ''}. Open what it found`} onClick={() => onOpen!(step.ref!, step.label)} />}
+      {opens && <button data-ctl="CTL-P013-054" type="button" className="op" data-ch-press="" aria-label={`${step.label}${step.detail ? `, ${step.detail}` : ''}. Open what it found`} onClick={() => onOpen!(step.ref!, step.label)} />}
     </li>
   );
 }
@@ -215,7 +215,7 @@ export function ActivityIsland({ island, density = 'full', onOpenStep }: { islan
         <i className="pm" />
         <i className="pb" />
       </span>
-      <button type="button" className="hd" aria-expanded={open} aria-controls={listId} onClick={island.toggle} data-ch-press="">
+      <button data-ctl="CTL-P013-055" type="button" className="hd" aria-expanded={open} aria-controls={listId} onClick={island.toggle} data-ch-press="">
         <LeadMark live={m.live} settled={m.stopped ? 'stopped' : m.settled ? 'done' : 'waiting'} />
         {/* Keyed by its words: a change of activity is a new line fading in, not letters swapping in place. */}
         <span key={m.head} className="t">

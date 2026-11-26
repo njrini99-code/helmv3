@@ -174,7 +174,7 @@ export function ProspectForm({
         <Problem id={`${uid}-notes-e`} problem={problems.find((p) => p.field === 'notes')} />
       </div>
       {phone && !adding && form?.prospect && (
-        <button type="button" className="ch-rec-danger is-block" onClick={() => onDelete(form.prospect!)}>
+        <button data-ctl="CTL-P014-013" type="button" className="ch-rec-danger is-block" onClick={() => onDelete(form.prospect!)}>
           Delete prospect
         </button>
       )}
@@ -194,7 +194,7 @@ export function ProspectForm({
     >
       {fields}
       {/* Enter in a field saves, through the same checks as the button. */}
-      <button type="submit" hidden />
+      <button data-ctl="CTL-P014-014" type="submit" hidden />
     </form>
   );
 
@@ -215,10 +215,10 @@ export function ProspectForm({
       description={adding ? 'Only a first name is required. Everything else can wait.' : form?.prospect ? `Update what you know about ${form.prospect.firstName}.` : undefined}
       footer={
         <>
-          <Button variant="ghost" disabled={saving} onClick={close}>
+          <Button data-ctl="CTL-P014-015" variant="ghost" disabled={saving} onClick={close}>
             Cancel
           </Button>
-          <Button variant="primary" busy={saving} feel="press" onClick={submit}>
+          <Button data-ctl="CTL-P014-016" variant="primary" busy={saving} feel="press" onClick={submit}>
             {saving ? <span data-ch-code="CH-14403">Saving…</span> : adding ? 'Add' : 'Save changes'}
           </Button>
         </>

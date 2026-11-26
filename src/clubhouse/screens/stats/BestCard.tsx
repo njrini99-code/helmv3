@@ -120,7 +120,7 @@ export function BestCardShare({ card }: { card: ChBestCard }) {
 
   return (
     <>
-      <Button size="sm" leftIcon={Share} onClick={() => setOpen(true)}>
+      <Button data-ctl="CTL-P005-001" size="sm" leftIcon={Share} onClick={() => setOpen(true)}>
         Share best score
       </Button>
       <Modal
@@ -132,10 +132,10 @@ export function BestCardShare({ card }: { card: ChBestCard }) {
         description="A dated card of the round. It shows no school or team name."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setOpen(false)}>
+            <Button data-ctl="CTL-P005-002" variant="ghost" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button variant="primary" leftIcon={Share} onClick={() => void share()} disabled={!src}>
+            <Button data-ctl="CTL-P005-003" variant="primary" leftIcon={Share} onClick={() => void share()} disabled={!src}>
               Share
             </Button>
           </>

@@ -66,7 +66,7 @@ export function TurnIsland({ model, summary, meta, words, open, onToggle, onOpen
   return (
     <section className={'ch-ak-isl' + (shown ? ' is-open' : '') + (model.live ? ' is-live' : '')} aria-label="What CoachHelm did" data-ch-code="CH-13860">
       {hasSteps ? (
-        <button
+        <button data-ctl="CTL-P013-056"
           type="button"
           className="hd"
           aria-expanded={shown}

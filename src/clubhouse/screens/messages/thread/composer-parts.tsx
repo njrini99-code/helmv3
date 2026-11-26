@@ -59,7 +59,7 @@ export function AttachChips({
           <Icon icon={FileText} size={13} />
           <span className="ch-ms-to__n">{f.name}</span>
           <Tooltip>
-            <button
+            <button data-ctl="CTL-P007-147"
               type="button"
               aria-label={`Remove ${f.name}`}
               disabled={disabled}
@@ -83,7 +83,9 @@ export function AttachButton({
   phone = false,
   disabled,
   onPick,
+  'data-ctl': ctl,
 }: {
+  'data-ctl'?: string;
   /** Phone: the design's "+", not the paperclip. */
   phone?: boolean;
   disabled?: boolean;
@@ -92,7 +94,7 @@ export function AttachButton({
   const input = useRef<HTMLInputElement | null>(null);
   return (
     <>
-      <IconButton
+      <IconButton data-ctl={ctl ?? 'CTL-P007-148'}
         icon={phone ? Plus : Paperclip}
         label="Attach a file"
         size="sm"

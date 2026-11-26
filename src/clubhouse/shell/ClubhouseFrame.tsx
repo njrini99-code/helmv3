@@ -192,7 +192,7 @@ export function ClubhouseFrame({
                           In a landmark of its own (MAC-20): a link outside every landmark is content a screen reader's
                           landmark list never reaches. */}
                       <nav className="ch-skipnav" aria-label="Skip">
-                        <a className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
+                        <a data-ctl="CTL-P001-021" className="ch-skip" href="#ch-content" data-ch-code="CH-1801">
                           Skip to content
                         </a>
                       </nav>

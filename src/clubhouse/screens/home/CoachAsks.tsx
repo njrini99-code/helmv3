@@ -27,7 +27,7 @@ export function CoachAsks({ asks }: { asks: ChPlayerAsks | null | undefined }) {
   const hub = rebuiltHref('/golf/dashboard/team-hub', 'player');
   if (!parts.length || !hub) return null;
   return (
-    <Link href={hub} className="ch-ph-asks">
+    <Link data-ctl="CTL-P002-002" href={hub} className="ch-ph-asks">
       <span className="ch-ph-asks__k">From your coach</span>
       {/* Each part keeps to one line, so a wrap never strands its figure ("· 2" / "tasks due"); its dot leads it, so a line
           never ends in a stranded "·" either (F-0074). */}

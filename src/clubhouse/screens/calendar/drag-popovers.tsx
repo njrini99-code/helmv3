@@ -61,10 +61,10 @@ export function SeriesScopeMenu({ anchorId, dayChanged, onPick, onCancel }: { an
       <div className="ch-dd-scope__h" aria-hidden="true">
         Repeating event
       </div>
-      <button type="button" role="menuitemradio" aria-checked="true" className="ch-menu__item" onClick={() => pick('this')}>
+      <button data-ctl="CTL-P006-044" type="button" role="menuitemradio" aria-checked="true" className="ch-menu__item" onClick={() => pick('this')}>
         This event
       </button>
-      <button type="button" role="menuitemradio" aria-checked="false" aria-disabled={dayChanged || undefined} aria-describedby={dayChanged ? 'ch-dd-scope-help' : undefined} className="ch-menu__item" onClick={() => !dayChanged && pick('thisAndFuture')}>
+      <button data-ctl="CTL-P006-045" type="button" role="menuitemradio" aria-checked="false" aria-disabled={dayChanged || undefined} aria-describedby={dayChanged ? 'ch-dd-scope-help' : undefined} className="ch-menu__item" onClick={() => !dayChanged && pick('thisAndFuture')}>
         This and following
       </button>
       {dayChanged && (
@@ -73,7 +73,7 @@ export function SeriesScopeMenu({ anchorId, dayChanged, onPick, onCancel }: { an
         </p>
       )}
       <div className="ch-menu__sep" role="separator" />
-      <button type="button" role="menuitem" className="ch-menu__item ch-dd-scope__cancel" onClick={onCancel}>
+      <button data-ctl="CTL-P006-046" type="button" role="menuitem" className="ch-menu__item ch-dd-scope__cancel" onClick={onCancel}>
         Cancel
       </button>
     </m.div>,
@@ -128,10 +128,10 @@ export function RoundMoveConfirm({ anchorId, question, teeSheet, onMove, onCance
       <div className="ch-dd-scope__h">{question}</div>
       <p className="ch-dd-scope__help">{teeSheet ? 'Each player’s tee time moves by the same amount.' : 'Players’ tee times aren’t changed.'}</p>
       <div className="ch-menu__sep" role="separator" />
-      <button type="button" className="ch-menu__item ch-dd-scope__cancel" onClick={onCancel}>
+      <button data-ctl="CTL-P006-047" type="button" className="ch-menu__item ch-dd-scope__cancel" onClick={onCancel}>
         Cancel
       </button>
-      <button
+      <button data-ctl="CTL-P006-048"
         type="button"
         className="ch-menu__item"
         data-primary=""

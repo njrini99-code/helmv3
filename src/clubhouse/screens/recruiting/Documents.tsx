@@ -256,7 +256,7 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
       <div className="ch-rec-sec__head">
         <SecHeading level={level}>Documents</SecHeading>
         {state.kind !== 'failed' && !(state.kind === 'ready' && docs.length === 0) && (
-          <button type="button" className="ch-rec-link" onClick={choose}>
+          <button data-ctl="CTL-P014-001" type="button" className="ch-rec-link" onClick={choose}>
             <Icon icon={Upload} size={15} />
             Upload
           </button>
@@ -283,12 +283,12 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
           <ul className="ch-rec-docs">
             {docs.map((d) => (
               <li key={d.id} className="ch-rec-doc">
-                <button type="button" className="ch-rec-doc__open" onClick={() => void open.run(d)}>
+                <button data-ctl="CTL-P014-002" type="button" className="ch-rec-doc__open" onClick={() => void open.run(d)}>
                   <span className="ch-rec-doc__t">{d.title}</span>
                   <span className="ch-rec-tag">{categoryLabel(d.category)}</span>
                 </button>
                 <Tooltip>
-                  <button
+                  <button data-ctl="CTL-P014-003"
                     type="button"
                     className="ch-rec-doc__x"
                     aria-label={`Remove ${d.title}`}
@@ -334,10 +334,10 @@ export function Documents({ prospect, writes, initialUpload, level }: { prospect
         description={asking ? `${asking.title} is deleted from ${prospect.firstName}’s documents. This can’t be undone.` : undefined}
         footer={
           <>
-            <Button variant="ghost" onClick={() => setAsking(null)}>
+            <Button data-ctl="CTL-P014-004" variant="ghost" onClick={() => setAsking(null)}>
               Keep it
             </Button>
-            <Button
+            <Button data-ctl="CTL-P014-005"
               variant="danger"
               busy={remove.pending}
               feel="warning"
@@ -387,19 +387,19 @@ function UploadDialog({
       footer={
         refused ? (
           <>
-            <Button variant="ghost" onClick={onClose}>
+            <Button data-ctl="CTL-P014-006" variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" onClick={onChoose}>
+            <Button data-ctl="CTL-P014-007" variant="primary" onClick={onChoose}>
               Choose another file
             </Button>
           </>
         ) : (
           <>
-            <Button variant="ghost" disabled={busy} onClick={onClose}>
+            <Button data-ctl="CTL-P014-008" variant="ghost" disabled={busy} onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" busy={busy} disabled={!staged} onClick={() => staged && onUpload(staged)}>
+            <Button data-ctl="CTL-P014-009" variant="primary" busy={busy} disabled={!staged} onClick={() => staged && onUpload(staged)}>
               {busy ? <span data-ch-code="CH-14404">{progress === null ? 'Uploading…' : `Uploading… ${progress}%`}</span> : 'Upload'}
             </Button>
           </>
@@ -437,7 +437,7 @@ function UploadDialog({
               <span className="ch-rec-note">Keep this page open until it finishes.</span>
             </div>
           )}
-          <button type="submit" hidden />
+          <button data-ctl="CTL-P014-010" type="submit" hidden />
         </form>
       )}
     </Modal>

@@ -37,7 +37,7 @@ export function NotRebuilt({ label, coachOnly = false }: { label: string; coachO
               : 'Your team, rounds and stats are on Home.'}
           </p>
           <div className="ch-empty-page__a">
-            <Button variant="primary" leftIcon={House} href="/golf/dashboard">
+            <Button data-ctl="CTL-P001-027" variant="primary" leftIcon={House} href="/golf/dashboard">
               Back to Home
             </Button>
           </div>
@@ -64,7 +64,7 @@ export function PlayersOnlyRounds() {
           <h1 className="ch-empty-page__title">Only players log rounds</h1>
           <p className="ch-empty-page__body">Your team’s rounds are in Rounds.</p>
           <div className="ch-empty-page__a">
-            <Button variant="primary" leftIcon={ChevronLeft} href="/golf/dashboard/rounds">
+            <Button data-ctl="CTL-P001-028" variant="primary" leftIcon={ChevronLeft} href="/golf/dashboard/rounds">
               Back to Rounds
             </Button>
           </div>

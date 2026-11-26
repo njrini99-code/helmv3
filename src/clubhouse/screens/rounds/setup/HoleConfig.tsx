@@ -102,7 +102,7 @@ export function HoleConfig({
                     </span>
                     <div className="ch-rsu-par" role="radiogroup" aria-label={`Hole ${h.n} par`} {...roving}>
                       {PARS.map((p) => (
-                        <button
+                        <button data-ctl="CTL-P011-111"
                           key={p}
                           type="button"
                           role="radio"

@@ -124,7 +124,7 @@ export function ClassClashes({ check, names, onRetry }: { check: ChClassCheck; n
           <span className="ch-field__help is-error">
             {check.status === 'failed' ? 'Couldn’t check the travelers’ classes, so one may clash.' : 'Some classes couldn’t be checked, so one more may clash.'} Publishing still works.
           </span>
-          <Button variant="ghost" size="sm" onClick={onRetry}>
+          <Button data-ctl="CTL-P010-005" variant="ghost" size="sm" onClick={onRetry}>
             Try again
           </Button>
         </div>

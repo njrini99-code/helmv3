@@ -128,7 +128,7 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
             {shown ?? (phone ? 'Tap a player to see their likely range; tap again to open them.' : 'Select a player to see their likely range; select again to open them.')}
           </p>
           {pin.pinned != null && (
-            <Link href={href(pin.pinned)} className="ch-sv-open" data-ch-press="">
+            <Link data-ctl="CTL-P004-033" href={href(pin.pinned)} className="ch-sv-open" data-ch-press="">
               Open player
             </Link>
           )}

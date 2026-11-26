@@ -128,10 +128,10 @@ export function TripEditSheet({
       description={t ? `${t.name}${t.dates ? ` · ${t.dates}` : ''}` : undefined}
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={save.pending}>
+          <Button data-ctl="CTL-P010-047" variant="ghost" onClick={onClose} disabled={save.pending}>
             Cancel
           </Button>
-          <Button variant="primary" busy={save.pending} feel={null} onClick={() => submit()}>
+          <Button data-ctl="CTL-P010-048" variant="primary" busy={save.pending} feel={null} onClick={() => submit()}>
             {save.pending ? 'Saving…' : 'Save changes'}
           </Button>
         </>
@@ -144,7 +144,7 @@ export function TripEditSheet({
           <span className="ch-field__label">Getting there</span>
           <div className="ch-hb-aud" role="radiogroup" tabIndex={-1} ref={rovingRadios} onKeyDown={radioKeys()} aria-label="Getting there">
             {TRANSPORTS.map(([k, l]) => (
-              <button
+              <button data-ctl="CTL-P010-049"
                 key={k}
                 type="button"
                 role="radio"
@@ -172,7 +172,7 @@ export function TripEditSheet({
         <Field label="Itinerary for the players" id={`${id}-notes`} optional>
           <textarea id={`${id}-notes`} className="ch-textarea" rows={4} value={v.notes} onChange={set('notes')} />
         </Field>
-        <button type="submit" hidden />
+        <button data-ctl="CTL-P010-050" type="submit" hidden />
       </form>
     </Modal>
   );

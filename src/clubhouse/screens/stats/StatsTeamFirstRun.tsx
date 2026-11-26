@@ -24,7 +24,7 @@ export function StatsTeamFirstRun({ invite = false }: { invite?: boolean }) {
       body="Team and player stats fill in as players post rounds this season."
       action={
         roster ? (
-          <Button variant="primary" leftIcon={invite ? UserPlus : Users} href={roster}>
+          <Button data-ctl="CTL-P004-018" variant="primary" leftIcon={invite ? UserPlus : Users} href={roster}>
             {invite ? 'Invite players' : 'View roster'}
           </Button>
         ) : undefined

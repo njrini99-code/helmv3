@@ -88,7 +88,7 @@ export function RoundRow({
           {round.tee || editingTee ? (
             <TimeField label={`Round ${n} first tee`} stepMinutes={1} value={round.tee ?? ''} onChange={(v) => v && onTee(v)} />
           ) : (
-            <Button variant="ghost" size="sm" aria={{ label: `Add time for round ${n}` }} leftIcon={Clock} onClick={onEditTee}>
+            <Button data-ctl="CTL-P016-127" variant="ghost" size="sm" aria={{ label: `Add time for round ${n}` }} leftIcon={Clock} onClick={onEditTee}>
               Add time
             </Button>
           )}
@@ -97,7 +97,7 @@ export function RoundRow({
           label={`Round ${n} options`}
           items={items}
           trigger={(t) => (
-            <button type="button" className="ch-tfx__more-btn" aria-label={`Round ${n} options`} {...t}>
+            <button data-ctl="CTL-P016-128" type="button" className="ch-tfx__more-btn" aria-label={`Round ${n} options`} {...t}>
               <Icon icon={Ellipsis} size={18} />
             </button>
           )}

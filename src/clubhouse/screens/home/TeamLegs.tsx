@@ -46,7 +46,7 @@ export function People({ p, className }: { p: ChLegPeople; className: string }) 
     const href = legPlayerHref(id);
     const text = p.names[p.ids.indexOf(id)] ?? '';
     return href ? (
-      <Link key={id} href={href} className={className}>
+      <Link data-ctl="CTL-P002-069" key={id} href={href} className={className}>
         {text}
       </Link>
     ) : (
@@ -108,7 +108,7 @@ export function TeamLegs({ legs, covered = false }: { legs: ChTeamLegs; covered?
           </span>
         </div>
         {team && (
-          <Button variant="ghost" size="sm" rightIcon={ArrowRight} href={team}>
+          <Button data-ctl="CTL-P002-070" variant="ghost" size="sm" rightIcon={ArrowRight} href={team}>
             Team stats
           </Button>
         )}

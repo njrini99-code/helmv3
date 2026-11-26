@@ -173,7 +173,7 @@ export function GlassMenu({
   return createPortal(
     <div className={'ch-mso-pop' + (open ? '' : ' is-leaving')} data-ch-ms-v2="on" data-ch-code="CH-7603">
       {/* A transparent scrim: any tap outside closes the menu and does nothing else. */}
-      <div className="ch-mso-pop__scrim" aria-hidden="true" onPointerDown={(e) => { e.preventDefault(); close(true); }} />
+      <div data-ctl="CTL-P007-077" className="ch-mso-pop__scrim" aria-hidden="true" onPointerDown={(e) => { e.preventDefault(); close(true); }} />
       <div
         ref={menu}
         role="menu"
@@ -187,7 +187,7 @@ export function GlassMenu({
           if (it.kind === 'separator') return <hr key={`s${i}`} />;
           const off = !!it.disabled;
           return (
-            <button
+            <button data-ctl="CTL-P007-078"
               key={`${it.label}-${i}`}
               type="button"
               role="menuitem"

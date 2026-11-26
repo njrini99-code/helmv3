@@ -133,15 +133,15 @@ export function useRosterLimit(data: ChRoster, players: ChRosterPlayer[], setPla
         description={`Division I golf allows ${NCAA_D1_GOLF_ROSTER_LIMIT} on the roster (${ROSTER_LIMIT_SOURCE}). Your conference may set fewer.`}
         footer={
           locked ? (
-            <Button variant="ghost" onClick={() => setLimitOpen(false)}>
+            <Button data-ctl="CTL-P003-020" variant="ghost" onClick={() => setLimitOpen(false)}>
               Close
             </Button>
           ) : (
             <>
-              <Button variant="ghost" onClick={() => setLimitOpen(false)}>
+              <Button data-ctl="CTL-P003-021" variant="ghost" onClick={() => setLimitOpen(false)}>
                 Cancel
               </Button>
-              <Button variant="primary" busy={save.pending} onClick={() => void save.run(draft)}>
+              <Button data-ctl="CTL-P003-022" variant="primary" busy={save.pending} onClick={() => void save.run(draft)}>
                 Save
               </Button>
             </>
@@ -198,10 +198,10 @@ export function useRosterLimit(data: ChRoster, players: ChRosterPlayer[], setPla
         description="A player who doesn’t count stays on the roster and in every lineup. Only the roster limit leaves them out."
         footer={
           <>
-            <Button variant="ghost" onClick={() => setMarking(null)}>
+            <Button data-ctl="CTL-P003-023" variant="ghost" onClick={() => setMarking(null)}>
               Cancel
             </Button>
-            <Button variant="primary" busy={mark.pending} onClick={() => marking && void mark.run(marking, reason)}>
+            <Button data-ctl="CTL-P003-024" variant="primary" busy={mark.pending} onClick={() => marking && void mark.run(marking, reason)}>
               Save
             </Button>
           </>
@@ -239,7 +239,7 @@ export function RosterLimitLine({ ctl }: { ctl: RosterLimitControl }) {
             {count.over} over
           </Badge>
         )}
-        <Button variant="ghost" size="sm" onClick={ctl.openLimit}>
+        <Button data-ctl="CTL-P003-025" variant="ghost" size="sm" onClick={ctl.openLimit}>
           {count.enabled ? 'Roster limit' : 'Set a roster limit'}
         </Button>
       </p>

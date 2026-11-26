@@ -35,7 +35,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
         </div>
         {/* One primary per screen: first run carries Add your first prospect in the page below. */}
         {(!nothing || c.error) && (
-          <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
+          <Button data-ctl="CTL-P014-017" variant="primary" leftIcon={Plus} onClick={c.startAdd}>
             New prospect
           </Button>
         )}
@@ -66,7 +66,7 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
               title="Your prospect list starts here"
               body="Add the golfers you’re watching. Keep their contact details, notes and documents in one place, and move them through Watched, Recruiting, Offered and Committed. Only coaches see this page."
               action={
-                <Button variant="primary" leftIcon={Plus} onClick={c.startAdd}>
+                <Button data-ctl="CTL-P014-018" variant="primary" leftIcon={Plus} onClick={c.startAdd}>
                   Add your first prospect
                 </Button>
               }
@@ -109,11 +109,11 @@ export function NoMatch({ query, stage, onClear, onAll, phone = false }: { query
       : `Search looks at names, hometowns, states, email and notes. Try another word${stage ? ', or look across every stage' : ''}.`
     : 'Nothing has reached this stage yet. Move a prospect here from their panel, or look across every stage.';
   const all = stage ? (
-    <Button variant={phone || !q ? 'primary' : 'secondary'} onClick={onAll}>
+    <Button data-ctl="CTL-P014-019" variant={phone || !q ? 'primary' : 'secondary'} onClick={onAll}>
       {q ? 'Search all stages' : 'Show all stages'}
     </Button>
   ) : undefined;
-  const clear = q ? <Button onClick={onClear}>Clear search</Button> : undefined;
+  const clear = q ? <Button data-ctl="CTL-P014-020" onClick={onClear}>Clear search</Button> : undefined;
   return <EmptyState kind="filtered" code="CH-14302" icon={SearchX} title={title} body={body} action={phone ? all : clear} secondaryAction={phone ? clear : all} />;
 }
 
@@ -155,7 +155,7 @@ function ProspectTable({ c }: { c: RecCtx }) {
           return (
             <tr key={p.id} className={on ? 'is-on' : undefined}>
               <th scope="row">
-                <button type="button" className="ch-rec-tb__name" aria-current={on || undefined} onClick={() => c.select(p.id)}>
+                <button data-ctl="CTL-P014-021" type="button" className="ch-rec-tb__name" aria-current={on || undefined} onClick={() => c.select(p.id)}>
                   <ProspectAvatar name={p.name} size={32} />
                   <span>
                     <b>{p.name}</b>
@@ -206,14 +206,14 @@ function ProspectPanel({ p, c }: { p: ChProspect; c: RecCtx }) {
             <h2>{p.name}</h2>
             <span>{subtitleOf(p) || 'No class or hometown yet'}</span>
           </div>
-          <Button size="sm" onClick={() => c.startEdit(p)}>
+          <Button data-ctl="CTL-P014-022" size="sm" onClick={() => c.startEdit(p)}>
             Edit
           </Button>
           <Menu
             label={`More for ${p.name}`}
             align="end"
             items={[{ label: 'Delete prospect', icon: Trash2, danger: true, onSelect: () => c.askDelete(p) }]}
-            trigger={(t) => <IconButton icon={Ellipsis} size="sm" label={`More for ${p.name}`} menu={t} />}
+            trigger={(t) => <IconButton data-ctl="CTL-P014-023" icon={Ellipsis} size="sm" label={`More for ${p.name}`} menu={t} />}
           />
         </div>
         <div className="ch-rec-stage" data-ch-code="CH-14803">

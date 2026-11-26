@@ -59,7 +59,7 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
         <div className="ch-msv-top">
           <div className="ch-msv-srow">
             <SearchField value={q} onChange={setQ} placeholder="Search" label="Search conversations and messages" className="ch-msv-search" />
-            <button type="button" className="ch-msv-new" aria-label="New message" onClick={onNew}>
+            <button data-ctl="CTL-P007-072" type="button" className="ch-msv-new" aria-label="New message" onClick={onNew}>
               <Icon icon={SquarePen} size={19} />
             </button>
           </div>

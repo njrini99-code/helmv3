@@ -25,7 +25,7 @@ export function HubStrip({ items, onOpen }: { items: StripItem[]; onOpen: (tab: 
     <ul ref={edges} className="ch-hscroll ch-hb-strip" aria-label="Team at a glance">
       {items.map((s) => (
         <li key={s.key} className={s.warn ? 'is-warn' : undefined}>
-          <button type="button" onClick={() => onOpen(s.tab)}>
+          <button data-ctl="CTL-P010-006" type="button" onClick={() => onOpen(s.tab)}>
             {/* The space is its own text node: the column ignores it, and the name reads "1 task overdue", not "1task". */}
             <b className="ch-num">{s.n}</b> <span>{s.after.trimStart()}</span>
           </button>

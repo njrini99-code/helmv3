@@ -24,7 +24,7 @@ export function HowToggle({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" className="ch-shs-how" data-ch="stats-how" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+      <button data-ctl="CTL-P004-004" type="button" className="ch-shs-how" data-ch="stats-how" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         How this is measured
         <ShsChevron />
       </button>

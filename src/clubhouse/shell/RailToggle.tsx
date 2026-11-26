@@ -45,7 +45,7 @@ export function RailToggle({ folded, onFold }: { folded: boolean; onFold: (folde
   const label = folded ? 'Expand sidebar' : 'Collapse sidebar';
   return (
     <Tooltip label={label} shortcut={[mod, '\\']}>
-      <button
+      <button data-ctl="CTL-P001-031"
         type="button"
         className="ch-railtoggle"
         aria-controls="ch-sidebar"

@@ -102,7 +102,7 @@ export function Week({ week, between, covered = false, events }: { week: ChCoach
             {todayRows.map((r) => {
               const e = nextOf(r.id);
               // The coach's today rows open their event, as the coach's desktop Today list did before lay-01.
-              return <AgendaRow key={r.id} r={r} href={e ? eventHref(e) : null} replies={r.isNext ? nextReplies(e, today) : null} />;
+              return <AgendaRow data-ctl="CTL-P002-074" key={r.id} r={r} href={e ? eventHref(e) : null} replies={r.isNext ? nextReplies(e, today) : null} />;
             })}
             {laterRows.length > 0 && <div className="ch-h-agenda__label ch-h-agenda__label--later">Later this week</div>}
             {laterRows.map((r) => (
@@ -126,7 +126,7 @@ function AgendaRow({ r, href = null, replies = null }: { r: ChAgendaRow; href?: 
       <span className="ch-h-agenda__t ch-num">{agendaTime(r, clock)}</span>
       <div className="ch-h-agenda__txt">
         {href ? (
-          <Link href={href} className="ch-h-agenda__a ch-h-agenda__open">
+          <Link data-ctl="CTL-P002-075" href={href} className="ch-h-agenda__a ch-h-agenda__open">
             {r.title}
           </Link>
         ) : (
@@ -143,7 +143,7 @@ function AgendaRow({ r, href = null, replies = null }: { r: ChAgendaRow; href?: 
       </div>
       {r.isNext && <Badge tone="accent">Next</Badge>}
       {replies?.nudge && (
-        <Button variant="ghost" size="sm" leftIcon={MessageSquare} className="ch-h-agenda__nudge" href={replies.nudge.href} aria={{ label: replies.nudge.aria }}>
+        <Button data-ctl="CTL-P002-076" variant="ghost" size="sm" leftIcon={MessageSquare} className="ch-h-agenda__nudge" href={replies.nudge.href} aria={{ label: replies.nudge.aria }}>
           {replies.nudge.label}
         </Button>
       )}

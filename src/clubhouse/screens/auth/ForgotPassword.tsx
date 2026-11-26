@@ -199,14 +199,14 @@ export function ResetForm({
       )}
       <div className="ch-au-submit" ref={keyRowRef}>
         {/* Stays on when the field is empty: Send says what is missing (today's page). CH-15420: in flight. */}
-        <button type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15420' : undefined}>
+        <button data-ctl="CTL-P015-006" type="submit" className="ch-btn ch-btn--primary ch-btn--lg" disabled={busy} aria-busy={busy || undefined} data-ch-code={busy ? 'CH-15420' : undefined}>
           <AuthKeyLabel busy={busy} idle={words.idle} working={words.working} />
         </button>
       </div>
       <p className="ch-au-alt" ref={altRef}>
         Remember it?{' '}
         {/* CH-15922: back to sign in in place; the href is sign in for a new tab or no JavaScript. */}
-        <Link href="/golf/login" onClick={back} data-ch-code="CH-15922">
+        <Link data-ctl="CTL-P015-007" href="/golf/login" onClick={back} data-ch-code="CH-15922">
           Sign in
         </Link>
       </p>
@@ -232,7 +232,7 @@ export function ResetSent({ email, focusOnMount, onBack }: { email: string; focu
       </p>
       <p className="ch-au-body">Open the link in the email to choose a new password. It expires in 1 hour. If it doesn’t arrive, check your spam folder or try a different email.</p>
       <div className="ch-au-submit">
-        <Link
+        <Link data-ctl="CTL-P015-008"
           href="/golf/login"
           className="ch-btn ch-btn--primary ch-btn--lg"
           data-ch-code="CH-15922"

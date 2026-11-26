@@ -109,7 +109,7 @@ export function Bubble({
             <BubbleBody api={api} m={m} first={first} last={last} group={group} who={who} />
           </div>
           {onActions && !m.failed && (
-            <button
+            <button data-ctl="CTL-P007-118"
               type="button"
               className="ch-sr-only ch-sr-only--focusable"
               data-ch-code="CH-7804"

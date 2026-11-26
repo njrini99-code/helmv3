@@ -99,7 +99,7 @@ export function DataTable<T, K extends string = string>({
           const key = c.sortKey;
           return (
             <span key={c.id} role="columnheader" className={cls} aria-sort={on ? dir : 'none'}>
-              <button type="button" className={join('ch-dt__sort', classNames.sort, on && 'is-on')} aria-label={c.headerLabel} onClick={() => onSort(key)}>
+              <button data-ctl="CTL-P003-053" type="button" className={join('ch-dt__sort', classNames.sort, on && 'is-on')} aria-label={c.headerLabel} onClick={() => onSort(key)}>
                 {c.header}
                 {/* The arrow’s room is kept on every sortable header, so a right-aligned label doesn’t move when it is chosen. */}
                 <span className={join('ch-dt__arrow', classNames.sortArrow)} aria-hidden="true">

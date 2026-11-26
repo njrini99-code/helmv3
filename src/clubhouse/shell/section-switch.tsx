@@ -315,7 +315,7 @@ export function SectionTrigger({ children }: { children: ReactNode }) {
   const newsId = useId();
   if (!sw?.enabled) return <>{children}</>;
   return (
-    <button
+    <button data-ctl="CTL-P001-055"
       type="button"
       className="ch-sw"
       data-ch-code="CH-1816"

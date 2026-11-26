@@ -61,7 +61,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
     <section ref={pane} className="ch-msv-newpane ch-msd-newpane" aria-labelledby="ch-msv-new-title">
       <header className="ch-msv-newpane__bar">
         <b id="ch-msv-new-title">New message</b>
-        <button type="button" onClick={onCancel}>
+        <button data-ctl="CTL-P007-010" type="button" onClick={onCancel}>
           Cancel
         </button>
       </header>
@@ -69,7 +69,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
         <div className="ch-msv-tocard ch-msd-to">
           <span aria-hidden="true">To:</span>
           {picked && (
-            <button type="button" className="ch-msp-tok ch-msd-tok" ref={(el) => void pop(el, 0.8, { once: true, fade: true })} aria-label={`Remove ${personOf(api, picked)?.name ?? 'person'}`} onClick={() => setPicked(null)}>
+            <button data-ctl="CTL-P007-011" type="button" className="ch-msp-tok ch-msd-tok" ref={(el) => void pop(el, 0.8, { once: true, fade: true })} aria-label={`Remove ${personOf(api, picked)?.name ?? 'person'}`} onClick={() => setPicked(null)}>
               <Avatar name={personOf(api, picked)?.name ?? FORMER_MEMBER} id={personOf(api, picked)?.playerId ?? picked} size={22} />
               {personOf(api, picked)?.name ?? FORMER_MEMBER}
               <Icon icon={X} size={12} />
@@ -86,7 +86,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
               {!term && <span>{coach ? 'Players you haven’t messaged' : 'People you haven’t messaged'}</span>}
             </header>
             {people.map((p) => (
-              <button key={p.userId} type="button" className={'ch-msv-suggest__r ch-msd-sug' + (matches(p.name) ? '' : ' is-dim')} onClick={() => pick(p.userId)}>
+              <button data-ctl="CTL-P007-012" key={p.userId} type="button" className={'ch-msv-suggest__r ch-msd-sug' + (matches(p.name) ? '' : ' is-dim')} onClick={() => pick(p.userId)}>
                 <Avatar name={p.name} id={p.playerId ?? p.userId} size="md" />
                 <span className="ch-msv-member__b">
                   <b>{p.name}</b>
@@ -99,7 +99,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
         )}
         {coach && !term && (
           <div className="ch-msp-panel ch-msv-newpane__more">
-            <button type="button" className="ch-msv-frow" onClick={() => onDialog('group')}>
+            <button data-ctl="CTL-P007-013" type="button" className="ch-msv-frow" onClick={() => onDialog('group')}>
               <span className="ch-msv-frow__ic">
                 <Icon icon={Users} size={16} />
               </span>
@@ -107,7 +107,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
                 <b>New group</b>
               </span>
             </button>
-            <button type="button" className="ch-msv-frow" onClick={() => onDialog('announce')}>
+            <button data-ctl="CTL-P007-014" type="button" className="ch-msv-frow" onClick={() => onDialog('announce')}>
               <span className="ch-msv-frow__ic">
                 <Icon icon={Megaphone} size={16} />
               </span>

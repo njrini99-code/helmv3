@@ -13,7 +13,7 @@ import { SaveCard } from './SaveCard';
 /** A card in the stream: the tile scans while it writes. */
 export function ArtifactCard({ artifact, writing, onOpen }: { artifact: AskArtifact; writing: boolean; onOpen: () => void }) {
   return (
-    <button type="button" className="acard" data-ch-press=".97" onClick={onOpen}>
+    <button data-ctl="CTL-P013-062" type="button" className="acard" data-ch-press=".97" onClick={onOpen}>
       <span className={'tile' + (writing ? ' busy' : '')} aria-hidden="true">
         <i />
         <i />
@@ -65,11 +65,11 @@ function Versions({ n, at, onGo }: { n: number; at: number; onGo: (i: number) =>
   if (n < 2) return null;
   return (
     <span className="vers ch-num">
-      <button type="button" aria-label="Earlier version" disabled={at === 0} onClick={() => onGo(at - 1)}>
+      <button data-ctl="CTL-P013-063" type="button" aria-label="Earlier version" disabled={at === 0} onClick={() => onGo(at - 1)}>
         <Icon icon={ChevronLeft} size={16} />
       </button>
       {at + 1} of {n}
-      <button type="button" aria-label="Later version" disabled={at === n - 1} onClick={() => onGo(at + 1)}>
+      <button data-ctl="CTL-P013-064" type="button" aria-label="Later version" disabled={at === n - 1} onClick={() => onGo(at + 1)}>
         <Icon icon={ChevronRight} size={16} />
       </button>
     </span>
@@ -86,17 +86,17 @@ function Actions({ artifact, body, builderHref, onPublish }: { artifact: AskArti
       {words && saving && <SaveCard title={artifact.title} body={words} onClose={() => setSaving(false)} />}
       <div className="apf">
         {builderHref && (
-          <Button variant="secondary" href={builderHref}>
+          <Button data-ctl="CTL-P013-065" variant="secondary" href={builderHref}>
             Edit in builder
           </Button>
         )}
         {words && (
-          <Button variant="secondary" aria-expanded={saving} onClick={() => setSaving(true)}>
+          <Button data-ctl="CTL-P013-066" variant="secondary" aria-expanded={saving} onClick={() => setSaving(true)}>
             Save draft…
           </Button>
         )}
         {words && onPublish && (
-          <Button variant="primary" onClick={() => onPublish(artifact.title)}>
+          <Button data-ctl="CTL-P013-067" variant="primary" onClick={() => onPublish(artifact.title)}>
             Publish…
           </Button>
         )}
@@ -146,7 +146,7 @@ export function ArtifactView({ artifact, phone, body, onClose, builderHref = nul
           <small>{KIND_LABEL[artifact.kind]}</small>
         </span>
         <Versions n={artifact.versions.length} at={at} onGo={setAt} />
-        <button type="button" className="sb" aria-label="Close" onClick={close}>
+        <button data-ctl="CTL-P013-068" type="button" className="sb" aria-label="Close" onClick={close}>
           <Icon icon={X} size={16} />
         </button>
       </header>
