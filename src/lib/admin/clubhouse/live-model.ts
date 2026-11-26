@@ -26,6 +26,7 @@ import {
 } from './rules';
 import { DEFAULT_LIVE, PLATFORM_WORDS, type LiveScope } from './live-scope';
 import { FAILURE_CATEGORIES, withScope, type ClubhouseScope } from './screens';
+import { ENDS_A_START } from './resolve';
 
 // ---------------------------------------------------------------------------
 // Rows, as the held migration 20261124090000 stores them
@@ -256,7 +257,7 @@ export interface ActionStat {
   act: string;
   page: string;
   starts: number;
-  /** Outcomes other than start: success, failure, offline, busy, stopped waiting, cancelled. */
+  /** Outcomes of a tap: success, failure, offline, busy, cancelled (stopped waiting is a wait, not an outcome). */
   tries: number;
   successes: number;
   failures: number;
@@ -273,8 +274,11 @@ export function actionStats(rows: readonly HourlyRow[]): ActionStat[] {
   return [...groupBy(actions, (r) => r.act).entries()]
     .map(([act, list]) => {
       const starts = sum(list.filter((r) => r.outcome === 'start'));
-      const done = list.filter((r) => r.outcome && r.outcome !== 'start' && r.outcome !== 'retry');
+      const done = list.filter((r) => r.outcome && r.outcome !== 'start' && r.outcome !== 'retry' && r.outcome !== 'stopped-waiting');
       const tries = sum(done);
+      // Only success, failure and cancelled end a start: offline and busy never had one, and a stopped wait is
+      // followed by the real outcome (resolve.ts ENDS_A_START). So an offline tap can't hide a start that never ended.
+      const ended = sum(done.filter((r) => ENDS_A_START.has(r.outcome)));
       const successes = sum(done.filter((r) => r.outcome === 'success'));
       const buckets = mergeBuckets(done);
       return {
@@ -284,7 +288,7 @@ export function actionStats(rows: readonly HourlyRow[]): ActionStat[] {
         tries,
         successes,
         failures: sum(done.filter((r) => r.outcome === 'failure')),
-        silent: Math.max(0, starts - tries),
+        silent: Math.max(0, starts - ended),
         rate: tries > 0 ? successes / tries : null,
         p50: bucketQuantile(buckets, 0.5),
         p95: bucketQuantile(buckets, 0.95),

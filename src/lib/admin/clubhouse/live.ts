@@ -243,13 +243,14 @@ export async function readPeopleNames(userIds: readonly string[]): Promise<Map<s
         client.from('golf_coaches').select('user_id, full_name').in('user_id', part),
         client.from('golf_players').select('user_id, first_name, last_name').in('user_id', part),
       ]);
-      for (const u of users.data ?? []) out.set(u.id, { name: null, email: u.email });
+      // A failed read leaves those people unnamed (the screen shows the short id); it never stops the page.
+      if (!users.error) for (const u of users.data ?? []) out.set(u.id, { name: null, email: u.email });
       const setName = (id: string | null, name: string | null) => {
         if (!id || !name) return;
         out.set(id, { name, email: out.get(id)?.email ?? null });
       };
-      for (const c of coaches.data ?? []) setName(c.user_id, c.full_name);
-      for (const p of players.data ?? []) setName(p.user_id, [p.first_name, p.last_name].filter(Boolean).join(' ') || null);
+      if (!coaches.error) for (const c of coaches.data ?? []) setName(c.user_id, c.full_name);
+      if (!players.error) for (const p of players.data ?? []) setName(p.user_id, [p.first_name, p.last_name].filter(Boolean).join(' ') || null);
     }
   } catch {
     // A name that can't be read shows as the short id; the screen still works.
@@ -259,7 +260,9 @@ export async function readPeopleNames(userIds: readonly string[]): Promise<Map<s
 
 export async function readTeamName(teamId: string): Promise<string | null> {
   try {
-    const { data } = await createAdminClient().from('golf_teams').select('name').eq('id', teamId).maybeSingle();
+    const { data, error } = await createAdminClient().from('golf_teams').select('name').eq('id', teamId).maybeSingle();
+    // Unreadable is "no name": the caller prints the team's pseudonym instead.
+    if (error) return null;
     return data?.name ?? null;
   } catch {
     return null;

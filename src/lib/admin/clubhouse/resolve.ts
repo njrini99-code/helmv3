@@ -135,6 +135,13 @@ export function resolveSignal(s: ChSignal, graph: BridgeGraph, actions: Map<stri
 export const SILENT_AFTER_MS = 30_000;
 
 /**
+ * The outcomes that end a started action. useAction sends `offline` and `busy` instead of a start (the tap never
+ * started anything), and `stopped-waiting` while the action is still running (its success or failure follows), so
+ * none of those three closes a start.
+ */
+export const ENDS_A_START: ReadonlySet<string> = new Set(['success', 'failure', 'cancelled']);
+
+/**
  * The starts in one session that never got an outcome: no outcome within 30 s and the page not hidden in that time.
  * Starts and outcomes pair up per action (its `act`, else its control, else its code), oldest first.
  */
@@ -151,6 +158,7 @@ export function silentActions(session: ChSignal[], opts: { now: number; pagehide
       open.set(k, [...(open.get(k) ?? []), s]);
       continue;
     }
+    if (!s.outcome || !ENDS_A_START.has(s.outcome)) continue;
     const queue = open.get(k);
     const start = queue?.shift();
     if (start) closeLate(start, s.at);

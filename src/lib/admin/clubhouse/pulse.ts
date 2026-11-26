@@ -32,9 +32,11 @@ export interface PulseTile extends PageTile {
 
 export interface PulseModel {
   pipe: PipeStatus;
-  /** R-09 holds, the pipe is off or not there yet: no "all clear" on this screen can be trusted. */
+  /** R-09 holds, the pipe is off or not there yet, or an evidence read failed: no "all clear" on this screen can be trusted. */
   untrusted: boolean;
-  /** Nothing high or critical fired and the pipe is live. */
+  /** How many evidence reads failed (hourly, sessions, events, drift). The rules ran on what was read, so an empty list proves nothing. */
+  readFailures: number;
+  /** Nothing high or critical fired, the pipe is live and every evidence read succeeded. */
   allClear: boolean;
   headline: BridgeAlert[];
   counts: Record<BridgeAlert['severity'], number>;
@@ -47,7 +49,16 @@ export interface PulseModel {
 /** Actions shown under "slipping": the ones a rule named, then the lowest success rates with real traffic. */
 const SLIPPING_MAX = 6;
 
-export function pulseModel(i: { graph: Pick<BridgeGraph, 'pages'>; rows: readonly HourlyRow[]; dayRows: readonly HourlyRow[]; alerts: readonly BridgeAlert[]; pipe: PipeStatus; release: string | null }): PulseModel {
+export function pulseModel(i: {
+  graph: Pick<BridgeGraph, 'pages'>;
+  rows: readonly HourlyRow[];
+  dayRows: readonly HourlyRow[];
+  alerts: readonly BridgeAlert[];
+  pipe: PipeStatus;
+  release: string | null;
+  /** The evidence reads that failed. A live pipe with a failed hourly or session read still cannot give an all-clear. */
+  readErrors?: readonly string[];
+}): PulseModel {
   const headline = headlineAlerts(i.alerts);
   const counts = { critical: 0, high: 0, medium: 0, low: 0 } as Record<BridgeAlert['severity'], number>;
   for (const a of i.alerts) counts[a.severity] += 1;
@@ -66,10 +77,13 @@ export function pulseModel(i: { graph: Pick<BridgeGraph, 'pages'>; rows: readonl
   const live = i.release && list.some((r) => r.release === i.release) ? i.release : (list[0]?.release ?? null);
   const base = live ? previousRelease(list, live) : null;
 
+  const readFailures = i.readErrors?.length ?? 0;
+  const untrusted = i.pipe.untrusted || readFailures > 0;
   return {
     pipe: i.pipe,
-    untrusted: i.pipe.untrusted,
-    allClear: headline.length === 0 && !i.pipe.untrusted,
+    untrusted,
+    readFailures,
+    allClear: headline.length === 0 && !untrusted,
     headline,
     counts,
     tiles,
@@ -168,10 +182,11 @@ export function pulseReport(m: PulseModel): string {
     '# Clubhouse Pulse',
     '',
     `Pipe: ${m.pipe.label}${m.untrusted ? ' (no all-clear can be trusted)' : ''}`,
+    ...(m.readFailures ? [`Evidence: ${m.readFailures} read${m.readFailures === 1 ? '' : 's'} failed, so the counts below are incomplete`] : []),
     `Rules: ${m.counts.critical} critical, ${m.counts.high} high, ${m.counts.medium} medium, ${m.counts.low} low`,
     '',
     '## Needs a look',
-    ...(m.headline.length ? m.headline.map((a) => `- ${a.rule} ${a.severity}: ${a.title}`) : [m.allClear ? '- Nothing high or critical.' : '- Nothing fired, but the pipe cannot vouch for it.']),
+    ...(m.headline.length ? m.headline.map((a) => `- ${a.rule} ${a.severity}: ${a.title}`) : [m.allClear ? '- Nothing high or critical.' : m.readFailures ? '- Nothing fired, but some evidence could not be read.' : '- Nothing fired, but the pipe cannot vouch for it.']),
     '',
     '## Page wall',
     ...wallInWords(m.tiles).map((l) => `- ${l}`),

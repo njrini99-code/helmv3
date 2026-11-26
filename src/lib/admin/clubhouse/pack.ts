@@ -458,7 +458,7 @@ export async function buildPack(graph: BridgeGraph, rawTarget: PackTarget, optio
 // Markdown
 // ---------------------------------------------------------------------------
 
-const esc = (v: PackCell | undefined) => String(v ?? '—').replace(/\|/g, '\\|').replace(/\n/g, ' ');
+const esc = (v: PackCell | undefined) => String(v ?? '—').replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
 const list = (xs: readonly string[], none = 'none') => (xs.length ? xs.map((x) => `- ${x}`).join('\n') : `- ${none}`);
 
 /** The pack as one paste: seven sections, then the same pack as a `bridge-pack/v1` JSON block. */

@@ -200,3 +200,24 @@ describe('B06: the Bridge fields of an incident row', () => {
     expect(bridgeFieldsOf({ metadata: { ui: 'clubhouse' } })).toBeNull();
   });
 });
+
+describe('actionStats silent starts (only success, failure or cancelled end a start)', () => {
+  it('an offline tap does not hide a start that never finished', () => {
+    const rows = [
+      h({ act: 'messages.send', outcome: 'start', code: '', signal_count: 20 }),
+      h({ act: 'messages.send', outcome: 'success', code: 'CH-1702', signal_count: 19 }),
+      h({ act: 'messages.send', outcome: 'offline', code: 'CH-1903', signal_count: 1 }),
+    ];
+    expect(actionStats(rows)[0]).toMatchObject({ starts: 20, successes: 19, silent: 1 });
+  });
+
+  it('a stopped wait is not a try and does not count twice with the success that follows it', () => {
+    const rows = [
+      h({ act: 'messages.send', outcome: 'start', code: '', signal_count: 5 }),
+      h({ act: 'messages.send', outcome: 'stopped-waiting', code: 'CH-1991', signal_count: 1 }),
+      h({ act: 'messages.send', outcome: 'success', code: 'CH-1702', signal_count: 5 }),
+    ];
+    expect(actionStats(rows)[0]).toMatchObject({ starts: 5, tries: 5, silent: 0, rate: 1 });
+  });
+});
+

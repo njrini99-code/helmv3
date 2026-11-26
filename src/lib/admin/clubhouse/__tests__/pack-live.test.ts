@@ -101,6 +101,13 @@ describe('the sections', () => {
     expect(s.rows?.[1]).toMatchObject({ release: BASE_RELEASE.slice(0, 7), signals: 1 });
   });
 
+  it('a person has no counters of their own: shared hourly totals are never credited to them', () => {
+    const s = countersSection(graph, t(packTargetKey.person(U[1]!)), data(), ctx('person u-1'));
+    expect(s.state).toBe('ok');
+    expect(s.rows).toBeUndefined();
+    expect(s.note).toContain('shared by everyone in the bucket');
+  });
+
   it('a team has no counters and says why, rather than zero', () => {
     const s = countersSection(graph, t(packTargetKey.team('7c9e6679-7425-40de-944b-e07fc1f90ae7')), data(), ctx('team t-1'));
     expect(s.state).toBe('ok');

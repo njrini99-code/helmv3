@@ -14,6 +14,8 @@ import {
   type ScopeViewport,
 } from '@/lib/admin/clubhouse/screens';
 import { DEFAULT_LIVE, LIVE_PLATFORMS, LIVE_WINDOWS, PLATFORM_WORDS, parseLiveScope } from '@/lib/admin/clubhouse/live-scope';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Button } from '@/components/fairway';
 
 export interface ScopeBarPage {
   id: string;
@@ -80,7 +82,7 @@ export function ScopeBar({ pages, live = false }: { pages: readonly ScopeBarPage
       <label htmlFor={`${id}-page`} className="sr-only">
         Page
       </label>
-      <select
+      <NativeSelect
         id={`${id}-page`}
         value={scope.page ?? 'all'}
         onChange={(e) => go({ page: e.target.value })}
@@ -92,60 +94,62 @@ export function ScopeBar({ pages, live = false }: { pages: readonly ScopeBarPage
             {p.id} {p.name}
           </option>
         ))}
-      </select>
+      </NativeSelect>
       <label htmlFor={`${id}-role`} className="sr-only">
         Role
       </label>
-      <select id={`${id}-role`} value={scope.role} onChange={(e) => go({ role: e.target.value })} className={cn(selectClass, 'flex-1 basis-28 sm:flex-none')}>
+      <NativeSelect id={`${id}-role`} value={scope.role} onChange={(e) => go({ role: e.target.value })} className={cn(selectClass, 'flex-1 basis-28 sm:flex-none')}>
         {SCOPE_ROLES.map((r) => (
           <option key={r} value={r}>
             {ROLE_LABEL[r]}
           </option>
         ))}
-      </select>
+      </NativeSelect>
       <label htmlFor={`${id}-vp`} className="sr-only">
         Viewport
       </label>
-      <select id={`${id}-vp`} value={scope.vp} onChange={(e) => go({ vp: e.target.value })} className={cn(selectClass, 'flex-1 basis-28 sm:flex-none')}>
+      <NativeSelect id={`${id}-vp`} value={scope.vp} onChange={(e) => go({ vp: e.target.value })} className={cn(selectClass, 'flex-1 basis-28 sm:flex-none')}>
         {SCOPE_VIEWPORTS.map((v) => (
           <option key={v} value={v}>
             {VP_LABEL[v]}
           </option>
         ))}
-      </select>
+      </NativeSelect>
       {live ? (
         <>
           <label htmlFor={`${id}-w`} className="sr-only">
             Window
           </label>
-          <select id={`${id}-w`} value={liveScope.w} onChange={(e) => go({ w: e.target.value })} className={cn(selectClass, 'flex-1 basis-24 sm:flex-none')}>
+          <NativeSelect id={`${id}-w`} value={liveScope.w} onChange={(e) => go({ w: e.target.value })} className={cn(selectClass, 'flex-1 basis-24 sm:flex-none')}>
             {LIVE_WINDOWS.map((w) => (
               <option key={w} value={w}>
                 Last {w}
               </option>
             ))}
-          </select>
+          </NativeSelect>
           <label htmlFor={`${id}-pf`} className="sr-only">
             Platform
           </label>
-          <select id={`${id}-pf`} value={liveScope.pf} onChange={(e) => go({ pf: e.target.value })} className={cn(selectClass, 'flex-1 basis-32 sm:flex-none')}>
+          <NativeSelect id={`${id}-pf`} value={liveScope.pf} onChange={(e) => go({ pf: e.target.value })} className={cn(selectClass, 'flex-1 basis-32 sm:flex-none')}>
             {LIVE_PLATFORMS.map((p) => (
               <option key={p} value={p}>
                 {p === 'all' ? 'All platforms' : PLATFORM_WORDS[p]}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </>
       ) : null}
       {scoped ? (
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="sm"
           onClick={() => go({ page: 'all', role: 'all', vp: 'all', w: DEFAULT_LIVE.w, pf: 'all' })}
-          className="inline-flex h-9 items-center gap-1 rounded-fw-sm px-2 text-caption font-medium text-text-secondary hover:bg-surface hover:text-text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500 [@media(pointer:coarse)]:h-11"
+          leftIcon={<X size={14} aria-hidden />}
+          className="[@media(pointer:coarse)]:h-11"
         >
-          <X size={14} aria-hidden />
           Clear scope
-        </button>
+        </Button>
       ) : null}
     </div>
   );

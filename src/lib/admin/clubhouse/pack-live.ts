@@ -155,6 +155,11 @@ export function countersSection(graph: BridgeGraph, target: PackTarget, data: Pa
   if (target.kind === 'team') {
     return { source: 'counters', title, state: 'ok', note: 'Hourly counters carry no team, so a team has no counts of its own; its sessions below are the evidence.' };
   }
+  if (target.kind === 'person') {
+    // An hourly row's user_ids says who contributed to it, not how much: summing whole rows would credit one person
+    // with everyone's events in that bucket. Their own sessions (below) are their evidence.
+    return { source: 'counters', title, state: 'ok', note: 'Hourly counters are shared by everyone in the bucket, so a person has no counts of their own; their sessions below are the evidence.' };
+  }
   if (target.kind === 'action' && !actionNameOf(graph, target)) {
     return { source: 'counters', title, state: 'ok', note: `${target.key} has no useAction name in the graph yet, so its counters cannot be told apart; its sessions are below.` };
   }

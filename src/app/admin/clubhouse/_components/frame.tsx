@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { PackageOpen, RadioTower } from 'lucide-react';
-import { Surface } from '@/components/fairway';
+import { Button, Surface } from '@/components/fairway';
 import { cn } from '@/lib/utils';
 import type { BridgeGraph } from '@/lib/admin/clubhouse/graph';
 import { clubhouseHref, describeScope, liveRef, type ClubhouseScope } from '@/lib/admin/clubhouse/screens';
@@ -247,16 +247,18 @@ export function GraphUnavailable({ code, title, retryHref }: { code: string; tit
  */
 export function PendingControl({ code, label, arrives }: { code: string; label: string; arrives: string }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="sm"
       disabled
       data-br={code}
       title={arrives}
-      className="inline-flex min-h-9 cursor-not-allowed items-center gap-1.5 rounded-fw-sm border border-dashed border-border-strong px-3 text-caption font-medium text-text-tertiary"
+      className="cursor-not-allowed border border-dashed border-border-strong text-text-tertiary"
     >
       {label}
       <span className="sr-only">: {arrives}</span>
-    </button>
+    </Button>
   );
 }
 

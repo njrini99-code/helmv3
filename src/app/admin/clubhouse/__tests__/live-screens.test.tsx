@@ -9,7 +9,7 @@ import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { fixtureGraph } from '@/lib/admin/clubhouse/__tests__/fixtures';
 import { NOW, badDay, ev, session, LIVE_RELEASE, BASE_RELEASE, h } from '@/lib/admin/clubhouse/__tests__/fixtures-live';
 import { categoryLookup, pipeStatus, runRules, type LiveRead } from '@/lib/admin/clubhouse/live-model';
-import { pulseModel } from '@/lib/admin/clubhouse/pulse';
+import { pulseModel, pulseReport } from '@/lib/admin/clubhouse/pulse';
 import { DEFAULT_SCOPE } from '@/lib/admin/clubhouse/screens';
 
 type Mode = 'ok' | 'no-signal';
@@ -122,6 +122,19 @@ describe('live screens over the seeded store', () => {
     const model = pulseModel({ graph, rows: day.dayRows, dayRows: day.dayRows, alerts, pipe: livePipe, release: LIVE_RELEASE });
     const { container } = render(<PulseBody model={model} graph={graph} scope={DEFAULT_SCOPE} live={{ w: '24h', pf: 'all' }} incidents={[]} />);
     for (const code of [BR.pulse.alertRow, BR.pulse.pageTile, BR.pulse.risingRow, BR.pulse.actionRow, BR.pulse.releaseCard]) expect(has(container, code), code).toBe(true);
+  });
+  it('B01 Pulse gives no all-clear when an evidence read failed, even with a live pipe and no alerts', () => {
+    const graph = fixtureGraph();
+    const clear = pulseModel({ graph, rows: [], dayRows: [], alerts: [], pipe: livePipe, release: LIVE_RELEASE });
+    expect(clear.allClear).toBe(true);
+    const failed = pulseModel({ graph, rows: [], dayRows: [], alerts: [], pipe: livePipe, release: LIVE_RELEASE, readErrors: ['hourly read failed'] });
+    expect(failed.allClear).toBe(false);
+    expect(failed.untrusted).toBe(true);
+    const { container } = render(<PulseBody model={failed} graph={graph} scope={DEFAULT_SCOPE} live={{ w: '24h', pf: 'all' }} incidents={[]} />);
+    expect(container.querySelector(`[data-br="${BR.pulse.empty}"]`)?.textContent).toContain('some evidence failed to load');
+    const report = pulseReport(failed);
+    expect(report).toContain('Evidence: 1 read failed');
+    expect(report).not.toContain('Nothing high or critical.');
   });
   it('the Pipe dot (BR-0106) in the truth line opens B11 at the pipe panel; every lens links its pipe there', () => {
     const graph = fixtureGraph();

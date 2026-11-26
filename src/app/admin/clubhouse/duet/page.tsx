@@ -21,6 +21,7 @@ import { CopyReportButton } from '../../_components/CopyReportButton';
 import { ClubhouseFrame, GraphUnavailable, NoSignal, PendingControl, Section } from '../_components/frame';
 import { DownloadPack } from '../_components/DownloadPack';
 import { GRAPH_SOURCE, readClubhouse } from '../_components/load';
+import { Input } from '@/components/ui/input';
 
 export const metadata: Metadata = { title: 'Duet desk' };
 
@@ -100,9 +101,12 @@ function BuildForm({ raw, includeNames, hidden }: { raw: string; includeNames: b
       {hidden.map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
-      <label className="flex min-w-0 flex-1 basis-72 flex-col gap-1">
-        <span className="text-caption font-medium text-text-secondary">What to pack: a page, control, action, code or finding, or a release, person or team</span>
-        <input
+      <div className="flex min-w-0 flex-1 basis-72 flex-col gap-1">
+        <label htmlFor="bridge-duet-target" className="text-caption font-medium text-text-secondary">
+          What to pack: a page, control, action, code or finding, or a release, person or team
+        </label>
+        <Input
+          id="bridge-duet-target"
           name="t"
           defaultValue={raw}
           required
@@ -112,7 +116,7 @@ function BuildForm({ raw, includeNames, hidden }: { raw: string; includeNames: b
           placeholder="P007 · CTL-P007-014 · 70603 · CH-7004 · F-0001 · rel:<sha> · user:<id>"
           className="min-h-10 w-full rounded-fw-sm border border-border-control bg-surface px-3 font-fw-mono text-body-sm text-text-primary placeholder:text-text-tertiary focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-500"
         />
-      </label>
+      </div>
       <label data-br={BR.duet.names} className="inline-flex min-h-10 cursor-pointer items-center gap-2 text-body-sm text-text-secondary">
         <input type="checkbox" name="names" value="1" defaultChecked={includeNames} className="size-4 accent-accent-600" />
         Include names

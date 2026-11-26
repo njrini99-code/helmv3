@@ -430,7 +430,7 @@ function roleFor(file, m) {
 function viewportFor(file) {
   const base = file.split('/').pop();
   if (/\/phone\//.test(file) || /Phone|Mobile/.test(base)) return 'phone';
-  if (/^Desk|Desk[A-Z.]/.test(base)) return 'desktop';
+  if (/^(?:Desk|.*Desk[A-Z.])/.test(base)) return 'desktop';
   return 'all';
 }
 
@@ -707,7 +707,7 @@ function context(root) {
   const manifests = loadManifests(root);
   const ledgers = loadLedgers(root);
   const boardPath = join(root, 'docs/clubhouse/history/CLICKABLES.md');
-  const boardMd = existsSync(boardPath) ? readFileSync(boardPath, 'utf8') : '';
+  const boardMd = readIfPresent(boardPath) ?? '';
   return { files, manifests, ledgers, boardMd };
 }
 
@@ -717,13 +717,23 @@ export function checkClickableMap(root) {
   const v = [];
   const text = buildMap(ctx);
   const path = join(root, OUT);
-  if (!existsSync(path) || readFileSync(path, 'utf8') !== text) v.push(`${OUT} is stale: the controls in src/clubhouse changed; run npm run clubhouse:clickables`);
+  if (readIfPresent(path) !== text) v.push(`${OUT} is stale: the controls in src/clubhouse changed; run npm run clubhouse:clickables`);
   return v;
 }
 
 /** clubhouse:check, D11: every control has a data-ctl and a label, and the ledgers match the code. */
 export function checkControls(root) {
   return controlProblems(context(root));
+}
+
+/** A file's text, or null when it does not exist (read once, no exists-then-read race). */
+function readIfPresent(p) {
+  try {
+    return readFileSync(p, 'utf8');
+  } catch (e) {
+    if (e && e.code === 'ENOENT') return null;
+    throw e;
+  }
 }
 
 /** Run --assign against the disk: write code edits, ledgers and the map. Returns a summary. */
@@ -736,7 +746,7 @@ export function assignOnDisk(root, { only = null, today = new Date().toISOString
   for (const [prefix, l] of Object.entries(res.ledgers)) {
     const p = join(root, LEDGER_DIR, `${prefix}.json`);
     const text = renderLedger(prefix, l);
-    if (!existsSync(p) || readFileSync(p, 'utf8') !== text) {
+    if (readIfPresent(p) !== text) {
       writeFileSync(p, text);
       ledgerWrites += 1;
     }

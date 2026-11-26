@@ -50,7 +50,9 @@ export function PulseBody({
             <p data-br={BR.pulse.empty} className="text-body-sm text-text-secondary">
               {model.allClear
                 ? 'Nothing high or critical fired in the last day.'
-                : 'Nothing high or critical fired, but the pipe cannot vouch for that (see above).'}
+                : model.readFailures
+                  ? 'Nothing high or critical fired in what could be read, but some evidence failed to load (see above).'
+                  : 'Nothing high or critical fired, but the pipe cannot vouch for that (see above).'}
             </p>
           }
         />

@@ -88,6 +88,14 @@ describe('silentActions', () => {
   const start = (seq: number, at: number, act = 'messages.send') => signal({ seq, at, act, outcome: 'start' });
   const end = (seq: number, at: number, act = 'messages.send') => signal({ seq, at, act, outcome: 'success', code: 'CH-7101' });
 
+  it('a busy or offline tap and a stopped wait do not close a start (only success, failure or cancelled do)', () => {
+    const other = (seq: number, at: number, outcome: 'busy' | 'offline' | 'stopped-waiting') => signal({ seq, at, act: 'messages.send', outcome, code: 'CH-1991' });
+    // A second tap while the first save runs is "busy": the first start is still open, and silent after 30 s.
+    expect(silentActions([start(1, t0), other(2, t0 + 200, 'busy'), other(3, t0 + 300, 'offline')], { now: t0 + 60_000 }).map((s) => s.seq)).toEqual([1]);
+    // A stopped wait then the real success inside 30 s: not silent.
+    expect(silentActions([start(1, t0), other(2, t0 + 8_000, 'stopped-waiting'), end(3, t0 + 12_000)], { now: t0 + 60_000 })).toEqual([]);
+  });
+
   it('pairs starts and outcomes per action, oldest first', () => {
     expect(silentActions([start(1, t0), end(2, t0 + 400), start(3, t0 + 1000), end(4, t0 + 1500)], { now: t0 + 120_000 })).toEqual([]);
   });

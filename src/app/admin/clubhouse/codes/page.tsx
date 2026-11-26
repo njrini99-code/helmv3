@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { Search } from 'lucide-react';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
-import { EmptyState } from '@/components/fairway';
+import { Button, EmptyState } from '@/components/fairway';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import {
   CATEGORIES,
@@ -23,6 +23,8 @@ import {
 import { ClubhouseFrame, GraphUnavailable, NoSignal, NoSignalCell } from '../_components/frame';
 import { CategoryLegend, CategoryTag, IdChip, PageChip, StatusTag } from '../_components/chips';
 import { GRAPH_SOURCE, readClubhouse } from '../_components/load';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Input } from '@/components/ui/input';
 
 export const metadata: Metadata = { title: 'Codes' };
 
@@ -110,10 +112,13 @@ function CodeSearch({ filter, scope }: { filter: CodeFilter; scope: ClubhouseSco
       {scopeEntries(scope).map(([key, value]) => (
         <input key={key} type="hidden" name={key} value={value} />
       ))}
-      <label className="relative min-w-0 flex-1 basis-64">
-        <span className="sr-only">Search codes</span>
-        <Search size={14} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-text-tertiary" />
-        <input
+      <div className="relative min-w-0 flex-1 basis-64">
+        <label htmlFor="bridge-codes-q" className="sr-only">
+          Search codes
+        </label>
+        <Search size={14} aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 text-text-tertiary" />
+        <Input
+          id="bridge-codes-q"
           type="search"
           name="q"
           defaultValue={filter.q}
@@ -123,35 +128,32 @@ function CodeSearch({ filter, scope }: { filter: CodeFilter; scope: ClubhouseSco
           autoComplete="off"
           className={`${fieldClass} w-full pl-8`}
         />
-      </label>
+      </div>
       <label className="min-w-0">
         <span className="sr-only">Category</span>
-        <select name="cat" defaultValue={filter.category ?? ''} data-br={BR.codes.filters} className={`${fieldClass} max-w-[14rem]`}>
+        <NativeSelect name="cat" defaultValue={filter.category ?? ''} data-br={BR.codes.filters} className={`${fieldClass} max-w-[14rem]`}>
           <option value="">All categories</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
               {categoryCode(c)} {categoryName(c)}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
       <label className="min-w-0">
         <span className="sr-only">Status</span>
-        <select name="status" defaultValue={filter.status ?? ''} data-br={BR.codes.filters} className={fieldClass}>
+        <NativeSelect name="status" defaultValue={filter.status ?? ''} data-br={BR.codes.filters} className={fieldClass}>
           <option value="">Any status</option>
           {ID_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </label>
-      <button
-        type="submit"
-        className="inline-flex h-9 items-center rounded-fw-sm bg-accent-fill px-3 text-body-sm font-medium text-text-on-accent-fill hover:bg-accent-fill-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-500 [@media(pointer:coarse)]:h-11"
-      >
+      <Button type="submit" variant="primary" size="sm" className="[@media(pointer:coarse)]:h-11">
         Search
-      </button>
+      </Button>
       {filter.q || filter.category || filter.status ? (
         <Link href={withScope(clubhouseHref.codes(), scope)} className="text-caption font-medium text-text-secondary hover:text-text-primary hover:underline">
           Clear

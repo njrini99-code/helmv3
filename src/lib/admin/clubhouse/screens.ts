@@ -711,7 +711,7 @@ export function graphSourceLine(graph: BridgeGraph): string {
 }
 
 export function markdownTable(header: readonly string[], rows: ReadonlyArray<readonly (string | number)[]>): string {
-  const esc = (v: string | number) => String(v).replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  const esc = (v: string | number) => String(v).replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
   return [
     `| ${header.map(esc).join(' | ')} |`,
     `| ${header.map(() => '---').join(' | ')} |`,
