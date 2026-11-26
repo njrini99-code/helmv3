@@ -2993,9 +2993,13 @@ describe('Settings · this file', () => {
       .map((m) => `CH-${m[1]}${m[2]}`)
       .filter((c) => !all.includes(c));
     expect(missing).toEqual([]);
-    const bridge = JSON.parse(readFileSync(join(root, 'config/clubhouse/bridge-contracts.json'), 'utf8')) as Array<{ id: number; page: string; chCode?: string; status: string }>;
+    const bridge = JSON.parse(readFileSync(join(root, 'config/clubhouse/bridge-contracts.json'), 'utf8')) as Array<{ id: number; page: string; chCode?: string; status: string; tests?: string[] }>;
     const titles = all.split('\n').filter((l) => /^\s*(it|describe)(\.each\(.*\))?\(/.test(l));
-    const unnamed = bridge.filter((r) => r.page === 'P008' && !r.chCode && r.status === 'implemented').filter((r) => !titles.some((l) => l.includes(String(r.id))));
+    // A row proven outside this page's files (the Bridge's own category 25) is named by a test in the file its `tests` lists.
+    const listed = (file: string) => readFileSync(join(root, file), 'utf8').split('\n').filter((l) => /^\s*(it|describe|test)(\.each\(.*\))?\(/.test(l));
+    const unnamed = bridge
+      .filter((r) => r.page === 'P008' && !r.chCode && r.status === 'implemented')
+      .filter((r) => !titles.some((l) => l.includes(String(r.id))) && !(r.tests ?? []).some((file) => listed(file).some((l) => l.includes(String(r.id)))));
     expect(unnamed.map((r) => r.id)).toEqual([]);
   });
 });

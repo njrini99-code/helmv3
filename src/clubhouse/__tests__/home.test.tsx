@@ -1067,8 +1067,12 @@ describe('Home · this file', () => {
     // A floor, so an unreadable catalog can't pass by finding nothing (2201 to 2217, 2301 to 2313 and 2401).
     expect(forced.length).toBeGreaterThanOrEqual(31);
     expect(forced.filter((c) => !titles.some((l) => l.includes(c)))).toEqual([]);
-    const bridge = JSON.parse(readFileSync(join(root, 'config/clubhouse/bridge-contracts.json'), 'utf8')) as Array<{ id: number; page: string; chCode?: string; status: string }>;
-    const unnamed = bridge.filter((r) => r.page === 'P002' && !r.chCode && r.status === 'implemented').filter((r) => !titles.some((l) => l.includes(String(r.id))));
+    const bridge = JSON.parse(readFileSync(join(root, 'config/clubhouse/bridge-contracts.json'), 'utf8')) as Array<{ id: number; page: string; chCode?: string; status: string; tests?: string[] }>;
+    // A row proven outside this page's files (the Bridge's own category 25) is named by a test in the file its `tests` lists.
+    const listed = (file: string) => readFileSync(join(root, file), 'utf8').split('\n').filter((l) => /^\s*(it|describe|test)(\.each\(.*\))?\(/.test(l));
+    const unnamed = bridge
+      .filter((r) => r.page === 'P002' && !r.chCode && r.status === 'implemented')
+      .filter((r) => !titles.some((l) => l.includes(String(r.id))) && !(r.tests ?? []).some((file) => listed(file).some((l) => l.includes(String(r.id)))));
     expect(unnamed.map((r) => r.id)).toEqual([]);
   });
 });
