@@ -4,7 +4,7 @@ name: TEMP gate diagnostics (remove before merge)
 on:
   push:
     branches: [agent/presentation-gate-green]
-    paths: ['e2e/tmp-gate-diag.spec.ts', 'tmp-gate-diag.config.ts', '.github/workflows/tmp-gate-diag.yml']
+    paths: ['e2e/tmp-gate-diag.spec.ts', 'tmp-gate-diag.config.ts', '.github/workflows/tmp-gate-diag.yml', 'src/clubhouse/screens/messages/thread/PhoneThread.tsx']
 
 permissions:
   contents: read
@@ -27,3 +27,24 @@ jobs:
       - uses: ./.github/actions/setup-node-npm
       - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
       - run: ./node_modules/.bin/playwright test --config tmp-gate-diag.config.ts
+
+  # The phone thread test, red on the thread as it is on main and green on the split.
+  red-green:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: ./.github/actions/setup-node-npm
+      - name: Red on main's PhoneThread
+        run: |
+          git show dc904616:src/clubhouse/screens/messages/thread/PhoneThread.tsx > src/clubhouse/screens/messages/thread/PhoneThread.tsx
+          if ./node_modules/.bin/vitest run --project unit-dom src/clubhouse/__tests__/messages.test.tsx -t 'opens at its newest message'; then
+            echo 'RED-GREEN: the test passed without the fix'; exit 1
+          fi
+          echo 'RED-GREEN: red as expected'
+          git checkout -- src/clubhouse/screens/messages/thread/PhoneThread.tsx
+      - name: Green on the split, with every Messages test file
+        run: ./node_modules/.bin/vitest run --project unit-dom src/clubhouse/__tests__/messages.test.tsx src/clubhouse/__tests__/wiring-p007-messages.test.tsx src/clubhouse/__tests__/thread-anchor.test.tsx src/clubhouse/screens/messages
