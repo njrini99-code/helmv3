@@ -15,7 +15,7 @@ html[data-fw-theme='dark'] .ch-qcs {
 .ch-qcs .qc__inner { display: flex; flex-direction: column; gap: 12px; }
 .ch-qcs .qc__comp { flex: none; padding: 8px 8px 12px; border-top: var(--ch-hairline-w) solid var(--ch-border-hairline); background: var(--ch-card-bg); }
 .ch-qcs .cmp { display: flex; align-items: flex-end; gap: 6px; padding: 4px 4px 4px 12px; border-radius: var(--ch-radius-xl); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline); }
-.ch-qcs .cmp__t { flex: 1; min-width: 0; min-height: 34px; padding: 8px 0 6px; font: var(--ch-type-16); color: var(--ch-text-primary); overflow-wrap: anywhere; letter-spacing: var(--ch-track-16); }
+.ch-qcs .cmp__t { flex: 1; min-width: 0; min-height: 34px; padding: 8px 0 6px; font: var(--ch-type-headline); font-weight: var(--ch-fw-400); color: var(--ch-text-primary); overflow-wrap: anywhere; letter-spacing: var(--ch-track-16); }
 .ch-qcs .cmp__t.ph { color: var(--ch-text-tertiary); }
 .ch-qcs .cmp__send { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 0; border-radius: 50%; background: var(--ch-accent); color: var(--ch-text-on-accent); cursor: pointer; }
 .ch-qcs .cmp__send.off { background: var(--ch-skel-base); color: var(--ch-text-tertiary); }
@@ -86,7 +86,7 @@ html[data-fw-theme='dark'] .ch-qcs {
   .ch-qck.is-desk.keyslot { width: auto; display: inline-flex; align-items: center; margin-right: 4px; }
   .ch-qck.is-desk .hkey { display: inline-flex; width: auto; height: 32px; gap: 6px; padding: 0 6px 0 8px; color: var(--ch-text-primary); background: var(--ch-ivory-25); box-shadow: inset 0 0 0 1px var(--ch-border-control), inset 0 1px 2px rgb(28 25 18 / 0.06); }
   .ch-qck.is-desk .hkey__mark { width: 18px; height: 18px; }
-  .ch-qck.is-desk .hkey__label { display: inline; font: var(--ch-type-14); letter-spacing: var(--ch-track-14); }
+  .ch-qck.is-desk .hkey__label { display: inline; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); letter-spacing: var(--ch-track-14); }
   .ch-qck.is-desk .hkey .ch-qc-keys { display: inline-flex; }
   .ch-qck.is-desk .hkey__disc { display: none; }
   .ch-qck.is-desk .hkey.is-on { color: var(--ch-green-700); box-shadow: inset 0 0 0 1px var(--ch-border-focus); }
@@ -96,7 +96,7 @@ html[data-fw-theme='dark'] .ch-qcs {
   html[data-fw-theme='dark'] .ch-qck.is-desk .hkey:hover:not(.is-on) { background: rgb(237 231 216 / 0.07); }
 }
 html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187 140 / 0.12); }
-.ch-qck .live { position: absolute; z-index: var(--ch-z-panel); height: 36px; right: 0; top: calc(50% - 18px); display: flex; align-items: center; gap: 8px; padding: 0 12px 0 12px; border: 0; border-radius: var(--ch-radius-xl); background: var(--ch-qc-live-bg); color: var(--ch-qc-a-frame-ink); box-shadow: inset 0 0 0 var(--ch-hairline-w) rgb(220 205 166 / 0.28); font: var(--ch-type-14-strong);  white-space: nowrap; cursor: pointer; transform-origin: 100% 50%; }
+.ch-qck .live { position: absolute; z-index: var(--ch-z-panel); height: 36px; right: 0; top: calc(50% - 18px); display: flex; align-items: center; gap: 8px; padding: 0 12px 0 12px; border: 0; border-radius: var(--ch-radius-xl); background: var(--ch-qc-live-bg); color: var(--ch-qc-a-frame-ink); box-shadow: inset 0 0 0 var(--ch-hairline-w) rgb(220 205 166 / 0.28); font: var(--ch-type-callout); font-weight: var(--ch-fw-600);  white-space: nowrap; cursor: pointer; transform-origin: 100% 50%; }
 .ch-qck .live[hidden] { display: none !important; }
 .ch-qck .live__ic { position: relative; width: 18px; height: 18px; display: grid; place-items: center; }
 .ch-qck .live__spin { width: 16px; height: 16px; border-radius: 50%; border: 2px solid rgb(244 238 221 / 0.25); border-top-color: var(--ch-on-green-ink); animation: ch-spinner-turn var(--ch-dur-typing) linear infinite; }
@@ -180,7 +180,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs .qc__h { flex: none; display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 8px 8px 8px 16px; }
 /* The chat's mark: the ball on the sheet itself, no tile under it (BallMark, styles/coachhelm-ball.css). */
 .ch-qcs .qc__mark { flex: none; display: grid; place-items: center; width: 28px; height: 28px; }
-.ch-qcs .qc__ttl { flex: 1; min-width: 0; margin-left: 4px; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ch-qcs .qc__ttl { flex: 1; min-width: 0; margin-left: 4px; font: var(--ch-type-headline); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-qcs .qc__full { flex: none; }
 /* The activity island's slot: the centre of the header's row. The island is one line here and opens over the body; while one
    is shown the name steps back for it (opacity only, so nothing in the row moves). */
@@ -212,9 +212,9 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
    right, one arrow. They are the body; they rise with it and have no stagger of their own (MQ-2-1). */
 .ch-qcs .qc-starts { list-style: none; margin: 0; padding: 0; display: grid; }
 .ch-qcs .qc-starts li + li { box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline); }
-.ch-qcs .qc-start { display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; align-items: center; column-gap: 12px; width: 100%; min-height: 52px; padding: 8px 0; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-primary); text-align: left; cursor: pointer; font: var(--ch-type-16); letter-spacing: var(--ch-track-16); }
+.ch-qcs .qc-start { display: grid; grid-template-columns: minmax(0, 1fr) auto 16px; align-items: center; column-gap: 12px; width: 100%; min-height: 52px; padding: 8px 0; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-primary); text-align: left; cursor: pointer; font: var(--ch-type-headline); font-weight: var(--ch-fw-400); letter-spacing: var(--ch-track-16); }
 .ch-qcs .qc-start__q { min-width: 0; text-wrap: balance; }
-.ch-qcs .qc-start__d { font: var(--ch-type-13); letter-spacing: var(--ch-track-13); color: var(--ch-text-secondary); white-space: nowrap; }
+.ch-qcs .qc-start__d { font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); letter-spacing: var(--ch-track-13); color: var(--ch-text-secondary); white-space: nowrap; }
 .ch-qcs .qc-start__go { color: var(--ch-text-tertiary); }
 .ch-qcs button.qc-start[data-ch-pressed] { background: var(--ch-accent-tint); }
 @media (hover: hover) { .ch-qcs button.qc-start:hover .qc-start__go { color: var(--ch-accent-ink); } }
@@ -237,7 +237,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 .ch-qcs .qc-chip__x::after { content: ''; position: absolute; inset: -12px; }
 .ch-qcs .qc-chip__x:disabled { opacity: 0.4; cursor: default; }
 .ch-qcs .qc-chip__x[data-ch-pressed] { background: var(--ch-accent-tint); }
-.ch-qcs .qc-offline { margin: 0; padding: 0 12px 6px; font: var(--ch-type-13); letter-spacing: var(--ch-track-13); color: var(--ch-text-secondary); }
+.ch-qcs .qc-offline { margin: 0; padding: 0 12px 6px; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); letter-spacing: var(--ch-track-13); color: var(--ch-text-secondary); }
 
 /* Moment 8. The page's side of a landing, drawn for it. These three rules reach outside the panel on purpose: they are
    the whole of what a stamped row and a slot need, and move to ui.css when the coordinator takes them. */
@@ -248,8 +248,8 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 [data-ui='clubhouse'] .ch-landslot { position: relative; }
 [data-ui='clubhouse'] .ch-landslot__tint { position: absolute; inset: 0; border-radius: inherit; background: var(--ch-accent-tint); opacity: 0; pointer-events: none; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 [data-ui='clubhouse'] .ch-landslot[data-phase='saved'] .ch-landslot__tint { opacity: 1; }
-[data-ui='clubhouse'] .ch-landslot__t { font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-ui='clubhouse'] .ch-landslot__s { display: grid; font: var(--ch-type-13); letter-spacing: var(--ch-track-13); }
+[data-ui='clubhouse'] .ch-landslot__t { font: var(--ch-type-body); font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-ui='clubhouse'] .ch-landslot__s { display: grid; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); letter-spacing: var(--ch-track-13); }
 [data-ui='clubhouse'] .ch-landslot__s > span { grid-area: 1 / 1; opacity: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 [data-ui='clubhouse'] .ch-landslot__s > span[data-on] { opacity: 1; }
 /* `ST-8.landed`: the mark. The row's own ground at the accent tint and a "New" tag, opacity only (landing.ts markRow);
@@ -261,7 +261,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 /* The key's own field: focused inside the tap so the phone's keyboard rises with the open (MO-1-3), then the composer
    takes the focus. Never seen, never tabbed to; the 16 role, and the field floor (controls.css: every phone field is at
    least 16px) keeps iOS from zooming. */
-.ch-qck .ch-qc-kbd { position: absolute; left: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; font: var(--ch-type-16); letter-spacing: var(--ch-track-16); }
+.ch-qck .ch-qc-kbd { position: absolute; left: 0; top: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; font: var(--ch-type-headline); font-weight: var(--ch-fw-400); letter-spacing: var(--ch-track-16); }
 /* The sheet takes focus itself when it opens on a thread (so VoiceOver starts at its header and the keyboard stays down):
    a dialog is not a control, and draws no ring. */
 .ch-root .ch-qcs .qc:focus, .ch-root .ch-qcs .qc:focus-visible { outline: 0; }

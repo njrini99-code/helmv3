@@ -15,7 +15,8 @@
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-gs__h .ch-num {
@@ -41,14 +42,16 @@
 }
 .ch-gs__row b {
   display: block;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-gs__row span.ch-num {
   display: block;
   margin-top: 2px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-gs__ans {

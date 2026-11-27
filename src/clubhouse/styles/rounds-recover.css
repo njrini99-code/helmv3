@@ -35,7 +35,7 @@
 }
 .ch-rcv-lede {
   margin: 0;
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -45,7 +45,8 @@
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-card);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-rcv-note b {
@@ -82,7 +83,7 @@
 .ch-rcv-top h2 {
   min-width: 0;
   margin: 0;
-  font: var(--ch-type-16-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-16);
   overflow-wrap: anywhere;
 }
@@ -95,16 +96,19 @@
   margin: 0;
 }
 .ch-rcv-facts {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-rcv-saved {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-rcv-why {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-rcv-acts {

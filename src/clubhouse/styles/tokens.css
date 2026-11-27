@@ -1693,5 +1693,9 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-type-footnote: 560 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-caption: 560 calc(13 * var(--ch-type-k))/calc(17 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-callout: 560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    /* dsx-07: a rule that reads a role and keeps its old weight through --ch-fw-400/500 gets the same 1x lift. */
+    --ch-type-body: 450 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-fw-400: 450;
+    --ch-fw-500: 560;
   }
 }

@@ -30,7 +30,8 @@ describe('Recruiting, the desktop prospect pane: an empty part is one line', () 
 
   it('says what is missing in the regular secondary line, not a bold title', () => {
     const b = rule(`${P} .ch-rec-empty__t b`);
-    expect(b).toContain('font: var(--ch-type-14)');
+    expect(b).toContain('font: var(--ch-type-callout)');
+    expect(b).toContain('font-weight: var(--ch-fw-400)');
     expect(b).toContain('color: var(--ch-text-secondary)');
   });
 

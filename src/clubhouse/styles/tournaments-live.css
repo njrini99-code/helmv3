@@ -10,7 +10,8 @@
   margin-top: var(--ch-space-2);
 }
 .ch-tour-live-muted {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-live-rounds {
@@ -53,7 +54,8 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 
@@ -93,7 +95,8 @@
 }
 .ch-tour-live-lane__n {
   overflow: hidden;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -107,7 +110,7 @@
   justify-self: end;
   padding: 2px 8px;
   border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
@@ -188,7 +191,8 @@
   padding: 12px;
   border: 0;
   background: none;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: inherit;
   text-align: start;
   cursor: pointer;
@@ -225,7 +229,8 @@
   gap: 12px;
   min-height: 48px;
   padding: 8px 16px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
 .ch-tour-live-field__p {
@@ -239,11 +244,13 @@
 .ch-tour-live-field__v {
   justify-self: end;
   padding-inline: 8px;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
 }
 .ch-tour-live-field__row.is-us {
   background: var(--ch-bg-selected);
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
 }
 .ch-tour-live-field__row.is-us:first-child {
   border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
@@ -253,7 +260,8 @@
 }
 .ch-tour-live-field__none {
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 
@@ -291,7 +299,8 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-subtle);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   cursor: pointer;
 }
@@ -312,7 +321,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
 }
@@ -332,7 +341,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -346,7 +355,8 @@
   cursor: default;
 }
 .ch-tour-live-hs__w {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   text-align: center;
 }
 

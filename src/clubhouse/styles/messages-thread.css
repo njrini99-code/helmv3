@@ -13,13 +13,15 @@
 [data-ch-ms-v2] .ch-msv-bname {
   display: block;
   margin: 0 0 1px;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-tertiary);
 }
 /* MSG-217 Edited marker: 0.78em, .75, margin-left 6. */
 [data-ch-ms-v2] .ch-ms-bub .ch-msv-edited {
   margin-left: 6px;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-12);
   color: color-mix(in srgb, currentColor 75%, transparent);
 }
@@ -28,7 +30,8 @@
 [data-ch-ms-v2] .ch-msv-time {
   top: auto;
   bottom: 6px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-crh-ink4);
   transform: none;
 }
@@ -56,7 +59,8 @@
   padding: 0;
   background: none;
   box-shadow: none;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   letter-spacing: 0;
   color: var(--ch-crh-ink4);
 }
@@ -112,7 +116,7 @@
   padding: 0 var(--ch-ms-px-5);
   background: var(--ch-bubble-mine-fill);
   color: var(--ch-accent-ink);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
   font-weight:var(--ch-fw-700);
   box-shadow: var(--ch-ms-badge-ring);
 }
@@ -165,7 +169,8 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
   box-shadow: var(--ch-elevation-card);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 
@@ -176,11 +181,11 @@
   box-shadow: var(--ch-elevation-card);
 }
 [data-ch-ms-v2] .ch-msv-hello > b {
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-20);
 }
 [data-ch-ms-v2] .ch-msv-hello > small {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
@@ -352,7 +357,8 @@ body [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware][data-ch-v
   opacity: 0;
 }
 [data-ch-ms-v2] .ch-ms-thread.is-layered .ch-ms-th__who div > span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-crh-ink4);
 }
 /* MSG-203 The desktop composer floats at the foot over the page. */

@@ -41,7 +41,7 @@ describe('event desk round pills on a phone', () => {
 describe('event desk hole grid type on a phone', () => {
   it('the Team vs par averages are the 12 role, never under the phone’s floor (F-0024)', () => {
     const heat = rule('.ch-tour-desk-hg.is-phone .ch-tour-desk-heat');
-    expect(heat).toMatch(/font:\s*var\(--ch-type-12-strong\)/);
+    expect(heat).toMatch(/font:\s*var\(--ch-type-caption\);\s*font-weight:\s*var\(--ch-fw-600\)/);
     expect(heat).toMatch(/letter-spacing:\s*var\(--ch-track-12\)/);
   });
 });

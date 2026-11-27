@@ -25,7 +25,7 @@
   letter-spacing: -0.01em;
 }
 .ch-rec-head p {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -58,10 +58,12 @@
   gap: 8px;
 }
 .ch-rec-pipe__sum b {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
 }
 .ch-rec-pipe__sum span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -180,12 +182,14 @@
   gap: 4px;
 }
 .ch-rec-pipe__txt b {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-rec-pipe__txt span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 
@@ -220,7 +224,8 @@
 .ch-rec-tb {
   width: 100%;
   border-collapse: collapse;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-rec-tb th[scope='col'] {
   padding: 8px 12px;
@@ -290,7 +295,8 @@
 }
 .ch-rec-tb__sub {
   display: none;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 /* The list is narrower than the table needs once the panel is open: class and hometown move under the name, then the date goes. */
@@ -340,7 +346,8 @@
   height: 24px;
   padding: 0 8px;
   border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   white-space: nowrap;
 }
@@ -399,12 +406,13 @@
   min-width: 0;
 }
 .ch-rec-panel__id h2 {
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-20);
   overflow-wrap: anywhere;
 }
 .ch-rec-panel__id span {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-rec-stage .ch-seg {
@@ -434,7 +442,8 @@
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
 }
 .ch-rec-meta {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-danger {
@@ -443,7 +452,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-danger-600);
   cursor: pointer;
@@ -492,7 +501,8 @@
 }
 .ch-rec-sec h2,
 .ch-rec-sec h3 {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-sec__head {
@@ -549,7 +559,8 @@
 .ch-rec-row__v {
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -562,7 +573,8 @@
   padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-100);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -610,7 +622,8 @@
 .ch-rec-doc__t {
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   overflow-wrap: anywhere;
 }
 .ch-rec-tag {
@@ -646,7 +659,8 @@
   outline-offset: -2px;
 }
 .ch-rec-note {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 /* The file drop (desktop): the section shows where a file will land while one is over it (CH-14111). */
@@ -664,7 +678,7 @@
   border: 1.5px dashed var(--ch-green-500);
   border-radius: var(--ch-radius-lg);
   background: rgb(238 245 240 / 0.94);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-green-600);
   pointer-events: none;
 }
@@ -718,10 +732,12 @@
   min-width: 0;
 }
 .ch-rec-empty__t b {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
 }
 .ch-rec-empty__t span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-empty__a {
@@ -731,7 +747,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
@@ -983,7 +999,7 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: var(--ch-type-14-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
     cursor: pointer;
@@ -1049,13 +1065,15 @@
     min-width: 0;
   }
   .ch-recm-row__b b {
-    font: var(--ch-type-15-strong);
+    font: var(--ch-type-callout);
+    font-weight: var(--ch-fw-600);
     letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
   .ch-recm-row__b span {
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
@@ -1094,7 +1112,8 @@
     overflow-wrap: anywhere;
   }
   .ch-recm-hero > span > span {
-    font: var(--ch-type-14);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
   }
   /* Email and Call: two smaller actions under the Stage row (P014 finding #8), one when only one is known. */
@@ -1124,7 +1143,8 @@
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
-    font: var(--ch-type-13-strong);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-600);
     color: var(--ch-green-600);
     text-decoration: none;
     cursor: pointer;
@@ -1141,7 +1161,8 @@
   }
   .ch-recm-tile__v {
     overflow: hidden;
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1182,7 +1203,7 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: var(--ch-type-16-medium);
+    font: var(--ch-type-callout);
     letter-spacing: var(--ch-track-16);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-primary);
@@ -1415,7 +1436,7 @@
   .ch-rec-form.is-phone .ch-rec-f .ch-field__label {
     /* The label column grows with Dynamic Type, so "Hometown" stays clear of its field at XXL. */
     width: calc(96 * var(--ch-type-k));
-    font: var(--ch-type-16);
+    font: var(--ch-type-body);
     letter-spacing: var(--ch-track-16);
     color: var(--ch-text-secondary);
   }
@@ -1505,7 +1526,8 @@
   }
   .ch-recm-stages__t > span:last-child {
     padding-left: 2px;
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-tertiary);
   }
 
@@ -1551,12 +1573,13 @@
     gap: 4px;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum b {
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-title);
     letter-spacing: var(--ch-track-20);
     color: var(--ch-text-primary);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
   }
@@ -1807,7 +1830,8 @@
     border-radius: var(--ch-radius-sm);
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__t b {
-    font: var(--ch-type-14);
+    font: var(--ch-type-callout);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__t span {
@@ -1838,7 +1862,8 @@
   align-items: center;
   gap: 4px 8px;
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-rec-cal__t {
@@ -1860,7 +1885,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
@@ -1890,14 +1915,16 @@
     min-height: 24px;
     max-width: none;
     margin-top: 2px;
-    font: var(--ch-type-14);
+    font: var(--ch-type-callout);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
   }
 }
 /* A Division I note under Email and Call: never a warning colour, the coach decides. */
 .ch-rec-hint {
   margin: 8px 2px 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 
@@ -1961,7 +1988,8 @@
   outline-offset: -2px;
 }
 .ch-rec-tb .is-next {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;

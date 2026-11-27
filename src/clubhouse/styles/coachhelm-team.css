@@ -45,7 +45,7 @@
   padding-top:2px;
 }
 .ch-htb .lt p {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   color:var(--ch-ink-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .card {
   /* The app's global .card draws a border, bright on dark; the shadow's ring is this card's only edge. */
@@ -63,9 +63,9 @@
   padding:16px 16px 8px;
 }
 .ch-htb .ch h4 {
-  font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); }
+  font: var(--ch-type-headline); letter-spacing: var(--ch-track-17); }
 .ch-htb .ch .meta {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   color:var(--ch-ink-600);
   text-align:right; letter-spacing: var(--ch-track-15); }
 /* The narrow rail's title holds its line; the counts beside it take what is left and wrap. */
@@ -80,7 +80,8 @@
   padding:0 16px 16px;
 }
 .ch-htb .subh {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color:var(--ch-ink-600);
   padding:6px 16px 6px;
 }
@@ -158,12 +159,14 @@
   height:auto;
 }
 .ch-htb .tile b {
-  font: var(--ch-type-14-strong); letter-spacing: var(--ch-track-14); }
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-14); }
 .ch-htb .tile .tm {
   display:flex;
   align-items:center;
   gap:6px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 /* F-14 / E-9: one line each. The week sits under the title; the byline's name ends in an ellipsis rather than wrapping. */
@@ -191,7 +194,7 @@
   box-shadow:var(--ch-elevation-card);
 }
 .ch-htb .feat .hk {
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color:var(--ch-feature-ink-2);
 }
 .ch-htb .feat .hn {
@@ -206,7 +209,8 @@
   letter-spacing: -0.038em;
   }
 .ch-htb .feat .hn span {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-feature-ink-2);
   padding-bottom:2px;
 }
@@ -218,7 +222,8 @@
 /* The hero is an estimate (every round's strokes gained came from the scorecard, none from shots): marked beside the figure. */
 .ch-htb .feat .hn b small {
   margin-left: 4px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   letter-spacing: 0;
   color: var(--ch-feature-ink-2);
 }
@@ -449,7 +454,8 @@
 }
 .ch-htb .stchips button b {
   display:block;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color:var(--ch-feature-loss);
 
   margin-top:2px;
@@ -495,7 +501,8 @@
   justify-content:space-between;
   gap:8px;
   margin-top:8px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-feature-ink-2);
 }
 .ch-htb .bars {
@@ -517,7 +524,8 @@
   display:flex;
   align-items:center;
   gap:6px;
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500);
   white-space:nowrap;
   overflow:hidden; letter-spacing: var(--ch-track-15); }
 .ch-htb .br .bt {
@@ -559,7 +567,8 @@
   background:repeating-linear-gradient(-45deg,var(--ch-chart-loss-fill) 0 4px,color-mix(in srgb,var(--ch-chart-loss-fill) 45%,var(--ch-card-bg)) 4px 7px);
 }
 .ch-htb .br .bv {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   text-align:right;
   color:var(--ch-loss); }
@@ -573,7 +582,8 @@
   display:flex;
   justify-content:space-between;
   padding:4px 16px 12px calc(16px + 48*var(--ch-type-k, 1));
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-500);
 }
 .ch-htb .axis {
@@ -608,14 +618,16 @@
 }
 .ch-htb .rd b {
   display:block;
-  font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-16); }
 .ch-htb .rd .ev {
   display:flex;
   flex-wrap:wrap;
   gap:4px 6px;
   margin-top:4px;
   align-items:center;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 /* The worth chip's place while its figure is on its way (the themes part): held, unseen, so the line never moves when it lands. */
@@ -640,14 +652,17 @@
   gap:0;
 }
 .ch-htb .pat b {
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .pat span:not(.ch-avatar) {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .nopat {
   margin:4px 16px 16px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .spot.cm {
@@ -681,7 +696,8 @@
   letter-spacing: -0.038em;
   }
 .ch-htb .cmk>span:not(.ch-badge) {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
   padding-bottom:1px;
 }
@@ -718,10 +734,11 @@
   fill:var(--ch-green-600);
 }
 .ch-htb .trend text {
-  font: var(--ch-type-11-medium);
+  font: var(--ch-type-caption);
   fill:var(--ch-ink-500); letter-spacing: var(--ch-track-11); }
 .ch-htb .trend .lv {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
 
   fill:var(--ch-ink-900);
 }
@@ -734,7 +751,8 @@
   flex-wrap:wrap;
   gap:4px 12px;
   margin-top:8px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-500);
 }
 .ch-htb .tkey span {
@@ -772,11 +790,13 @@
 }
 .ch-htb .cr .cn b {
   display:block;
-  font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); }
 .ch-htb .cr .cn span,
 .ch-htb .cr .cv span {
   display:block;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
   margin-top:2px;
   }
@@ -785,7 +805,8 @@
 }
 .ch-htb .cr .cv b {
   display:block;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .cr .cv .l {
   color:var(--ch-loss);
   font-weight:var(--ch-fw-500);}
@@ -798,7 +819,8 @@
   margin:0 16px 8px;
   padding:8px 0;
   min-height:36px;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color:var(--ch-green-600);
 }
 .ch-htb .shape {
@@ -820,14 +842,15 @@
 }
 .ch-htb .shape .sv {
   display:block;
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   letter-spacing: -0.01em;
 
   margin-top:6px;
 }
 .ch-htb .shape .st {
   display:block;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-500);
   margin-top:2px;
   }
@@ -879,10 +902,12 @@
 }
 .ch-htb .cp .n b {
   display:block;
-  font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); }
 .ch-htb .cp .n span:not(.ch-avatar) {
   display:block;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .db {
@@ -924,7 +949,8 @@
 }
 .ch-htb .cp .v b {
   display:block;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .cp .v span {
   display:block;
   font: var(--ch-type-caption);
@@ -940,7 +966,8 @@
   display:flex;
   gap:16px;
   padding:2px 16px 12px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-500);
 }
 .ch-htb .dbkey span {
@@ -954,7 +981,8 @@
   margin-left:0;
 }
 .ch-htb .ins .cnote {
-  font: var(--ch-type-14);}
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);}
 .ch-htb .hud {
   padding:0 8px 4px;
 }
@@ -991,7 +1019,8 @@
   }
 .ch-htb .hudsvg .tl {
   fill:var(--ch-gain);
-  font: var(--ch-type-11-strong); letter-spacing: var(--ch-track-11); }
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-11); }
 .ch-htb .hudsvg .trail {
   fill:none;
   stroke:var(--ch-coin, var(--ch-chart-flat));
@@ -1012,7 +1041,8 @@
 }
 .ch-htb .hudsvg .hp text {
   fill:var(--ch-yr-ink);
-  font: var(--ch-type-11-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   text-anchor:middle;
   dominant-baseline:central;
   pointer-events:none;
@@ -1031,7 +1061,8 @@
   flex-wrap:wrap;
   gap:4px 12px;
   padding:4px 16px 12px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .rr {
@@ -1054,14 +1085,17 @@
 }
 .ch-htb .rr b {
   display:block;
-  font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-16); }
 .ch-htb .rr .m {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .rr .tot {
   text-align:right;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   color:var(--ch-loss); letter-spacing: var(--ch-track-15); }
 .ch-htb .rr .tot.g {
   color:var(--ch-gain);
@@ -1071,7 +1105,8 @@
 }
 .ch-htb .rr .tot span {
   display:block;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .fp {
@@ -1089,7 +1124,7 @@
 }
 .ch-htb .fp .lab {
   fill:var(--ch-ink-500);
-  font: var(--ch-type-11-medium);
+  font: var(--ch-type-caption);
   text-anchor:middle; letter-spacing: var(--ch-track-11); }
 /* The words lead; a bar to the target, when the focus has one, closes the row (W11, look-09, Cards.tsx). */
 .ch-htb .wk {
@@ -1104,10 +1139,12 @@
 }
 .ch-htb .wk b {
   display:block;
-  font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); }
 .ch-htb .wk span {
   display:block;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 /* The state line is quiet: every row's in one green read as nine alarms (W11). */
@@ -1163,7 +1200,8 @@
   letter-spacing: -0.038em;
   }
 .ch-htb .rec .big span {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .lv {
@@ -1172,7 +1210,7 @@
   grid-template-columns:minmax(0,calc(128 * var(--ch-type-k, 1))) minmax(40px,1fr) auto;
   gap:8px;
   align-items:center;
-  font: var(--ch-type-14-medium); }
+  font: var(--ch-type-callout); }
 .ch-htb .lv .t {
   position:relative;
   height:10px;
@@ -1197,7 +1235,8 @@
   background:var(--ch-ink-900);
   border-radius: var(--ch-radius-full);}
 .ch-htb .lv .n {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 
   white-space:nowrap;
@@ -1209,7 +1248,8 @@
   gap:8px;
   border-top:var(--ch-hairline-w) solid var(--ch-separator);
   padding:8px 16px 12px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .recfoot.ch-htb-orphan-rck {
@@ -1268,10 +1308,11 @@
 }
 .ch-htb .insh b {
   display:block;
-  font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
+  font: var(--ch-type-headline); letter-spacing: var(--ch-track-16); }
 .ch-htb .insh .c > span {
   display:block;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .xb::after {
@@ -1295,7 +1336,8 @@
   font: var(--ch-type-title);
   letter-spacing: -0.02em;}
 .ch-htb .ins .lede {
-  font: var(--ch-type-16);
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600); letter-spacing: var(--ch-track-16); }
 .ch-htb .evs {
   display:flex;
@@ -1312,7 +1354,8 @@
   grid-template-columns:calc(70 * var(--ch-type-k, 1)) minmax(0,1fr) auto;
   gap:8px;
   align-items:center;
-  font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); }
 .ch-htb .ld .t {
   height:12px;
   border-radius: var(--ch-radius-sm);
@@ -1344,7 +1387,8 @@
   background:var(--ch-chart-gain-fill);
 }
 .ch-htb .ld .v {
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .drill {
   display:flex;
   gap:12px;
@@ -1363,10 +1407,11 @@
 }
 .ch-htb .drill b {
   display:block;
-  font: var(--ch-type-16-strong); letter-spacing: var(--ch-track-16); }
+  font: var(--ch-type-headline); letter-spacing: var(--ch-track-16); }
 .ch-htb .drill span:not(.dicon) {
   display:block;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .acts {
@@ -1378,7 +1423,8 @@
   display:inline-flex;
   align-items:center;
   gap:6px;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   color:var(--ch-green-600);
   padding:6px 0; letter-spacing: var(--ch-track-15); }
 .ch-htb .assigned {
@@ -1391,7 +1437,8 @@
   border-radius: var(--ch-radius-md);
   background:var(--ch-accent-tint);
   color:var(--ch-gain);
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .assigned path {
   stroke-dasharray:24;
   stroke-dashoffset:24;
@@ -1450,9 +1497,11 @@
 }
 .ch-htb .sto-h b {
   display:block;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .sto-h .c span:not(.ch-avatar) {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-feature-ink-2);
 }
 .ch-htb .sto-h .xb {
@@ -1482,10 +1531,12 @@
   font-variation-settings:'wdth' 88;
 }
 .ch-htb .sto-b p {
-  font: var(--ch-type-16);
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-feature-ink-2); letter-spacing: var(--ch-track-16); }
 .ch-htb .sto-b .src {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-feature-ink-2);
   display:flex;
   gap:6px;
@@ -1506,7 +1557,8 @@
   background:color-mix(in srgb, var(--ch-feature-ink) 9%, transparent);
   display:grid;
   place-items:center;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   font-style:normal;
   color:var(--ch-feature-ink-2);
   }
@@ -1533,7 +1585,8 @@
 .ch-htb .sbar2 .h {
   display:flex;
   justify-content:space-between;
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500);
   color:var(--ch-feature-ink-2); letter-spacing: var(--ch-track-15); }
 .ch-htb .sbar2 .h b {
   color:var(--ch-feature-ink);
@@ -1612,14 +1665,16 @@
 }
 .ch-htb .notice b {
   display:block;
-  font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .notice div > span:not([class]) {
   display:block;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .emptyh {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   color:var(--ch-feature-ink-2);
   margin-top:8px;
   max-width:34ch; letter-spacing: var(--ch-track-15); }
@@ -1647,20 +1702,24 @@
   border-radius: 50%;
   background:var(--ch-accent-tint);
   color:var(--ch-gain);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   text-align:center;
 }
 .ch-htb .steps b {
   display:block;
-  font: var(--ch-type-15-medium); letter-spacing: var(--ch-track-15); }
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); }
 .ch-htb .steps span {
   display:block;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .nordss {
   padding:12px 16px 4px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .dgrid {
@@ -1894,7 +1953,8 @@
   transform-origin: 0% 50%;
 }
 .ch-htb .br .bmiss {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-600);
 }
 .ch-htb .br .bv.is-none {
@@ -1937,7 +1997,8 @@
 :is(.ch-htb, .ch-htb-sheet) .acts .ch-btn {
   width: 100%;
   min-height: 44px;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 .ch-htb-sheet .acts .ch-btn--ghost {
@@ -2092,7 +2153,8 @@
   border-radius: var(--ch-radius-sm);
   background: color-mix(in srgb, var(--ch-feature-ink) 9%, transparent);
   color: var(--ch-feature-ink-2);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
 }
 .ch-htb .sto-hole.is-birdie {
   background: color-mix(in srgb, var(--ch-feature-gain) 24%, transparent);
@@ -2115,11 +2177,13 @@
   grid-template-columns: 1fr auto;
   gap: 4px 8px;
   color: var(--ch-feature-ink-2);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-htb .sto-bar b {
   color: var(--ch-feature-ink);
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 .ch-htb .sto-axis {
@@ -2327,7 +2391,8 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 }
 .ch-htb .cp .v span {
   display: block;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-htb .cp .v .l {
   color: var(--ch-loss);

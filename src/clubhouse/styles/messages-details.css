@@ -97,13 +97,13 @@
   padding: var(--ch-space-2) 0 var(--ch-space-1);
 }
 [data-ch-ms-v2] .ch-msd-hero > b {
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
   font-weight: var(--ch-fw-700);
   color: var(--ch-text-primary);
 }
 [data-ch-ms-v2] .ch-msd-hero > span {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
@@ -148,7 +148,7 @@
 }
 /* The header's quiet note ("Players you haven't messaged"): 15k, ink-2, on the header's baseline. */
 [data-ch-ms-v2] .ch-msd-lcard__h > small {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
@@ -193,7 +193,7 @@
   letter-spacing: 0;
 }
 [data-ch-ms-v2] .ch-msd-lcard__h > .ch-num {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-accent-ink);
 }
@@ -211,7 +211,8 @@
   border: 0;
   background: none;
   color: var(--ch-accent-ink);
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   cursor: pointer;
 }
@@ -237,11 +238,13 @@
   border-radius: var(--ch-radius-sm);
   background: var(--ch-accent-tint);
   color: var(--ch-accent-ink);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
 }
 [data-ch-ms-v2] .ch-msd-seeall {
   color: var(--ch-accent-ink);
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
 }
 /* MSG-607: three columns, gap 4, padding 12, square tiles, radius 10 (snapped to 8). */
@@ -272,7 +275,7 @@
 }
 [data-ch-ms-v2] .ch-msd-class__t {
   min-width: 0;
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -280,7 +283,8 @@
   margin: 0;
 }
 [data-ch-ms-v2] .ch-msd-class__t .ch-ca-thread__line {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 /* MSG-601: the phone page's profile block and the bottom padding. */
@@ -316,7 +320,8 @@
   align-items: center;
   gap: var(--ch-space-2);
   margin-bottom: var(--ch-space-1);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-tertiary);
 }
@@ -328,7 +333,7 @@
 }
 [data-ch-ms-v2] .ch-msd-poll__q {
   margin: 0 0 var(--ch-msd-s10);
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: -0.01em;
   text-wrap: balance;
   overflow-wrap: anywhere;
@@ -357,7 +362,7 @@
   background: var(--ch-well-bg-flat);
   box-shadow: inset 0 var(--ch-hairline-w) 2px rgb(28 25 18 / 0.06);
   color: var(--ch-text-primary);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   text-align: left;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -417,7 +422,8 @@
   border-radius: var(--ch-radius-sm);
   background: var(--ch-accent-tint);
   color: var(--ch-accent-ink);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-label);
   white-space: nowrap;
 }
@@ -425,7 +431,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--ch-space-1_5);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-tertiary);
 }
 /* Voter faces: 18, overlap -5, a 1.5 px ring in the well's colour; yours first. MOT-POLL-3: yours is there at once (its pop
@@ -453,7 +460,8 @@
   justify-content: space-between;
   gap: var(--ch-space-1) var(--ch-space-2);
   margin-top: var(--ch-space-1);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 [data-ch-ms-v2] .ch-msd-poll__count {
@@ -469,7 +477,8 @@
   border: 0;
   background: none;
   color: var(--ch-accent-ink);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   cursor: pointer;
 }
 [data-ch-ms-v2] .ch-msd-poll__link:focus-visible {
@@ -519,11 +528,13 @@
   margin: 0;
   padding: var(--ch-space-3) var(--ch-space-4) var(--ch-space-2);
   overflow: hidden;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 .ch-msd-vg__h > small {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-tertiary);
 }
 .ch-msd-vg__bar {
@@ -553,14 +564,16 @@
 }
 .ch-msd-vg__name {
   overflow: hidden;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-msd-vg__line {
   overflow: hidden;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -568,11 +581,13 @@
 .ch-msd-vg__none {
   margin: 0;
   padding: var(--ch-space-1) var(--ch-space-4) var(--ch-space-3);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-msd-vg__left {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-msd-draft {
@@ -580,7 +595,8 @@
   border: 0;
   background: none;
   color: var(--ch-accent-ink);
-  font: var(--ch-type-17-medium);
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-17);
   cursor: pointer;
 }
@@ -637,7 +653,8 @@
   border-radius: var(--ch-radius-sm);
   background: var(--ch-accent-tint);
   color: var(--ch-accent-ink);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   letter-spacing: 0.02em;
 }
 [data-ch-ms-v2] .ch-msd-file__t {
@@ -646,12 +663,14 @@
 }
 [data-ch-ms-v2] .ch-msd-file__t > b {
   overflow: hidden;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 [data-ch-ms-v2] .ch-msd-file__t > span {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: color-mix(in srgb, currentColor 72%, transparent);
 }
 /* Mine is the green bubble: the tile is white at .14 and its ink is the bubble's. */
@@ -673,12 +692,12 @@
   border-radius: var(--ch-radius-lg);
 }
 [data-ch-ms-v2] .ch-msd-hello > b {
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   font-weight: var(--ch-fw-700);
   letter-spacing: -0.015em;
 }
 [data-ch-ms-v2] .ch-msd-hello > small {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
@@ -691,7 +710,8 @@
   background: var(--ch-well-bg-flat);
   box-shadow: inset 0 var(--ch-hairline-w) 2px rgb(28 25 18 / 0.06);
   color: var(--ch-text-primary);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 /* The To field: min 52, padding 12 16; a token is the face (22) + the name on a 10% tint, accent ink, 600, a pill. */
 [data-ch-ms-v2] .ch-msd-tok {
@@ -704,7 +724,8 @@
   border-radius: var(--ch-radius-full);
   background: var(--ch-accent-tint);
   color: var(--ch-accent-ink);
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   cursor: pointer;
 }
 [data-ch-ms-v2] .ch-msd-to {
@@ -731,7 +752,8 @@
 
 [data-ch-ms-v2] .ch-msd-mutenote {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
   text-align: center;
 }

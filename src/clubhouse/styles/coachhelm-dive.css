@@ -45,11 +45,13 @@
   padding: 0 6px;
 }
 .ch-hd-grp h3 {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: -0.01em;
 }
 .ch-hd-grp__h span {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -133,11 +135,12 @@
   color: var(--ch-hd-ink);
 }
 .ch-hd-it__b b {
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   text-wrap: pretty;
 }
 .ch-hd-it__v {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-hd-ink);
@@ -183,16 +186,18 @@
   min-width: 0;
 }
 .ch-hd-cl__b b {
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-hd-cl__b em {
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   font-style: normal;
   color: var(--ch-green-700);
 }
 .ch-hd-cl__b > span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -204,7 +209,8 @@
   align-self: flex-start;
   min-height: 44px;
   padding: 0 6px;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-green-700);
 }
 .ch-hd-more:focus-visible {
@@ -257,13 +263,14 @@
 }
 .ch-hd-read dt {
   padding-top: 2px;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-green-700);
 }
 .ch-hd-read dd {
   margin: 0;
   max-width: 62ch;
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
@@ -297,7 +304,7 @@
 .ch-hd-read__stale {
   display: block;
   margin-top: 4px;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-hd-sec {
@@ -314,7 +321,7 @@
   gap: 12px;
 }
 .ch-hd-sec h3 {
-  font: var(--ch-type-16-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-16);
 }
 .ch-hd-sec__h > span {
@@ -348,7 +355,8 @@
 }
 .ch-hd-meas__v span {
   max-width: 40ch;
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
@@ -357,11 +365,13 @@
   display: flex;
   flex-wrap: wrap;
   gap: 4px 16px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-hd-meas__w {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-700);
 }
 .ch-hd-meas__w b {
@@ -402,7 +412,8 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-tr li > b {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-hd-fig);
 }
@@ -411,7 +422,8 @@
   color: var(--ch-text-secondary);
 }
 .ch-hd-tr__t {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -431,12 +443,14 @@
   fill: var(--ch-ivory-25);
 }
 .ch-hd-strip__c {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-hd-fig);
 }
 .ch-hd-strip__c em {
   margin-left: 6px;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
@@ -479,7 +493,8 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-where__d {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-green-700);
 }
 .ch-hd-where__b {
@@ -489,14 +504,15 @@
   min-width: 0;
 }
 .ch-hd-where__b b {
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
 }
 .ch-hd-where__b b span {
   font-weight: 400;
   color: var(--ch-text-tertiary);
 }
 .ch-hd-where__b > span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -539,7 +555,8 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-r__d {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-green-700);
 }
 .ch-hd-r__c {
@@ -548,15 +565,17 @@
   flex-wrap: wrap;
   gap: 2px 8px;
   min-width: 0;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
 }
 .ch-hd-r__c em {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-hd-r__s {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
@@ -568,7 +587,8 @@
   height: 26px;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-ivory-150);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -599,7 +619,8 @@
   align-self: flex-start;
   padding: 4px 8px;
   border-radius: var(--ch-radius-full);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
 }
 .ch-hd-dx__lvl.is-observed {
@@ -613,7 +634,8 @@
 }
 .ch-hd-dx__c {
   max-width: 60ch;
-  font: var(--ch-type-16);
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-16);
   color: var(--ch-ink-700);
   text-wrap: pretty;
@@ -630,22 +652,26 @@
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
 }
 .ch-hd-dx__d dt {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-hd-dx__d dd {
   margin: 0;
   flex: none;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-ink-700);
 }
 .ch-hd-dx__d dd em {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-hd-dx__r {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -660,7 +686,7 @@
 }
 .ch-hd-why {
   max-width: 62ch;
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
@@ -728,19 +754,22 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-plan__b b {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   text-wrap: pretty;
 }
 .ch-hd-plan__b span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-hd-plan__w {
   padding: 4px 8px;
   border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-150);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -1033,7 +1062,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   :is(.ch-hl.is-phone) .ch-hd-grp h3 {
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-title);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -1269,7 +1298,7 @@ main[data-canopy] .ch-hd-it.is-on,
   gap: 6px;
   min-height: 40px;
   padding: 0 6px;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   text-decoration: none;

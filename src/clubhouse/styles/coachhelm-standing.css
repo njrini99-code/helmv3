@@ -29,7 +29,8 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 6px 16px;
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-green-600);
 }
 .ch-hs-hero__k span:last-child {
@@ -54,7 +55,8 @@
 .ch-hs-hero__sub {
   max-width: 58ch;
   margin-top: auto;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -64,7 +66,8 @@
   border-radius: var(--ch-radius-lg);
   background: var(--ch-champagne-100);
   box-shadow: inset 0 0 0 1px var(--ch-champagne-ring);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-700);
 }
 .ch-hs-early b {
@@ -91,12 +94,13 @@
   padding-bottom: 12px;
 }
 .ch-hs-g h2 {
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   letter-spacing: -0.02em;
 }
 .ch-hs-g__h p {
   max-width: 58ch;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-hs-rows {
@@ -128,7 +132,8 @@
 }
 .ch-hs-r__h h3 {
   margin: 0;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   text-wrap: balance;
 }
@@ -232,7 +237,7 @@
 }
 .ch-hs-r__f dd {
   margin: 0;
-  font: var(--ch-type-16-strong);
+  font: var(--ch-type-headline);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.01em;
   color: var(--ch-ink-700);
@@ -244,14 +249,16 @@
 .ch-hs-note {
   grid-column: 1 / -1;
   margin: 0;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 /* The projection reads as the row's last line, its gold lead-in carrying the tone; no rule at its edge (no side rails, 2026-10-19). */
 .ch-hs-proj {
   grid-column: 1 / -1;
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -422,7 +429,7 @@
     box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   }
   main[data-canopy] .ch-hs-g h2 {
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-title);
     letter-spacing: var(--ch-track-20);
   }
   main[data-canopy] :is(.ch-hs-r:first-child, .ch-hs-sk__g > :nth-child(2)) {
@@ -512,7 +519,7 @@
     border-top: var(--ch-ledger-rule-double);
   }
   .ch-hs-g h2 {
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-title);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);
@@ -587,11 +594,12 @@
 }
 .ch-hs-ld__h h3 {
   margin: 0;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 .ch-hs-ld__v {
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
@@ -633,7 +641,8 @@
 .ch-hs-ld__none,
 .ch-hs-ld__fail {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -649,7 +658,8 @@
   align-items: center;
   gap: 8px;
   min-height: 36px;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
@@ -698,7 +708,8 @@
 }
 .ch-hs-ld__b a {
   position: relative;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
   text-decoration: underline;
   text-decoration-color: var(--ch-border-hairline);
@@ -718,7 +729,8 @@
 }
 .ch-hs-ld__b p {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-hs-ld__b em {
@@ -809,7 +821,8 @@ main[data-canopy] .ch-hs-g__h {
 .ch-hs-tally > span {
   padding: 4px 8px;
   border-radius: var(--ch-radius-full);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
 }
 .ch-hs-tally .is-ahead {

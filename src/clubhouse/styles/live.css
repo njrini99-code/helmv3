@@ -45,13 +45,15 @@ section.ch-lv-card {
   margin: 0;
   flex: 1 1 auto;
   min-width: 0;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-lv-card__problem {
   flex: none;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-warning-600);
 }
 .ch-lv-card__open,
@@ -68,7 +70,7 @@ section.ch-lv-card {
 }
 .ch-lv-card__more {
   width: 100%;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-green-600);
 }
 .ch-lv-card__open[data-ch-pressed],
@@ -96,7 +98,7 @@ section.ch-lv-card {
   gap: var(--ch-space-2);
   min-height: 44px;
   padding: 0 var(--ch-space-3) 0 var(--ch-space-4);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-text-primary);
   text-decoration: none;
   touch-action: manipulation;
@@ -184,7 +186,8 @@ section.ch-lv-card {
   background: var(--ch-bg-selected);
 }
 .ch-lv-lane.is-selected .ch-lv-name {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 
@@ -197,7 +200,8 @@ section.ch-lv-card {
   border-radius: 50%;
   background: var(--ch-bg-subtle);
   color: var(--ch-ink-700);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
 }
 .ch-lv-id {
   grid-area: id;
@@ -206,7 +210,8 @@ section.ch-lv-card {
 }
 .ch-lv-name {
   overflow: hidden;
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
@@ -214,7 +219,8 @@ section.ch-lv-card {
 }
 .ch-lv-sub {
   overflow: hidden;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-500);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -337,7 +343,7 @@ section.ch-lv-card {
   padding: 0 var(--ch-space-1);
   border-radius: var(--ch-radius-sm);
   color: var(--ch-text-primary);
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
   text-align: right;
 }
@@ -375,7 +381,8 @@ section.ch-lv-card {
 .ch-lv-thru {
   grid-area: thru;
   justify-self: end;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-500);
   white-space: nowrap;
 }
@@ -448,7 +455,8 @@ section.ch-lv-card {
   border: 0;
   background: transparent;
   color: var(--ch-green-600);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -553,7 +561,8 @@ section.ch-lv-card {
   border-radius: var(--ch-radius-full);
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   cursor: pointer;
   touch-action: manipulation;
 }
@@ -579,12 +588,13 @@ section.ch-lv-card {
   min-height: 32px;
   margin: 0;
   padding: 0 var(--ch-space-1);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-ink-600);
 }
 .ch-lv-empty__title {
   margin: 0;
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-500);
 }
@@ -612,7 +622,8 @@ section.ch-lv-card {
 }
 .ch-lv-panel__title {
   margin: 0 0 var(--ch-space-3);
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -624,13 +635,14 @@ section.ch-lv-card {
 }
 .ch-lv-panel__head h2 {
   margin: 0;
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-20);
   color: var(--ch-text-primary);
 }
 .ch-lv-panel__head p {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-500);
 }
 
@@ -653,17 +665,19 @@ section.ch-lv-card {
 }
 .ch-lv-figure__side {
   display: grid;
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-lv-figure__next {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-500);
 }
 .ch-lv-note {
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-500);
 }
 .ch-lv-note[data-tone='warn'] {
@@ -674,7 +688,8 @@ section.ch-lv-card {
   display: inline-flex;
   align-items: center;
   gap: var(--ch-space-2);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 
@@ -698,7 +713,8 @@ section.ch-lv-card {
   border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-subtle);
   color: var(--ch-ink-500);
-  font: var(--ch-type-11);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-11);
 }
 .ch-lv-ribbon__hole[data-here] {
@@ -713,7 +729,8 @@ section.ch-lv-card {
   border-radius: var(--ch-radius-full);
   background: var(--ch-selected-strong);
   color: var(--ch-text-on-accent);
-  font: var(--ch-type-11-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-11);
 }
 
@@ -730,7 +747,8 @@ section.ch-lv-card {
 .ch-lv-sc th,
 .ch-lv-sc td {
   padding: var(--ch-space-0_5) 0;
-  font: var(--ch-type-11);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-11);
   text-align: center;
   color: var(--ch-ink-500);
@@ -745,13 +763,15 @@ section.ch-lv-card {
   color: var(--ch-ink-700);
 }
 .ch-lv-sc td:last-child {
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 
 .ch-lv-moments h3 {
   margin: 0 0 var(--ch-space-1);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-ink-600);
 }
 .ch-lv-moments ol {
@@ -765,15 +785,18 @@ section.ch-lv-card {
   justify-content: space-between;
   gap: var(--ch-space-3);
   padding: var(--ch-space-1) 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
 .ch-lv-moments time {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-500);
 }
 .ch-lv-read {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-600);
 }
 .ch-lv-read summary {
@@ -795,11 +818,13 @@ section.ch-lv-card {
   display: grid;
   gap: var(--ch-space-0_5);
   padding: var(--ch-space-3);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-600);
 }
 .ch-lv-peek b {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -821,7 +846,8 @@ section.ch-lv-card {
 }
 .ch-lv-own__title {
   margin: 0;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-ink-600);
 }
 .ch-lv-own__figure {
@@ -838,7 +864,7 @@ section.ch-lv-card {
   color: var(--ch-score-under);
 }
 .ch-lv-own__thru {
-  font: var(--ch-type-15);
+  font: var(--ch-type-body);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -850,13 +876,15 @@ section.ch-lv-card {
   display: grid;
   justify-items: center;
   gap: var(--ch-space-1);
-  font: var(--ch-type-11);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-11);
   color: var(--ch-ink-500);
 }
 .ch-lv-own__next {
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
 .ch-lv-own__legs {
@@ -872,12 +900,14 @@ section.ch-lv-card {
   gap: var(--ch-space-2);
 }
 .ch-lv-own__legs dt {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-500);
 }
 .ch-lv-own__legs dd {
   margin: 0;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-lv-own__resume {
@@ -908,7 +938,7 @@ section.ch-lv-card {
   padding: 0 var(--ch-space-3);
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-text-primary);
   text-decoration: none;
   touch-action: manipulation;
@@ -942,7 +972,8 @@ section.ch-lv-card {
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
   touch-action: manipulation;
   cursor: pointer;

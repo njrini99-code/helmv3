@@ -199,7 +199,8 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -253,7 +254,8 @@
 .ch-tour-led__season {
   min-width: 800px;
   padding: 16px 8px 6px;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__name {
@@ -263,7 +265,8 @@
   min-width: 0;
 }
 .ch-tour-led__open {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-decoration: none;
@@ -288,19 +291,22 @@
   }
 }
 .ch-tour-led__t2 {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__fin {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-tour-led__fin em {
   font-style: normal;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__go {
@@ -354,17 +360,20 @@
   display: block;
 }
 .ch-tour-led__m b {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-body);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-tour-led__m small {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__m em {
   margin-top: 4px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
