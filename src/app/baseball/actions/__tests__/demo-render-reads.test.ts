@@ -86,9 +86,10 @@ function isDemoSafe(source: string, options: string): boolean {
   if (/demoSafe\s*:\s*true/.test(options)) return true;
   // `{ ...FEATURE }` or a bare `FEATURE` constant: look at what the constant holds.
   const ident = options.match(/,\s*(?:\{\s*\.\.\.)?([A-Z_][A-Z0-9_]*)\b/);
-  if (!ident) return false;
-  const decl = source.match(new RegExp(`const\\s+${ident[1]}\\b[^=]*=\\s*\\{([^}]*)\\}`));
-  return Boolean(decl && /demoSafe\s*:\s*true/.test(decl[1]));
+  const constName = ident?.[1];
+  if (!constName) return false;
+  const decl = source.match(new RegExp(`const\\s+${constName}\\b[^=]*=\\s*\\{([^}]*)\\}`));
+  return /demoSafe\s*:\s*true/.test(decl?.[1] ?? '');
 }
 
 /** `exportName` in `src/app/baseball/actions/<module>.ts`, if it's a wrapped action. */
@@ -107,7 +108,8 @@ function resolveWrapped(module: string, exportName: string): WrappedAction | nul
     const fn = source.match(
       new RegExp(`export\\s+async\\s+function\\s+${exportName}\\b[\\s\\S]*?withBaseballAction\\(\\s*['"\`](\\w+)['"\`]`),
     );
-    if (fn) options = optionsText(source, fn[1]);
+    const innerName = fn?.[1];
+    if (innerName) options = optionsText(source, innerName);
   }
   if (options === null) return null;
   return { file: relative(ROOT, file), demoSafe: isDemoSafe(source, options) };
@@ -118,12 +120,13 @@ function actionImports(source: string): Map<string, [string, string]> {
   const out = new Map<string, [string, string]>();
   const re = /import\s+(type\s+)?\{([^}]+)\}\s+from\s+['"]@\/app\/baseball\/actions\/([\w-]+)['"]/g;
   for (const m of source.matchAll(re)) {
-    if (m[1]) continue;
-    for (const raw of m[2].split(',')) {
+    const [, typeOnly, specs = '', module = ''] = m;
+    if (typeOnly) continue;
+    for (const raw of specs.split(',')) {
       const spec = raw.trim();
       if (!spec || spec.startsWith('type ')) continue;
-      const [exported, local] = spec.split(/\s+as\s+/).map((s) => s.trim());
-      out.set(local ?? exported, [m[3], exported]);
+      const [exported = '', local] = spec.split(/\s+as\s+/).map((s) => s.trim());
+      out.set(local ?? exported, [module, exported]);
     }
   }
   return out;
@@ -190,6 +193,6 @@ describe('BaseballHelm demo: reads that run while a page loads are demo-safe', (
       .map((f) => resolveWrapped(f.replace(/\.ts$/, ''), action))
       .filter((w): w is WrappedAction => w !== null);
     expect(found).toHaveLength(1);
-    expect(found[0].demoSafe).toBe(true);
+    expect(found[0]?.demoSafe).toBe(true);
   });
 });
