@@ -215,7 +215,7 @@ export function useLongPress(onFire: (() => void) | undefined, onSwipe?: (direct
       const o = origin.current;
       const el = e.currentTarget as HTMLElement;
       if (el.style.transform) {
-        el.style.transition = 'transform var(--ch-dur-quick) var(--ch-ease)';
+        el.style.transition = 'transform var(--ch-dur-quick) var(--ch-ease-out)';
         el.style.transform = '';
         window.setTimeout(() => {
           el.style.transition = '';

@@ -59,7 +59,7 @@ describe('the one card', () => {
     for (const file of ['ui.css', 'shell.css', 'base.css', 'controls.css']) {
       postcss.parse(read('src/clubhouse/styles', file)).walkRules(/\.ch-surface(?![\w-]*__)/, (rule) => {
         rule.walkDecls('box-shadow', (d) => {
-          const ok = d.value === 'var(--ch-card-shadow)' || d.value === 'var(--ch-feature-shadow)' || (rule.selector.includes('.ch-surface--flat') && /^0 0 0 1px var\(--ch-border-subtle\)$/.test(d.value));
+          const ok = d.value === 'var(--ch-elevation-card)' || d.value === 'var(--ch-card-shadow)' || (rule.selector.includes('.ch-surface--flat') && /^0 0 0 1px var\(--ch-border-subtle\)$/.test(d.value));
           expect(ok, `${file}: ${rule.selector} { box-shadow: ${d.value} }`).toBe(true);
         });
       });

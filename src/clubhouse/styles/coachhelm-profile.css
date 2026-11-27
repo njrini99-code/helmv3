@@ -81,7 +81,7 @@
   padding: 24px 24px 16px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hg-m.is-good {
   --ch-hg-tone: var(--ch-green-600);
@@ -211,7 +211,7 @@
 }
 .ch-hg-m__how summary svg {
   color: var(--ch-text-tertiary);
-  transition: rotate var(--ch-dur-quick) var(--ch-ease);
+  transition: rotate var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-hg-m__how[open] summary svg {
   rotate: 180deg;
@@ -581,12 +581,20 @@ html[data-fw-theme='dark'] .ch-hg-grid.is-locked > .ch-hg-m {
   box-shadow:
     0 0 0 3px var(--ch-ivory-25),
     0 0 0 4.5px color-mix(in srgb, var(--ch-hg-tone) 45%, transparent),
-    var(--ch-elevation-mark-ink);
+    var(--ch-elevation-raised);
 }
 
 /* Hover on pointers that hover, the same surface steps the rows use (W4b, 2026-10-19). */
 @media (hover: hover) {
   .ch-hg-m__how summary:hover svg {
     color: var(--ch-text-primary);
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-hg-sc__d {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

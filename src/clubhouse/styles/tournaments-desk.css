@@ -106,7 +106,7 @@
   color: var(--ch-text-secondary);
   white-space: nowrap;
   cursor: pointer;
-  transition: color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-tour-desk-tabs button[aria-selected='true'] {
   color: var(--ch-text-primary);
@@ -203,7 +203,7 @@
 }
 .ch-tour-desk-pill[aria-pressed='true'] {
   background: var(--ch-bg-selected);
-  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-inset);
   color: var(--ch-green-700);
 }
 .ch-tour-desk-pill:focus-visible {
@@ -360,7 +360,7 @@ button.ch-tour-desk-sc:focus-visible {
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-sc.is-tie {
-  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+  box-shadow: var(--ch-ring-attention-inset);
 }
 .ch-tour-desk-sc.is-none {
   color: var(--ch-text-secondary);
@@ -413,7 +413,7 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 4px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__row {
   grid-template-columns: minmax(0, 1fr) repeat(var(--ch-tour-desk-n), 48px) 44px;
@@ -464,7 +464,7 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-fc h3 {
   margin: 0;
@@ -534,7 +534,7 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 6px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-hg__row {
   display: grid;
@@ -625,7 +625,7 @@ button.ch-tour-desk-sc:focus-visible {
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-hg__c.is-disputed .ch-tour-desk-hg__cell {
-  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+  box-shadow: var(--ch-ring-attention-inset);
 }
 .ch-tour-desk-hg__row .ch-tour-desk-hg__tot {
   font: var(--ch-type-13-strong);
@@ -699,7 +699,7 @@ button.ch-tour-desk-sc:focus-visible {
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-ev__list li {
   display: grid;
@@ -786,4 +786,15 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-ev__tot {
   font: var(--ch-type-12-strong);
   color: var(--ch-text-primary);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__scroll,
+  .ch-tour-desk-fc,
+  .ch-tour-desk-hg.is-phone .ch-tour-desk-hg__scroll,
+  .ch-tour-desk-ev__list {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

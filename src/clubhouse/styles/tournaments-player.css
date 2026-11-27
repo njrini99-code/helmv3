@@ -146,7 +146,7 @@
   position: relative;
   color: inherit;
   text-decoration: none;
-  transition: opacity var(--ch-dur-press) var(--ch-ease);
+  transition: opacity var(--ch-dur-press) var(--ch-ease-out);
 }
 .ch-tour-pl-next__open::after {
   position: absolute;
@@ -245,7 +245,7 @@
 .ch-tour-pl:not(.is-phone) .ch-tour-pl-res.ch-sheet {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-sheet-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-pl-res__row {
   position: relative;
@@ -415,7 +415,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-pl-round + .ch-tour-pl-round,
 .ch-tour-pl-note + .ch-tour-pl-note {
@@ -440,7 +440,7 @@
   padding: 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   font: var(--ch-type-17-strong);
   letter-spacing: var(--ch-track-17);
   color: var(--ch-text-primary);
@@ -523,4 +523,15 @@
 }
 .ch-tour-pl.is-phone .ch-tour-pl-reflect__a .ch-btn {
   min-height: 44px;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-pl:not(.is-phone) .ch-tour-pl-res.ch-sheet,
+  .ch-tour-pl-rounds,
+  .ch-tour-pl-notes,
+  .ch-tour-pl-reveal {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

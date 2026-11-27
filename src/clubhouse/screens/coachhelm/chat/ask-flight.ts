@@ -31,7 +31,7 @@ export async function flyDraftHome(card: HTMLElement, draft: HTMLElement, slot: 
   const a = draft.getBoundingClientRect();
   const b = slot.getBoundingClientRect();
   const flyer = draft.cloneNode(true) as HTMLElement;
-  Object.assign(flyer.style, { position: 'absolute', left: `${a.left - c.left}px`, top: `${a.top - c.top}px`, width: `${a.width}px`, height: `${a.height}px`, margin: '0', zIndex: '3', pointerEvents: 'none', transformOrigin: '0 0', background: 'var(--ch-card-bg)', borderRadius: 'var(--ch-radius-md)', boxShadow: 'var(--ch-elevation-lifted)' });
+  Object.assign(flyer.style, { position: 'absolute', left: `${a.left - c.left}px`, top: `${a.top - c.top}px`, width: `${a.width}px`, height: `${a.height}px`, margin: '0', zIndex: '3', pointerEvents: 'none', transformOrigin: '0 0', background: 'var(--ch-card-bg)', borderRadius: 'var(--ch-radius-md)', boxShadow: 'var(--ch-elevation-card)' });
   flyer.setAttribute('aria-hidden', 'true');
   flyer.removeAttribute('id');
   card.appendChild(flyer);
@@ -54,7 +54,7 @@ export async function flyPageToFolder(page: HTMLElement, folder: HTMLElement, re
   const sheet = document.createElement('div');
   const w = Math.min(a.width, 120);
   const h = Math.round(w * 1.3);
-  Object.assign(sheet.style, { position: 'fixed', left: `${a.left}px`, top: `${a.top}px`, width: `${w}px`, height: `${h}px`, zIndex: '60', pointerEvents: 'none', transformOrigin: '0 0', borderRadius: 'var(--ch-radius-sm)', background: 'var(--ch-card-bg)', boxShadow: 'var(--ch-elevation-lifted)' });
+  Object.assign(sheet.style, { position: 'fixed', left: `${a.left}px`, top: `${a.top}px`, width: `${w}px`, height: `${h}px`, zIndex: '60', pointerEvents: 'none', transformOrigin: '0 0', borderRadius: 'var(--ch-radius-sm)', background: 'var(--ch-card-bg)', boxShadow: 'var(--ch-elevation-card)' });
   sheet.setAttribute('aria-hidden', 'true');
   (folder.closest("[data-ui='clubhouse']") ?? document.body).appendChild(sheet);
   try {

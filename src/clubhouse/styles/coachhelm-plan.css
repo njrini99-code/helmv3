@@ -80,7 +80,7 @@
 .ch-cp-menu { display: grid; padding: 4px; border-radius: var(--ch-radius-md); background: var(--ch-bg-subtle); }
 .ch-cp-menu button { display: flex; justify-content: space-between; min-height: 44px; align-items: center; padding: 0 8px; border: 0; border-radius: var(--ch-radius-sm); background: none; color: var(--ch-text-primary); font: var(--ch-type-15-medium);  cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-cp-menu button[aria-checked='true'] { background: var(--ch-bg-surface); }
-.ch-cp-menu input { min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-bg-surface); color: var(--ch-text-primary); font: var(--ch-type-16-medium);  box-shadow: inset 0 0 0 2px var(--ch-green-600); letter-spacing: var(--ch-track-16); }
+.ch-cp-menu input { min-height: 40px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-bg-surface); color: var(--ch-text-primary); font: var(--ch-type-16-medium);  box-shadow: var(--ch-ring-accent-strong); letter-spacing: var(--ch-track-16); }
 .ch-cp-receipt { display: grid; gap: 4px; }
 .ch-cp-receipt b { font: var(--ch-type-15-strong);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-15); }
 .ch-cp-receipt span { font: var(--ch-type-14); color: var(--ch-text-secondary); }
@@ -139,7 +139,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 .ch-cpv .art {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   overflow: hidden;
 }
 .ch-cpv .art-h {
@@ -351,7 +351,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 .ch-cpv .blk.wh {
   min-height: 96px;
   border-radius: var(--ch-radius-md);
-  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-strong);
 }
 .ch-cpv .sb {
   display: block;
@@ -452,7 +452,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
 }
 .ch-cpv .saverow .chev {
   margin-left: auto;
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-cpv .saverow.open .chev {
   transform: rotate(180deg);
@@ -519,7 +519,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: var(--ch-card-bg);
-  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-strong);
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -562,7 +562,7 @@ html[data-fw-theme='dark'] .ch-cpv-full {
   color: var(--ch-green-600);
 }
 .ch-cpv .fold.tg {
-  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-strong);
 }
 .ch-cpv .fold b {
   font: var(--ch-type-13-strong);
@@ -1975,4 +1975,12 @@ html[data-fw-theme='dark'] .ch-cpv-vz {
 .ch-cpv .flist { animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios) backwards; }
 @media (hover: hover) {
   .ch-cpv .fr:hover { background-color: var(--ch-sel); transition-duration: 0s; }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-cpv .art {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

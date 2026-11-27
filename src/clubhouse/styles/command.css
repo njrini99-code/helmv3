@@ -18,7 +18,7 @@
   line-height: var(--ch-lead-label);
   white-space: nowrap;
   pointer-events: none;
-  animation: ch-fade var(--ch-dur-press) var(--ch-ease);
+  animation: ch-fade var(--ch-dur-press) var(--ch-ease-out);
 }
 /* Closed, it fades out over the same beat before it leaves (OVL-07). */
 .ch-popover.ch-tip[data-leaving] {
@@ -90,7 +90,7 @@
   font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   pointer-events: none;
-  animation: ch-fade var(--ch-dur-press) var(--ch-ease);
+  animation: ch-fade var(--ch-dur-press) var(--ch-ease-out);
 }
 .ch-cmd-hint__k {
   color: var(--ch-text-secondary);

@@ -17,7 +17,7 @@ describe('the poll card styles', () => {
     const details = readFileSync(join(process.cwd(), 'src/clubhouse/styles/messages-details.css'), 'utf8');
     const rule = (sel: string) => details.slice(details.indexOf(`${sel} {`), details.indexOf('}', details.indexOf(`${sel} {`)));
     expect(rule('[data-ch-ms-v2] .ch-msd-poll__mark')).toMatch(/inset 0 0 0 1\.5px var\(--ch-text-tertiary\)/);
-    expect(rule('[data-ch-ms-v2] .ch-msd-poll__fill')).toMatch(/transform var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\)/);
+    expect(rule('[data-ch-ms-v2] .ch-msd-poll__fill')).toMatch(/transform var\(--ch-dur-reveal\) var\(--ch-ease-ios\)/);
     expect(rule('[data-ch-ms-v2] .ch-msd-poll__fill')).not.toMatch(/transform var\(--ch-dur-base\)/);
     expect(details.slice(details.indexOf('[data-ch-ms-v2] .ch-msd-poll {'), details.indexOf('}', details.indexOf('[data-ch-ms-v2] .ch-msd-poll {')))).toMatch(/border-radius: var\(--ch-radius-xl\);/);
     expect(details).toMatch(/\.ch-msd-poll\.is-mine \{\s*border-bottom-right-radius: var\(--ch-radius-tail\);/);

@@ -28,7 +28,7 @@
 .ch-lv-card {
   background: var(--ch-bg-surface);
   border-radius: var(--ch-radius-lg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   overflow: hidden;
 }
 section.ch-lv-card {
@@ -157,7 +157,7 @@ section.ch-lv-card {
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   user-select: none;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-lv-hit.is-static {
   cursor: default;
@@ -608,7 +608,7 @@ section.ch-lv-card {
   overscroll-behavior: contain;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-lv-panel__title {
   margin: 0 0 var(--ch-space-3);
@@ -817,7 +817,7 @@ section.ch-lv-card {
   padding: var(--ch-space-4);
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-lv-own__title {
   margin: 0;
@@ -964,4 +964,14 @@ button.ch-lv-card__more {
 
 .ch-lv-pillwrap {
   display: contents;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-lv-card,
+  .ch-lv-panel,
+  .ch-lv-own {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

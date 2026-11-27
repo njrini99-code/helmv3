@@ -220,7 +220,7 @@
   text-decoration-color: var(--ch-ink-rule);
   text-underline-offset: 3px;
   text-decoration-thickness: 1px;
-  transition: color var(--ch-dur-quick) var(--ch-ease), text-decoration-color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out), text-decoration-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-th-mention:hover {
@@ -729,7 +729,7 @@ a.ch-th-reads__r:focus-visible {
   font: var(--ch-type-15-medium);
   letter-spacing: var(--ch-track-15);
   overflow-wrap: anywhere;
-  transition: color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-th-reads__v {
   font: var(--ch-type-14-strong);
@@ -749,7 +749,7 @@ a.ch-th-reads__r:focus-visible {
   padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-th-tile__label {
   font: var(--ch-type-12);
@@ -872,7 +872,7 @@ a.ch-th-reads__r:focus-visible {
 .ch-th-tablewrap {
   overflow-x: auto;
   border-radius: var(--ch-radius-lg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   background: var(--ch-ivory-25);
 }
 .ch-th-table {
@@ -961,7 +961,7 @@ a.ch-th-reads__r:focus-visible {
   background: none;
   cursor: pointer;
   color: var(--ch-text-tertiary);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-th-icobtn:hover {
@@ -991,12 +991,12 @@ a.ch-th-reads__r:focus-visible {
   box-shadow: 0 0 0 1px rgb(28 25 18 / 0.12);
   font: var(--ch-type-14);
   color: var(--ch-text-primary);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-th-pill:hover {
     background: var(--ch-ivory-50);
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+    box-shadow: var(--ch-ring-accent-hairline);
     color: var(--ch-green-700);
   }
 }
@@ -1050,11 +1050,11 @@ a.ch-th-reads__r:focus-visible {
   overflow: hidden;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-th-act[data-status='cancelled'],
 .ch-th-act[data-status='abandoned'] {
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-th-act__head {
   display: flex;
@@ -1216,7 +1216,7 @@ a.ch-th-reads__r:focus-visible {
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-th-receipt__head {
   display: flex;
@@ -1483,7 +1483,7 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-follow button[data-ch-pressed] {
   background: var(--ch-ivory-50);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-hairline);
   color: var(--ch-green-700);
 }
 .ch-th-receipt__chips a[data-ch-pressed] {
@@ -1530,4 +1530,15 @@ a.ch-th-reads__r:focus-visible {
 @media (max-width: 389px) {
   .ch-th--phone .ch-th-mark { display: none; }
   .ch-th--phone .ch-th-card { padding-left: 0; }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-th-card,
+  .ch-th-tile,
+  .ch-th-tablewrap,
+  .ch-th-receipt {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

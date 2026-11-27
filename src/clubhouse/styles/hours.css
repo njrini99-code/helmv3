@@ -113,7 +113,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hrs-tr {
   position: relative;
@@ -234,7 +234,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   list-style: none;
 }
 .ch-hrs-pc {
@@ -319,7 +319,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   list-style: none;
 }
 .ch-hrs-ln {
@@ -440,5 +440,15 @@
   .ch-hrs-tools,
   .ch-hrs-ln__act {
     display: none;
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-hrs-tbl,
+  .ch-hrs-pl,
+  .ch-hrs-ev__l {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

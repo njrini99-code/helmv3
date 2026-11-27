@@ -48,7 +48,7 @@
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 .ch-rt-pill--card {
   padding: 0 16px 0 12px;
@@ -674,7 +674,7 @@ path.ch-rt-map__shot {
 }
 .ch-rt-log__chev {
   color: var(--ch-green-700);
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-rt-log.is-open .ch-rt-log__chev {
   transform: rotate(180deg);
@@ -844,7 +844,7 @@ path.ch-rt-map__shot {
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* A result option's note and the rare options were #8a857a on the well: 3.2:1 (aesthetic audit X-4); tertiary holds 4.7:1. */
 .ch-rt-seg button em {
@@ -937,7 +937,7 @@ path.ch-rt-map__shot {
   border-radius: var(--ch-radius-full);
   font: var(--ch-type-footnote);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 .ch-rt-tags button[aria-pressed='true'] {
   background: var(--ch-selected-strong);
@@ -1063,7 +1063,7 @@ path.ch-rt-map__shot {
 .ch-rt-read__chev {
   flex: none;
   color: var(--ch-text-tertiary);
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-rt-read.is-open .ch-rt-read__chev {
   transform: rotate(180deg);
@@ -1136,7 +1136,7 @@ path.ch-rt-map__shot {
   font: 500 13px/36px var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 .ch-rt-quick button[aria-pressed='true'] {
   background: var(--ch-selected-strong);
@@ -1352,7 +1352,7 @@ path.ch-rt-map__shot {
   line-height: var(--ch-lead-tight);
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 .ch-rt-bar__i:disabled {
   cursor: default;
@@ -1474,7 +1474,7 @@ path.ch-rt-map__shot {
   padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 .ch-rt-opt > span:last-child {
   display: flex;
@@ -1498,7 +1498,7 @@ path.ch-rt-map__shot {
 }
 .ch-rt-opt[aria-checked='true'] {
   background: #f2f8f4;
-  box-shadow: 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent);
 }
 .ch-rt-opt[aria-checked='true'] .ch-rt-radio {
   box-shadow: inset 0 0 0 5px var(--ch-green-700);
@@ -1605,7 +1605,7 @@ path.ch-rt-map__shot {
   border-radius: var(--ch-radius-lg);
   color: var(--ch-ink-700);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 .ch-rt-xopt > span {
   display: flex;
@@ -1638,7 +1638,7 @@ path.ch-rt-map__shot {
     transition-duration: 0s;
   }
   .ch-rt-xopt.is-danger:not(:disabled):hover {
-    box-shadow: var(--ch-elevation-control), 0 0 0 1px color-mix(in srgb, var(--ch-danger-600) 35%, transparent);
+    box-shadow: var(--ch-elevation-flat), 0 0 0 1px color-mix(in srgb, var(--ch-danger-600) 35%, transparent);
   }
   .ch-rt-xopt.is-primary:not(:disabled):hover {
     box-shadow: 0 0 0 1.5px rgb(21 90 57 / 0.55);
@@ -1666,7 +1666,7 @@ path.ch-rt-map__shot {
   border-spacing: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
@@ -1888,7 +1888,7 @@ path.ch-rt-map__shot {
 .ch-rt-subm > .ch-btn.ch-btn--primary {
   background: var(--ch-on-green-ink);
   color: var(--ch-green-900);
-  box-shadow: var(--ch-elevation-on-frame);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rt-subm > .ch-btn.ch-btn--ghost {
   color: var(--ch-on-green-ink);
@@ -2028,7 +2028,7 @@ path.ch-rt-map__shot {
   filter: drop-shadow(0 10px 18px rgb(0 0 0 / 0.45));
 }
 :where(html[data-fw-theme='dark']) .ch-rt-log {
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 :where(html[data-fw-theme='dark']) .ch-rt-log.is-empty {
   border-color: var(--ch-border-control);
@@ -2079,7 +2079,7 @@ path.ch-rt-map__shot {
   background: linear-gradient(180deg, var(--ch-green-fill-500), var(--ch-green-fill-600));
   color: var(--ch-on-green-ink);
   box-shadow:
-    var(--ch-elevation-control);
+    var(--ch-elevation-flat);
 }
 :where(html[data-fw-theme='dark']) .ch-rt-amiss button {
   background: rgb(255 255 255 / 0.05);
@@ -2170,7 +2170,7 @@ path.ch-rt-map__shot {
   background: var(--ch-scrim-deep, rgb(28 25 18 / 0.38));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
-  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease-out));
 }
 .ch-rtcv {
   /* The folded shot list: its bar, above the home indicator. The map takes everything above it. */
@@ -2293,11 +2293,11 @@ path.ch-rt-map__shot {
   padding: 0 20px calc(20px + env(safe-area-inset-bottom));
   /* Folded, only the bar shows; tapped or swiped up, the list rises over the map on the smooth spring. */
   transform: translateY(calc(100% - var(--ch-rtcv-peek)));
-  transition: transform var(--ch-dur-release) var(--ch-ease-spring-smooth);
+  transition: transform var(--ch-dur-release) var(--ch-ease-ios);
   border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
   background: var(--ch-ivory-100);
   color: var(--ch-ink-900);
-  box-shadow: var(--ch-elevation-sheet);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-rtcv__sheet.is-open {
   transform: none;
@@ -2433,7 +2433,7 @@ path.ch-rt-map__shot {
     color: var(--ch-on-green-ink);
     background: rgb(244 238 221 / 0.08);
     box-shadow: inset 0 0 0 1px rgb(244 238 221 / 0.14);
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-rt-pill--card .ch-rt-pill__l {
     display: none;
@@ -2563,8 +2563,8 @@ path.ch-rt-map__shot {
     background: transparent;
     box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-stage-rule);
     transition:
-      background-color var(--ch-dur-quick) var(--ch-ease),
-      box-shadow var(--ch-dur-quick) var(--ch-ease);
+      background-color var(--ch-dur-quick) var(--ch-ease-out),
+      box-shadow var(--ch-dur-quick) var(--ch-ease-out);
     content: '';
   }
   .ch-rt-strip__h > * {
@@ -3015,7 +3015,7 @@ path.ch-rt-map__shot {
     background: var(--ch-ivory-100);
     color: var(--ch-ink-900);
     box-shadow:
-      var(--ch-elevation-feature);
+      var(--ch-elevation-card);
   }
   .ch-rt-sec,
   .ch-rt-slot,
@@ -3055,13 +3055,13 @@ path.ch-rt-map__shot {
   }
   .ch-rt-band__ask {
     order: 0;
-    transition: opacity var(--ch-dur-base) var(--ch-ease);
+    transition: opacity var(--ch-dur-base) var(--ch-ease-out);
   }
   .ch-rt-band[data-face='distance'] > .ch-rt-band__ask {
     visibility: hidden;
     opacity: 0;
     transition:
-      opacity var(--ch-dur-quick) var(--ch-ease),
+      opacity var(--ch-dur-quick) var(--ch-ease-out),
       visibility 0s linear var(--ch-dur-quick);
   }
   .ch-rt-held {
@@ -3100,14 +3100,14 @@ path.ch-rt-map__shot {
     grid-area: 1 / 1;
     display: flex;
     flex-direction: column;
-    transition: opacity var(--ch-dur-base) var(--ch-ease);
+    transition: opacity var(--ch-dur-base) var(--ch-ease-out);
   }
   .ch-rt-face[inert] {
     display: flex;
     visibility: hidden;
     opacity: 0;
     transition:
-      opacity var(--ch-dur-quick) var(--ch-ease),
+      opacity var(--ch-dur-quick) var(--ch-ease-out),
       visibility 0s linear var(--ch-dur-quick);
   }
   .ch-rt-face > .ch-rt-sec {
@@ -3143,7 +3143,7 @@ path.ch-rt-map__shot {
     line-height: var(--ch-lead-tight);
     background: var(--ch-green-800);
     color: var(--ch-on-green-ink);
-    box-shadow: var(--ch-elevation-control);
+    box-shadow: var(--ch-elevation-flat);
   }
   /* The miss grid without its two captions (its keys say long and short), on 44px rows across the card. */
   .ch-rt-follow .ch-rt-amissw {
@@ -3244,17 +3244,17 @@ path.ch-rt-map__shot {
     color: var(--ch-ink-900);
     box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
     transition:
-      background-color var(--ch-dur-quick) var(--ch-ease),
-      transform var(--ch-dur-quick) var(--ch-ease);
+      background-color var(--ch-dur-quick) var(--ch-ease-out),
+      transform var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-rt-seg button:not([aria-checked='true'])[data-ch-pressed] {
     transform: translateY(1px);
-    box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
+    box-shadow: var(--ch-elevation-flat), 0 0 0 1px var(--ch-border-subtle);
   }
   @media (hover: hover) {
     .ch-rt-seg button:not([aria-checked='true']):active {
       transform: translateY(1px);
-      box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
+      box-shadow: var(--ch-elevation-flat), 0 0 0 1px var(--ch-border-subtle);
     }
   }
   .ch-rt-seg button.is-rare {
@@ -3264,7 +3264,7 @@ path.ch-rt-map__shot {
   .ch-rt-seg button[aria-checked='true'] {
     background: var(--ch-green-800);
     color: var(--ch-on-green-ink);
-    box-shadow: var(--ch-elevation-control);
+    box-shadow: var(--ch-elevation-flat);
   }
   .ch-rt-seg button[aria-checked='true'] em {
     color: var(--ch-on-green-ink-soft);
@@ -3328,20 +3328,20 @@ path.ch-rt-map__shot {
     background: var(--ch-raised-bg);
     color: var(--ch-ink-900);
     box-shadow: var(--ch-key-raised-shadow), 0 0 0 1px var(--ch-border-subtle);
-    transition: transform var(--ch-dur-quick) var(--ch-ease);
+    transition: transform var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-rt-amiss button:not([aria-checked='true'])[data-ch-pressed],
   .ch-rt-tags button:not([aria-pressed='true'])[data-ch-pressed],
   .ch-rt-quick button:not([aria-pressed='true'])[data-ch-pressed] {
     transform: translateY(1px);
-    box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
+    box-shadow: var(--ch-elevation-flat), 0 0 0 1px var(--ch-border-subtle);
   }
   @media (hover: hover) {
     .ch-rt-amiss button:not([aria-checked='true']):active,
     .ch-rt-tags button:not([aria-pressed='true']):active,
     .ch-rt-quick button:not([aria-pressed='true']):active {
       transform: translateY(1px);
-      box-shadow: var(--ch-elevation-control), 0 0 0 1px var(--ch-border-subtle);
+      box-shadow: var(--ch-elevation-flat), 0 0 0 1px var(--ch-border-subtle);
     }
   }
   @media (prefers-reduced-motion: reduce) {
@@ -3410,7 +3410,7 @@ path.ch-rt-map__shot {
     line-height: var(--ch-lead-tight);
     background: var(--ch-on-green-ink);
     color: var(--ch-green-900);
-    box-shadow: var(--ch-elevation-on-frame);
+    box-shadow: var(--ch-elevation-card);
   }
   .ch-rt-bar__row > .ch-btn.ch-rt-bar__go:disabled {
     background: rgb(244 238 221 / 0.16);
@@ -3439,7 +3439,7 @@ path.ch-rt-map__shot {
      the hole dims under its own dissolve, as a green card that opens a page does, and the log line takes the wash of a
      played hole's chip, 12px past its words on each side (the box grows; the words stay where they were). */
   .ch-rt-bar__i {
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-rt-pill[data-ch-pressed],
   .ch-rt-bar__i[data-ch-pressed]:not(:disabled) {
@@ -3464,7 +3464,7 @@ path.ch-rt-map__shot {
     inset: 0;
     background: rgb(2 18 10 / 0.2);
     opacity: 0;
-    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    transition: opacity var(--ch-dur-press) var(--ch-ease-out);
     pointer-events: none;
     content: '';
   }
@@ -3481,7 +3481,7 @@ path.ch-rt-map__shot {
     margin-inline: -12px;
     padding-inline: 12px;
     border-radius: var(--ch-radius-md);
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-rt-log__h[data-ch-pressed] {
     background: rgb(244 238 221 / 0.1);
@@ -3634,4 +3634,19 @@ path.ch-rt-map__shot {
 :root[data-reduce-transparency][data-fw-theme='dark'] .ch-rtcv__glass,
 :root[data-reduce-transparency][data-fw-theme='dark'] .ch-rtcv__back {
   background: var(--ch-green-900);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-rt-panel,
+  .ch-rt-subm,
+  .ch-rt-subm > .ch-btn.ch-btn--primary,
+  :where() .ch-rt-log,
+  .ch-rtcv__sheet,
+  .ch-rtcv-d,
+  .ch-rt-card,
+  .ch-rt-bar__row > .ch-btn.ch-rt-bar__go {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

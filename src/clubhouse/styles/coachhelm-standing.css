@@ -12,7 +12,7 @@
   overflow: hidden;
   color: var(--ch-text-primary);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hs-hero.is-solo {
   grid-template-columns: minmax(0, 1fr);
@@ -80,7 +80,7 @@
   padding: 24px 32px 8px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hs-g__h {
   display: flex;
@@ -296,7 +296,7 @@
   padding: 32px 32px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hs-sk__col {
   display: flex;
@@ -310,7 +310,7 @@
   padding: 24px 32px 8px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hs-sk__r {
   display: grid;
@@ -452,7 +452,7 @@
     border-radius: var(--ch-radius-lg);
     color: var(--ch-on-green-ink);
     background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
+    box-shadow: var(--ch-elevation-card);
   }
   .ch-hs-hero__main {
     gap: 12px;
@@ -673,7 +673,7 @@
   margin-top: -8px;
   opacity: 0;
   /* The list's height changes at once; only its opacity eases (a new height transition recalculates layout each frame). */
-  transition: opacity var(--ch-dur-base) var(--ch-ease);
+  transition: opacity var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-hs-ld__b[data-open='true'] {
   grid-template-rows: 1fr;
@@ -867,7 +867,7 @@ main[data-canopy] .ch-hs-r.is-ahead,
   box-shadow:
     0 0 0 3px var(--ch-ivory-25),
     0 0 0 4.5px color-mix(in srgb, var(--ch-hs-tone) 45%, transparent),
-    var(--ch-elevation-mark-ink);
+    var(--ch-elevation-raised);
 }
 .ch-hs-r.is-ahead {
   --ch-hs-tone: var(--ch-green-fill-600);
@@ -1028,5 +1028,16 @@ main[data-canopy] .ch-hs-r:not(:first-child) .ch-hs-r__f dt {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 6px 16px;
     }
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-hs-hero,
+  .ch-hs-sk__hero,
+  .ch-hs-sk__g,
+  .ch-hs-tr__you {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

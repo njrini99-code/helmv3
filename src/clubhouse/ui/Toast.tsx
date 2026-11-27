@@ -402,7 +402,7 @@ function ToastCard({
       }
       if (d !== 0) {
         const curve = chSupportsLinear() ? chSpringCurve('smooth', { velocity: (-fresh * 1000) / d, rest: 0.5 / Math.abs(d) }) : null;
-        el.style.transition = curve ? `translate ${curve.ms}ms ${curve.linear}` : 'translate var(--ch-dur-release) var(--ch-ease)';
+        el.style.transition = curve ? `translate ${curve.ms}ms ${curve.linear}` : 'translate var(--ch-dur-release) var(--ch-ease-out)';
       }
       el.style.translate = '';
       releaseFor('press');

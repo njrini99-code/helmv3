@@ -32,7 +32,7 @@
    only the fade is skipped. Put `.ch-tour-washable` on the cell and toggle `.ch-tour-changed`. */
 .ch-tour-washable {
   border-radius: var(--ch-radius-sm);
-  transition: background-color var(--ch-dur-reveal) var(--ch-ease);
+  transition: background-color var(--ch-dur-reveal) var(--ch-ease-out);
 }
 .ch-tour-changed {
   background-color: var(--ch-bg-selected);
@@ -321,7 +321,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-led__m {
   display: grid;
@@ -377,4 +377,12 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-led__list {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

@@ -131,13 +131,27 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | `--ch-seg-on-shadow` | `inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 1px 2px rgb(11 58 37 / 0.35), 0 3px 8px -2px rgb(11 58 37 / 0.3)` | `inset 0 1px 0 rgb(255 255 255 / 0.16), inset 0 -1px 0 rgb(0 0 0 / 0.2), 0 1px 2px rgb(0 0 0 / 0.5), 0 3px 8px -2px rgb(0 0 0 / 0.45)` | Its soft drop shadow |
 | `--ch-seg-on-ink` | `#f9f7f1` | same | The pill label |
 
-#### The three elevations
+#### The four named elevations
 
 | Token | Light | Dark | Role |
 |---|---|---|---|
-| `--ch-elevation-card` | `0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)` | `0 0 0 1px rgb(241 236 223 / 0.08)` | Card: every card (MOTION-AND-VISUAL 4.6). Flat, the page, is none |
-| `--ch-elevation-raised` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)` | Raised: sheets, menus, the palette, pins, toasts (MOTION-AND-VISUAL 4.6) |
+| `--ch-elevation-flat` | `0 0 0 0 transparent` | same | Flat: on the surface, no lift (pills, chips, strips, bubbles) |
+| `--ch-elevation-card` | `0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)` | `0 0 0 1px rgb(241 236 223 / 0.08)` | Card: every card (MOTION-AND-VISUAL 4.6) |
+| `--ch-elevation-raised` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)` | Raised: menus, the palette, pins, a lifted control (MOTION-AND-VISUAL 4.6) |
+| `--ch-elevation-overlay` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)` | Overlay: sheets, dialogs, popovers, toasts (the raised step today) |
 | `--ch-scrim` | `rgb(28 25 18 / 0.24)` | `rgb(2 6 4 / 0.58)` | The scrim under a sheet or dialog |
+
+#### Motion roles
+
+| Token | Light | Dark | Role |
+|---|---|---|---|
+| `--ch-motion-press-in` | `110ms cubic-bezier(0.22, 1, 0.36, 1)` | same | A press going down |
+| `--ch-motion-press-out` | `280ms cubic-bezier(0.32, 0.72, 0, 1)` | same | A press let go |
+| `--ch-motion-popup-in` | `180ms cubic-bezier(0.32, 0.72, 0, 1)` | same | A menu, popover or toast arriving |
+| `--ch-motion-popup-out` | `110ms cubic-bezier(0.22, 1, 0.36, 1)` | same | One leaving |
+| `--ch-motion-sheet-in` | `520ms cubic-bezier(0.32, 0.72, 0, 1)` | same | A sheet or pushed panel rising |
+| `--ch-motion-sheet-out` | `280ms cubic-bezier(0.22, 1, 0.36, 1)` | same | One leaving |
+| `--ch-motion-page` | `520ms cubic-bezier(0.32, 0.72, 0, 1)` | same | A push or a pop |
 
 #### Radii
 
@@ -187,9 +201,11 @@ Sizes are at the default Text Size: every role multiplies by `--ch-type-k`, so t
 | Feature card | `--ch-feature-bg`, flat deep green, text `--ch-on-green-ink` | `--ch-elevation-feature` | 16 | Once per view |
 | The bar material | `--ch-glass-bg`: `color-mix(in oklab, var(--ch-workspace) 78%, transparent)` under `blur(20px) saturate(140%)`, both themes | a hairline once content is under it | n/a | The one material, for the bar that appears on scroll and other chrome over scrolling content (the strip, the message composer, its date pill and jump key, the round bar). Never behind data, sheets or menus, and never on something nothing scrolls under (MOT-16): Home's today key and the course view's keys are opaque. Increase Contrast and Reduce Transparency make it the solid page |
 
-These three elevations (flat, card, raised) are the only ones (MOTION-AND-VISUAL 4.6; S1.5 to S1.5c). Every other elevation token is an alias of one of them, or none. Green controls keep their inset highlight (`--ch-seg-on-shadow`): it is part of the control, not an elevation. Message bubbles, pills and chips are flat. No card inside a card. No lit inset rim, no sun drift, no third ambient layer. A drop shadow written in a page stylesheet instead of a token is counted per file by `npm run clubhouse:css` (`config/clubhouse/css-ratchet.json`) and may only fall.
+Four named elevations are the only depth a surface reads (MOTION-AND-VISUAL 4.6; S1.5 to S1.5c; named in dsx-07, 27 Nov 2026): `--ch-elevation-flat` (on the surface, no lift), `--ch-elevation-card`, `--ch-elevation-raised` and `--ch-elevation-overlay` (sheets, dialogs, popovers, toasts; the raised step today). The older names that only point at one of them (reading, lifted, framed, board, plate, mark, glass, strip, control, `--ch-shadow-sm/md/lg`, the per-lane card shadows) are retiring: `src/clubhouse/__tests__/elevation-roles.test.ts` counts their reads per file and lets them only fall. Shadows vanish under forced colours (Windows High Contrast), so every surface that reads a named elevation also draws `outline: 1px solid CanvasText` inside `@media (forced-colors: active)`, in its own stylesheet or base.css's shared list; the same test counts the surfaces still without one. An edge that is not depth (a selected choice, a drop target, a due date) is a ring token, `--ch-ring-*`, never an elevation. Green controls keep their inset highlight (`--ch-seg-on-shadow`): it is part of the control, not an elevation. Message bubbles, pills and chips are flat. No card inside a card. No lit inset rim, no sun drift, no third ambient layer. A drop shadow written in a page stylesheet instead of a token is counted per file by `npm run clubhouse:css` (`config/clubhouse/css-ratchet.json`) and may only fall.
 
 Radii: five steps (MOTION-AND-VISUAL 4.5): `--ch-radius-sm` 8 (menu items, small chips, kbd, chart pins), `-md` 12 (buttons, inputs, hole chips, menus), `-lg` 16 (cards, toasts, options), `-xl` 20 (sheets and the phone lip) and `-full` (pills, the toggle, avatars). Three shapes sit outside the steps on purpose: `--ch-radius-xs` 4 for the bogey square (a square must not read as a circle), and a message bubble's 18 (`--ch-radius-bubble`) with its 6 corner (`--ch-radius-tail`). Chart marks take the stroke's cap, not a radius. A border-radius that is not a token is counted by the same ratchet; there are five left.
+
+Space: the 4 px grid with 2 and 6 for tight pairs, `--ch-space-0_5` (2) to `--ch-space-12` (48), and the named gaps (`--ch-gap-*`). A padding, margin, gap or inset holding a raw length is counted per file by the same ratchet (`raw-space`, dsx-07) and may only fall; new spacing reads a token.
 
 Card anatomy:
 ```
@@ -227,7 +243,7 @@ Edges: 16px page edge, 20px on large phones (≥ 414pt wide), already `--ch-page
 
 Instrument Sans only (`--ch-font-sans`). Every size scales with iPhone Text Size through `--ch-type-k` (from `-apple-system-body`, capped at XXL). No tracked caps, no serif, sentence case everywhere. Nine roles (MOTION-AND-VISUAL 4.3), their desktop and phone values in the generated "Type roles" table in §3: large title (the page title), title (card hero titles, a hole number), headline (card heads, bar titles, row titles that lead), body (prose; 16/24 inside a CoachHelm thread), callout (row titles, controls, secondary prose), footnote (row meta, eyebrows, captions under figures), caption (axis labels, legends, chips), the hero figure (the one number a screen leads with, 600) and the row figure (scores and averages in rows, 600). Secondary text is weight 500 for contrast on ivory. Meta is never larger than body. Weights are 400, 500, 600 and 700 only.
 
-A new rule reads a role. The numeric steps (`--ch-type-11` to `-34`) that the roles replace are still read in older stylesheets; `src/clubhouse/__tests__/legacy-type-roles.test.ts` counts them per file and lets the count only fall, and no older named role (serif, display, label, eyebrow, meta, row, section, bar or card title) may come back.
+A new rule reads a role. A `font` or `font-size` holding a literal weight or size (no `--ch-type-*` token) is counted per file by `npm run clubhouse:css` (`raw-type`, dsx-07) and may only fall. The numeric steps (`--ch-type-11` to `-34`) that the roles replace are still read in older stylesheets; `src/clubhouse/__tests__/legacy-type-roles.test.ts` counts them per file and lets the count only fall, and no older named role (serif, display, label, eyebrow, meta, row, section, bar or card title) may come back.
 
 Numbers: tabular figures everywhere, a true minus (−), "E" for even, "—" for no data, window and sample stated ("Last 10 rounds · 142 shots"). One number per card is the headline; it should not shout.
 
@@ -245,15 +261,17 @@ Owned by the navigation motion work (audit Batches 2 and 4); this section change
 
 One motion set, already in `tokens.css`; this file fixes which to use where.
 
+Motion roles (dsx-07, 27 Nov 2026): a rule names what moves and reads one role, a duration and a curve together, from the generated "Motion roles" table in §3: `--ch-motion-press-in` (110, out curve) and `-press-out` (280, iOS curve); `-popup-in` (180, iOS) and `-popup-out` (110, out); `-sheet-in` (520, iOS) and `-sheet-out` (280, out); `-page` (520, iOS). Under Reduce Motion the popup, sheet and page roles become the quick fade (180, out curve) and the press keeps its beats; a rule that travels must also drop its transform there. `src/clubhouse/__tests__/motion-roles.test.ts` pins the set. The retiring motion names (`--ch-ease`, `--ch-ease-sheet`, the `--ch-*-spring-*` pairs) were moved onto the beats and curves they named on every live file; the motion gate counts what is left.
+
 | Moment | Duration | Easing | Notes |
 |---|---|---|---|
-| Press (buttons, cards that open) | 110ms down, 280ms release | `--ch-ease` | Scale 0.97 on buttons and tappable cards; rows wash instead |
-| Tab switch | 260ms | crossfade, `--ch-ease` | Content only; bars do not move |
+| Press (buttons, cards that open) | 110ms down, 280ms release | `--ch-ease-out` | Scale 0.97 on buttons and tappable cards; rows wash instead |
+| Tab switch | 260ms | crossfade, `--ch-ease-out` | Content only; bars do not move |
 | Push to detail | 462ms | `--ch-ease-spring-smooth` (the `linear()` spring) | Incoming slides 100% → 0, outgoing to −24% (`CH_UNDERLAY_SHIFT` 0.24; `--ch-vt-parallax` moves to −24% in PR 1) and dims to 0.9 |
-| Sheet up | 462ms spring; down 280ms `--ch-ease` | | Follows the finger; velocity hands off to the spring |
+| Sheet up | 462ms spring; down 280ms `--ch-ease-out` | | Follows the finger; velocity hands off to the spring |
 | Segmented thumb | 360ms | `--ch-ease-spring` (slight overshoot) | Thumb slides, label weights cross-fade |
 | Large title on scroll | scroll-linked | none | Title scales to 86% and fades as it scrolls under; nothing moves into the green bar, whose title is always shown; the 14px shade fades in under the bar after 8px. Reduce Motion: fade only |
-| Chart marks | 360ms once, when first scrolled into view | `--ch-ease` | Bars grow from the zero axis; never on re-render, never count-ups. Marks inside the shared read sheet and other sheets are drawn at rest (completeness pass, 4 Nov) |
+| Chart marks | 360ms once, when first scrolled into view | `--ch-ease-out` | Bars grow from the zero axis; never on re-render, never count-ups. Marks inside the shared read sheet and other sheets are drawn at rest (completeness pass, 4 Nov) |
 | New message, new row | 260ms | spring | Height opens, then content fades and rises 6px |
 
 Reduce Motion: every duration above goes to 0 except crossfades, which become opacity only (no movement) over `CH_FADE_MS` (180ms today, owner decision of 24 Oct, pinned by `reduced-motion.test.tsx`). Any lane file that says 120ms for the Reduce Motion crossfade means `CH_FADE_MS`. Today's override block at `tokens.css` 1094–1108 already zeroes them; add the 120ms crossfade exception.

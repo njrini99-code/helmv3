@@ -82,7 +82,7 @@
   background: var(--ch-tab-bar);
 }
 .ch-hb-tabs button {
-  transition: color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-hb-tabs button:not([aria-selected='true']):hover {
@@ -105,7 +105,7 @@
 .ch-hb-card {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-sheet-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hb-card__h {
   display: flex;
@@ -319,7 +319,7 @@
   padding: 24px 32px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-sheet-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hb-ann.is-featured {
   box-shadow: var(--ch-elevation-raised);
@@ -482,7 +482,7 @@
   border-radius: var(--ch-radius-sm);
   background: none;
   cursor: pointer;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 /* Hover first (W4b): a press under the pointer is also a hover, and the press must win. */
 @media (hover: hover) {
@@ -545,7 +545,7 @@
   border: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   font: var(--ch-type-15);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
@@ -577,7 +577,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-sheet-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hb-pass.is-big {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -908,7 +908,7 @@
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-hb-file__open:hover {
@@ -983,7 +983,7 @@
   border: 0;
   border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   font: var(--ch-type-footnote);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -1033,7 +1033,7 @@
   border: 0;
   border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -1041,7 +1041,7 @@
 }
 .ch-hb-picks button[aria-pressed='true'] {
   background: var(--ch-selected-bg);
-  box-shadow: 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent);
   color: var(--ch-forest-800);
 }
 /* Attachments in New announcement: chosen files as chips, and the list to choose from (CH-10209, CH-10311). */
@@ -1070,7 +1070,7 @@
   border: 0;
   border-radius: var(--ch-radius-full);
   background: var(--ch-green-50);
-  box-shadow: 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent);
   font: var(--ch-type-footnote);
   line-height: var(--ch-lead-tight);
   color: var(--ch-forest-800);
@@ -1386,7 +1386,7 @@
   }
   .ch-hb-rsvp__b {
     border-radius: var(--ch-radius-sm);
-    transition: background-color var(--ch-dur-press) var(--ch-ease), box-shadow var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out), box-shadow var(--ch-dur-press) var(--ch-ease-out);
   }
   /* The event's line opens it in Calendar: a press tints it a little past its words, without moving them. */
   .ch-hb-rsvp__b[data-ch-pressed] {
@@ -1415,7 +1415,7 @@
     padding: 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
+    box-shadow: var(--ch-elevation-card);
     color: var(--ch-on-green-ink);
   }
   .ch-hb-ann.is-featured .ch-hb-eyebrow {
@@ -1518,7 +1518,7 @@
     border-radius: var(--ch-radius-md);
     background: var(--ch-sheet-bg);
     box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-hb-new[data-ch-pressed] {
     background-color: var(--ch-bg-hover);
@@ -1651,7 +1651,7 @@
     margin: 0 -12px;
     padding: 8px 12px 8px 32px;
     border-radius: var(--ch-radius-md);
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-hb-feed li > a[data-ch-pressed] {
     background-color: var(--ch-sel);
@@ -1713,7 +1713,7 @@
     margin-left: -12px;
     padding: 8px 12px;
     border-radius: var(--ch-radius-md);
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-hb-file__open[data-ch-pressed] {
     background-color: var(--ch-sel);
@@ -1780,7 +1780,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   text-align: left;
   cursor: pointer;
 }
@@ -1794,7 +1794,7 @@
 }
 .ch-hb-evpick button[aria-checked='true'] {
   background: var(--ch-green-100);
-  box-shadow: 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent);
 }
 .ch-hb-tripsum {
   display: grid;
@@ -2308,7 +2308,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     box-shadow:
       inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 40%, transparent),
       inset var(--ch-light-rim-x) 0 0 color-mix(in oklab, var(--ch-light-rim-soft) 25%, transparent),
-      var(--ch-elevation-feature);
+      var(--ch-elevation-card);
   }
   .ch-hb-ann.is-featured h3 {
     text-shadow:
@@ -2447,7 +2447,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   box-shadow: inset 0 1px 2px rgb(28 25 18 / 0.14);
 }
 .ch-hb-rsvp__bar > * {
-  transition: flex-grow var(--ch-dur-base) var(--ch-ease);
+  transition: flex-grow var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-hb-rsvp__bar .is-going {
   background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
@@ -2457,15 +2457,15 @@ html[data-fw-theme='dark'] .ch-hb-chip {
 }
 .ch-hb-reads__t i {
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-hb-rsvp__d {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong), var(--ch-elevation-mark-ink);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong), var(--ch-elevation-raised);
 }
 .ch-hb-rsvp__list li {
   border-radius: var(--ch-radius-md);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-hb-rsvp__list li:hover {
@@ -2571,7 +2571,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   text-decoration: underline;
   text-decoration-color: transparent;
   text-underline-offset: 3px;
-  transition: text-decoration-color var(--ch-dur-quick) var(--ch-ease);
+  transition: text-decoration-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-hb-strip button:hover > span {
@@ -2657,7 +2657,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
     padding: 32px 32px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
+    box-shadow: var(--ch-elevation-card);
     color: var(--ch-on-green-ink);
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-lead h3 {
@@ -2729,7 +2729,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   /* The Travel pass (the next trip, big): the same green, its plan on a dashed perforation. */
   .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big {
     background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
+    box-shadow: var(--ch-elevation-card);
     color: var(--ch-on-green-ink);
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-pass__top .ch-hb-eyebrow,
@@ -2802,7 +2802,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   padding: 24px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
-  box-shadow: var(--ch-elevation-feature);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-on-green-ink);
 }
 .ch-hb-board__f {
@@ -2862,7 +2862,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   border-radius: var(--ch-radius-full);
   background: var(--ch-champagne-300);
   transform: translateX(calc((var(--ch-hb-p, 0) - 1) * 100%));
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-hb-board p {
   margin: 0;
@@ -2901,7 +2901,7 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   content: '';
   transform: scaleX(var(--ch-hb-p, 0));
   transform-origin: left center;
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 html[data-fw-theme='dark'] .ch-hb-prog i::after {
   background: var(--ch-green-600);
@@ -2984,7 +2984,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   /* The one card recipe, Home's own (owner, 11 Nov): the flat white face and the card's cast, not an outlined ivory tile. */
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 /* L-003: a tile whose whole body is a compact empty keeps its own height; the neighbour's no longer stretches it into blank. */
 .ch-hw.is-bare,
@@ -3080,7 +3080,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   gap: 16px;
   padding: 24px 24px 24px;
   background: var(--ch-feature-bg);
-  box-shadow: var(--ch-elevation-feature);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-on-green-ink);
 }
 .ch-hw--dark .ch-hw__h h2,
@@ -3774,7 +3774,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
   border: 0;
   border-radius: 50%;
   background: none;
-  box-shadow: inset 0 0 0 1.5px var(--ch-warning-600);
+  box-shadow: var(--ch-ring-warn-inset);
   font: var(--ch-type-12-strong);
   line-height: var(--ch-lead-tight);
   color: var(--ch-warning-600);
@@ -4058,7 +4058,7 @@ html[data-fw-theme='dark'] .ch-hb-prog i::after {
 }
 
 html[data-fw-theme='dark'] .ch-hw--dark {
-  box-shadow: var(--ch-elevation-feature);
+  box-shadow: var(--ch-elevation-card);
 }
 
 /* Narrow desktop and tablet: two tiles a row stop fitting, so the bento is one column in rank order. */
@@ -4169,5 +4169,23 @@ html[data-fw-theme='dark'] .ch-hw--dark {
   .ch-hw .ch-hw-agenda a,
   .ch-hw .ch-hw-later button {
     min-height: 44px;
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-hb-card,
+  .ch-hb-ann,
+  .ch-hb-ann.is-featured,
+  .ch-hb-pass,
+  .ch-hb-pass.is-big,
+  .ch-hb-rsvp__d,
+  .ch-hb[data-canopy] .ch-hb-ann.is-lead,
+  .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big,
+  .ch-hb-board,
+  .ch-hw,
+  .ch-hw--dark {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

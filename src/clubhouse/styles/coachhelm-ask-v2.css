@@ -18,7 +18,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .prose { margin: 0; font: var(--ch-type-16);  color: var(--ch-text-primary); letter-spacing: var(--ch-track-16); }
 .ch-ak-th .work .sum { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; border: 0; background: none; padding: 0; text-align: left; font: var(--ch-type-15); color: var(--ch-text-secondary); cursor: pointer; letter-spacing: var(--ch-track-15); }
 .ch-ak-th .work .sum .t { flex: 1; min-width: 0; }
-.ch-ak-th .work .sum .chev { color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .work .sum .chev { color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease-out); }
 .ch-ak-th .work.open .sum .chev { transform: rotate(180deg); }
 .ch-ak-th .steps { display: grid; gap: 0; margin: 0; padding: 0 0 8px; list-style: none; }
 .ch-ak-th .step { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 12px; align-items: start; min-height: 32px; padding: 6px 0; }
@@ -103,7 +103,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-th .qh { display: flex; align-items: center; gap: 12px; padding: 12px 16px 12px; border-bottom: 0.5px solid var(--ch-ak-ak-hair); }
 .ch-ak-th .qh b { flex: 1; min-width: 0; font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-ak-th .qdots { display: flex; gap: 4px; flex: none; }
-.ch-ak-th .qdots i { width: 24px; height: 4px; border-radius: var(--ch-radius-full); background: var(--ch-ak-ak-track); transform: scaleX(0.667); transition: transform var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-th .qdots i { width: 24px; height: 4px; border-radius: var(--ch-radius-full); background: var(--ch-ak-ak-track); transform: scaleX(0.667); transition: transform var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-ak-th .qdots i.on { background: var(--ch-ask-accent); }
 .ch-ak-th .qdots i.cur { transform: none; }
 .ch-ak-th .qpane { display: grid; gap: 12px; min-width: 0; padding: 16px 16px 4px; }
@@ -128,7 +128,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   font: var(--ch-type-13);
   color: var(--ch-text-secondary);
 }
@@ -195,7 +195,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 .ch-ak-pollp .pf { font: var(--ch-type-12); color: var(--ch-text-secondary); }
 .ch-ak-th {
   --ch-ask-shadow-1: 0 0 0 0.5px var(--ch-ak-ak-hair), 0 1px 2px rgb(28 25 18 / 0.05);
-  --ch-ask-shadow-2: var(--ch-elevation-reading);
+  --ch-ask-shadow-2: var(--ch-elevation-card);
 }
 .ch-ak-th, .ch-ak-pane, .ch-ak-out, .ch-ak-knows, .ch-ak-meter, .ch-ak-handoff {
   --ch-ask-v2-x1: 0 0 0 0.5px rgb(28 27 24 / 0.14);
@@ -388,7 +388,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   font: var(--ch-type-14-medium);
   color: var(--ch-text-secondary);
   cursor: pointer;
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* The press controller's mark (B6): the pressed look on touch, where :active is not read. */
 .ch-ak-home:not(.is-phone) .sugg button[data-ch-pressed] {
@@ -494,7 +494,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
   box-shadow: 0 0 0 0.5px var(--ch-ak-ak-hair);
 }
 .ch-ak-hs .hsr.nw {
-  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ch-ask-accent) 40%, transparent), var(--ch-card-shadow);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--ch-ask-accent) 40%, transparent), var(--ch-elevation-card);
 }
 .ch-ak-hs .hsr .ri {
   display: grid;
@@ -572,11 +572,11 @@ html[data-fw-theme='dark'] .ch-ak-th {
 [data-motion='off'] .ch-ak-pane { animation: none; }
 
 /* M-ASK-33 to 39: the brief. Its panes change in place on a tap (3.1: content does not travel); the dots and the choice settle. */
-.ch-ak-th .qdots i { transition: transform var(--ch-dur-spring-settle) var(--ch-ease-spring-settle), background-color var(--ch-dur-base) var(--ch-ease); }
-.ch-ak-th .opt { transition: background-color var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease); }
-.ch-ak-th .opt .bx { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary); color: var(--ch-text-on-accent); transition: background-color var(--ch-dur-base) var(--ch-ease), box-shadow var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .qdots i { transition: transform var(--ch-dur-base) var(--ch-ease-ios), background-color var(--ch-dur-base) var(--ch-ease-out); }
+.ch-ak-th .opt { transition: background-color var(--ch-dur-base) var(--ch-ease-out), box-shadow var(--ch-dur-base) var(--ch-ease-out); }
+.ch-ak-th .opt .bx { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ch-text-tertiary); color: var(--ch-text-on-accent); transition: background-color var(--ch-dur-base) var(--ch-ease-out), box-shadow var(--ch-dur-base) var(--ch-ease-out); }
 .ch-ak-th .opt.multi .bx { border-radius: var(--ch-radius-sm); }
-.ch-ak-th .opt .bx path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .opt .bx path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease-out); }
 .ch-ak-th .opt[aria-pressed='true'] .bx { background: var(--ch-selected-strong); box-shadow: none; }
 .ch-ak-th .opt[aria-pressed='true'] .bx path { stroke-dashoffset: 0; }
 @media (prefers-reduced-motion: reduce) {
@@ -636,7 +636,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 /* M-ASK-50: the Draft chip takes the flow's done word. */
 
 /* M-ASK-51: at the ring's end Undo fades and takes no presses. */
-.ch-ak-th .receipt .undo, .ch-ak-sv .receipt .undo { transition: opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-th .receipt .undo, .ch-ak-sv .receipt .undo { transition: opacity var(--ch-dur-base) var(--ch-ease-out); }
 .ch-ak-th .receipt .undo.gone, .ch-ak-sv .receipt .undo.gone { opacity: 0; pointer-events: none; }
 .ch-ak-th .receipt.undone:focus, .ch-ak-sv .receipt.undone:focus { outline: none; }
 
@@ -892,7 +892,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-sv .row b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
 .ch-ak-sv .row .fi { display: grid; place-items: center; color: var(--ch-ask-accent); transform-origin: 50% 100%; }
 .ch-ak-sv .row .c { font: var(--ch-type-13); color: var(--ch-text-tertiary); }
-.ch-ak-sv .row .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-sv .row .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease-out); }
 .ch-ak-sv .row[aria-expanded='true'] .chev { transform: rotate(180deg); }
 .ch-ak-sv .list { display: grid; margin: 4px 16px 0; padding: 4px; border-radius: var(--ch-radius-md); background: var(--ch-well-bg-flat); }
 .ch-ak-sv .fr { position: relative; display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 8px 12px; border: 0; border-radius: var(--ch-radius-sm); background: none; text-align: left; cursor: pointer; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); color: var(--ch-text-primary); }
@@ -948,7 +948,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-wl .t.shim { color: var(--ch-text-primary); }
 .ch-ak-wl.is-sum { position: relative; min-height: 28px; cursor: pointer; }
 .ch-ak-wl.is-sum::after { content: ''; position: absolute; inset: -8px -8px; }
-.ch-ak-wl.is-sum .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-ak-wl.is-sum .chev { flex: none; color: var(--ch-text-tertiary); transition: transform var(--ch-dur-base) var(--ch-ease-out); }
 .ch-ak-wl.is-sum[aria-expanded='true'] .chev { transform: rotate(180deg); }
 .ch-ak-wl.is-sum:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: var(--ch-radius-sm); }
 
@@ -977,7 +977,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* The send key: one key in one place. Its meaning changes in the frame of the tap; the two discs cross by opacity. */
 .ch-ak-root .ch-ask-cmp__send { position: relative; overflow: hidden; }
 .ch-ak-root .ch-ask-cmp__send.is-stop { background: var(--ch-accent); }
-.ch-ak-root .ch-ask-cmp__send .ink { position: absolute; inset: 0; border-radius: inherit; background: var(--ch-ink-900); opacity: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-root .ch-ask-cmp__send .ink { position: absolute; inset: 0; border-radius: inherit; background: var(--ch-ink-900); opacity: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-ak-root .ch-ask-cmp__send.is-stop .ink { opacity: 1; }
 .ch-ak-root .ch-ask-cmp__send.is-stop[data-ch-pressed] .ink { background: var(--ch-ink-press); }
 .ch-ak-root .ch-ask-cmp__send .g { position: relative; display: grid; grid-area: 1 / 1; place-items: center; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
@@ -992,14 +992,14 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* ── Chat v3, the task card (MOTION Moment 7) ─────────────────────────────────────────────────────────────────────── */
 /* The card arrives whole, out of the answer: the plan came as one piece. */
 /* Cancel leaves on Confirm and keeps its box, so the working button keeps its place. */
-.ch-ak-th[data-v3] .conf .btns .cx { transition: opacity var(--ch-dur-msg-key-out) var(--ch-ease); }
+.ch-ak-th[data-v3] .conf .btns .cx { transition: opacity var(--ch-dur-msg-key-out) var(--ch-ease-out); }
 .ch-ak-th[data-v3] .conf .btns .cx.is-gone { opacity: 0; pointer-events: none; }
 .ch-ak-needs { margin: 0; padding: var(--ch-space-2) var(--ch-space-5) 0; font: var(--ch-type-13); color: var(--ch-loss); }
 /* The hold: the countdown ring with the seconds left, in the place the check will take. */
 .ch-ak-th[data-v3] .receipt { min-height: 68px; }
 .ch-ak-th[data-v3] .receipt.is-hold { align-items: flex-start; }
 .ch-ak-th[data-v3] .receipt.is-hold .lk.now { margin: 4px 0 0 -6px; }
-.ch-ak-th[data-v3] .receipt .cd { position: relative; display: grid; flex: none; place-items: center; width: 28px; height: 28px; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-th[data-v3] .receipt .cd { position: relative; display: grid; flex: none; place-items: center; width: 28px; height: 28px; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-ak-th[data-v3] .receipt .cd svg { position: absolute; inset: 0; width: 28px; height: 28px; }
 .ch-ak-th[data-v3] .receipt .cd .trk { stroke: var(--ch-separator); stroke-width: 2.5; }
 /* A paint-only exception to transform and opacity (MOTION, "Rules"): a 28px mark, no layout. It drains even under Reduce Motion: it is information. */
@@ -1015,7 +1015,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* A chip and the punctuation that closes its sentence are one unbreakable piece. */
 .ch-ak-keep { white-space: nowrap; }
 /* The task card's body (the capability's own, cards/): the thing itself, on the sheet. A withdrawn draft steps back; it is not removed. */
-.ch-ak-task__body { min-width: 0; padding: var(--ch-space-4) var(--ch-space-5) 0; transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-ak-task__body { min-width: 0; padding: var(--ch-space-4) var(--ch-space-5) 0; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-ak-task__sum { margin: var(--ch-space-4) var(--ch-space-5) 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); text-wrap: balance; }
 /* A pin sheet is a slip, not a page: it keeps a slip's width on a desk. */
 .ch-ak-th .conf.ch-ak-task { box-sizing: border-box; width: 100%; max-width: 520px; padding-bottom: var(--ch-space-1); }
@@ -1035,15 +1035,15 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 }
 
 /* --ch-isl-r is the radius step as a length for the geometry below; the corners themselves name the step (radius-steps). */
-.ch-isl { --ch-isl-r: var(--ch-radius-lg); --ch-isl-w: min(380px, 100% - 28px); position: absolute; top: 2px; left: 50%; z-index: var(--ch-z-sticky); width: var(--ch-isl-w); height: calc(var(--ch-isl-r) * 2); margin-left: calc(var(--ch-isl-w) / -2); color: var(--ch-feature-ink); --ch-rm-animation: var(--ch-dur-quick); animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) backwards; transition: transform var(--ch-dur-release) var(--ch-ease); }
+.ch-isl { --ch-isl-r: var(--ch-radius-lg); --ch-isl-w: min(380px, 100% - 28px); position: absolute; top: 2px; left: 50%; z-index: var(--ch-z-sticky); width: var(--ch-isl-w); height: calc(var(--ch-isl-r) * 2); margin-left: calc(var(--ch-isl-w) / -2); color: var(--ch-feature-ink); --ch-rm-animation: var(--ch-dur-quick); animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) backwards; transition: transform var(--ch-dur-release) var(--ch-ease-out); }
 .ch-isl:is(.ch-ask-head *) { top: calc(50% - var(--ch-isl-r)); --ch-isl-w: min(380px, 100% - 32px); }
 .ch-isl.is-compact { --ch-isl-w: min(300px, 100% - 24px); }
 .ch-isl:has(.hd[data-ch-pressed]) { transform: scale(0.98); transition-duration: var(--ch-dur-press); }
 .ch-isl.is-leaving { opacity: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); pointer-events: none; }
 
 /* The shadow of each size, crossed by opacity: a shadow is never resized. */
-.ch-isl .sh { position: absolute; inset: 0; border-radius: var(--ch-radius-lg); box-shadow: var(--ch-feature-shadow); pointer-events: none; }
-.ch-isl .sh::after { content: ''; position: absolute; inset: 0 0 auto; height: calc(var(--ch-isl-r) * 2 + var(--ch-isl-h, 0) * 1px); border-radius: var(--ch-radius-lg); box-shadow: var(--ch-elevation-raised); opacity: 0; transition: opacity var(--ch-dur-base) var(--ch-ease); }
+.ch-isl .sh { position: absolute; inset: 0; border-radius: var(--ch-radius-lg); box-shadow: var(--ch-elevation-card); pointer-events: none; }
+.ch-isl .sh::after { content: ''; position: absolute; inset: 0 0 auto; height: calc(var(--ch-isl-r) * 2 + var(--ch-isl-h, 0) * 1px); border-radius: var(--ch-radius-lg); box-shadow: var(--ch-elevation-raised); opacity: 0; transition: opacity var(--ch-dur-base) var(--ch-ease-out); }
 .ch-isl.is-open .sh::after { opacity: 1; }
 
 /* The plate: a top cap, a middle two pixels tall (whole pixels, so its edges stay sharp when scaled) that scales to the steps' height, and a bottom cap that rides its edge. */
@@ -1052,7 +1052,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-isl .pt { top: 0; height: var(--ch-isl-r); border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0; }
 .ch-isl .pm { top: calc(var(--ch-isl-r) - 1px); height: 2px; transform-origin: 50% 0; }
 .ch-isl .pb { top: var(--ch-isl-r); height: var(--ch-isl-r); border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); }
-.ch-isl :is(.pm, .pb, .bc, .bd) { transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth); }
+.ch-isl :is(.pm, .pb, .bc, .bd) { transition: transform var(--ch-dur-reveal) var(--ch-ease-ios); }
 .ch-isl.is-open .pm { transform: scaleY(calc((var(--ch-isl-h, 0) + 2) / 2)); }
 .ch-isl.is-open .pb { transform: translateY(calc(var(--ch-isl-h, 0) * 1px)); }
 
@@ -1062,7 +1062,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-isl .hd:focus-visible, .ch-isl .st .op:focus-visible { outline: 2px solid var(--ch-border-focus-on-dark); outline-offset: 2px; }
 .ch-isl .hd .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ch-isl .hd .n { flex: none; font: var(--ch-type-12); color: var(--ch-feature-ink-3); }
-.ch-isl .hd .chev { flex: none; color: var(--ch-feature-ink-3); transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-isl .hd .chev { flex: none; color: var(--ch-feature-ink-3); transition: transform var(--ch-dur-base) var(--ch-ease-out); }
 .ch-isl.is-open .hd .chev { transform: rotate(180deg); }
 
 /* A step's mark. The ring turns on the working beat for as long as the step runs (the one loop, 3.1); finished, it closes
@@ -1072,8 +1072,8 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 /* The ring (r 8, stroke 2.2) and its marks sit inside the 20-unit box, so the svg clips nothing and needs no overflow. */
 :is(.ch-isl, .ch-ak-isl) .mk svg { width: 16px; height: 16px; }
 :is(.ch-isl, .ch-ak-isl) .mk :is(.trk, .arc, .ck, .bar) { stroke-width: 2.2; }
-:is(.ch-isl, .ch-ak-isl) .mk .trk { stroke: var(--ch-feature-track); transition: opacity var(--ch-dur-base) var(--ch-ease); }
-:is(.ch-isl, .ch-ak-isl) .mk .arc { stroke: var(--ch-feature-gain); stroke-dasharray: 100; stroke-dashoffset: 70; transform-box: fill-box; transform-origin: 50% 50%; animation: ch-spinner-turn var(--ch-dur-typing) linear infinite; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease), opacity var(--ch-dur-base) var(--ch-ease); }
+:is(.ch-isl, .ch-ak-isl) .mk .trk { stroke: var(--ch-feature-track); transition: opacity var(--ch-dur-base) var(--ch-ease-out); }
+:is(.ch-isl, .ch-ak-isl) .mk .arc { stroke: var(--ch-feature-gain); stroke-dasharray: 100; stroke-dashoffset: 70; transform-box: fill-box; transform-origin: 50% 50%; animation: ch-spinner-turn var(--ch-dur-typing) linear infinite; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-ease-out), opacity var(--ch-dur-base) var(--ch-ease-out); }
 :is(.ch-isl, .ch-ak-isl) .mk:is(.is-done, .is-failed) .arc { stroke-dashoffset: 0; }
 :is(.ch-isl, .ch-ak-isl) .mk:is(.is-done, .is-failed) .trk { opacity: 0; }
 :is(.ch-isl, .ch-ak-isl) .mk.is-rest .arc, :is(.ch-isl, .ch-ak-isl) .mk.is-stopped .arc { animation: none; }
@@ -1088,12 +1088,12 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
    as the plate, which stay equal when the height changes mid-move. */
 .ch-isl { --ch-isl-max: 420px; }
 .ch-isl .bc { position: absolute; top: calc(var(--ch-isl-r) * 2); left: 0; right: 0; height: var(--ch-isl-max); overflow: hidden; border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg); pointer-events: none; transform: translateY(calc(var(--ch-isl-max) * -1)); }
-.ch-isl .bd { max-height: min(52dvh, var(--ch-isl-max)); overflow-y: auto; overscroll-behavior: contain; padding: 0 6px 8px; opacity: 0; transform: translateY(var(--ch-isl-max)); transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth), opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-isl .bd { max-height: min(52dvh, var(--ch-isl-max)); overflow-y: auto; overscroll-behavior: contain; padding: 0 6px 8px; opacity: 0; transform: translateY(var(--ch-isl-max)); transition: transform var(--ch-dur-reveal) var(--ch-ease-ios), opacity var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-isl.is-open .bc { transform: translateY(calc(var(--ch-isl-h, 0) * 1px - var(--ch-isl-max))); }
 .ch-isl.is-open .bd { pointer-events: auto; opacity: 1; transform: translateY(calc(var(--ch-isl-max) - var(--ch-isl-h, 0) * 1px)); }
 .ch-isl .steps { margin: 0; padding: 4px 0 0; border-top: 1px solid var(--ch-feature-sep); list-style: none; }
 .ch-isl .st { position: relative; }
-.ch-isl .st .row { display: flex; align-items: flex-start; gap: 8px; min-height: 36px; padding: 8px 6px 8px 2px; border-radius: var(--ch-radius-sm); font: var(--ch-type-13); transition: background-color var(--ch-dur-quick) var(--ch-ease); }
+.ch-isl .st .row { display: flex; align-items: flex-start; gap: 8px; min-height: 36px; padding: 8px 6px 8px 2px; border-radius: var(--ch-radius-sm); font: var(--ch-type-13); transition: background-color var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-isl .st .op { position: absolute; inset: 0; margin: 0; padding: 0; border: 0; border-radius: var(--ch-radius-sm); background: none; cursor: pointer; }
 .ch-isl .st:has(.op[data-ch-pressed]) .row { background: var(--ch-feature-icon-bg); }
 @media (hover: hover) { .ch-isl .st:has(.op:hover) .row { background: var(--ch-feature-icon-bg); } }
@@ -1172,7 +1172,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
   max-width: 100%;
   border-radius: var(--ch-radius-full);
   background: var(--ch-feature-bg);
-  box-shadow: var(--ch-feature-shadow);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-feature-ink);
 }
 .ch-ak-isl .hd {
@@ -1617,5 +1617,19 @@ button.ch-ak-src__row[data-ch-pressed] {
   .ch-ak-th:not(.ch-th--phone, .is-compact) .ch-ak-leaf > .ch-ak-leaf__head + .prose .ch-th-prose > .ch-th-p:first-child {
     font: var(--ch-type-22-medium);
     letter-spacing: var(--ch-track-22);
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-ak-th .conf,
+  .ch-ak-meter,
+  .ch-ak-hs .hsr.nw,
+  .ch-isl .sh,
+  .ch-isl .sh::after,
+  .ch-ak-isl,
+  .ch-ak-leaf {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

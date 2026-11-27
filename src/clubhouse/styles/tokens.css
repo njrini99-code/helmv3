@@ -277,7 +277,15 @@
   /* P-4: a clash line on the dark ink pill (the drag time pill): champagne on ink by day, a deep amber on ivory at night. */
   --ch-on-ink-warning: var(--ch-champagne-300);
   /* P-4: a drop target's ring (a month day, a strip day under a dragged card): 2px of green inside its edge. */
-  --ch-ring-drop: inset 0 0 0 2px var(--ch-green-600);
+  /* Rings (dsx-07): an edge drawn as a zero-blur shadow, so it never changes a box's size. Not an elevation: a selected
+     choice, a drop target, a due date. Each follows the theme through its colour token. */
+  --ch-ring-accent: 0 0 0 1.5px var(--ch-green-600);
+  --ch-ring-accent-inset: inset 0 0 0 1.5px var(--ch-green-600);
+  --ch-ring-accent-strong: inset 0 0 0 2px var(--ch-green-600);
+  --ch-ring-accent-hairline: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+  --ch-ring-warn-inset: inset 0 0 0 1.5px var(--ch-warning-600);
+  --ch-ring-attention-inset: inset 0 0 0 1.5px var(--ch-champagne-500);
+  --ch-ring-drop: var(--ch-ring-accent-strong);
   /* P-4 4.1: the tournament fill's top sheen, and a class block's ring when a pointer rests on it. */
   --ch-ev-sheen: inset 0 1px 0 rgb(255 255 255 / 0.08);
   --ch-ev-class-ring-hover: inset 0 0 0 1px rgb(45 92 119 / 0.28);
@@ -710,6 +718,13 @@
   /* L-047: one quiet cast, not a 30px drop that muddies the ring under it. */
   --ch-medallion-shadow: 0 1px 2px rgb(11 58 37 / 0.18), 0 4px 10px -4px rgb(11 58 37 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.1);
   /* A control's contact shadow only: no lit white rim and no sun drift (S1.5, nothing white). */
+  /* Named elevations (dsx-07, design lab foundation 2): four, and only four, for anything that sits on the page.
+     flat: on the surface, no lift (a pill, a chip, a strip). card: a card at rest. raised: what floats (a menu, a
+     popover, a lifted control). overlay: a sheet, a dialog, a toast (the raised step today). Every other
+     --ch-elevation-* name below that only points at one of these is retiring: elevation-names.test.ts counts its uses,
+     which may only fall. Shadows drop out under forced colours, so a surface that reads one of these also draws an
+     outline there (base.css; forced-colors-edge.test.ts). */
+  --ch-elevation-flat: 0 0 0 0 transparent;
   --ch-elevation-control: 0 0 0 0 transparent;
   /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and
      overlay (a sheet, a dialog, below). Floating was the raised level's old name and folds into it. */
@@ -1035,6 +1050,20 @@
      (lib/use-busy.ts). A wait, not motion: kept with reduced motion and Animations off. */
   --ch-dur-busy-delay: 150ms;
   --ch-dur-busy-min: 300ms;
+  /* Motion roles (dsx-07, design lab foundation 6): what moves names its role, not a beat and a curve, so a rule can't pair
+     them wrongly. Each is a duration and a curve for a transition or an animation shorthand. press-in: a press going down
+     (110, out curve); press-out: a press let go (280, iOS curve). popup-in: a menu, popover or toast arriving (180, iOS);
+     popup-out: one leaving (110, out). sheet-in: a sheet or pushed panel rising (520, iOS); sheet-out: one leaving (280,
+     out). page: a push, a pop (520, iOS). Under Reduce Motion the travelling roles become the quick fade (3.11): a rule
+     that reads them must also drop its transform there, which a token can't do; Animations off zeroes the beats they
+     read. motion-roles.test.ts pins the set. */
+  --ch-motion-press-in: var(--ch-dur-press) var(--ch-ease-out);
+  --ch-motion-press-out: var(--ch-dur-release) var(--ch-ease-ios);
+  --ch-motion-popup-in: var(--ch-dur-quick) var(--ch-ease-ios);
+  --ch-motion-popup-out: var(--ch-dur-press) var(--ch-ease-out);
+  --ch-motion-sheet-in: var(--ch-dur-reveal) var(--ch-ease-ios);
+  --ch-motion-sheet-out: var(--ch-dur-release) var(--ch-ease-out);
+  --ch-motion-page: var(--ch-dur-reveal) var(--ch-ease-ios);
 
   /* Retiring (3.2): every motion token below is outside the vocabulary. Each may only lose uses (the motion gate,
      src/clubhouse/__tests__/motion-gate.test.ts, holds the count in config/clubhouse/motion-ratchet.json); write the
@@ -1452,6 +1481,17 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-typing: 0ms;
   --ch-dur-typing-step: 0ms;
   --ch-dur-story: 0ms;
+}
+
+/* Reduce Motion (3.11, dsx-07): the travelling roles become the quick fade. The press stays: a scale is not travel. */
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='clubhouse'] {
+    --ch-motion-popup-in: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-popup-out: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-sheet-in: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-sheet-out: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-page: var(--ch-dur-quick) var(--ch-ease-out);
+  }
 }
 
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off

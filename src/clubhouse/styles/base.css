@@ -90,11 +90,11 @@
 :where(.ch-root select),
 :where(.ch-root textarea) {
   transition:
-    background-color var(--ch-dur-quick) var(--ch-ease),
-    color var(--ch-dur-quick) var(--ch-ease),
-    border-color var(--ch-dur-quick) var(--ch-ease),
-    box-shadow var(--ch-dur-quick) var(--ch-ease),
-    opacity var(--ch-dur-quick) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease-out),
+    color var(--ch-dur-quick) var(--ch-ease-out),
+    border-color var(--ch-dur-quick) var(--ch-ease-out),
+    box-shadow var(--ch-dur-quick) var(--ch-ease-out),
+    opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* Lines break where they read best: headings balanced, running text without a lone last word. */
 :where(.ch-root h1),
@@ -229,7 +229,7 @@ svg .ch-num {
   color: var(--ch-text-primary);
   border: 0;
   border-radius: var(--ch-radius-md);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   font: var(--ch-type-callout);
 }
 .ch-sr-only--focusable > button {
@@ -274,13 +274,13 @@ svg .ch-num {
 }
 .ch-raised {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  box-shadow: var(--ch-elevation-flat);
   border-radius: var(--ch-radius-md);
 }
 /* A reading sheet is a card on the page, so it takes the card's 16 (H17); 20 belongs to a bottom sheet's top corners. */
 .ch-sheet {
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-sheet-shadow);
+  box-shadow: var(--ch-elevation-card);
   border-radius: var(--ch-radius-lg);
 }
 /* System contrast modes suppress shadows; retain a visible surface boundary there. */

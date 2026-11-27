@@ -115,7 +115,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-text-tertiary);
   font: var(--ch-type-footnote);
   cursor: pointer;
@@ -144,7 +144,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 /* The header's quiet note ("Players you haven't messaged"): 15k, ink-2, on the header's baseline. */
 [data-ch-ms-v2] .ch-msd-lcard__h > small {
@@ -379,7 +379,7 @@
   background: var(--ch-poll-bar);
   transform: scaleX(var(--ch-poll-share, 0));
   transform-origin: 0 50%;
-  transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  transition: transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 [data-ch-ms-v2] .ch-msd-poll__opt.is-on .ch-msd-poll__fill {
   background: var(--ch-poll-bar-on);
@@ -508,7 +508,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-msd-vg__h {
   position: relative;
@@ -589,12 +589,12 @@
 .ch-msd-sw .ch-switch__track {
   width: 44px;
   height: 26px;
-  transition: background-color var(--ch-msd-sw-track, var(--ch-dur-msg-pill-out)) var(--ch-ease);
+  transition: background-color var(--ch-msd-sw-track, var(--ch-dur-msg-pill-out)) var(--ch-ease-out);
 }
 .ch-msd-sw .ch-switch__thumb {
   width: 22px;
   height: 22px;
-  transition: transform var(--ch-msd-sw-travel, var(--ch-dur-word)) var(--ch-ease-ios), scale var(--ch-dur-press) var(--ch-ease);
+  transition: transform var(--ch-msd-sw-travel, var(--ch-dur-word)) var(--ch-ease-ios), scale var(--ch-dur-press) var(--ch-ease-out);
 }
 .ch-msd-sw .ch-switch input:checked + .ch-switch__track .ch-switch__thumb {
   transform: translateX(18px);
@@ -734,4 +734,14 @@
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
   text-align: center;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  [data-ch-ms-v2] .ch-msd-tile,
+  [data-ch-ms-v2] .ch-msd-lcard,
+  .ch-msd-vg {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

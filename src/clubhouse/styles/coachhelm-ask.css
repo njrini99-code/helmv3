@@ -107,7 +107,7 @@
   background: none;
   color: var(--ch-text-secondary);
   cursor: pointer;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-ask-head__btn.is-accent {
   color: var(--ch-green-600);
@@ -207,10 +207,10 @@
    Shown, the rail arrives on its own, fading in over base while its content slides in from the edge, inside the rail's
    own clip; hidden, it goes at once. The phone's drawer is not in the grid and keeps its own motion. */
 .ch-ask-body > .ch-ask-hist {
-  transition: opacity var(--ch-dur-base) var(--ch-ease);
+  transition: opacity var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-ask-body > .ch-ask-hist > * {
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-ask-hist.is-closed {
   padding: 0;
@@ -246,7 +246,7 @@
   background: none;
   color: var(--ch-text-secondary);
   cursor: pointer;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-ask-hist__iconbtn.is-accent {
   color: var(--ch-green-600);
@@ -274,7 +274,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-card);
   font: var(--ch-type-14-medium);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -340,7 +340,7 @@
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-ask-hist__row:hover {
@@ -401,7 +401,7 @@
   border: 0;
   border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-card);
   font: var(--ch-type-14-strong);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
@@ -427,12 +427,12 @@
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
   cursor: pointer;
-  transition: color var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out), box-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-ask-pill:hover {
     color: var(--ch-green-700);
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+    box-shadow: var(--ch-ring-accent-hairline);
   }
 }
 
@@ -521,7 +521,7 @@
   border-radius: var(--ch-radius-xl);
   background: var(--ch-sheet-bg);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-control), var(--ch-elevation-raised);
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-ask-cmp__box:focus-within {
   box-shadow: var(--ch-elevation-floating-focus);
@@ -669,7 +669,7 @@
   gap: var(--ch-space-3);
   padding: var(--ch-space-5) var(--ch-space-5) var(--ch-space-3);
   border-radius: var(--ch-radius-xl);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-sheet);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-raised);
 }
 .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box:focus-within {
   box-shadow: var(--ch-elevation-floating-focus);
@@ -841,7 +841,7 @@
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 /* The row Enter would pick: the pointer's, or the arrow keys'. The selected fill plus the control edge, so the choice
    is seen without colour (audit S1.8b, MENTION-01). */
@@ -920,7 +920,7 @@
   background: var(--ch-scrim, rgb(28 25 18 / 0.24));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
-  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease-out));
 }
 .ch-ask-hist.is-drawer {
   width: min(330px, 86vw);
@@ -1077,7 +1077,7 @@ body.keyboard-open .ch-ask-hist.is-drawer {
     color: inherit;
     text-align: left;
     cursor: pointer;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-ask-card[data-ch-pressed] {
     background: var(--ch-sel);
@@ -1155,10 +1155,10 @@ body.keyboard-open .ch-ask-hist.is-drawer {
    the next view lands, and dims once the switch has taken the busy delay, held at least the busy hold (data-ch-busy,
    lib/use-busy.ts; MOTION-AND-VISUAL 3.9). To the Board the whole chat dims; to another chat the list of chats stays crisp. */
 .ch-ask-body {
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 :where(.ch-ask-body) > * {
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-ask[aria-busy='true'][data-switch='view']:not([aria-label^='Loading']) > .ch-ask-body,
 .ch-ask[aria-busy='true']:not([aria-label^='Loading']) > .ch-ask-plain,
@@ -1305,7 +1305,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
    grey. Chips and starter questions stay the app's quiet keys and take a green hairline on hover. */
 .ch-ask-hist__new {
   background: var(--ch-accent);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-text-on-accent);
 }
 .ch-ask-hist__new svg {
@@ -1328,7 +1328,7 @@ html:not([data-fw-theme='dark']) .ch-ask {
 @media (hover: hover) {
   .ch-ask-cmp__chip:not(.is-set):hover,
   .ch-ask-cmp__round:hover {
-    box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+    box-shadow: var(--ch-ring-accent-hairline);
     color: var(--ch-green-700);
   }
 }
@@ -1425,5 +1425,19 @@ html:not([data-fw-theme='dark']) .ch-ask {
   }
   .ch-root:has(> .ch-cpv-full) .ch-ask-main {
     margin-right: max(380px, min(452px, 45vw));
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-ask-hist__new,
+  .ch-ask-hist__emptynew,
+  .ch-ask-cmp__box,
+  .ch-ask-cmp.is-hero:not(.is-phone) .ch-ask-cmp__box,
+  .ch-ask-pick,
+  .ch-ask-hist.is-drawer,
+  .ch-ask-body.has-evidence > .ch-ask-ev {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

@@ -135,7 +135,7 @@
   margin: 6px 2px 0;
   padding: var(--ch-ms-px-3) var(--ch-ms-px-9);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   font: var(--ch-type-footnote);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-flag);
@@ -164,7 +164,7 @@
   padding: var(--ch-ms-px-5) var(--ch-ms-px-10);
   border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   font: var(--ch-type-13);
   color: var(--ch-text-tertiary);
 }
@@ -173,7 +173,7 @@
 [data-ch-ms-v2] .ch-msv-hello {
   margin: 16px 0 12px;
   padding: var(--ch-ms-px-22) 16px var(--ch-ms-px-18);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 [data-ch-ms-v2] .ch-msv-hello > b {
   font: var(--ch-type-20-strong);
@@ -294,11 +294,11 @@
   inset: auto 0 0;
   z-index: var(--ch-z-raised);
   translate: 0 calc(-1 * var(--ch-ms-kb, 0px));
-  transition: translate var(--ch-dur-keyboard) var(--ch-ease-sheet);
+  transition: translate var(--ch-dur-keyboard) var(--ch-ease-ios);
 }
 [data-ch-ms-v2] :is(.ch-msp-thread, .ch-ms-thread.is-layered) .ch-msv-jump {
   translate: 0 calc(-1 * var(--ch-ms-kb, 0px));
-  transition: translate var(--ch-dur-keyboard) var(--ch-ease-sheet);
+  transition: translate var(--ch-dur-keyboard) var(--ch-ease-ios);
 }
 /* The home indicator's room stays while the composer rides (the lift is the keyboard minus it). */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
@@ -367,5 +367,15 @@ body [data-ch-ms-v2] .ch-pscreen.ch-msp-thread[data-fw-keyboard-aware][data-ch-v
   [data-ch-ms-v2] .ch-msp-thread > .ch-msp-composer,
   [data-ch-ms-v2] :is(.ch-msp-thread, .ch-ms-thread.is-layered) .ch-msv-jump {
     transition: none;
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  [data-ch-ms-v2] .ch-ms-msg__fail,
+  [data-ch-ms-v2] .ch-ms-quote,
+  [data-ch-ms-v2] .ch-msv-hello {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

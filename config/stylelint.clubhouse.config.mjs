@@ -21,6 +21,10 @@ export default {
  * - raw-shadow: a box-shadow with a layer that is not a --ch-* token (none and the no-op 0 0 0 0 transparent are fine).
  * - raw-motion: a raw duration (ms or s) or a cubic-bezier() outside tokens.css and motion.css.
  * - keyframes: an @keyframes outside motion.css.
+ * - raw-type (dsx-07): a `font` or `font-size` that reads no --ch-type-* token (a literal weight or size). New text
+ *   reads one of the nine roles (legacy-type-roles.test.ts counts the numeric steps separately).
+ * - raw-space (dsx-07): a padding, margin, gap or inset whose value holds a length that is not a --ch-* token
+ *   (0 and auto are not lengths). New spacing reads --ch-space-* or a named gap.
  *
  * Radius and shadow only fall: a lower count is recorded with `npm run clubhouse:css -- --ratchet`, so a fix can't make
  * room for a new one. Motion and keyframes are ceilings only while the motion thread moves them into motion.css (it lowers
@@ -28,6 +32,9 @@ export default {
  */
 const RADIUS_PROP = /^border(?:-(?:top|bottom|start|end)-(?:left|right|start|end))?-radius$/i;
 const SHAPE_WORDS = /^(?:0|0px|50%|100%|inherit|initial|unset|revert|revert-layer)$/i;
+const TYPE_PROP = /^(?:font|font-size)$/i;
+const SPACE_PROP = /^(?:padding|margin|gap|row-gap|column-gap|inset|scroll-padding|scroll-margin)(?:-(?:inline|block|top|right|bottom|left))?(?:-(?:start|end))?$/i;
+const KEYWORDS = /^(?:inherit|initial|unset|revert|revert-layer)$/i;
 const TOKEN_FILES = /(?:^|\/)(?:tokens|motion)\.css$/;
 
 /** True when a border-radius value is built from the steps alone. */
@@ -54,9 +61,23 @@ export function shadowIsToken(value, comma) {
 export const RAW_MOTION = /(?<![\w-])(?:\d*[1-9]\d*(?:\.\d+)?|\d*\.\d*[1-9]\d*)m?s(?![\w-])|cubic-bezier\(/i;
 
 export const systemRatchet = {
-  strict: ['raw-radius', 'raw-shadow'],
+  strict: ['raw-radius', 'raw-shadow', 'raw-type', 'raw-space'],
   ceiling: ['raw-motion', 'keyframes'],
   isRadius: (prop) => RADIUS_PROP.test(prop),
   tokenFile: (file) => TOKEN_FILES.test(file),
   motionFile: (file) => /(?:^|\/)motion\.css$/.test(file),
 };
+
+/** True when a font or font-size reads a type token (or a global keyword). */
+export function typeIsToken(value) {
+  const v = value.trim();
+  return KEYWORDS.test(v) || /var\(--ch-type-[\w-]+/.test(v);
+}
+
+/** True when a spacing value holds no raw length outside a var() (and its fallback). */
+export function spaceIsToken(value) {
+  const bare = value.replace(/var\([^()]*(?:\([^()]*\)[^()]*)*\)/g, ' ');
+  return !/(?<![\w.-])-?(?:\d*\.)?\d*[1-9]\d*(?:\.\d+)?(?:px|rem|em|pt)\b/i.test(bare);
+}
+systemRatchet.isType = (prop) => TYPE_PROP.test(prop);
+systemRatchet.isSpace = (prop) => SPACE_PROP.test(prop);

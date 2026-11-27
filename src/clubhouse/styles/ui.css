@@ -21,8 +21,8 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease),
-    box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out),
+    box-shadow var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-root .ch-btn:focus-visible {
   /* A real outline, not a box-shadow ring (premium plan batch 5, CC-6): it survives forced colours, where shadows are
@@ -503,7 +503,7 @@
   animation: none;
 }
 .ch-toast {
-  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease-sheet) backwards;
+  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease-ios) backwards;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -634,7 +634,7 @@
   min-width: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-surface--flat {
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
@@ -846,7 +846,7 @@
   font: var(--ch-type-footnote);
   color: var(--ch-green-700);
   text-decoration: none;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-backlink:hover {
@@ -908,7 +908,7 @@
   padding-inline: 12px;
   border-radius: var(--ch-radius-md);
   cursor: pointer;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it; letting go clears it
    at once, since only the pressed state carries the delay (CH-1606). */
@@ -1046,7 +1046,7 @@
   padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
-  box-shadow: var(--ch-elevation-feature);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-on-green-ink);
   text-decoration: none;
 }
@@ -1062,7 +1062,7 @@
   border-radius: inherit;
   background: rgb(2 18 10 / 0.2);
   opacity: 0;
-  transition: opacity var(--ch-dur-press) var(--ch-ease);
+  transition: opacity var(--ch-dur-press) var(--ch-ease-out);
   content: '';
   pointer-events: none;
 }
@@ -1373,7 +1373,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   background: var(--ch-scrim-deep, rgb(28 25 18 / 0.38));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
-  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease-out));
 }
 .ch-peek__panel {
   position: absolute;
@@ -1468,7 +1468,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   line-height: var(--ch-lead-label);
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: var(--ch-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-flat), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 @media (hover: hover) {
   .ch-hovercard__act:hover {
@@ -1704,7 +1704,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   background: linear-gradient(160deg, var(--ch-green-fill-700), var(--ch-green-900));
   color: var(--ch-on-fill-50);
   font: 700 14px/1 var(--ch-font-sans);
-  box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-mark);
+  box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-raised);
 }
 .ch-zn__id h2 {
   margin: 0;
@@ -1740,7 +1740,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   padding: 16px 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-plate);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-card);
 }
 .ch-znbig {
   font-size: 64px;
@@ -1997,7 +1997,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   clip-path: inset(0 0 0 clamp(0px, calc(100% - var(--ch-target-min)), var(--ch-wks-gap-max, 2px)) round var(--ch-radius-md));
   background: var(--ch-green-fill-600);
   transform: translateX(calc(var(--ch-wks-at, 0) * 100%));
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
   content: '';
   pointer-events: none;
 }
@@ -2021,7 +2021,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: inherit;
   text-decoration: none;
   touch-action: manipulation;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 :is(button, a).ch-wks__d {
   cursor: pointer;
@@ -2044,7 +2044,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   outline-offset: 2px;
 }
 .ch-wks__d.is-today:not(.is-on) {
-  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-inset);
 }
 .ch-wks__d em {
   overflow: hidden;
@@ -2055,7 +2055,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--ch-text-tertiary);
-  transition: color var(--ch-dur-base) var(--ch-ease);
+  transition: color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-wks__d b {
   font: var(--ch-type-17-medium);
@@ -2063,7 +2063,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
-  transition: color var(--ch-dur-base) var(--ch-ease);
+  transition: color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-wks__d i {
   display: flex;
@@ -2077,7 +2077,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   height: 4px;
   border-radius: 50%;
   background: var(--ch-green-500);
-  transition: background-color var(--ch-dur-base) var(--ch-ease);
+  transition: background-color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-wks__d.is-today b {
   font: var(--ch-type-17-strong);
@@ -2316,7 +2316,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-surface--feature {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
-  box-shadow: var(--ch-feature-shadow);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-feature-ink);
 }
 .ch-surface--feature .ch-surface__title {
@@ -2579,7 +2579,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-es--page:not(.ch-surface *, .ch-sheet *) {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-es__copy {
   display: flex;
@@ -3013,7 +3013,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-crh-skcard > b {
   padding: 12px 16px;
@@ -3037,4 +3037,26 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-crh-skcard__r + .ch-crh-skcard__r {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-lift::after,
+  .ch-surface,
+  .ch-popover,
+  .ch-feat,
+  :where() .ch-toast,
+  .ch-peek__card,
+  .ch-peek__menu,
+  .ch-hovercard,
+  .ch-zn__n,
+  .ch-zn__read,
+  .ch-line__tip,
+  .ch-app[data-ch-refresh='on'] .ch-surface--feature,
+  .ch-surface--feature,
+  .ch-es--page:not(.ch-surface *, .ch-sheet *),
+  .ch-crh-skcard {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

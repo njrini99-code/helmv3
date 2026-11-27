@@ -237,7 +237,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-lu-slot,
 .ch-tour-lu-r {
@@ -394,4 +394,13 @@
   flex: 1 1 auto;
   max-width: 190px;
   margin-left: auto;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-lu-slots,
+  .ch-tour-lu-roster {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

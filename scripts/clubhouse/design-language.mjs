@@ -3,7 +3,7 @@
  * The token tables in design/refresh/DESIGN_LANGUAGE.md, generated from src/clubhouse/styles/tokens.css.
  *
  * DESIGN_LANGUAGE.md is the Clubhouse design system: the laws and rules are prose, and every value it quotes (page,
- * cards, ink, edges, chart marks, keys, the toggle, the three elevations, radii and type roles) comes from this
+ * cards, ink, edges, chart marks, keys, the toggle, the four named elevations, motion roles, radii and type roles) comes from this
  * script, with its WCAG contrast measured against the card and the page in both themes. A value changes in
  * tokens.css, never in the doc; `clubhouse:check` fails when the block and the tokens drift apart.
  *
@@ -163,9 +163,20 @@ const TOGGLE = [
   ['--ch-seg-on-ink', 'The pill label'],
 ];
 const ELEVATION = [
-  ['--ch-elevation-card', 'Card: every card (MOTION-AND-VISUAL 4.6). Flat, the page, is none'],
-  ['--ch-elevation-raised', 'Raised: sheets, menus, the palette, pins, toasts (MOTION-AND-VISUAL 4.6)'],
+  ['--ch-elevation-flat', 'Flat: on the surface, no lift (pills, chips, strips, bubbles)'],
+  ['--ch-elevation-card', 'Card: every card (MOTION-AND-VISUAL 4.6)'],
+  ['--ch-elevation-raised', 'Raised: menus, the palette, pins, a lifted control (MOTION-AND-VISUAL 4.6)'],
+  ['--ch-elevation-overlay', 'Overlay: sheets, dialogs, popovers, toasts (the raised step today)'],
   ['--ch-scrim', 'The scrim under a sheet or dialog'],
+];
+const MOTION_ROLES = [
+  ['--ch-motion-press-in', 'A press going down'],
+  ['--ch-motion-press-out', 'A press let go'],
+  ['--ch-motion-popup-in', 'A menu, popover or toast arriving'],
+  ['--ch-motion-popup-out', 'One leaving'],
+  ['--ch-motion-sheet-in', 'A sheet or pushed panel rising'],
+  ['--ch-motion-sheet-out', 'One leaving'],
+  ['--ch-motion-page', 'A push or a pop'],
 ];
 const TYPE = [
   ['--ch-type-large-title', 'Large title: the page title'],
@@ -277,9 +288,13 @@ export function renderTokenTables(css) {
     '',
     valueTable(tokens, TOGGLE),
     '',
-    '#### The three elevations',
+    '#### The four named elevations',
     '',
     valueTable(tokens, ELEVATION, { expandVars: true }),
+    '',
+    '#### Motion roles',
+    '',
+    valueTable(tokens, MOTION_ROLES, { expandVars: true }),
     '',
     '#### Radii',
     '',

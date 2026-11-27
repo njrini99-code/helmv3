@@ -35,7 +35,7 @@ function useSheetDialog(open: boolean, onClose: () => void, guard?: { busy?: boo
   const springBack = () => {
     const d = ref.current;
     if (!d) return;
-    d.style.transition = 'translate var(--ch-dur-base) var(--ch-ease)';
+    d.style.transition = 'translate var(--ch-dur-base) var(--ch-ease-out)';
     d.style.translate = '';
   };
   const requestClose = () => {

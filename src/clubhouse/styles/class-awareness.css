@@ -584,3 +584,11 @@
   overflow: hidden;
   clip-path: inset(50%);
 }
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-ca-pop {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}

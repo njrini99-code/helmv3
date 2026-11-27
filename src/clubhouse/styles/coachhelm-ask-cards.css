@@ -283,7 +283,7 @@
 .ch-akg-card__hd { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; border-bottom: var(--ch-hairline-w) solid var(--ch-border-hairline); }
 .ch-akg-card__hd > b { font: var(--ch-type-13-strong); color: var(--ch-text-primary); }
 .ch-akg-card__sum { margin: 0; font: var(--ch-type-17-strong); letter-spacing: var(--ch-track-17); text-wrap: balance; overflow-wrap: anywhere; }
-.ch-akg-card__body { transition: opacity var(--ch-dur-quick) var(--ch-ease); }
+.ch-akg-card__body { transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-akg-card__body[data-dim] { opacity: 0.55; }
 .ch-akg-card__ft { display: flex; flex-direction: column; gap: 8px; }
 .ch-akg-card__ft:empty { display: none; }
@@ -328,3 +328,13 @@
 .ch-akg-batch[data-density='compact'] { max-width: 361px; }
 .ch-akg-isl { position: relative; width: 100%; max-width: 640px; min-height: 380px; border-radius: var(--ch-radius-lg); background: var(--ch-well-bg-flat); }
 .ch-akg-isl[data-density='compact'] { max-width: 361px; }
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-akc-all,
+  .ch-akg-plain,
+  .ch-akg-card {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}

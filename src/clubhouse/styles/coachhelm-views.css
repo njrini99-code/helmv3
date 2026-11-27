@@ -42,10 +42,10 @@
   line-height: var(--ch-lead-tight);
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* The tap area reaches 44 x 44 without changing how the chip is drawn. */
 .ch-hv-chip::after {
@@ -107,7 +107,7 @@
   padding: 24px 24px 8px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-50);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hv-next h3 {
   font: var(--ch-type-14-strong);
@@ -130,7 +130,7 @@
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
   text-decoration: none;
-  transition: color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-hv-link span {
   display: flex;
@@ -149,7 +149,7 @@
 .ch-hv-link svg {
   flex: none;
   color: var(--ch-green-600);
-  transition: translate var(--ch-dur-quick) var(--ch-ease);
+  transition: translate var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-hv-link:hover svg {

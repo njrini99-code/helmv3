@@ -288,7 +288,7 @@
   align-items: center;
   padding: 16px 4px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* CH-13602: hovering a row or a player tints it (quick). */
 @media (hover: hover) {
@@ -361,7 +361,7 @@
   padding: 20px 24px 6px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hl-prop ul {
   list-style: none;
@@ -431,7 +431,7 @@
   padding: 16px 20px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-text-secondary);
   font: var(--ch-type-14);
 }
@@ -469,7 +469,7 @@
   padding: 32px 32px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hl-sk__tabs {
   display: flex;
@@ -725,7 +725,7 @@
    board's views here, the Team page (coachhelm-team.css), Ask (coachhelm-ask.css) and Your week (coachhelm-file.css).
    Reduced motion shortens the ease to nothing (base.css). The ease is `:where`, so a child's own transition still wins. */
 :where(.ch-hl) > * {
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-hl[aria-busy='true']:not([aria-label^='Loading']) > :not(.ch-hl-h):not([data-ch-strip]) {
   pointer-events: none;
@@ -894,7 +894,7 @@
     inset 0 1px 0 color-mix(in oklab, var(--ch-light-rim) 55%, transparent),
     inset var(--ch-light-rim-x) 0 0 color-mix(in oklab, var(--ch-light-rim) 40%, transparent),
     inset 0 -1px 0 rgb(0 0 0 / 0.18),
-    var(--ch-elevation-feature);
+    var(--ch-elevation-card);
   color: var(--ch-on-green-ink);
 }
 :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__k {
@@ -1144,7 +1144,7 @@
   }
   /* Also worth knowing: the chevron leans toward the row on hover. */
   .ch-hl[data-canopy] .ch-hl-row svg {
-    transition: transform var(--ch-dur-quick) var(--ch-ease);
+    transition: transform var(--ch-dur-quick) var(--ch-ease-out);
   }
   @media (hover: hover) {
     .ch-hl[data-canopy] .ch-hl-row:hover svg {
@@ -1433,7 +1433,7 @@ html:not([data-fw-theme='dark']) .ch-hl {
   font: var(--ch-type-13-strong);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), border-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out), border-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-hl-cx__c.is-on {
   border-color: var(--ch-border-strong);
@@ -1576,5 +1576,16 @@ html:not([data-fw-theme='dark']) .ch-hl {
   .ch-hl[data-canopy] > .ch-hl-h.is-aside-title > .ch-hl-h__aside {
     grid-row: 1 / span 2;
     padding-bottom: 6px;
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-hl-prop,
+  .ch-hl-dis,
+  .ch-hl-sk__card,
+  :is(.ch-hl.is-phone, .ch-hl[data-canopy]) .ch-hl-focus__head {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

@@ -270,7 +270,7 @@
   opacity: 0;
   pointer-events: none;
   transform: translateY(4px) scale(0.96);
-  transition: opacity var(--ch-mso-hb-fade) linear, transform var(--ch-mso-hb-move) var(--ch-ease);
+  transition: opacity var(--ch-mso-hb-fade) linear, transform var(--ch-mso-hb-move) var(--ch-ease-out);
 }
 :where(.ch-ms-msg:not(.is-mine)) .ch-msv-hoverbar {
   right: -64px;
@@ -576,7 +576,7 @@ button.ch-msv-seen::before {
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-mss .ch-seen-list.is-v2 .ch-seen-sec__h {
   position: static;
@@ -644,5 +644,13 @@ button.ch-msv-seen::before {
     left: 50%;
     width: max(100% + 4px, 44px);
     transform: translateX(-50%);
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-mss .ch-seen-sec {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

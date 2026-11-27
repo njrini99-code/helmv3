@@ -18,7 +18,7 @@
   outline-offset:2px;
   border-radius: var(--ch-radius-sm);}
 .ch-htb .tapp {
-  transition:background-color var(--ch-dur-release) var(--ch-ease);
+  transition:background-color var(--ch-dur-release) var(--ch-ease-out);
 }
 /* Rows tint, they don't scale (lib/press.ts). */
 .ch-htb .tapp[data-ch-pressed] {
@@ -52,7 +52,7 @@
   border:0;
   background:var(--ch-card-bg);
   border-radius: var(--ch-radius-lg);
-  box-shadow:var(--ch-card-shadow);
+  box-shadow:var(--ch-elevation-card);
   overflow:hidden;
 }
 .ch-htb .ch {
@@ -188,7 +188,7 @@
   padding:16px 16px 12px;
   position:relative;
   overflow:hidden;
-  box-shadow:var(--ch-feature-shadow);
+  box-shadow:var(--ch-elevation-card);
 }
 .ch-htb .feat .hk {
   font: var(--ch-type-14-medium);
@@ -273,13 +273,13 @@
 .ch-htb .stn {
   cursor:pointer;
   transform-box:view-box;
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-quick) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-htb .stn .halo {
   fill:color-mix(in srgb, var(--ch-feature-loss) 17%, transparent);
   stroke:var(--ch-feature-loss);
   stroke-width:1.5;
-  transition:fill var(--ch-dur-base) var(--ch-ease),stroke-width var(--ch-dur-base) var(--ch-ease);
+  transition:fill var(--ch-dur-base) var(--ch-ease-out),stroke-width var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-htb .stn .core {
   fill:var(--ch-feature-loss);
@@ -439,7 +439,7 @@
   text-align:center;
   font: var(--ch-type-footnote);
   color:var(--ch-feature-ink-2);
-  transition:background-color var(--ch-dur-base) var(--ch-ease),color var(--ch-dur-base) var(--ch-ease);
+  transition:background-color var(--ch-dur-base) var(--ch-ease-out),color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-htb .stchips button b.is-gain {
   color:var(--ch-chart-gain);
@@ -470,7 +470,7 @@
   color:var(--ch-feature-ink);
   font-weight:var(--ch-fw-500);}
 .ch-htb .hole .stn {
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-base) var(--ch-ease);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios),opacity var(--ch-dur-base) var(--ch-ease-out);
 }
 /* Off the hole, a station and a coin step back but stay marks: .6 holds a station core at 3.2:1 and .65 a coin's ink
    ring at 5.1:1 on the stage's lightest green (charts contrast pass, 16 Nov). */
@@ -480,7 +480,7 @@
 /* Only the disc steps back: its initials keep full ink (L-010: faded text read 2.7:1). */
 .ch-htb .hole.offh .scn circle {
   opacity:.65;
-  transition:opacity var(--ch-dur-base) var(--ch-ease);
+  transition:opacity var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-htb .stchips button[aria-pressed="true"] {
   background:color-mix(in srgb, var(--ch-feature-ink) 10%, transparent);
@@ -547,7 +547,7 @@
   top:0;
   bottom:0;
   border-radius: var(--ch-radius-sm);
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .br .bf.l {
   background:var(--ch-chart-loss-fill);
@@ -1226,7 +1226,7 @@
   inset:0;
   background:var(--ch-scrim);
   opacity:0;
-  transition:opacity var(--ch-dur-release) var(--ch-ease);
+  transition:opacity var(--ch-dur-release) var(--ch-ease-out);
 }
 .ch-htb .rs .pan {
   position:absolute;
@@ -1239,8 +1239,8 @@
   background:var(--ch-bg-page);
   border-radius: var(--ch-radius-xl) var(--ch-radius-xl) 0 0;
   transform:translateY(105%);
-  transition:transform var(--ch-dur-release) var(--ch-ease);
-  box-shadow:var(--ch-shadow-lg);
+  transition:transform var(--ch-dur-release) var(--ch-ease-out);
+  box-shadow:var(--ch-elevation-raised);
 }
 .ch-htb .rs.on {
   pointer-events:auto;
@@ -1250,7 +1250,7 @@
 }
 .ch-htb .rs.on .pan {
   transform:none;
-  transition:transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .ins {
   display:grid;
@@ -1326,7 +1326,7 @@
   inset:0 auto 0 0;
   border-radius: var(--ch-radius-sm);
   background:var(--ch-chart-flat);
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 /* A signed figure's zero rule: a loss runs left of it (CH-23). */
 .ch-htb .ld .t b {
@@ -1411,12 +1411,12 @@
   flex-direction:column;
   padding:calc(env(safe-area-inset-top) + 12px) var(--ch-page-x-phone, 16px) calc(env(safe-area-inset-bottom) + 32px);
   transform:translateY(102%);
-  transition:transform var(--ch-dur-release) var(--ch-ease);
+  transition:transform var(--ch-dur-release) var(--ch-ease-out);
   pointer-events:none;
 }
 .ch-htb .story.on {
   transform:none;
-  transition:transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios);
   pointer-events:auto;
 }
 .ch-htb .prog {
@@ -1550,7 +1550,7 @@
   border-radius: var(--ch-radius-sm);
   background:var(--ch-feature-loss);
   width:0;
-  transition:transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .sbar2 .t i.g {
   background:var(--ch-feature-gain);
@@ -1804,16 +1804,16 @@
   width:min(420px, 50vw);
   padding-bottom:env(safe-area-inset-bottom);
   background:var(--ch-bg-page);
-  box-shadow:-1px 0 0 var(--ch-separator),var(--ch-shadow-lg);
+  box-shadow:-1px 0 0 var(--ch-separator),var(--ch-elevation-raised);
   transform:translateX(102%);
-  transition:transform var(--ch-dur-release) var(--ch-ease);
+  transition:transform var(--ch-dur-release) var(--ch-ease-out);
   overflow-y:auto;
   z-index:4;
   --ch-page-x-phone: var(--ch-space-5);
 }
 .ch-htb .insp.on {
   transform:none;
-  transition:transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  transition:transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .insp .ins {
   padding-top:16px;
@@ -1881,7 +1881,7 @@
 
 /* The bars scale from the zero line; no width, left or right moves (AC-SPOT-04). */
 .ch-htb .br .bf {
-  transition: transform var(--ch-dur-reveal) var(--ch-ease-spring-smooth);
+  transition: transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 .ch-htb .br .bf.l {
   right: 16%;
@@ -2021,15 +2021,15 @@
   stroke-dasharray: none;
 }
 .ch-htb .scn {
-  transition: opacity var(--ch-dur-base) var(--ch-ease);
+  transition: opacity var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-htb .insp {
   transform: translateX(102%);
-  transition: transform var(--ch-dur-release) var(--ch-ease);
+  transition: transform var(--ch-dur-release) var(--ch-ease-out);
 }
 .ch-htb .insp.on {
   transform: none;
-  transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth);
+  transition: transform var(--ch-dur-reveal) var(--ch-ease-ios);
 }
 /* The viewer a tap opens rises from below over the reveal beat on the iOS curve; each story's body arrives 24px from the
    trailing side over the base beat. Both on motion.css's ch-arrive (3.12). */
@@ -2285,7 +2285,7 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 /* The sub-tabs: what's leaving dims and stops answering while the next view loads, and the view that lands rises from that same
    dim, as the other CoachHelm views do (MOT-13). The switch itself, in the top bar, doesn't change. */
 :where(.ch-htb) > * {
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-htb[aria-busy='true']:not([aria-label^='Loading']) > * {
   pointer-events: none;
@@ -2437,4 +2437,15 @@ html[data-fw-theme='dark'] .ch-htb .scn circle {
 }
 .ch-htb .card > .ch .meta {
   color: var(--ch-feature-ink-2);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-htb .card,
+  .ch-htb .feat,
+  .ch-htb .rs .pan,
+  .ch-htb .insp {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

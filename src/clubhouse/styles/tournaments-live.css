@@ -34,7 +34,7 @@
   padding: 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-live-team__v {
   min-width: 72px;
@@ -67,7 +67,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-live-lanes {
   display: grid;
@@ -348,4 +348,14 @@
 .ch-tour-live-hs__w {
   font: var(--ch-type-12);
   text-align: center;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-live-team,
+  .ch-tour-live-lanes,
+  .ch-tour-live-field {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

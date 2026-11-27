@@ -12,7 +12,7 @@
   --ch-hf-a-accent: var(--ch-green-600);
   --ch-hf-a-sep: var(--ch-separator);
   --ch-hf-a-ring: var(--ch-border-hairline);
-  --ch-hf-a-shadow: var(--ch-card-shadow);
+  --ch-hf-a-shadow: var(--ch-elevation-card);
   --ch-hf-a-feat: var(--ch-feature-bg);
   --ch-hf-a-feat-1: var(--ch-feature-ink);
   --ch-hf-a-feat-2: var(--ch-feature-ink-2);
@@ -110,7 +110,7 @@
 .ch-hf .ch-hf-why { margin: 0; font: var(--ch-type-15); letter-spacing: var(--ch-track-15); }
 .ch-hf .ch-hf-whym { margin: 8px 0 0; font: var(--ch-type-13-strong); color: var(--ch-hf-a-ink-2); }
 .ch-hf .ch-hf-cx { padding: 12px; }
-.ch-hf .hs__s .fill { transition: transform var(--ch-dur-base) var(--ch-ease); }
+.ch-hf .hs__s .fill { transition: transform var(--ch-dur-base) var(--ch-ease-out); }
 /* The app's global .card draws a border; the shared card recipe's ring is this card's only edge. */
 .ch-hf .card { position: relative; border: 0; border-radius: var(--ch-radius-lg); background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-1); overflow: hidden; }
 .ch-hf .card__h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 16px 16px 12px; }
@@ -181,7 +181,7 @@
 .ch-hf .hs__s i { position: absolute; top: 0; left: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--ch-hf-a-card); box-shadow: inset 0 0 0 2px var(--ch-hf-c-track); display: grid; place-items: center; }
 .ch-hf .hs__s.on i { background: var(--ch-hf-c-gain); box-shadow: none; }
 .ch-hf .hs__s i { transition: background-color var(--ch-dur-quick) var(--ch-ease-out), box-shadow var(--ch-dur-quick) var(--ch-ease-out); }
-.ch-hf .hs__s i svg { width: 9px; height: 9px; stroke: var(--ch-text-on-accent); stroke-width: 3.2; stroke-dasharray: 14; stroke-dashoffset: 14; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-dur-press) var(--ch-ease); }
+.ch-hf .hs__s i svg { width: 9px; height: 9px; stroke: var(--ch-text-on-accent); stroke-width: 3.2; stroke-dasharray: 14; stroke-dashoffset: 14; transition: stroke-dashoffset var(--ch-dur-base) var(--ch-dur-press) var(--ch-ease-out); }
 .ch-hf .hs__s.on i svg { stroke-dashoffset: 0; }
 .ch-hf .hs__s b { font: var(--ch-type-15-strong); letter-spacing: var(--ch-track-15); }
 .ch-hf .hs__s small { font: var(--ch-type-13); color: var(--ch-hf-a-ink-3);  }
@@ -251,7 +251,7 @@
 .ch-hf .cx__k { margin: 0; font: var(--ch-type-13-strong);  color: var(--ch-hf-a-ink-2); }
 .ch-hf .corr, .ch-hf .cx__why { display: flex; flex-wrap: wrap; gap: 8px; }
 .ch-hf .cx__why { padding: 8px; border-radius: var(--ch-radius-md); background: var(--ch-hf-a-well); }
-.ch-hf .corr button, .ch-hf .cx__why button { display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border: var(--ch-hairline-w) solid var(--ch-hf-a-sep); border-radius: var(--ch-radius-full); background: var(--ch-card-bg); font: var(--ch-type-13-strong);  color: var(--ch-hf-a-ink); cursor: pointer; transition: background-color var(--ch-dur-quick) var(--ch-ease), border-color var(--ch-dur-quick) var(--ch-ease); }
+.ch-hf .corr button, .ch-hf .cx__why button { display: inline-flex; align-items: center; min-height: 36px; padding: 0 16px; border: var(--ch-hairline-w) solid var(--ch-hf-a-sep); border-radius: var(--ch-radius-full); background: var(--ch-card-bg); font: var(--ch-type-13-strong);  color: var(--ch-hf-a-ink); cursor: pointer; transition: background-color var(--ch-dur-quick) var(--ch-ease-out), border-color var(--ch-dur-quick) var(--ch-ease-out); }
 .ch-hf .corr button.is-on { border-color: var(--ch-hf-a-accent); background: var(--ch-selected-tint); }
 .ch-hf .corr button[data-ch-pressed], .ch-hf .cx__why button[data-ch-pressed] { background: var(--ch-hf-a-press); }
 .ch-hf .cx.is-done { flex-direction: row; align-items: center; justify-content: space-between; }
@@ -330,9 +330,9 @@
 .ch-hf {
   --ch-file-shadow-1: var(--ch-hf-a-shadow);
   --ch-file-shadow-2: var(--ch-hf-a-shadow), inset 0 0 0 999px var(--ch-hf-a-press);
-  --ch-file-shadow-3: var(--ch-feature-shadow);
+  --ch-file-shadow-3: var(--ch-elevation-card);
   --ch-file-shadow-4: 0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring);
-  --ch-file-shadow-5: inset 0 0 0 999px color-mix(in srgb, var(--ch-ivory-0) 5%, transparent), var(--ch-feature-shadow);
+  --ch-file-shadow-5: inset 0 0 0 999px color-mix(in srgb, var(--ch-ivory-0) 5%, transparent), var(--ch-elevation-card);
   --ch-file-shadow-6: var(--ch-crh-btn-shadow);
   --ch-file-shadow-7: none;
 }

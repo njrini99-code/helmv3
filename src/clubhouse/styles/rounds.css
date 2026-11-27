@@ -211,7 +211,7 @@
   white-space: nowrap;
   background: var(--ch-raised-bg);
   box-shadow: var(--ch-btn-secondary-shadow);
-  transition: transform var(--ch-dur-press) var(--ch-ease);
+  transition: transform var(--ch-dur-press) var(--ch-ease-out);
 }
 .ch-rd-unf__cta[data-ch-pressed] {
   transform: translateY(1px);
@@ -250,7 +250,7 @@
   padding: 20px 24px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rd-season.is-empty {
   display: flex;
@@ -541,7 +541,7 @@
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-shadow-sm);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rd-more h2 {
   margin: 0 0 6px;
@@ -710,17 +710,17 @@
   background: var(--ch-sheet-bg);
   color: inherit;
   text-decoration: none;
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   transition:
-    box-shadow var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-quick) var(--ch-ease);
+    box-shadow var(--ch-dur-quick) var(--ch-ease-out),
+    transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* Off the Ledger (a narrow window), a round card that opens its review lifts 1px with a deeper shadow on hover (quick);
    on the desktop Ledger it takes the row tint instead (CH-11601, below). */
 @media (hover: hover) {
   a.ch-rd-sc:hover {
     transform: translateY(-1px);
-    box-shadow: var(--ch-elevation-row-card-hover);
+    box-shadow: var(--ch-elevation-card);
   }
 }
 a.ch-rd-sc:focus-visible {
@@ -1624,7 +1624,7 @@ a.ch-rd-sc:focus-visible {
   border-radius: var(--ch-radius-sm);
   background: #bfb59c;
   transform: translateX(calc((var(--ch-rv-p, 0) - 1) * 100%));
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-rv-dist__r.is-birdie i,
 .ch-rv-dist__r.is-eagle i {
@@ -1880,7 +1880,7 @@ a.ch-rd-sc:focus-visible {
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-trd-tr {
   position: relative;
@@ -1892,7 +1892,7 @@ a.ch-rd-sc:focus-visible {
   padding: var(--ch-space-2) var(--ch-space-5);
   font: var(--ch-type-14);
   color: var(--ch-text-secondary);
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 .ch-trd-tbl.is-by-player .ch-trd-tr {
   grid-template-columns: 64px minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) 56px 56px 16px;
@@ -2194,7 +2194,7 @@ a.ch-trd-open:focus-visible {
     padding: 16px 16px 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
+    box-shadow: var(--ch-elevation-card);
   }
   /* A notice on the card (the round couldn't be checked, its scores or its posting didn't load) takes the on-green inks,
      as on the shared feature card (shell.css); the card's own padding insets it. */
@@ -2311,7 +2311,7 @@ a.ch-trd-open:focus-visible {
     border-radius: 0;
     background: none;
     box-shadow: none;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-rd.is-phone .ch-rd-sc + .ch-rd-sc {
     box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-ledger-rule-soft);
@@ -2359,7 +2359,7 @@ a.ch-trd-open:focus-visible {
     padding: 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-feature-bg);
-    box-shadow: var(--ch-elevation-feature);
+    box-shadow: var(--ch-elevation-card);
   }
   .ch-rv.is-phone .ch-rv-hero h1,
 .ch-rv.is-phone .ch-rv-hero h2,
@@ -2750,7 +2750,7 @@ html[data-fw-theme='dark'] .ch-rv-figs > div + div {
   border-left-color: rgb(107 187 140 / 0.12);
 }
 html[data-fw-theme='dark'] .ch-rv-card {
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 html[data-fw-theme='dark'] .ch-rv-lie.is-fairway,
 html[data-fw-theme='dark'] .ch-rv-lie.is-green,
@@ -2810,7 +2810,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     box-shadow: none;
     font: var(--ch-type-footnote);
     color: var(--ch-green-700);
-    transition: background-color var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
   }
   @media (hover: hover) {
     .ch-rv[data-canopy] .ch-rv-back:hover {
@@ -2911,7 +2911,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   padding: 4px 6px 6px;
   border-radius: var(--ch-radius-lg);
   background: linear-gradient(180deg, var(--ch-green-800), var(--ch-green-900));
-  box-shadow: var(--ch-elevation-feature);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-on-green-ink);
 }
 .ch-rv .ch-rv-nine tr + tr > * {
@@ -2991,7 +2991,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rv-nine tbody tr:not(.is-par) td.is-sel:not(:empty) {
   background: var(--ch-ivory-0);
-  box-shadow: inset 0 0 0 2px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-strong);
 }
 @media (hover: hover) {
   .ch-rv .ch-rv-nine tbody tr:not(.is-par) td[data-hole]:not(.is-sel):hover {
@@ -3195,8 +3195,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     color: var(--ch-green-700);
     box-shadow: var(--ch-btn-secondary-shadow);
     transition:
-      transform var(--ch-dur-press) var(--ch-ease),
-      box-shadow var(--ch-dur-quick) var(--ch-ease);
+      transform var(--ch-dur-press) var(--ch-ease-out),
+      box-shadow var(--ch-dur-quick) var(--ch-ease-out);
   }
   @media (hover: hover) {
     .ch-rd[data-canopy] .ch-rd-unf__cta:hover {
@@ -3329,7 +3329,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    transition: background-color var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-rd[data-canopy] .ch-rd-sc + .ch-rd-sc::before {
     position: absolute;
@@ -3902,7 +3902,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background:
     var(--ch-stage-bg);
   box-shadow:
-    var(--ch-elevation-feature);
+    var(--ch-elevation-card);
 }
 .ch-rv .ch-rzstage {
   padding: 24px 24px 16px;
@@ -3999,25 +3999,25 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-zn .ch-rv-sg__v.is-gain {
   background: var(--ch-chart-gain-fill);
-  box-shadow: var(--ch-elevation-mark);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-rv .ch-zn .ch-rv-sg__v.is-loss {
   background: var(--ch-chart-loss-fill);
-  box-shadow: var(--ch-elevation-mark-warn);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-rv .ch-zn .ch-rv-dist__t i {
-  box-shadow: var(--ch-elevation-mark-ink);
+  box-shadow: var(--ch-elevation-raised);
 }
 
 /* fairway and green marks */
 .ch-rv .ch-rzhit__c i {
   width: 22px;
   height: 22px;
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rv .ch-rzhit__c.is-hit i {
   background: radial-gradient(circle at 35% 30%, var(--ch-green-400), var(--ch-green-800));
-  box-shadow: var(--ch-elevation-mark);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-rv .ch-rzhit__c.is-miss i {
   border: 2px solid var(--ch-champagne-500);
@@ -4032,7 +4032,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 /* putts a hole and first putts */
 .ch-rv .ch-rzpt__c i {
   background: linear-gradient(180deg, var(--ch-ivory-300), var(--ch-ivory-400));
-  box-shadow: var(--ch-elevation-mark-ink);
+  box-shadow: var(--ch-elevation-raised);
 }
 .ch-rv .ch-rzpt__c i.is-one {
   background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
@@ -4062,10 +4062,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background: linear-gradient(160deg, var(--ch-ivory-0), var(--ch-ivory-200));
   box-shadow:
     inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong),
-    var(--ch-elevation-mark-ink);
+    var(--ch-elevation-raised);
 }
 .ch-rv .ch-rzcost button {
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 
 /* the hero and its figures */
@@ -4075,7 +4075,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     linear-gradient(160deg, #0f4430, #082b1c);
   box-shadow:
     inset 0 -3px 0 var(--ch-champagne-500),
-    var(--ch-elevation-feature);
+    var(--ch-elevation-card);
 }
 /* Solid ivory (premium plan M4, Round review): gradient-clipped type ran to banned near-white and lost legibility at night. */
 .ch-rv-hero__s b {
@@ -4085,7 +4085,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-50));
   box-shadow:
     inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong),
-    var(--ch-elevation-plate);
+    var(--ch-elevation-card);
 }
 .ch-rv-figs > div + div {
   border-left-color: rgb(176 149 96 / 0.35);
@@ -4114,7 +4114,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzdot__halo {
   opacity: 0.16;
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rv .ch-rzdot.is-hot .ch-rzdot__halo {
   opacity: 0.34;
@@ -4123,8 +4123,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   opacity: 0;
   translate: calc(var(--ch-rz-x, 0) * 1cqw) 4px;
   transition:
-    opacity var(--ch-dur-quick) var(--ch-ease),
-    translate var(--ch-dur-quick) var(--ch-ease);
+    opacity var(--ch-dur-quick) var(--ch-ease-out),
+    translate var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rv .ch-rzstage__tip.is-on {
   opacity: 1;
@@ -4143,13 +4143,13 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 /* values that change under the pointer or the filter glide to their new length, on transform (the scoring distribution's
    bars keep their own slide). The strokes-gained bars are sized inline and do not glide. */
 .ch-rv .ch-rzrow__t i {
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-rv .ch-rzpt__c i {
   transition:
-    transform var(--ch-dur-base) var(--ch-ease),
-    opacity var(--ch-dur-quick) var(--ch-ease),
-    filter var(--ch-dur-quick) var(--ch-ease);
+    transform var(--ch-dur-base) var(--ch-ease-out),
+    opacity var(--ch-dur-quick) var(--ch-ease-out),
+    filter var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rv .ch-rzpt:hover .ch-rzpt__c:not(:hover) i {
@@ -4171,8 +4171,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzcost button {
   transition:
-    background-color var(--ch-dur-quick) var(--ch-ease),
-    transform var(--ch-dur-release) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease-out),
+    transform var(--ch-dur-release) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rv .ch-rzcost button:hover .ch-rzcost__n {
@@ -4183,8 +4183,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rv .ch-rzcost__n {
   transition:
-    background-color var(--ch-dur-quick) var(--ch-ease),
-    color var(--ch-dur-quick) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease-out),
+    color var(--ch-dur-quick) var(--ch-ease-out);
 }
 
 /* ==========================================================================================================================
@@ -4274,7 +4274,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   box-shadow:
     0 0 0 2px var(--ch-workspace),
     0 0 0 3.5px var(--ch-champagne-500),
-    var(--ch-elevation-mark);
+    var(--ch-elevation-raised);
 }
 .ch-rd .ch-rd-range b {
   top: -4px;
@@ -4288,8 +4288,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 .ch-rd .ch-rd-putts i {
   border-radius: var(--ch-radius-sm);
   background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
-  box-shadow: var(--ch-elevation-mark);
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  box-shadow: var(--ch-elevation-raised);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-rd .ch-rd-putts b {
   top: -5px;
@@ -4307,7 +4307,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rd .ch-rd-greens i.is-hit {
   background: linear-gradient(180deg, var(--ch-green-400), var(--ch-green-700));
-  box-shadow: var(--ch-elevation-mark);
+  box-shadow: var(--ch-elevation-raised);
 }
 @media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
   .ch-rd[data-canopy] .ch-rd-season__big {
@@ -4364,7 +4364,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   background:
     var(--ch-stage-bg);
   box-shadow:
-    var(--ch-elevation-feature);
+    var(--ch-elevation-card);
   color: var(--ch-rd-ink);
 }
 .ch-rd .ch-rd-stage__h {
@@ -4490,15 +4490,15 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   transform-box: fill-box;
   transform-origin: 50% 100%;
   transition:
-    transform var(--ch-dur-base) var(--ch-ease),
-    opacity var(--ch-dur-quick) var(--ch-ease),
-    filter var(--ch-dur-quick) var(--ch-ease);
+    transform var(--ch-dur-base) var(--ch-ease-out),
+    opacity var(--ch-dur-quick) var(--ch-ease-out),
+    filter var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rd .ch-rd-rib__bar.is-down {
   transform-origin: 50% 0%;
 }
 .ch-rd .ch-rd-rib__v {
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rd .ch-rd-rib__g.is-dim .ch-rd-rib__bar,
 .ch-rd .ch-rd-rib__g.is-dim .ch-rd-rib__v {
@@ -4535,8 +4535,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   transform: translateX(-50%);
   translate: calc(var(--ch-rd-x, 0) * 1cqw) 4px;
   transition:
-    opacity var(--ch-dur-quick) var(--ch-ease),
-    translate var(--ch-dur-quick) var(--ch-ease);
+    opacity var(--ch-dur-quick) var(--ch-ease-out),
+    translate var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rd .ch-rd-rib__tip.is-on {
   opacity: 1;
@@ -4600,7 +4600,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   box-shadow:
     var(--ch-board-shadow),
     0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong),
-    var(--ch-elevation-board);
+    var(--ch-elevation-card);
 }
 .ch-rd[data-canopy] .ch-rd-unf__f > span:first-child {
   display: inline-flex;
@@ -4623,7 +4623,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   font-variation-settings: 'wdth' 88;
 }
 .ch-rd .ch-rd-unf__cta svg {
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rd .ch-rd-unf__cta:hover svg {
@@ -4638,8 +4638,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
 }
 .ch-rd .ch-rd-more__go {
   transition:
-    background-color var(--ch-dur-quick) var(--ch-ease),
-    box-shadow var(--ch-dur-quick) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease-out),
+    box-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 
 /* ---- The book ---- */
@@ -4712,7 +4712,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rd[data-canopy] .ch-rd-sc__c > b {
     font-size: 17px;
-    transition: color var(--ch-dur-quick) var(--ch-ease);
+    transition: color var(--ch-dur-quick) var(--ch-ease-out);
   }
   /* Out, In and Tot: a small hung board, the review's scorecard in miniature. The totals hang on ivory plates; the total is gilt. */
   .ch-rd[data-canopy] .ch-rd-sc__grid {
@@ -4723,8 +4723,8 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     background: linear-gradient(180deg, #0f4a2f, #082b1c);
     box-shadow:
       0 0 0 1px var(--ch-green-900),
-      var(--ch-elevation-board);
-    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+      var(--ch-elevation-card);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-rd[data-canopy] .ch-rd-sc__grid > span {
     height: 42px;
@@ -4754,7 +4754,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   }
   .ch-rd[data-canopy] .ch-rd-meter__t i {
     background: linear-gradient(90deg, var(--ch-green-400), var(--ch-green-700));
-    transition: transform var(--ch-dur-base) var(--ch-ease);
+    transition: transform var(--ch-dur-base) var(--ch-ease-out);
   }
   .ch-rd[data-canopy] .ch-rd-meter__t.is-p i {
     background: linear-gradient(90deg, var(--ch-champagne-300), var(--ch-champagne-500));
@@ -4784,7 +4784,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
     .ch-rd[data-canopy] a.ch-rd-sc:hover .ch-rd-sc__grid {
       box-shadow:
         0 0 0 1px var(--ch-green-900),
-        var(--ch-elevation-board-hover);
+        var(--ch-elevation-card);
     }
   }
 }
@@ -4834,7 +4834,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-text-primary);
 }
 .ch-rcard.is-phone {
@@ -5140,7 +5140,7 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   display: block;
   width: 100%;
   border-radius: var(--ch-radius-sm);
-  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-reading);
+  box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline), var(--ch-elevation-card);
 }
 .ch-rcard-share__hold {
   aspect-ratio: 600 / 440;
@@ -5779,8 +5779,8 @@ a.ch-rd-grp__h.is-link:focus-visible {
   font: var(--ch-type-13);
   /* M5: a new window re-tints the tiles. */
   transition:
-    background-color var(--ch-dur-base) var(--ch-ease),
-    border-color var(--ch-dur-base) var(--ch-ease);
+    background-color var(--ch-dur-base) var(--ch-ease-out),
+    border-color var(--ch-dur-base) var(--ch-ease-out);
 }
 @media (min-width: 414px) {
   .ch-hmap-t {
@@ -5978,8 +5978,8 @@ a.ch-rd-grp__h.is-link:focus-visible {
   background: var(--ch-hm-level);
   vertical-align: middle;
   transition:
-    background-color var(--ch-dur-base) var(--ch-ease),
-    border-color var(--ch-dur-base) var(--ch-ease);
+    background-color var(--ch-dur-base) var(--ch-ease-out),
+    border-color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-hmap-list__dot.is-u1,
 .ch-hmap-list__dot.is-u2 {
@@ -6194,8 +6194,8 @@ button.ch-hip__row:focus-visible,
 }
 .ch-cmp-row__c {
   transition:
-    background-color var(--ch-dur-quick) var(--ch-ease),
-    border-color var(--ch-dur-quick) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease-out),
+    border-color var(--ch-dur-quick) var(--ch-ease-out);
   display: grid;
   place-items: center;
   width: 22px;
@@ -6228,7 +6228,7 @@ button.ch-hip__row:focus-visible,
 /* M8: the best and last overlays fade, they do not pop. */
 .ch-carc__ov {
   opacity: 1;
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-carc__ov.is-off {
   opacity: 0;
@@ -6444,7 +6444,7 @@ button.ch-hip__row:focus-visible,
     border: 0;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
-    box-shadow: var(--ch-card-shadow);
+    box-shadow: var(--ch-elevation-card);
   }
 }
 
@@ -6492,4 +6492,45 @@ button.ch-hip__row:focus-visible,
   margin-inline: calc(-1 * var(--ch-page-x-phone));
   padding: 12px var(--ch-page-x-phone);
   border-top: 0;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-rd-season,
+  .ch-rd-more,
+  .ch-rd-sc,
+  a.ch-rd-sc,
+  .ch-rv-hero,
+  .ch-trd-tbl,
+  .ch-rd.is-phone .ch-rd-unf,
+  .ch-rv.is-phone .ch-rv-hero,
+  .ch-rv-sk-phone > .ch-rv-hero,
+  .ch-rv-card,
+  .ch-rv .ch-rv-nine,
+  .ch-rv .ch-rzstage,
+  .ch-rv .ch-rzplate,
+  .ch-rv .ch-rzstage__tip,
+  .ch-rv .ch-zn .ch-rv-sg__v.is-gain,
+  .ch-rv .ch-zn .ch-rv-sg__v.is-loss,
+  .ch-rv .ch-zn .ch-rv-dist__t i,
+  .ch-rv .ch-rzhit__c.is-hit i,
+  .ch-rv .ch-rzpt__c i,
+  .ch-rv .ch-rzcost__n,
+  .ch-rv-figs,
+  .ch-rd .ch-rd-range i.is-best,
+  .ch-rd .ch-rd-putts i,
+  .ch-rd .ch-rd-greens i.is-hit,
+  .ch-rd .ch-rd-stage,
+  .ch-rd .ch-rd-rib__tip,
+  .ch-rd.is-phone .ch-rd-rib__tip,
+  .ch-rd[data-canopy] .ch-rd-strip,
+  .ch-rd[data-canopy] .ch-rd-sc__grid,
+  .ch-rd[data-canopy] a.ch-rd-sc .ch-rd-sc__grid,
+  .ch-rcard,
+  .ch-rcard-share__pic img,
+  .ch-rcard-share__hold,
+  .ch-rd.ch-trd.is-phone .ch-fgr {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

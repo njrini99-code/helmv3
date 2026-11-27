@@ -20,7 +20,7 @@
 .ch-hr-page.is-phone .ch-hr-dos { gap: 24px; }
 .ch-hr-page .ch-hd-dos__h {
   position: relative; overflow: hidden; gap: 8px; padding: 16px;
-  border-radius: var(--ch-radius-lg); color: var(--ch-on-green-ink); background: var(--ch-feature-bg); box-shadow: var(--ch-elevation-feature);
+  border-radius: var(--ch-radius-lg); color: var(--ch-on-green-ink); background: var(--ch-feature-bg); box-shadow: var(--ch-elevation-card);
 }
 .ch-hr-page.is-desk .ch-hd-dos__h { padding: 24px 24px 20px; }
 .ch-hr-page .ch-hd-dos__h > * { position: relative; }
@@ -150,7 +150,7 @@
 .ch-hr-surecard { padding: 4px 16px; }
 .ch-hr.is-desk .ch-hr-surecard { padding: 4px 20px; }
 .ch-hr-surecard > .ch-hl-why { width: 100%; min-height: 48px; margin: 0; padding: 0; border: 0; background: none; font: var(--ch-type-headline); letter-spacing: 0; color: var(--ch-text-primary); }
-.ch-hr-surekey svg { transition: transform var(--ch-dur-spring-smooth) var(--ch-ease-spring-smooth); }
+.ch-hr-surekey svg { transition: transform var(--ch-dur-reveal) var(--ch-ease-ios); }
 .ch-hr-surekey[aria-expanded='true'] svg { transform: rotate(180deg); }
 .ch-hr-sure { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0 0 16px; }
 .ch-hr-sure p { margin: 0; font: var(--ch-type-14); color: var(--ch-text-secondary); }
@@ -184,3 +184,11 @@
 .ch-hr-skel { display: flex; flex-direction: column; }
 .ch-hr.is-desk .ch-hr-skel { gap: var(--ch-gap-section); }
 .ch-hr-skelhead { display: flex; flex-direction: column; gap: 6px; }
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-hr-page .ch-hd-dos__h {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
+}
