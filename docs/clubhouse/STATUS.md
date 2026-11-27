@@ -143,9 +143,9 @@ calls in the 2026-10-23 plan below.
   numbers: `20261017110000` (null putts), `20260930150000` and
   `20261023170000` (strokes gained), the OD-01 chain
   (`20261024151000`, Standing by season, was applied on its own on
-  2026-11-18). `20261025060000` (course page index) only if that read
-  measures slow; `20261025070400` (pg_cron
-  variant) is not applied. HELD.md stays the authority for prerequisites.
+  2026-11-18). `20261025060000` (course page index) and `20261025070400`
+  (pg_cron variant) were retired as OBSOLETE on 2026-11-27: the course read
+  measured about 5 ms, and the Vercel cron is the scheduler. HELD.md stays the authority for prerequisites.
 - **Scoring and data rules (owner, 2026-10-28).** A provisional DQ is
   dropped from the team score as well as the desk. The server decides
   qualifier tie order once, so both apps and Confirm agree. Settings shows
@@ -236,8 +236,8 @@ deployed or applied by this plan; the owner said prepare only.
   `20261025020000`, `20261025020050`, and `20261025020100` plus
   `20261025020200` (only if OQ-68 is yes); Seen by `20261025010000` (owner
   call OC-2); drag and drop `20261025030000`, then change marks
-  `20261025080000` after it; course page index `20261025060000` (only if
-  measured slow). The app works before and after each one.
+  `20261025080000` after it (course page index `20261025060000` retired
+  2026-11-27, measured fast). The app works before and after each one.
   HELD.md's apply queue is the authority for order and prerequisites.
 - **The production calendar error** (Sentry `JAVASCRIPT-NEXTJS-1D3`) is the
   Oct 21 build calling `golf_event_attendance_counts` before
