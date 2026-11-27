@@ -3,7 +3,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 
 /** True inside a Surface: a card in a card is always wrong (SYS-3), so development says so. */
-const InSurface = createContext(false);
+export const InSurface = createContext(false);
 
 /**
  * The design system's Surface (design/handoff/design-system/components/surfaces): the card. Warm paper, the card

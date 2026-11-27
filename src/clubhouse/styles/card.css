@@ -1,0 +1,237 @@
+/* The card kernel (ui/Card.tsx; design lab pilot P1, QUEUE dsx-02). One card, its parts and its states, every value read
+   from tokens.css: the card material and its one elevation, option F's green title bar and the view's one feature card
+   (DESIGN_LANGUAGE.md §4 and law 5). A page never redraws these: it composes the parts and, at most, places the card. */
+
+.ch-card {
+  /* The card's inner gutter: the parts align to it, and the green bar runs edge to edge above it. */
+  --ch-card-pad: 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: clip;
+  border: 0;
+  border-radius: var(--ch-radius-lg);
+  background: var(--ch-card-bg);
+  box-shadow: var(--ch-card-shadow);
+  color: var(--ch-text-primary);
+  text-align: start;
+  text-decoration: none;
+}
+.ch-card[data-card-tone='feature'] {
+  /* The green stage redefines the gain and loss pair on itself, so a delta or a toned figure reads on it (CONS-20). */
+  --ch-chart-gain: var(--ch-feature-gain);
+  --ch-chart-loss: var(--ch-feature-loss);
+  background: var(--ch-feature-bg);
+  box-shadow: var(--ch-elevation-feature);
+  color: var(--ch-feature-ink);
+}
+
+/* A pressable card is a button or a link: the face is the name, the whole card is the target, and nothing in it is a
+   second control. The press scale is lib/press.ts's (data-ch-press-scale); a pan that starts on the card still scrolls. */
+.ch-card:is(button, a) {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  touch-action: pan-x pan-y pinch-zoom;
+  -webkit-tap-highlight-color: transparent;
+}
+.ch-card:is(button, a):focus-visible {
+  /* A real outline, not a ring in the shadow stack: it survives forced colours, as the keys' does (CC-6). */
+  outline: 2px solid var(--ch-border-focus);
+  outline-offset: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .ch-card[data-card-tone='paper']:is(button, a):hover {
+    /* The card that opens something, under the pointer: tokens.css's hover elevation, never a new one. */
+    box-shadow: var(--ch-elevation-reading-hover);
+  }
+}
+
+/* Header: the name, small or as a headline, a meta line, an icon and actions. */
+.ch-card__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: var(--ch-card-pad) var(--ch-card-pad) 0;
+}
+.ch-card__head-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.ch-card__eyebrow {
+  font: var(--ch-type-13-medium);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-secondary);
+}
+.ch-card__title {
+  margin: 0;
+  font: var(--ch-type-headline);
+  letter-spacing: 0;
+  color: inherit;
+}
+.ch-card__meta {
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-card__icon {
+  display: inline-flex;
+  flex: none;
+  color: var(--ch-text-tertiary);
+}
+.ch-card__actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Option F's green title bar (look-09): the header is a deep green band across the card's top, its corners the card's own
+   (the card clips), its inks the on-green ones. The parts under it keep the paper. */
+.ch-card[data-card-bar='green'] > .ch-card__head {
+  align-items: center;
+  padding: 10px var(--ch-card-pad);
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+}
+.ch-card[data-card-bar='green'] > .ch-card__head :is(.ch-card__eyebrow, .ch-card__title) {
+  color: var(--ch-feature-ink);
+}
+.ch-card[data-card-bar='green'] > .ch-card__head :is(.ch-card__meta, .ch-card__icon) {
+  color: var(--ch-feature-ink-2);
+}
+.ch-card[data-card-tone='feature'] :is(.ch-card__eyebrow, .ch-card__meta, .ch-card__icon, .ch-card__unit, .ch-card__note) {
+  color: var(--ch-feature-ink-2);
+}
+
+/* The figure: tabular, in ink unless it is a real gain or loss against a benchmark. */
+.ch-card__metric {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 8px var(--ch-card-pad) 0;
+}
+.ch-card__value {
+  font: var(--ch-type-28-strong);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ch-track-28);
+  white-space: nowrap;
+  color: inherit;
+}
+.ch-card__metric[data-size='row'] .ch-card__value {
+  font: var(--ch-type-figure);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.ch-card__metric[data-size='hero'] .ch-card__value {
+  font: var(--ch-type-figure-hero);
+  font-variant-numeric: tabular-nums;
+}
+.ch-card__value.is-gain {
+  color: var(--ch-chart-gain);
+}
+.ch-card__value.is-loss {
+  color: var(--ch-chart-loss);
+}
+.ch-card__unit {
+  margin-inline-start: 4px;
+  font: var(--ch-type-13);
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
+}
+.ch-card__delta {
+  display: inline-flex;
+}
+
+/* Visual, body and footer. The last part closes the card with the gutter below it. */
+.ch-card__visual {
+  padding: 12px var(--ch-card-pad) 0;
+}
+.ch-card__body {
+  padding: 12px var(--ch-card-pad) 0;
+  font: var(--ch-type-body);
+}
+.ch-card[data-card-role='list'] > .ch-card__body {
+  padding-inline: 0;
+}
+.ch-card[data-card-role='chart'] > .ch-card__visual {
+  padding-inline: 8px;
+}
+.ch-card > :last-child:not(.ch-card__foot) {
+  padding-bottom: var(--ch-card-pad);
+}
+.ch-card__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: var(--ch-card-pad);
+  padding: 12px var(--ch-card-pad);
+  border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
+  font: var(--ch-type-13);
+  line-height: var(--ch-lead-caption);
+  color: var(--ch-text-tertiary);
+}
+.ch-card[data-card-tone='feature'] > .ch-card__foot {
+  border-top-color: var(--ch-on-green-ring);
+}
+.ch-card__note {
+  min-width: 0;
+}
+.ch-card__foot-act {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+/* Empty and failed: the header stays, the message takes the body's place at the body's height class. */
+.ch-card__msg {
+  padding: 12px var(--ch-card-pad) var(--ch-card-pad);
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-secondary);
+}
+
+/* Loading: the card's own shape, static (no shimmer, no pulse: MOTION-AND-VISUAL 3.9). */
+.ch-card__skel {
+  display: grid;
+  gap: 10px;
+  padding: var(--ch-card-pad);
+}
+.ch-card__skel-line,
+.ch-card__skel-block {
+  display: block;
+  border-radius: var(--ch-radius-sm);
+  background: var(--ch-skel-base);
+}
+.ch-card__skel-line.is-eyebrow {
+  width: 40%;
+  height: 12px;
+}
+.ch-card__skel-line.is-figure {
+  width: 55%;
+  height: 28px;
+}
+.ch-card__skel-line.is-meta {
+  width: 70%;
+  height: 12px;
+}
+.ch-card__skel-block {
+  height: 120px;
+}
+
+/* Forced colours drop every box-shadow, and with it the card's ring: a real border keeps the edge (the report's
+   surface rule; the keys already do this with their outline). */
+@media (forced-colors: active) {
+  .ch-card {
+    border: 1px solid CanvasText;
+  }
+  .ch-card[data-card-bar='green'] > .ch-card__head {
+    border-bottom: 1px solid CanvasText;
+  }
+}

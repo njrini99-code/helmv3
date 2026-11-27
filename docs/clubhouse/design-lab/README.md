@@ -16,6 +16,7 @@ Clubhouse component family. Minor fixes do not need it.
 | `research/R-external-references.md` | External comparison database: open-source implementations read at source, licences, techniques |
 | `03-gap-register.md` | Ranked gaps and blind spots with severity, evidence and the test that would catch each |
 | `04-foundations-and-pilots.md` | Proposed Phase 4 foundations and the Phase 6 pilot picks for Nick's review |
+| `05-research-report-review.md` | Nick's research report checked against the code: what was adopted, what was not, and ten more blind spots |
 
 ## Evidence tiers
 
@@ -27,6 +28,8 @@ Every claim in these files carries one of these:
   sign-in). Fixture shots are layout evidence only, never shown as the
   product.
 - **S / D** real Safari, Simulator or iPhone. None in this pass.
+- **P / N** the installed web app (standalone viewport) and the Capacitor
+  shell, the only place native haptics run. Neither is implied by S or D.
 
 External references carry SOURCE (code read, file URL given), DOCS, VISUAL
 or INFERRED. Nothing claims to have read proprietary source.

@@ -1,0 +1,42 @@
+/* The card lab (preview only, /clubhouse-preview/card-lab): layout for the pairs, nothing the cards themselves read. */
+.ch-card-lab {
+  display: grid;
+  gap: 32px;
+  max-width: 1100px;
+  padding: 24px 16px 64px;
+}
+.ch-card-lab__head h1 {
+  margin: 0;
+  font: var(--ch-type-title);
+}
+.ch-card-lab__head p,
+.ch-card-lab__rule {
+  margin: 4px 0 0;
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-tertiary);
+}
+.ch-card-lab__sec {
+  display: grid;
+  gap: 12px;
+}
+.ch-card-lab__sec h2 {
+  margin: 0;
+  font: var(--ch-type-headline);
+}
+.ch-card-lab__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.ch-card-lab__who {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: var(--ch-type-15-medium);
+}
+.ch-card-lab__why {
+  display: block;
+  margin-top: 6px;
+  font: var(--ch-type-13);
+  color: var(--ch-text-secondary);
+}

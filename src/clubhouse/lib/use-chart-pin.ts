@@ -33,13 +33,30 @@ export interface ChartPinOptions {
   release?: 'keep' | 'restore';
   /** With a finger, how long a still press waits before it reads (ms). Off when absent. */
   hold?: number;
+  /**
+   * Each mark's identity (a round's id), in mark order. With it a pin follows its datum, not its position: a round that
+   * arrives while one is pinned (a refresh, a new window) leaves the pin on the same round, and a pinned round that leaves
+   * drops the pin rather than moving it to whichever round took its index.
+   */
+  ids?: readonly string[];
 }
 
 export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number, number] = [0, 1], positions?: readonly number[], options: ChartPinOptions = {}) {
   const restore = options.release === 'restore';
   const hold = options.hold;
   const [hover, setHover] = useState<number | null>(null);
-  const [pin, setPin] = useState<number | null>(null);
+  const [pinState, setPinState] = useState<{ i: number; id: string | null } | null>(null);
+  const idsRef = useRef(options.ids);
+  idsRef.current = options.ids;
+  const setPin = useCallback((next: number | null | ((p: number | null) => number | null)) => {
+    setPinState((was) => {
+      const i = typeof next === 'function' ? next(was?.i ?? null) : next;
+      return i == null ? null : { i, id: idsRef.current?.[i] ?? null };
+    });
+  }, []);
+  // The pin's index now: found by its datum when the marks have ids, else its position.
+  const ids = options.ids;
+  const pin = pinState == null ? null : pinState.id != null && ids ? (ids.indexOf(pinState.id) >= 0 ? ids.indexOf(pinState.id) : null) : pinState.i;
   const root = useRef<HTMLElement | null>(null);
   const drag = useRef<{ x: number; y: number; scrubbing: boolean; at: number | null; timer: number | null } | null>(null);
   const stopHold = () => {
@@ -64,7 +81,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
   const clear = useCallback(() => {
     setHover(null);
     setPin(null);
-  }, []);
+  }, [setPin]);
 
   useEffect(() => {
     if (pinned == null) return;
@@ -73,7 +90,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
     };
     document.addEventListener('pointerdown', away);
     return () => document.removeEventListener('pointerdown', away);
-  }, [pinned]);
+  }, [pinned, setPin]);
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent<HTMLElement>) => {
@@ -106,7 +123,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
       setHover(null);
       setPin(next);
     },
-    [axis, clear, count, hovered, pinned, restore],
+    [axis, clear, count, hovered, pinned, restore, setPin],
   );
 
   const item = useCallback(
@@ -125,7 +142,7 @@ export function useChartPin(count: number, axis: 'x' | 'y' = 'y', inset: [number
       'data-active': active === i ? ('' as const) : undefined,
       'data-pinned': pinned === i ? ('' as const) : undefined,
     }),
-    [active, pinned],
+    [active, pinned, setPin],
   );
 
   const [from, to] = inset;

@@ -134,7 +134,7 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
   }, [roundsKey, reduced, width]);
 
   // Rounds sit by their dates, so the pick reads the round nearest the finger, not its even slot.
-  const pin = useChartPin(n, 'x', [PAD.l / width, 1 - PAD.r / width], n > 1 ? shown.map((_, i) => share[i]!) : undefined, { release: 'restore', hold: HOLD_MS });
+  const pin = useChartPin(n, 'x', [PAD.l / width, 1 - PAD.r / width], n > 1 ? shown.map((_, i) => share[i]!) : undefined, { release: 'restore', hold: HOLD_MS, ids: shown.map((r) => r.id) });
   const read = pin.active;
   // The card hears a change of round, never the first paint's "none".
   const tell = useRef(onRead);
