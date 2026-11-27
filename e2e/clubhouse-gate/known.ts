@@ -32,8 +32,6 @@ export const KNOWN: Record<string, string> = {
   'practice-card-stress|390|dark|tap-target': 'PP-22',
   'practice-card-stress|390|light|page-edge': 'PP-25',
   'practice-card-stress|390|light|tap-target': 'PP-22',
-  'stats-team|390|dark|card-escape': 'STATS-2',
-  'stats-team|390|light|card-escape': 'STATS-2',
   'team-long|1440|dark|row-inset': 'TEAM-17',
   'team-long|1440|light|row-inset': 'TEAM-17',
   'team-stress|1440|dark|row-inset': 'TEAM-17',
