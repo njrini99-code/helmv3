@@ -7,9 +7,10 @@
  *      classes or haptics module; CSS scoped to .ch-* / [data-ui]; only
  *      --ch-* custom properties; each page stylesheet anchors only its
  *      own classes (css-owners.mjs).
- *   2. Hold the design doctrine the compiler can't: red only for under par,
- *      no emoji, no exclamation marks in copy, no tracked uppercase, no
- *      count-ups, no staggers but the first-paint reveal (.ch-reveal in
+ *   2. Hold the design doctrine the compiler can't: red only for errors,
+ *      destructive actions, the pin flag and a penalty stake (under par is the
+ *      gain, green: MOTION-AND-VISUAL 4.7), no emoji, no exclamation marks
+ *      in copy, no tracked uppercase, no count-ups, no staggers but the first-paint reveal (.ch-reveal in
  *      base.css), durations only from the v2 tokens (D-64).
  * It also validates docs/clubhouse/PROGRESS.md so the tracker can't drift
  * into a state its own gates forbid, and holds the docs to the code: a page
@@ -17,7 +18,8 @@
  * (changelog-gate.mjs), every page's VERIFY.md keeps a `## Screenshots`
  * evidence log whose rows follow the screenshot naming (shots.mjs), and every
  * relative markdown link under docs/clubhouse resolves (links.mjs). The design system's token tables in
- * design/refresh/DESIGN_LANGUAGE.md match tokens.css (design-language.mjs).
+ * design/refresh/DESIGN_LANGUAGE.md match tokens.css (design-language.mjs), and every
+ * var(--ch-*) resolves to a defined custom property (token-refs.mjs, dsx-09).
  *
  * Usage: node scripts/clubhouse/check.mjs [--root <dir>] [--base <ref>]
  * Exit 0 clean, 1 on any violation.
@@ -31,6 +33,7 @@ import { loadManifests, runChangelogGate } from './changelog-gate.mjs';
 import { checkScreenshotLog } from './shots.mjs';
 import { checkLinks } from './links.mjs';
 import { checkDesignLanguage } from './design-language.mjs';
+import { runTokenRefs } from './token-refs.mjs';
 import { checkClickableMap, checkControls } from './clickable-map.mjs';
 import { runBridgeUiMapCheck } from './bridge-ui-map.mjs';
 
@@ -545,6 +548,9 @@ function main() {
 
   // The design system's token tables (design/refresh/DESIGN_LANGUAGE.md) are generated from tokens.css.
   violations.push(...checkDesignLanguage(root));
+
+  // Every var(--ch-*) resolves (GAP-B3, dsx-09); fallback-only hooks nothing sets may only shrink.
+  if (existsSync(join(root, 'src/clubhouse'))) violations.push(...runTokenRefs(root).violations);
 
   // The every-button map (CLUBHOUSE_CLICKABLE_MAP.md) moves with the code (D11, plan §4.7).
   if (existsSync(join(root, 'src/clubhouse'))) violations.push(...checkClickableMap(root));
