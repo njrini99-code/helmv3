@@ -104,7 +104,7 @@ const PROBES: Probe[] = [
 ];
 const FAILING = new Set(['team-long', 'home-coach', 'home-coach-stress', 'home-player', 'messages-empty', 'roster', 'roster-long', 'read', 'read-stress', 'read-player', 'stats-team']);
 
-test('gate findings with their CSS', async ({ page }) => {
+test.skip('gate findings with their CSS', async ({ page }) => {
   const phone = page.viewportSize()!.width <= 820;
   for (const screen of GATE_SCREENS.filter((s) => FAILING.has(s.id) && (phone ? s.phone : s.desktop))) {
     await prep(page, screen.path, screen.tap, phone);
@@ -116,10 +116,11 @@ test('gate findings with their CSS', async ({ page }) => {
   }
 });
 
-test('messages-stress jump key timing', async ({ page, browserName }) => {
+test('messages-stress jump key timing', async ({ browser, browserName }) => {
   test.skip(browserName !== 'webkit', 'phone only');
   for (const reduced of [false, true]) {
-    await page.emulateMedia({ reducedMotion: reduced ? 'reduce' : 'no-preference' });
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: reduced ? 'reduce' : 'no-preference', baseURL: test.info().project.use.baseURL });
+    const page = await context.newPage();
     await page.addInitScript(() => {
       const w = window as unknown as { __diag: unknown[] };
       if (w.__diag) return;
@@ -127,30 +128,45 @@ test('messages-stress jump key timing', async ({ page, browserName }) => {
       const t0 = performance.now();
       const seen = new WeakSet<Animation>();
       let last = '';
+      const at = () => Math.round(performance.now() - t0);
+      document.addEventListener('scroll', (e) => {
+        const t = e.target as Element;
+        if (t instanceof Element && t.matches('.ch-ms-scroll')) w.__diag.push({ at: at(), scroll: `${Math.round(t.scrollTop)}/${t.scrollHeight}/${t.clientHeight}` });
+      }, { capture: true, passive: true });
+      for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown']) document.addEventListener(type, () => w.__diag.push({ at: at(), input: type }), { capture: true, passive: true });
       const tick = () => {
-        const at = Math.round(performance.now() - t0);
         const hyd = !!document.querySelector('.ch-root[data-hydrated]');
-        const scrollers = Array.from(document.querySelectorAll('.ch-ms-scroll')).map((s) => `${Math.round(s.scrollTop)}/${s.scrollHeight}/${s.clientHeight}`);
+        const scrollers = Array.from(document.querySelectorAll('.ch-ms-scroll')).map((s) => {
+          const cs = getComputedStyle(s);
+          const list = s.querySelector('.ch-ms-msgs');
+          return `${Math.round(s.scrollTop)}/${s.scrollHeight}/${s.clientHeight} ov=${cs.overflowY} cls=${s.className} first=${s.firstElementChild?.className ?? '-'} msgs=${list?.children.length ?? '-'} listAnims=${list?.getAnimations?.().length ?? '-'} listT=${list ? getComputedStyle(list).transform : '-'}`;
+        });
         const key = !!document.querySelector('.ch-msv-jump');
-        const push = Array.from(document.querySelectorAll('section.ch-pscreen')).map((s) => `${s.className}@${Math.round(s.getBoundingClientRect().left)}`);
+        const push = Array.from(document.querySelectorAll('section.ch-pscreen')).map((s) => `${s.className}@${Math.round(s.getBoundingClientRect().left)} vis=${getComputedStyle(s).visibility}`);
         const state = JSON.stringify({ hyd, scrollers, key, push });
-        if (state !== last) { w.__diag.push({ at, state }); last = state; }
+        if (state !== last) { w.__diag.push({ at: at(), state }); last = state; }
         for (const a of document.getAnimations()) {
           if (seen.has(a)) continue;
           seen.add(a);
           const t = (a.effect as KeyframeEffect | null)?.target as Element | null;
-          if (!t || !(t.matches('.ch-msv-jump, section.ch-pscreen'))) continue;
+          if (!t || !(t.matches('.ch-msv-jump, section.ch-pscreen, .ch-ms-msgs, .ch-ms-scroll'))) continue;
           let frames: unknown[] = [];
           try { frames = (a.effect as KeyframeEffect).getKeyframes(); } catch { /* */ }
-          w.__diag.push({ at, anim: t.className, dur: (a.effect as KeyframeEffect).getComputedTiming().duration, frames });
+          w.__diag.push({ at: at(), anim: t.className, dur: (a.effect as KeyframeEffect).getComputedTiming().duration, frames });
         }
-        if (at < 4000) requestAnimationFrame(tick);
+        if (at() < 12000) requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     });
     const response = await page.goto('/clubhouse-preview/messages?state=design&view=stress', { waitUntil: 'load' });
     expect(response?.status()).toBe(200);
-    await page.waitForTimeout(4500);
-    out(`jump ${reduced ? 'reduce' : 'motion'}`, await page.evaluate(() => (window as unknown as { __diag: unknown[] }).__diag.slice(0, 200)));
+    const loadedAt = await page.evaluate(() => Math.round(performance.now()));
+    await page.locator('.ch-root[data-hydrated]').first().waitFor({ state: 'attached', timeout: 30_000 }).catch(() => {});
+    const hydAt = await page.evaluate(() => Math.round(performance.now()));
+    await page.waitForTimeout(2500);
+    const gateEnd = await page.evaluate(() => Math.round(performance.now()));
+    await page.waitForTimeout(4000);
+    out(`jump ${reduced ? 'reduce' : 'motion'} load=${loadedAt} hyd=${hydAt} gateEnd=${gateEnd}`, await page.evaluate(() => (window as unknown as { __diag: unknown[] }).__diag.slice(0, 400)));
+    await context.close();
   }
 });
