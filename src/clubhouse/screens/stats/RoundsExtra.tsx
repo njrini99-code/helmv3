@@ -9,6 +9,7 @@ import { BestCardShare } from './BestCard';
 import { bestCardFields } from './best-card-fields';
 import type { ChViewer } from '../../data/stats-player';
 import { Zone, ZoneBig as Big, ZoneBlock as Vis } from '../../ui/Zone';
+import { Card as KernelCard } from '../../ui/Card';
 
 /**
  * The Rounds tab's parity figures (PARITY.md SC12 to SC14): the score of every
@@ -17,15 +18,15 @@ import { Zone, ZoneBig as Big, ZoneBlock as Vis } from '../../ui/Zone';
  */
 function Card({ id, title, meta, phone, children }: { id: string; title: string; meta?: string; phone: boolean; children: ReactNode }) {
   return phone ? (
-    <section className="ch-stm-panel" aria-labelledby={id}>
+    <KernelCard kind="list" className="ch-stm-panel" labelledBy={id}>
       <div className="ch-stm-panel__h">
         <h2 id={id}>{title}</h2>
         {meta && <span>{meta}</span>}
       </div>
       {children}
-    </section>
+    </KernelCard>
   ) : (
-    <section className="ch-st-card" aria-labelledby={id}>
+    <KernelCard kind="list" className="ch-st-card" labelledBy={id}>
       <div className="ch-st-card__head">
         <div>
           <h2 id={id}>{title}</h2>
@@ -33,7 +34,7 @@ function Card({ id, title, meta, phone, children }: { id: string; title: string;
         </div>
       </div>
       {children}
-    </section>
+    </KernelCard>
   );
 }
 

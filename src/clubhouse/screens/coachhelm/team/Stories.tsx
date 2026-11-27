@@ -17,6 +17,7 @@ import { useOverlayScrollLock } from '../../../lib/overlay-scroll';
 import { Button } from '../../../ui/Button';
 import { Icon } from '../../../ui/Icon';
 import { Coin, Notice } from './parts';
+import { Card } from '../../../ui/Card';
 
 /** A true minus on a negative, and no plus: these are measures, not changes (TEAM-23). */
 const signed = (v: number) => formatFixed(v).replace('-', '\u2212');
@@ -343,16 +344,16 @@ export function StoriesCard({
   const week = brief?.week ?? 'This week';
   if (failed)
     return (
-      <section className="card today" data-ch-team-card="today">
+      <Card kind="list" className="card today" data={{ 'data-ch-team-card': 'today' }}>
         <div className="ch">
           <h4>This week</h4>
         </div>
         <Notice title="Couldn’t load what’s new" body="The weekly brief didn’t load. Everything below is current." onRetry={onRetry} />
-      </section>
+      </Card>
     );
   if (!all.length) return null;
   return (
-    <section className="card today" data-ch-team-card="today" aria-label="This week">
+    <Card kind="list" className="card today" label="This week" data={{ 'data-ch-team-card': 'today' }}>
       <div className="ch">
         <h4>This week</h4>
         {/* Four zeros in a row say nothing (QA-8). */}
@@ -446,7 +447,7 @@ export function StoriesCard({
           />,
           document.querySelector('.ch-htb') ?? document.body,
         )}
-    </section>
+    </Card>
   );
 }
 

@@ -155,9 +155,9 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/home/CoachLatest.tsx`
 
-- CTL-P002-004 46 `button` "Previous round" (button, onClick)
-- CTL-P002-005 52 `button` "Next round" (button, onClick)
-- CTL-P002-006 94 `Button` "{Open recap|{firstName}’s stats}" (button, href)
+- CTL-P002-004 47 `button` "Previous round" (button, onClick)
+- CTL-P002-005 53 `button` "Next round" (button, onClick)
+- CTL-P002-006 95 `Button` "{Open recap|{firstName}’s stats}" (button, href)
 
 ### `src/clubhouse/screens/home/CoachQueue.tsx`
 
@@ -225,10 +225,10 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/home/LiveNowCard.tsx`
 
-- CTL-P002-050 97 `Link` "{openLive}" (link, href) CH-16603
-- CTL-P002-051 101 `Button` "{openLive}" (button, href) CH-16603
-- CTL-P002-052 107 `Link` "{tournamentLive}" (link, href) CH-16685
-- CTL-P002-053 121 `Link` "{seeAll}" (link, href) CH-16606
+- CTL-P002-050 98 `Link` "{openLive}" (link, href) CH-16603
+- CTL-P002-051 102 `Button` "{openLive}" (button, href) CH-16603
+- CTL-P002-052 108 `Link` "{tournamentLive}" (link, href) CH-16685
+- CTL-P002-053 122 `Link` "{seeAll}" (link, href) CH-16606
 
 ### `src/clubhouse/screens/home/NewEventLink.tsx`
 
@@ -253,12 +253,12 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/home/PlayerHomePhone.tsx`
 
-- CTL-P002-063 97 `Button` "Message coach" (button, href)
-- CTL-P002-064 101 `Button` "New round" (button, href)
-- CTL-P002-065 172 `Button` "Add classes" (button, href) CH-2312
-- CTL-P002-066 200 `button` "Previous round" (button, onClick)
-- CTL-P002-067 206 `button` "Next round" (button, onClick)
-- CTL-P002-068 250 `Button` "{Open recap|My stats}" (button, href)
+- CTL-P002-063 98 `Button` "Message coach" (button, href)
+- CTL-P002-064 102 `Button` "New round" (button, href)
+- CTL-P002-065 173 `Button` "Add classes" (button, href) CH-2312
+- CTL-P002-066 201 `button` "Previous round" (button, onClick)
+- CTL-P002-067 207 `button` "Next round" (button, onClick)
+- CTL-P002-068 251 `Button` "{Open recap|My stats}" (button, href)
 
 ### `src/clubhouse/screens/home/TeamLegs.tsx`
 
@@ -271,7 +271,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/home/TeammatesLiveCard.tsx`
 
-- CTL-P002-072 58 `button` "{seeAll}" (button, onClick) CH-16606
+- CTL-P002-072 59 `button` "{seeAll}" (button, onClick) CH-16606
 
 ### `src/clubhouse/screens/home/UpNext.tsx`
 
@@ -394,22 +394,22 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/StatsFilter.tsx`
 
-- CTL-P004-005 109 `button` "Filter {{length}|}" (button, onClick)
-- CTL-P004-006 118 `button` "Remove filter: {label}" (button, onClick)
-- CTL-P004-007 135 `button` "Clear filters" (button, onClick)
-- CTL-P004-008 203 `Button` "Clear filters" (button, onClick)
-- CTL-P004-009 218 `Button` "Clear filters" (button, onClick)
-- CTL-P004-010 318 `Button` "Clear" (button, onClick)
-- CTL-P004-011 331 `Button` "Done" (button, onClick)
-- CTL-P004-012 341 `button` "All" (button, onClick)
-- CTL-P004-013 345 `button` "{KIND_LABEL}" (button, onClick)
-- CTL-P004-014 356 `button` "{label}" (button, onClick)
-- CTL-P004-015 438 `button` "{label}" (button, onClick)
+- CTL-P004-005 110 `button` "Filter {{length}|}" (button, onClick)
+- CTL-P004-006 119 `button` "Remove filter: {label}" (button, onClick)
+- CTL-P004-007 136 `button` "Clear filters" (button, onClick)
+- CTL-P004-008 204 `Button` "Clear filters" (button, onClick)
+- CTL-P004-009 219 `Button` "Clear filters" (button, onClick)
+- CTL-P004-010 319 `Button` "Clear" (button, onClick)
+- CTL-P004-011 332 `Button` "Done" (button, onClick)
+- CTL-P004-012 342 `button` "All" (button, onClick)
+- CTL-P004-013 346 `button` "{KIND_LABEL}" (button, onClick)
+- CTL-P004-014 357 `button` "{label}" (button, onClick)
+- CTL-P004-015 439 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/screens/stats/StatsTeam.tsx`
 
-- CTL-P004-016 124 `HowStatsCountLink` "How stats are counted (ledger)" (link)
-- CTL-P004-017 306 `Link` "{name} {meta}" (link, href)
+- CTL-P004-016 125 `HowStatsCountLink` "How stats are counted (ledger)" (link)
+- CTL-P004-017 307 `Link` "{name} {meta}" (link, href)
 
 ### `src/clubhouse/screens/stats/StatsTeamFirstRun.tsx`
 
@@ -426,8 +426,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/StatsTeamPhone.tsx`
 
-- CTL-P004-025 401 `button` "{label}, {no data|for…" (button, onClick, role=tab)
-- CTL-P004-026 478 `Link` "{name} {rounds} {pluralWord} {|{format…" (link, href)
+- CTL-P004-025 402 `button` "{label}, {no data|for…" (button, onClick, role=tab)
+- CTL-P004-026 479 `Link` "{name} {rounds} {pluralWord} {|{format…" (link, href)
 
 ### `src/clubhouse/screens/stats/StatsTeamPhoneShs.tsx`
 
@@ -443,7 +443,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/TeamRank.tsx`
 
-- CTL-P004-033 131 `Link` "Open player" (link, href)
+- CTL-P004-033 132 `Link` "Open player" (link, href)
 
 ## P005 Stats (player)
 
@@ -498,25 +498,25 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/StatsPlayer.tsx`
 
-- CTL-P005-024 281 `Button` "{label}" (button, href)
-- CTL-P005-025 286 `IconButton` "Previous player" (button, href)
-- CTL-P005-026 290 `IconButton` "Next player" (button, href)
-- CTL-P005-027 305 `Button` "Message" (button, href)
-- CTL-P005-028 310 `Button` "Schedule 1:1" (button, href)
-- CTL-P005-029 315 `Button` "CoachHelm" (button, href)
-- CTL-P005-030 351 `Button` "{label}" (button, href)
-- CTL-P005-031 356 `IconButton` "Previous player" (button, href)
-- CTL-P005-032 360 `IconButton` "Next player" (button, href)
-- CTL-P005-033 383 `Button` "Message" (button, href)
-- CTL-P005-034 388 `Button` "Schedule 1:1" (button, href)
-- CTL-P005-035 393 `Button` "CoachHelm" (button, href)
-- CTL-P005-036 398 `Button` "Add focus area" (button, onClick)
-- CTL-P005-037 422 `button` "{l}{{n}|}" (button, onClick, role=tab)
-- CTL-P005-038 595 `Link` "{course}, {date}: open the round" (link, href)
-- CTL-P005-039 680 `Button` "Add focus area" (button, onClick)
-- CTL-P005-040 721 `GoalSetButton` "Set a goal (ledger)" (button)
-- CTL-P005-041 821 `Button` "Cancel" (button, onClick)
-- CTL-P005-042 824 `Button` "{Adding…|Propose focus area}" (button, onClick)
+- CTL-P005-024 282 `Button` "{label}" (button, href)
+- CTL-P005-025 287 `IconButton` "Previous player" (button, href)
+- CTL-P005-026 291 `IconButton` "Next player" (button, href)
+- CTL-P005-027 306 `Button` "Message" (button, href)
+- CTL-P005-028 311 `Button` "Schedule 1:1" (button, href)
+- CTL-P005-029 316 `Button` "CoachHelm" (button, href)
+- CTL-P005-030 352 `Button` "{label}" (button, href)
+- CTL-P005-031 357 `IconButton` "Previous player" (button, href)
+- CTL-P005-032 361 `IconButton` "Next player" (button, href)
+- CTL-P005-033 384 `Button` "Message" (button, href)
+- CTL-P005-034 389 `Button` "Schedule 1:1" (button, href)
+- CTL-P005-035 394 `Button` "CoachHelm" (button, href)
+- CTL-P005-036 399 `Button` "Add focus area" (button, onClick)
+- CTL-P005-037 423 `button` "{l}{{n}|}" (button, onClick, role=tab)
+- CTL-P005-038 596 `Link` "{course}, {date}: open the round" (link, href)
+- CTL-P005-039 681 `Button` "Add focus area" (button, onClick)
+- CTL-P005-040 722 `GoalSetButton` "Set a goal (ledger)" (button)
+- CTL-P005-041 822 `Button` "Cancel" (button, onClick)
+- CTL-P005-042 825 `Button` "{Adding…|Propose focus area}" (button, onClick)
 
 ### `src/clubhouse/screens/stats/StatsPlayerPhoneShs.tsx`
 
@@ -2238,13 +2238,13 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/coachhelm/team/Cards.tsx`
 
-- CTL-P013-241 80 `button` "{name} {join}{· early|}{· estima…" (button, onClick)
+- CTL-P013-241 81 `button` "{name} {join}{· early|}{· estima…" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/CourseCard.tsx`
 
-- CTL-P013-242 95 `button` "{name} {rounds} rounds · last {d…" (button, onClick)
-- CTL-P013-243 175 `button` "{Show fewer|Show all {length} c…" (button, onClick)
-- CTL-P013-244 194 `button` "{Show fewer|Show {length} more}" (button, onClick)
+- CTL-P013-242 96 `button` "{name} {rounds} rounds · last {d…" (button, onClick)
+- CTL-P013-243 176 `button` "{Show fewer|Show all {length} c…" (button, onClick)
+- CTL-P013-244 195 `button` "{Show fewer|Show {length} more}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/Huddle.tsx`
 
@@ -2252,8 +2252,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/coachhelm/team/SpotCard.tsx`
 
-- CTL-P013-246 42 `button` "{name} {missing}" (button, onClick)
-- CTL-P013-247 50 `button` "{name} {formatSigned}" (button, onClick)
+- CTL-P013-246 43 `button` "{name} {missing}" (button, onClick)
+- CTL-P013-247 51 `button` "{name} {formatSigned}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/StationControl.tsx`
 
@@ -2262,16 +2262,16 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/coachhelm/team/Stories.tsx`
 
-- CTL-P013-250 234 `div` "Story, {nameOf}" (onPointerDown)
-- CTL-P013-251 265 `div` "{map}" (onPointerDown)
-- CTL-P013-252 272 `div` "{split} {storyWhen} Close stories" (onPointerDown)
-- CTL-P013-253 278 `button` "Close stories" (button, onClick)
-- CTL-P013-254 283 `div` "Story body (next) (ledger)" (onClick)
-- CTL-P013-255 291 `Button` "{actionOf}" (button, onClick)
-- CTL-P013-256 294 `Button` "{Next|Done}" (button, onClick)
-- CTL-P013-257 406 `button` "{{figure}{text}|{text} {figure}}" (button, onClick)
-- CTL-P013-258 463 `button` "Close" (button, onClick)
-- CTL-P013-259 470 `Button` "{actionOf}" (button, onClick)
+- CTL-P013-250 235 `div` "Story, {nameOf}" (onPointerDown)
+- CTL-P013-251 266 `div` "{map}" (onPointerDown)
+- CTL-P013-252 273 `div` "{split} {storyWhen} Close stories" (onPointerDown)
+- CTL-P013-253 279 `button` "Close stories" (button, onClick)
+- CTL-P013-254 284 `div` "Story body (next) (ledger)" (onClick)
+- CTL-P013-255 292 `Button` "{actionOf}" (button, onClick)
+- CTL-P013-256 295 `Button` "{Next|Done}" (button, onClick)
+- CTL-P013-257 407 `button` "{{figure}{text}|{text} {figure}}" (button, onClick)
+- CTL-P013-258 464 `button` "Close" (button, onClick)
+- CTL-P013-259 471 `Button` "{actionOf}" (button, onClick)
 
 ### `src/clubhouse/screens/coachhelm/team/TeamBoard.tsx`
 
@@ -2932,8 +2932,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/ui/Card.tsx`
 
-- CTL-P000-055 104 `Link` "{label}" (link, href)
-- CTL-P000-056 110 `button` "{label}" (button, onClick)
+- CTL-P000-055 117 `Link` "{label}" (link, href)
+- CTL-P000-056 123 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/ui/Checkbox.tsx`
 

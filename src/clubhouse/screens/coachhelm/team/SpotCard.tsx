@@ -7,6 +7,7 @@ import { patternAt, readsAt, stationOrder, type ChStation, type ChTeamBoardData,
 import { STATION_NAME } from './hole-geometry';
 import { Coin, Notice, ReadRow } from './parts';
 import { useContentIn, useRowFlip } from './team-motion';
+import { Card } from '../../../ui/Card';
 
 const ZERO_AT = 84;
 const LOSS_SCALE = 1.3;
@@ -88,7 +89,7 @@ export function SpotCard({
   useContentIn(card, station, '.ch, .subh, .rds, .pat, .nopat');
   const status = data.patternsStatus ?? 'ok';
   return (
-    <section ref={card} className="card spot" data-spot="" data-ch-team-card="spot" aria-label={STATION_NAME[station]}>
+    <Card kind="list" ref={card} className="card spot" label={STATION_NAME[station]} data={{ 'data-spot': '', 'data-ch-team-card': 'spot' }}>
       <div className="ch">
         <h4>{STATION_NAME[station]}</h4>
         <span className="meta">
@@ -148,6 +149,6 @@ export function SpotCard({
           )}
         </div>
       </div>
-    </section>
+    </Card>
   );
 }

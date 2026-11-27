@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode, type Ref } from 'react';
 import { InSurface } from './Surface';
 
 /**
@@ -46,6 +46,10 @@ export function Card({
   message,
   className,
   ctl,
+  labelledBy,
+  data,
+  ref,
+  as: Tag = 'section',
   children,
 }: {
   kind?: CardRole;
@@ -62,6 +66,14 @@ export function Card({
   className?: string;
   /** The control id (`CTL-P###-NNN`) when the card is pressable. */
   ctl?: string;
+  /** The id of the heading that names a section card, when the page's own heading sits inside it (aria-labelledby). */
+  labelledBy?: string;
+  /** A page's own data attributes on the card (`{ 'data-density': 'phone' }`): hooks its stylesheet and tests read. */
+  data?: Record<`data-${string}`, string | undefined>;
+  /** The card's element, for a page that measures or scrolls to it. Only for a section card. */
+  ref?: Ref<HTMLElement>;
+  /** A section card by default; `div` for a card that is a part of its page's section rather than one of its own. */
+  as?: 'section' | 'div';
   children?: ReactNode;
 }) {
   const nested = useContext(InSurface);
@@ -69,6 +81,7 @@ export function Card({
   const pressable = !!(onPress || href) && state === 'ready';
   const greenBar = bar === 'green' && tone === 'paper';
   const attrs = {
+    ...data,
     className: 'ch-card' + (className ? ` ${className}` : ''),
     'data-card-role': kind,
     'data-card-tone': tone,
@@ -112,9 +125,9 @@ export function Card({
       </button>
     );
   return (
-    <section {...attrs} aria-label={label}>
+    <Tag {...attrs} ref={ref as Ref<HTMLDivElement>} aria-label={label} aria-labelledby={label ? undefined : labelledBy}>
       {inner}
-    </section>
+    </Tag>
   );
 }
 

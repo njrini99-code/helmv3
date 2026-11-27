@@ -41,6 +41,7 @@ import { LargeTitle } from '../../ui/LargeTitle';
 import { TeamInsight } from './StatsInsight';
 import { NoData } from '../../ui/NoData';
 import { sgIsEstimate } from '../../data/stats-sg-mix';
+import { Card } from '../../ui/Card';
 
 type Sort = 'avg' | 'sg';
 /** The leg the strokes gained readout shows and the players' SG sort ranks by: the team total or one of the four legs. */
@@ -305,7 +306,7 @@ function RoundFigures({ data }: { data: ChTeamStats }) {
   // Greens, putts and scrambling read the rounds with their holes (Q-123); this says how many, under the group.
   const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
   return (
-    <section className="ch-stm-panel" aria-labelledby="ch-stm-round">
+    <Card kind="list" className="ch-stm-panel" labelledBy="ch-stm-round">
       <div className="ch-stm-panel__h">
         <h2 id="ch-stm-round">The round</h2>
       </div>
@@ -329,7 +330,7 @@ function RoundFigures({ data }: { data: ChTeamStats }) {
       <p className="ch-stm-cover" aria-hidden={coverage ? undefined : true}>
         {coverage}
       </p>
-    </section>
+    </Card>
   );
 }
 
@@ -364,10 +365,10 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
   );
   if (!known.length)
     return (
-      <section className="ch-stm-panel ch-stm-panel--bars" aria-labelledby="ch-stm-legs">
+      <Card kind="list" className="ch-stm-panel ch-stm-panel--bars" labelledBy="ch-stm-legs">
         {head}
         <EmptyState compact code="CH-4303" title="No strokes gained in this window." body="Strokes gained appears for rounds posted with shots." />
-      </section>
+      </Card>
     );
   const note = !losing.length
     ? `No leg is losing strokes against ${baseline.noun}.`
@@ -383,7 +384,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
     true,
   );
   return (
-    <section className="ch-stm-panel" aria-labelledby="ch-stm-legs">
+    <Card kind="list" className="ch-stm-panel" labelledBy="ch-stm-legs">
       {head}
       <div className="ch-stm-group">
         <p className="ch-stm-sgfig">
@@ -425,7 +426,7 @@ function Legs({ data, leg, onLeg }: { data: ChTeamStats; leg: ChLegPick; onLeg: 
         </div>
       </div>
       <p className="ch-stm-note">{note}</p>
-    </section>
+    </Card>
   );
 }
 
@@ -447,7 +448,7 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
   );
   const by = sort === 'avg' ? 'by scoring average' : i < 0 ? 'by strokes gained' : `by ${LEGS_LIST[i]} SG`;
   return (
-    <section className="ch-stm-panel" aria-labelledby="ch-stm-players">
+    <Card kind="list" className="ch-stm-panel" labelledBy="ch-stm-players">
       <div className="ch-stm-panel__h">
         <div className="ch-stm-gh">
           <h2 id="ch-stm-players">Players</h2>
@@ -497,7 +498,7 @@ export function Players({ data, leg, sort, onSort }: { data: ChTeamStats; leg: C
           })}
         </ul>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -509,7 +510,7 @@ export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean
   const bands = data.putting.bands;
   const drawn = bands.reduce((a, b) => a + b.attempts, 0);
   return (
-    <section className="ch-stm-panel" aria-labelledby="ch-stm-putt">
+    <Card kind="list" className="ch-stm-panel" labelledBy="ch-stm-putt">
       <div className="ch-stm-panel__h">
         <h2 id="ch-stm-putt">Team putting</h2>
         <span className="ch-num">Make rate by distance · {drawn} putts{data.window === 'last10' && !isFiltered(data.filter) ? ` · each player’s last ${data.last}` : ''}</span>
@@ -532,6 +533,6 @@ export function Putting({ data, covered }: { data: ChTeamStats; covered: boolean
         })}
       </div>
       <p className="ch-stm-note">{puttingNote(data.putting.bands)} The mark is the Tour make rate.</p>
-    </section>
+    </Card>
   );
 }

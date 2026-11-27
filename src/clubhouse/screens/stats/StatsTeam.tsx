@@ -22,6 +22,7 @@ import { StatsTeamPhoneShs } from './StatsTeamPhoneShs';
 import { RetryNotice, ShowSeason, StatsTeamFrame, TeamCharts, TeamFilter, TeamFilterEmpty, TeamHeadActions } from './StatsTeamIslands';
 import { pluralWord } from '../../lib/plural';
 import { TeamInsight } from './StatsInsight';
+import { Card } from '../../ui/Card';
 
 /**
  * Team stats. Rendered on the server: the figures, putting and season bests
@@ -273,9 +274,9 @@ function TeamPutting({ putting, failed, covered }: { putting: ChTeamStats['putti
   if (failed) return <RetryNotice code="CH-4203" title="Team putting didn’t load" body="Try again." covered={covered} />;
   if (!putting)
     return (
-      <div className="ch-st-card">
+      <Card kind="list" as="div" className="ch-st-card">
         <EmptyState code="CH-4306" compact title="No putts logged in this window." body="Putting fills in from rounds posted with putt distances." />
-      </div>
+      </Card>
     );
   // The rings draw every band (CH-18), so the count is every putt.
   const drawn = putting.bands.reduce((a, b) => a + b.attempts, 0);
@@ -289,7 +290,7 @@ function TeamPutting({ putting, failed, covered }: { putting: ChTeamStats['putti
 function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamStats['bests']; filter: ChFilter; longestError: boolean; covered: boolean }) {
   const filtered = isFiltered(filter);
   return (
-    <section className="ch-st-card">
+    <Card kind="list" className="ch-st-card">
       <div className="ch-st-card__head">
         <div>
           <h2>Season bests</h2>
@@ -317,6 +318,6 @@ function SeasonBests({ bests, filter, longestError, covered }: { bests: ChTeamSt
       )}
       {/* A best that could not be read is said so, not left out: the line would read as "nobody holed a long putt" (CH-4211). */}
       {longestError && <RetryNotice code="CH-4211" title="The longest putt didn’t load" body="The other bests are right. Try again." covered={covered} />}
-    </section>
+    </Card>
   );
 }

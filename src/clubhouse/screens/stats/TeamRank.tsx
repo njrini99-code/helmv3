@@ -14,6 +14,7 @@ import { Select } from '../../ui/Select';
 import { teamPlayerHref } from './links';
 import { formatRankValue, metricDef, rankLabel, rankReadout, rankScale, rankSummary, teamMeanFor, teamRankRows, TEAM_RANK_METRICS, type TeamRankMetric } from './team-rank';
 import { NoData } from '../../ui/NoData';
+import { Card } from '../../ui/Card';
 
 export type TeamRankData = Pick<ChTeamStats, 'grid' | 'team' | 'legTotals' | 'filter'>;
 
@@ -199,14 +200,14 @@ export function TeamRank({ data, phone = false }: { data: TeamRankData; phone?: 
 
   if (phone)
     return (
-      <section className="ch-stm-panel ch-sv-tr is-phone" aria-labelledby="ch-stm-rank">
+      <Card kind="list" className="ch-stm-panel ch-sv-tr is-phone" labelledBy="ch-stm-rank">
         <div className="ch-stm-panel__h">
           <h2 id="ch-stm-rank">Who gains and loses</h2>
           {menu}
         </div>
         <div className="ch-stm-group ch-sv-tr__inset">{body}</div>
         <p className="ch-stm-note">{sub}.</p>
-      </section>
+      </Card>
     );
   return (
     <section className="ch-sv-tr" aria-labelledby="ch-sv-tr-h">

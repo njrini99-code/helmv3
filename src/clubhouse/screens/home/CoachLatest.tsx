@@ -18,6 +18,7 @@ import { EmptyState } from '../../ui/States';
 import { firstName } from './model';
 import { roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
+import { Card } from '../../ui/Card';
 
 /** `changeTone`'s class as FigureRow's tone: a strokes gained that rounds to zero stays plain. */
 const figureTone = (t: string) => (t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : undefined);
@@ -60,7 +61,7 @@ export function CoachLatest({ data, covered, years }: { data: ChCoachHome['lates
       ) : !r ? (
         <EmptyState code="CH-2302" shape="rows" shapeCount={2} title="No rounds posted yet this season." body="The newest 18-hole round appears here as soon as a player posts it." />
       ) : (
-        <div className="ch-ph-card">
+        <Card kind="list" as="div" className="ch-ph-card">
           <div className="ch-ph-rd">
             <Avatar name={r.playerName} id={r.playerId} size="md" year={years?.[r.playerId] ?? null} />
             <span className="ch-ph-rd__b">
@@ -95,7 +96,7 @@ export function CoachLatest({ data, covered, years }: { data: ChCoachHome['lates
               {recap ? 'Open recap' : `${firstName(r.playerName)}’s stats`}
             </Button>
           )}
-        </div>
+        </Card>
       )}
     </section>
   );

@@ -11,6 +11,7 @@ import { useChClock } from '../../lib/use-clock';
 import { useNow } from '../../lib/use-now';
 import { PlayerLiveSheet } from '../live/PlayerLiveSheet';
 import '../../styles/live.css';
+import { Card } from '../../ui/Card';
 
 const LIMIT = 4;
 
@@ -42,7 +43,7 @@ export function TeammatesLiveCard({ initial, playerId, frozen = false, now: froz
   const title = OWN_COPY.teammates(mates.length);
 
   return (
-    <section className="ch-lv-card" aria-labelledby="ch-lv-mates-title" data-density="phone">
+    <Card kind="list" className="ch-lv-card" labelledBy="ch-lv-mates-title" data={{ 'data-density': 'phone' }}>
       <header className="ch-lv-card__head">
         <span className="ch-lv-dot" aria-hidden="true" />
         <h2 id="ch-lv-mates-title" data-ch-code="CH-16682">
@@ -61,6 +62,6 @@ export function TeammatesLiveCard({ initial, playerId, frozen = false, now: froz
       )}
       <LiveAnnouncer moments={live.moments} enabled />
       <PlayerLiveSheet lane={selected} moments={live.moments} now={now} coach={false} hours={hours} onClose={() => setOpen(null)} />
-    </section>
+    </Card>
   );
 }
