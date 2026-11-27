@@ -239,7 +239,11 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>;
   if (!n) return null;
   const R = 30;
   const B = 24;
-  const T = 8;
+  // An axis figure's baseline sits 4 under its gridline and its 13 type's box rises 13 over that baseline, so the top gridline
+  // sits 10 down: at 8 the top figure's box rose 1 past the drawing (the gate's card-escape, desk and phone).
+  const T = 10;
+  // The first day's dot is drawn whole: centred on the drawing's edge, half of it fell outside (the gate's card-escape).
+  const L = 6;
   // Against par when every day has it (stats and charts audit 2026-11-15, CH-01): the same golf on a par-70 and a par-72 course is
   // one level, never two strokes apart, and the dashed line is par. Raw strokes, against the days' own average, otherwise.
   const vsPar = teamDaysVsPar(known);
@@ -251,7 +255,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>;
   const fig = (q: number) => (vsPar ? formatToPar(q, 1) : formatFixed(q, 1));
   // Round days sit by their dates when every day has one (CH-11), evenly otherwise.
   const share = dateShares(known.map((d) => d.date));
-  const x = (i: number) => (n === 1 ? 0.5 : share[i]!) * (width - R);
+  const x = (i: number) => L + (n === 1 ? 0.5 : share[i]!) * (width - R - L);
   const y = (q: number) => T + ((q - lo) / (hi - lo || 1)) * (H - T - B);
   const pts = v.map((q, i) => [x(i), y(q)] as const);
   const joined = teamLineDays(known);

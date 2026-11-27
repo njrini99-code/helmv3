@@ -161,6 +161,46 @@ describe('team hero · round days sit by their dates (CH-11)', () => {
     ]);
     expect(x[1]! - x[0]!).toBeCloseTo(x[2]! - x[1]!, 5);
   });
+
+  // The presentation gate (card-escape, desk and phone): the first day's dot sat on the drawing's left edge, half of it outside.
+  it('draws every dot whole inside the drawing', () => {
+    const c = render(
+      <TeamFeatureChart
+        days={[
+          { label: 'Sep 1', score: 71, n: 6, date: '2026-09-01' },
+          { label: 'Sep 8', score: 79, n: 1, date: '2026-09-08' },
+          { label: 'Oct 5', score: 74, n: 6, date: '2026-10-05' },
+        ]}
+        mean={74.7}
+      />,
+    ).container;
+    const [, , w, h] = c.querySelector('.ch-shs-chart svg')!.getAttribute('viewBox')!.split(' ').map(Number);
+    for (const d of c.querySelectorAll('.ch-shs-rdot')) {
+      const [cx, cy, r] = ['cx', 'cy', 'r'].map((a) => Number(d.getAttribute(a)));
+      expect(cx! - r!).toBeGreaterThanOrEqual(0);
+      expect(cx! + r!).toBeLessThanOrEqual(w!);
+      expect(cy! - r!).toBeGreaterThanOrEqual(0);
+      expect(cy! + r!).toBeLessThanOrEqual(h!);
+    }
+  });
+
+  // The presentation gate (card-escape, desk and phone): the top axis figure's box, 13 tall over its baseline, rose 1 past the
+  // drawing's top. The figures are 13 type, so each baseline needs 13 above it.
+  it('leaves each axis figure room for its box above its baseline', () => {
+    const c = render(
+      <TeamFeatureChart
+        days={[
+          { label: 'Sep 1', score: 71, n: 6, date: '2026-09-01' },
+          { label: 'Sep 8', score: 79, n: 1, date: '2026-09-08' },
+          { label: 'Oct 5', score: 74, n: 6, date: '2026-10-05' },
+        ]}
+        mean={74.7}
+      />,
+    ).container;
+    const figures = [...c.querySelectorAll('.ch-shs-chart svg g > text.ch-shs-ax')];
+    expect(figures.length).toBeGreaterThan(1);
+    for (const t of figures) expect(Number(t.getAttribute('y')) - 13).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe('team hero · against par when every day has it (CH-01)', () => {

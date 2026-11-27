@@ -4370,6 +4370,7 @@
       "file": "src/clubhouse/screens/coachhelm/team/Huddle.tsx",
       "group": "screens",
       "exports": [
+        "COIN_BOUNDS",
         "Huddle"
       ],
       "styles": [],
@@ -20115,6 +20116,7 @@
     {
       "file": "src/clubhouse/styles/messages-inbox.css",
       "classes": [
+        "ch-es--page",
         "ch-inb",
         "ch-inb--phone",
         "ch-inb--rail",
