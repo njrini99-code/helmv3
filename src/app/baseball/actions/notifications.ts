@@ -71,7 +71,8 @@ const BASEBALL_SHELL_PATH = '/baseball';
 
 export const getBaseballNotifications = withBaseballAction(
   'getBaseballNotifications',
-  { featureArea: 'baseball-notifications' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-notifications', demoSafe: true },
   async (ctx, limit: number = 20): Promise<NotificationsResult> => {
     const supabase = await createClient();
 
@@ -96,7 +97,8 @@ export const getBaseballNotifications = withBaseballAction(
 
 export const getUnreadNotificationCount = withBaseballAction(
   'getUnreadNotificationCount',
-  { featureArea: 'baseball-notifications' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-notifications', demoSafe: true },
   async (ctx): Promise<CountResult> => {
     const supabase = await createClient();
 

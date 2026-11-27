@@ -54,7 +54,8 @@ export interface AiAuditLogResult {
  */
 export const getAiAuditLog = withBaseballAction(
   'getAiAuditLog',
-  { featureArea: 'baseball-coachhelm', requiredCapability: 'can_manage_stats' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-coachhelm', requiredCapability: 'can_manage_stats', demoSafe: true },
   async (ctx, opts?: { limit?: number }): Promise<AiAuditLogResult> => {
     const supabase = await createClient();
     const db = supabase as unknown as LooseClient;

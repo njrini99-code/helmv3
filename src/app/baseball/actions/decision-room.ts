@@ -376,9 +376,11 @@ async function loadActionOutcomes(
 export async function getDecisionRoomData(): Promise<DecisionRoomData> {
   const inner = withBaseballAction(
     'getDecisionRoomData',
+    // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
     {
       featureArea: 'baseball-decision-room',
       requiredCapability: 'can_manage_settings',
+      demoSafe: true,
     },
     async (ctx): Promise<DecisionRoomData> => {
       const supabase = await createClient();
