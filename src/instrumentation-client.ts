@@ -4,6 +4,7 @@ import { redactEventPii } from '@/lib/observability/redact-pii';
 import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { buildClientSentryOptions, isHealthProbeFetchEcho } from '@/lib/sentry-client-options';
+import { sendsErrorEventsToSentry } from '@/lib/sentry-environment';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
@@ -184,6 +185,12 @@ Sentry.init({
   // duplicated event.contexts.location written by error-logging.ts.
   // Replay already masks DOM text.
   beforeSend(event, hint) {
+    // Only production's errors go to Sentry: a preview's or a local build's would use up production's allowance.
+    // Before every other rule, so nothing below runs for an event that is not sent. See sendsErrorEventsToSentry.
+    if (!sendsErrorEventsToSentry(event.environment, process.env.NEXT_PUBLIC_SENTRY_ERRORS_ALL_ENVIRONMENTS)) {
+      return null;
+    }
+
     // /api/health's database readiness failure is independently captured on
     // the server and persisted through the Bridge. The connectivity hook
     // intentionally accepts its 503 response as proof that the DEVICE is
