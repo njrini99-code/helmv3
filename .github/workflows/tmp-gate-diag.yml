@@ -1,0 +1,38 @@
+name: TEMP gate diagnostics (remove before merge)
+
+# Temporary: where the Team stats chart's axis figures sit against their drawing, and the gate on that one screen, in CI's
+# own browsers. Deleted before the PR is ready.
+on:
+  push:
+    branches: [agent/presentation-gate-green]
+    paths: ['e2e/tmp-gate-diag.spec.ts', 'tmp-gate-diag.config.ts', '.github/workflows/tmp-gate-diag.yml', 'src/clubhouse/screens/stats/ScoringFeatureChart.tsx']
+
+permissions:
+  contents: read
+
+env:
+  NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: local-presentation-fixture-only
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: local-presentation-fixture-only
+  NEXT_TELEMETRY_DISABLED: '1'
+  CH_QUALITY: '1'
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-npm
+      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Axis figures against their drawing
+        run: ./node_modules/.bin/playwright test --config tmp-gate-diag.config.ts
+      - name: The gate on the Team stats screen
+        if: ${{ !cancelled() }}
+        run: |
+          pkill -f 'next dev --webpack --hostname 127.0.0.1 --port 3100' || true
+          for pid in $(ss -ltnpH 'sport = :3100' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do kill "$pid" || true; done
+          sleep 2
+          ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop -g 'stats-team '
