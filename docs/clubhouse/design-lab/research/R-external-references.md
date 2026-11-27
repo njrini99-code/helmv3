@@ -9,6 +9,17 @@ cards, light + dark.
 
 Compiled 2026-11-27 from public sources only. No project data was sent anywhere.
 
+> **Correction from the inventory (read first).** The stack line above came
+> from `package.json`, which carries Radix, vaul, recharts and d3-scale for
+> other surfaces. Clubhouse itself uses none of them: overlays are its own
+> native `<dialog>` layer (`lib/dialog-lifetime.ts`, `lib/sheet-drag.ts`),
+> and every chart is hand-drawn SVG (a test pins it recharts-free). So every
+> "Adopt vaul / Radix / recharts" verdict below means **adopt the
+> technique inside the existing Clubhouse primitive**, not add the
+> dependency. Where an external default conflicts with
+> `.claude/rules/clubhouse.md` (motion timings, skeleton pulse, count-ups,
+> red for losses, haptics outside `lib/haptics.ts`), the rule wins.
+
 ## How to read this
 
 Evidence types:
