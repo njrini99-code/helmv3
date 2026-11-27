@@ -64,7 +64,7 @@ describe('Practice in waiting mirrors the loaded pages', () => {
     expect(main.querySelectorAll('.ch-prc-h__a > .ch-skel').length).toBe(2);
     expect(main.querySelectorAll('.ch-prc-week > .ch-prc-tile').length).toBe(7);
     // Up next, then the plans: nothing rides between them at either width.
-    expect(classes(main.querySelector('.ch-prc-home')!.children)).toEqual(['ch-prc-card ch-prc-next', 'ch-prc-home__plans']);
+    expect(classes(main.querySelector('.ch-prc-home')!.children)).toEqual(['ch-card ch-prc-card ch-prc-next', 'ch-prc-home__plans']);
     // Up next in the card's own order: the label and state, the name, when, the day strip, its key, four blocks, "and N more", the key.
     expect(classes(main.querySelector('.ch-prc-next')!.children)).toEqual(['ch-prc-next__k', 'ch-prc-sk-next', 'ch-prc-next__w ch-prc-sk-facts', 'ch-prc-day', 'ch-prc-sk-mix', 'ch-prc-next__rows', 'ch-prc-next__more', 'ch-prc-next__a']);
     expect(main.querySelectorAll('.ch-prc-next__rows > li').length).toBe(4);

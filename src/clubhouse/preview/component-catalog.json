@@ -10195,6 +10195,7 @@
         "NavRow",
         "PickerRow",
         "Problem",
+        "RowCard",
         "SliderRow",
         "SwitchRow"
       ],
@@ -21434,6 +21435,7 @@
         "ch-btn",
         "ch-btn--primary",
         "ch-btn--secondary",
+        "ch-card",
         "ch-cp-sheet",
         "ch-field__help",
         "ch-hscroll",

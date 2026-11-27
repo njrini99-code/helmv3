@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode, type Ref } from 'react';
 import { InSurface } from './Surface';
 
 /**
@@ -28,6 +28,8 @@ import { InSurface } from './Surface';
  * - `state` is built in: `loading` draws the card's own skeleton shape (static, no shimmer, MOTION-AND-VISUAL 3.9) with
  *   `aria-busy`; `empty` and `failed` keep the header and put `message` where the body goes, so a card never collapses or
  *   changes height class between states.
+ * - `as` draws a card that is not a control as an `li` or `article` (a template in a list) or a `div`; `hidden` takes a
+ *   page's own skeleton card out of the reading order. A pressable card is always the button or the link.
  * - A card is never inside a card (SYS-3): it shares Surface's nesting guard.
  */
 export type CardRole = 'metric' | 'entity' | 'chart' | 'comparison' | 'alert' | 'list';
@@ -36,6 +38,7 @@ export type CardState = 'ready' | 'loading' | 'empty' | 'failed';
 const CardCtx = createContext<{ pressable: boolean; bar: boolean; tone: 'paper' | 'feature' }>({ pressable: false, bar: false, tone: 'paper' });
 
 export function Card({
+  as: Tag = 'section',
   kind = 'metric',
   tone = 'paper',
   bar,
@@ -46,14 +49,20 @@ export function Card({
   message,
   className,
   ctl,
+  'data-ctl': dataCtl,
   id,
   labelledBy,
   live,
   role,
   busy,
   code,
+  hidden,
+  data,
+  ref,
   children,
 }: {
+  /** The element a card that is not a control draws as. */
+  as?: 'section' | 'article' | 'li' | 'div';
   kind?: CardRole;
   tone?: 'paper' | 'feature';
   /** Option F's green title bar on a paper card. A feature card is already green and takes none. */
@@ -68,6 +77,8 @@ export function Card({
   className?: string;
   /** The control id (`CTL-P###-NNN`) when the card is pressable. */
   ctl?: string;
+  /** The same id written as the controls ledger writes it on an element (`npm run clubhouse:controls`); `ctl` wins when both are set. */
+  'data-ctl'?: string;
   /** The card's id, when a link or a scroll lands on it. */
   id?: string;
   /** The id of a heading inside the card that names it (a page's own heading), in place of `label`. */
@@ -80,6 +91,12 @@ export function Card({
   busy?: boolean;
   /** The page's state code (`CH-NNNNN`), written to `data-ch-code`. */
   code?: string;
+  /** A page's own skeleton card, which no screen reader reads (`aria-hidden`). */
+  hidden?: boolean;
+  /** A page's own data attributes on the card (`{ 'data-density': 'phone' }`): hooks its stylesheet and tests read. */
+  data?: Record<`data-${string}`, string | undefined>;
+  /** The card's element, for a page that measures or scrolls to it. Only for a card that is not a control. */
+  ref?: Ref<HTMLElement>;
   children?: ReactNode;
 }) {
   const nested = useContext(InSurface);
@@ -87,17 +104,19 @@ export function Card({
   const pressable = !!(onPress || href) && state === 'ready';
   const greenBar = bar === 'green' && tone === 'paper';
   const attrs = {
+    ...data,
     className: 'ch-card' + (className ? ` ${className}` : ''),
     'data-card-role': kind,
     'data-card-tone': tone,
     'data-card-bar': greenBar ? 'green' : undefined,
     'data-card-state': state === 'ready' ? undefined : state,
     id,
-    'aria-labelledby': labelledBy,
+    'aria-labelledby': label ? undefined : labelledBy,
     'aria-live': live,
     'aria-busy': busy || undefined,
     role,
     'data-ch-code': code,
+    'aria-hidden': hidden || undefined,
   };
   const body =
     state === 'loading' ? (
@@ -119,26 +138,26 @@ export function Card({
   );
   if (state === 'loading')
     return (
-      <div {...attrs} aria-busy="true" aria-label={label ?? 'Loading'}>
+      <Tag {...attrs} aria-busy="true" aria-label={label ?? 'Loading'}>
         {inner}
-      </div>
+      </Tag>
     );
   if (pressable && href)
     return (
-      <Link {...attrs} data-ctl={ctl ?? 'CTL-P000-055'} href={href} aria-label={label} data-ch-press-scale=".97">
+      <Link {...attrs} data-ctl={ctl ?? dataCtl ?? 'CTL-P000-055'} href={href} aria-label={label} data-ch-press-scale=".97">
         {inner}
       </Link>
     );
   if (pressable)
     return (
-      <button {...attrs} data-ctl={ctl ?? 'CTL-P000-056'} type="button" onClick={onPress} aria-label={label} data-ch-press-scale=".97">
+      <button {...attrs} data-ctl={ctl ?? dataCtl ?? 'CTL-P000-056'} type="button" onClick={onPress} aria-label={label} data-ch-press-scale=".97">
         {inner}
       </button>
     );
   return (
-    <section {...attrs} aria-label={label}>
+    <Tag {...attrs} ref={ref as never} aria-label={label}>
       {inner}
-    </section>
+    </Tag>
   );
 }
 

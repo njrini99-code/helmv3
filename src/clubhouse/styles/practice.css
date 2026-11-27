@@ -1990,7 +1990,9 @@ main.ch-prc-planpage > .ch-backlink {
   padding: 0;
   list-style: none;
 }
-.ch-prc-gcard {
+/* On the card kernel (a pressable Card is a button): the kernel resets a button card to no padding and inherited type, so
+   this card names both classes to keep its own. */
+.ch-prc-gcard.ch-card {
   display: grid;
   gap: 8px;
   width: 100%;

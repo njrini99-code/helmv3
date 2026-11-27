@@ -7,7 +7,7 @@ import { ReadFailed, ReadsFailed, useSaveAction } from '../parts';
 import { golfReadsFailed } from '../Golf';
 import { LiveRoundsGroup } from '../LiveRounds';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
-import { FieldRow, Group, NavRow, Problem } from './ui';
+import { FieldRow, Group, NavRow, Problem, RowCard } from './ui';
 
 /** Golf profile on the phone (player): golf details in an edit sheet, and the team: leave it, or ask to join one. */
 export function GolfPhone({ data, writes }: { data: ChSettingsData; writes: ChSettingsWrites }) {
@@ -78,13 +78,13 @@ function GolfSheet({ open, onClose, details, writes }: { open: boolean; onClose:
       onAction={() => void save.run(draft)}
       note="Your coaches and teammates see your handicap and class on the roster."
     >
-      <div className="ch-setm-card">
+      <RowCard>
         <FieldRow id="set-hcp-i" label="Handicap index" inline inputMode="decimal" placeholder="4.8" value={draft.handicapIndex} onChange={set('handicapIndex')} />
         <FieldRow id="set-grad" label="Graduation year" inline inputMode="numeric" placeholder="2028" value={draft.graduationYear} onChange={set('graduationYear')} />
         <FieldRow id="set-phone" label="Phone" inline type="tel" autoComplete="tel" value={draft.phone} onChange={set('phone')} />
         <FieldRow id="set-home" label="Hometown" inline autoComplete="address-level2" value={draft.hometown} onChange={set('hometown')} />
         <FieldRow id="set-state" label="State" inline maxLength={2} placeholder="NC" value={draft.state} onChange={(e) => { const value = e.target.value.toUpperCase(); setDraft((d) => ({ ...d, state: value })); }} />
-      </div>
+      </RowCard>
       {invalid && dirty && <Problem problem={invalid} />}
     </FormSheet>
   );
@@ -161,10 +161,10 @@ function MembershipPhone({ m, writes }: { m: ChMembership; writes: ChSettingsWri
         onAction={() => void join.run(code, note)}
         note="Your coaches approve the request from their roster."
       >
-        <div className="ch-setm-card">
+        <RowCard>
           <FieldRow id="set-join-code" label="Team code" autoComplete="off" autoCapitalize="characters" maxLength={12} placeholder="K7M2Q9XA" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} />
           <FieldRow id="set-join-note" label="Note to the coaches" help="Optional." maxLength={200} value={note} onChange={(e) => setNote(e.target.value)} />
-        </div>
+        </RowCard>
       </FormSheet>
     </>
   );

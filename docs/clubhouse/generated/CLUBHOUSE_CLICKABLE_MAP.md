@@ -1187,10 +1187,10 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/settings/phone/ui.tsx`
 
-- CTL-P008-094 61 `button` "{ariaLabel}" (button, onClick)
-- CTL-P008-095 102 `a` "{label}" (link, href)
-- CTL-P008-096 111 `button` "{label}" (button, onClick)
-- CTL-P008-097 156 `NavRow` "{label}" (onClick)
+- CTL-P008-094 74 `button` "{ariaLabel}" (button, onClick)
+- CTL-P008-095 115 `a` "{label}" (link, href)
+- CTL-P008-096 124 `button` "{label}" (button, onClick)
+- CTL-P008-097 169 `NavRow` "{label}" (onClick)
 
 ### `src/clubhouse/ui/Slider.tsx`
 
@@ -2799,31 +2799,31 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/practice/LibraryPages.tsx`
 
-- CTL-P017-008 45 `PhoneIconAction` "{actionLabel}" (onClick)
-- CTL-P017-009 50 `Button` "{actionLabel}" (button, onClick)
-- CTL-P017-010 66 `Link` "{name} {GolfHelm|} {facts} {{levels}|}" (link, href)
-- CTL-P017-011 101 `button` "All" (button, onClick)
-- CTL-P017-012 105 `button` "{label}" (button, onClick)
-- CTL-P017-013 117 `Button` "New drill" (button, onClick)
-- CTL-P017-014 127 `DrillRowLink` "(no label)" (link) CH-13204
-- CTL-P017-015 133 `DrillRowLink` "(no label)" (link) CH-13204
-- CTL-P017-016 214 `Button` "Archive" (button, onClick)
-- CTL-P017-017 215 `Button` "Edit" (button, onClick)
-- CTL-P017-018 220 `Button` "Add to your drills" (button, onClick)
-- CTL-P017-019 311 `Button` "Keep" (button, onClick)
-- CTL-P017-020 314 `Button` "Archive" (button, onClick)
-- CTL-P017-021 393 `Button` "New group" (button, onClick)
-- CTL-P017-022 403 `button` "{name} {plural}" (button, onClick) CH-13204
-- CTL-P017-023 435 `input` "{name}" (type=checkbox)
-- CTL-P017-024 446 `Button` "Delete group" (button, onClick)
-- CTL-P017-025 460 `Button` "Keep" (button, onClick)
-- CTL-P017-026 463 `Button` "Delete" (button, onClick)
-- CTL-P017-027 558 `button` "{name} Session · {hour…" (button, onClick) CH-13204
-- CTL-P017-028 564 `IconButton` "{name}: more" (button) CH-13204
-- CTL-P017-029 584 `button` "{name} {Block|{Week|Se…" (button, onClick) CH-13204
-- CTL-P017-030 592 `IconButton` "{name}: more" (button) CH-13204
-- CTL-P017-031 630 `Button` "Keep" (button, onClick)
-- CTL-P017-032 633 `Button` "Delete" (button, onClick)
+- CTL-P017-008 46 `PhoneIconAction` "{actionLabel}" (onClick)
+- CTL-P017-009 51 `Button` "{actionLabel}" (button, onClick)
+- CTL-P017-010 67 `Link` "{name} {GolfHelm|} {facts} {{levels}|}" (link, href)
+- CTL-P017-011 102 `button` "All" (button, onClick)
+- CTL-P017-012 106 `button` "{label}" (button, onClick)
+- CTL-P017-013 118 `Button` "New drill" (button, onClick)
+- CTL-P017-014 128 `DrillRowLink` "(no label)" (link) CH-13204
+- CTL-P017-015 134 `DrillRowLink` "(no label)" (link) CH-13204
+- CTL-P017-016 215 `Button` "Archive" (button, onClick)
+- CTL-P017-017 216 `Button` "Edit" (button, onClick)
+- CTL-P017-018 221 `Button` "Add to your drills" (button, onClick)
+- CTL-P017-019 312 `Button` "Keep" (button, onClick)
+- CTL-P017-020 315 `Button` "Archive" (button, onClick)
+- CTL-P017-021 394 `Button` "New group" (button, onClick)
+- CTL-P017-022 404 `Card` "{name} {plural}" (onPress) CH-13204
+- CTL-P017-023 436 `input` "{name}" (type=checkbox)
+- CTL-P017-024 447 `Button` "Delete group" (button, onClick)
+- CTL-P017-025 461 `Button` "Keep" (button, onClick)
+- CTL-P017-026 464 `Button` "Delete" (button, onClick)
+- CTL-P017-027 559 `button` "{name} Session · {hour…" (button, onClick) CH-13204
+- CTL-P017-028 565 `IconButton` "{name}: more" (button) CH-13204
+- CTL-P017-029 585 `button` "{name} {Block|{Week|Se…" (button, onClick) CH-13204
+- CTL-P017-030 593 `IconButton` "{name}: more" (button) CH-13204
+- CTL-P017-031 631 `Button` "Keep" (button, onClick)
+- CTL-P017-032 634 `Button` "Delete" (button, onClick)
 
 ### `src/clubhouse/screens/practice/NewPlanSheet.tsx`
 
@@ -2844,23 +2844,23 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/practice/PracticeHome.tsx`
 
-- CTL-P017-041 78 `Link` "{inner}" (link, href)
-- CTL-P017-042 82 `button` "{inner}" (button, onClick)
-- CTL-P017-043 102 `Link` "{title} {wholeFacts} {{line}|}{Edits n…" (link, href)
-- CTL-P017-044 146 `Button` "Open the calendar" (button, href)
-- CTL-P017-045 152 `PhoneIconAction` "New plan" (onClick)
-- CTL-P017-046 160 `Button` "Plan format" (button, href)
-- CTL-P017-047 161 `Button` "New plan" (button, onClick)
-- CTL-P017-048 187 `button` "Ask CoachHelm It draft…" (button, onClick) CH-13396
-- CTL-P017-049 196 `Link` "Start from a template Six sta…" (link, href) CH-13396
-- CTL-P017-050 205 `button` "Blank Add blocks yours…" (button, onClick) CH-13396
-- CTL-P017-051 246 `Button` "Open plan" (button, href) CH-13204
-- CTL-P017-052 248 `Button` "{Edit|Keep building}" (button, href) CH-13204
-- CTL-P017-053 253 `Button` "Build plan" (button, onClick) CH-13204
-- CTL-P017-054 269 `Button` "New plan" (button, onClick) CH-13396
-- CTL-P017-055 300 `button` "Past plans ({length})" (button, onClick)
-- CTL-P017-056 309 `Button` "Show more" (button, onClick)
-- CTL-P017-057 316 `Link` "Plan format" (link, href)
+- CTL-P017-041 79 `Link` "{inner}" (link, href)
+- CTL-P017-042 83 `button` "{inner}" (button, onClick)
+- CTL-P017-043 103 `Link` "{title} {wholeFacts} {{line}|}{Edits n…" (link, href)
+- CTL-P017-044 147 `Button` "Open the calendar" (button, href)
+- CTL-P017-045 153 `PhoneIconAction` "New plan" (onClick)
+- CTL-P017-046 161 `Button` "Plan format" (button, href)
+- CTL-P017-047 162 `Button` "New plan" (button, onClick)
+- CTL-P017-048 188 `button` "Ask CoachHelm It draft…" (button, onClick) CH-13396
+- CTL-P017-049 197 `Link` "Start from a template Six sta…" (link, href) CH-13396
+- CTL-P017-050 206 `button` "Blank Add blocks yours…" (button, onClick) CH-13396
+- CTL-P017-051 247 `Button` "Open plan" (button, href) CH-13204
+- CTL-P017-052 249 `Button` "{Edit|Keep building}" (button, href) CH-13204
+- CTL-P017-053 254 `Button` "Build plan" (button, onClick) CH-13204
+- CTL-P017-054 270 `Button` "New plan" (button, onClick) CH-13396
+- CTL-P017-055 301 `button` "Past plans ({length})" (button, onClick)
+- CTL-P017-056 310 `Button` "Show more" (button, onClick)
+- CTL-P017-057 317 `Link` "Plan format" (link, href)
 
 ### `src/clubhouse/screens/practice/PracticeSheet.tsx`
 
@@ -2874,41 +2874,41 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/practice/builder/Builder.tsx`
 
-- CTL-P017-062 344 `button` "Try again" (button, onClick)
-- CTL-P017-063 354 `Button` "Load latest" (button, onClick) CH-13580
-- CTL-P017-064 380 `Button` "Change the practice time" (button, onClick)
-- CTL-P017-065 398 `button` "Add block" (button)
-- CTL-P017-066 422 `Button` "Send" (button)
-- CTL-P017-067 427 `button` "Or tell it what you want" (button, onClick)
-- CTL-P017-068 437 `Button` "{cta}" (button, onClick)
-- CTL-P017-069 456 `Button` "Remove all" (button, onClick)
-- CTL-P017-070 461 `Button` "Keep all" (button, onClick)
-- CTL-P017-071 466 `Button` "Undo" (button, onClick)
-- CTL-P017-072 471 `Button` "Go to Groups" (button, onClick)
-- CTL-P017-073 500 `Button` "Keep {title}" (button, onClick)
-- CTL-P017-074 504 `Button` "Swap {title}" (button, onClick)
-- CTL-P017-075 508 `Button` "Remove {title}" (button, onClick)
-- CTL-P017-076 537 `button` "More for {title}" (button)
-- CTL-P017-077 566 `button` "{clockFor} {title} {wholeFacts}…" (button, onClick)
-- CTL-P017-078 623 `Button` "Split evenly" (button, onClick)
-- CTL-P017-079 624 `Button` "Add group" (button, onClick)
-- CTL-P017-080 634 `button` "Remove Group {name}" (button, onClick)
-- CTL-P017-081 681 `button` "{get}" (button)
-- CTL-P017-082 711 `Button` "Take the drill off {head}" (button, onClick)
-- CTL-P017-083 715 `Button` "{Change|Add} drill for {head}" (button, onClick)
-- CTL-P017-084 740 `button` "{message}" (button, onClick)
-- CTL-P017-085 759 `Button` "Print" (button, onClick)
-- CTL-P017-086 761 `Button` "Delete draft" (button, onClick)
-- CTL-P017-087 767 `Button` "{publishLabel}" (button, onClick)
-- CTL-P017-088 819 `Button` "Not yet" (button, onClick) CH-13081
-- CTL-P017-089 822 `Button` "{Republish|Publish to …" (button, onClick) CH-13081
-- CTL-P017-090 896 `Button` "Cancel" (button, onClick)
-- CTL-P017-091 899 `Button` "Move practice" (button, onClick)
-- CTL-P017-092 930 `button` "{name} {kindLabel} · {…" (button, onClick) CH-13895
-- CTL-P017-093 947 `PhoneIconAction` "Print" (onClick)
-- CTL-P017-094 966 `BackLink` "Practice" (link, onClick)
-- CTL-P017-095 977 `Button` "Preview" (button, onClick)
-- CTL-P017-096 978 `Button` "{publishLabel}" (button, onClick)
+- CTL-P017-062 345 `button` "Try again" (button, onClick)
+- CTL-P017-063 355 `Button` "Load latest" (button, onClick) CH-13580
+- CTL-P017-064 381 `Button` "Change the practice time" (button, onClick)
+- CTL-P017-065 399 `button` "Add block" (button)
+- CTL-P017-066 423 `Button` "Send" (button)
+- CTL-P017-067 428 `button` "Or tell it what you want" (button, onClick)
+- CTL-P017-068 438 `Button` "{cta}" (button, onClick)
+- CTL-P017-069 457 `Button` "Remove all" (button, onClick)
+- CTL-P017-070 462 `Button` "Keep all" (button, onClick)
+- CTL-P017-071 467 `Button` "Undo" (button, onClick)
+- CTL-P017-072 472 `Button` "Go to Groups" (button, onClick)
+- CTL-P017-073 501 `Button` "Keep {title}" (button, onClick)
+- CTL-P017-074 505 `Button` "Swap {title}" (button, onClick)
+- CTL-P017-075 509 `Button` "Remove {title}" (button, onClick)
+- CTL-P017-076 538 `button` "More for {title}" (button)
+- CTL-P017-077 567 `button` "{clockFor} {title} {wholeFacts}…" (button, onClick)
+- CTL-P017-078 624 `Button` "Split evenly" (button, onClick)
+- CTL-P017-079 625 `Button` "Add group" (button, onClick)
+- CTL-P017-080 635 `button` "Remove Group {name}" (button, onClick)
+- CTL-P017-081 682 `button` "{get}" (button)
+- CTL-P017-082 712 `Button` "Take the drill off {head}" (button, onClick)
+- CTL-P017-083 716 `Button` "{Change|Add} drill for {head}" (button, onClick)
+- CTL-P017-084 741 `button` "{message}" (button, onClick)
+- CTL-P017-085 760 `Button` "Print" (button, onClick)
+- CTL-P017-086 762 `Button` "Delete draft" (button, onClick)
+- CTL-P017-087 768 `Button` "{publishLabel}" (button, onClick)
+- CTL-P017-088 820 `Button` "Not yet" (button, onClick) CH-13081
+- CTL-P017-089 823 `Button` "{Republish|Publish to …" (button, onClick) CH-13081
+- CTL-P017-090 897 `Button` "Cancel" (button, onClick)
+- CTL-P017-091 900 `Button` "Move practice" (button, onClick)
+- CTL-P017-092 931 `button` "{name} {kindLabel} · {…" (button, onClick) CH-13895
+- CTL-P017-093 948 `PhoneIconAction` "Print" (onClick)
+- CTL-P017-094 967 `BackLink` "Practice" (link, onClick)
+- CTL-P017-095 978 `Button` "Preview" (button, onClick)
+- CTL-P017-096 979 `Button` "{publishLabel}" (button, onClick)
 
 ### `src/clubhouse/screens/practice/builder/Sheets.tsx`
 
@@ -2932,8 +2932,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/ui/Card.tsx`
 
-- CTL-P000-055 128 `Link` "{label}" (link, href)
-- CTL-P000-056 134 `button` "{label}" (button, onClick)
+- CTL-P000-055 147 `Link` "{label}" (link, href)
+- CTL-P000-056 153 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/ui/Checkbox.tsx`
 

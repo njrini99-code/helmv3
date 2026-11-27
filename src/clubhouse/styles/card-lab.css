@@ -32,11 +32,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-callout);
 }
 .ch-card-lab__why {
   display: block;
   margin-top: 6px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   color: var(--ch-text-secondary);
 }

@@ -332,6 +332,8 @@ export function useSheetDrag(
         if (samples.length > 12) samples.shift();
       };
       const springBack = (speed: number, to = 0) => {
+        // The pinned footer moves with the sheet; read before settle, which clears its transition.
+        const pinned = stops.current && pinSel.current ? el.querySelector<HTMLElement>(pinSel.current) : null;
         let timer = 0;
         const settle = () => {
           window.clearTimeout(timer);
@@ -354,7 +356,6 @@ export function useSheetDrag(
           return;
         }
         const gap = dy - to;
-        const pinned = stops.current && pinSel.current ? el.querySelector<HTMLElement>(pinSel.current) : null;
         if (Math.abs(gap) >= 0.5 && chSupportsLinear()) {
           // Toward rest from wherever it is, at the speed it was moving (progress per second), cut within half a pixel.
           // Thrown back hard, a sheet carries on past its open position as when pulled there, over its floor; a drawer
@@ -367,8 +368,8 @@ export function useSheetDrag(
           // The dim comes back with the panel, on its spring (A9).
           if (dialog) chSetScrim(dialog, 1, curve.ms, curve.linear);
         } else {
-          el.style.transition = 'translate var(--ch-dur-release) var(--ch-ease)';
-          if (pinned) pinned.style.transition = 'translate var(--ch-dur-release) var(--ch-ease)';
+          el.style.transition = 'translate var(--ch-dur-release) var(--ch-ease-ios)';
+          if (pinned) pinned.style.transition = 'translate var(--ch-dur-release) var(--ch-ease-ios)';
           if (dialog) chSetScrim(dialog, 1, CH_DUR.release * 1000);
         }
         el.style.translate = to ? `0 ${to}px` : '';
