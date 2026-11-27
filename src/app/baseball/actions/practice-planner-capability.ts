@@ -32,7 +32,8 @@ import { hasBaseballCapability } from '@/lib/baseball/capabilities';
  */
 export const getCanManagePractice = withBaseballAction(
   'getCanManagePractice',
-  { feature: 'baseball_practice', featureArea: 'baseball-practice' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { feature: 'baseball_practice', featureArea: 'baseball-practice', demoSafe: true },
   async (ctx): Promise<boolean> => {
     if (ctx.activeRole !== 'coach') return false;
     return hasBaseballCapability(ctx.activeTeamId, 'can_manage_practice');
