@@ -32,6 +32,29 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
     out.push({ check, at: path(el), detail });
   };
   const painted = (c: string) => !!c && c !== 'transparent' && !/^rgba?\(.*,\s*0\)$/.test(c) && !/\/\s*0\)$/.test(c);
+  // A computed box-shadow, layer by layer ("rgb(…) 0px 2px 4px 0px inset, …"): the commas inside a colour are not layers.
+  const shadowLayers = (v: string) => {
+    const layers: string[] = [];
+    let depth = 0, from = 0;
+    for (let i = 0; i < v.length; i++) {
+      if (v[i] === '(') depth++;
+      else if (v[i] === ')') depth--;
+      else if (v[i] === ',' && depth === 0) {
+        layers.push(v.slice(from, i));
+        from = i + 1;
+      }
+    }
+    layers.push(v.slice(from));
+    return layers.map((l) => {
+      const [x = 0, y = 0, blur = 0, spread = 0] = (l.replace(/[a-z-]+\([^)]*\)/gi, '').match(/-?[\d.]+px/g) ?? []).map(px);
+      return { inset: /\binset\b/.test(l), x, y, blur, spread };
+    });
+  };
+  // Drawn inward: at least one inset layer, and anything outside it is a sharp lip of 1px or less (the well's highlight).
+  const recessed = (v: string) => {
+    const layers = shadowLayers(v);
+    return layers.some((l) => l.inset) && layers.filter((l) => !l.inset).every((l) => l.blur === 0 && l.x === 0 && Math.abs(l.y) <= 1 && l.spread <= 1);
+  };
   const visible = (el: Element) => {
     const r = el.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) return false;
@@ -132,7 +155,10 @@ export function scanPage(args: { phone: boolean }): GateFinding[] {
       if (outer && !freed(el, outer)) {
         const o = outer.getBoundingClientRect();
         const s = getComputedStyle(el);
-        const lifted = (s.boxShadow && s.boxShadow !== 'none') || (px(s.borderTopWidth) > 0 && painted(s.borderTopColor));
+        // A tile or well in a card is allowed (DESIGN_LANGUAGE §4: --ch-bg-subtle, "a hairline, or the toggle well's inset"): a
+        // shadow drawn inward, with at most a 1px lip below it, sinks into the card rather than lifting off it. Only a lifted
+        // surface is a card inside a card; a painted border still counts as one.
+        const lifted = (s.boxShadow && s.boxShadow !== 'none' && !recessed(s.boxShadow)) || (px(s.borderTopWidth) > 0 && painted(s.borderTopColor));
         if (lifted && r.width >= o.width * 0.5) add('nested-surface', el, `inside ${name(outer)}`);
       }
     }
