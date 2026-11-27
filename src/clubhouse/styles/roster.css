@@ -3553,6 +3553,12 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
     position: absolute;
     right: calc(100% - 4px);
   }
+  /* The first label (Player) starts on the row's 16 with the names under it: its key's 6 of padding, pulled back by a
+     negative margin, drew the key 10 from the card's edge. Its focus ring still clears the word. */
+  [data-ch-crh='on'].ch-rsd .ch-rs-row--head > :first-child > .ch-rs-sorth {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+  }
   /* One track for the season card, and the leaders share the rest: none leaves the card the row, never a hole. */
   [data-ch-crh='on'].ch-rsd .ch-rs-top {
     display: grid;

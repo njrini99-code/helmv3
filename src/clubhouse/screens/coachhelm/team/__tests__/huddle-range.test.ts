@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { huddleRange, huddleYRange, r2, spreadCoins } from '../Huddle';
+import { COIN_BOUNDS, huddleRange, huddleYRange, r2, spreadCoins } from '../Huddle';
 
 // The chart's box, as Huddle.tsx draws it: 320 × 262, plot from (36, 16) to (308, 222).
 const at = (v: { x: number; y: number }, r: { lo: number; hi: number }) => ({
@@ -40,6 +40,22 @@ describe('coins that land on one another are drawn apart (L-024)', () => {
     const out = spreadCoins(pts, box);
     expect(out[2]).toEqual(pts[2]);
     out.forEach((o, i) => expect(Math.hypot(o.x - pts[i]!.x, o.y - pts[i]!.y)).toBeLessThanOrEqual(14 * Math.SQRT2 + 0.01));
+  });
+});
+
+describe('a coin drawn apart keeps its 44 tap circle inside the drawing too (TEAM-1, presentation gate team-long)', () => {
+  it.each([
+    // Players on near-identical figures at the top-right corner, as far out as huddleRange places a true point (x 298, y 22).
+    [[{ x: 298, y: 22 }, { x: 297, y: 23 }, { x: 296, y: 22 }]],
+    [[{ x: 298, y: 120 }, { x: 298, y: 121 }]],
+    [[{ x: 150, y: 22 }, { x: 150, y: 22 }]],
+  ])('%j', (points) => {
+    for (const c of spreadCoins(points, COIN_BOUNDS)) {
+      expect(c.x + 22).toBeLessThanOrEqual(320);
+      expect(c.y - 22).toBeGreaterThanOrEqual(0);
+      expect(c.x - 22).toBeGreaterThanOrEqual(0);
+      expect(c.y + 22).toBeLessThanOrEqual(262);
+    }
   });
 });
 

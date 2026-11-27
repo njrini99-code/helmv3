@@ -96,8 +96,10 @@ function Scoring({ data, phone, covered }: { data: ChPlayerHome; phone: boolean;
   };
   const figs: Array<[string, string, string, string]> = [
     // Every figure names its window (prod audit 2026-11-15, PL-HOME-02): the average and under par are the rounds picked below, strokes gained
-    // is always the last ten (figure-window.ts, QA-1; PL-HOME-01) and the handicap is the index.
-    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : `Last ${shown.length} · ${averageChange(delta, deltaSignal, before.length)}`, deltaSignal],
+    // is always the last ten (figure-window.ts, QA-1; PL-HOME-01) and the handicap is the index. On the phone the picker in the card already
+    // says "Last 10", so the average's change says only what differs from it, as coach Home's does (HOME-P-11): "Last 10 · −0.9 · Better than
+    // previous 10" ran to three lines in the card's half-width cell (the presentation gate's cramped-text).
+    ['Scoring avg', formatFixed(mean), delta == null ? `Last ${shown.length}` : phone ? averageChange(delta, deltaSignal, before.length) : `Last ${shown.length} · ${averageChange(delta, deltaSignal, before.length)}`, deltaSignal],
     ['Strokes gained', data.sgPerRound == null ? NO_DATA : formatSigned(data.sgPerRound), data.sgPerRound == null ? 'After three rounds' : `Last 10, per round ${sgBaseline(data.tour).vs}`, changeTone(data.sgPerRound, false)],
     ['Handicap', formatHcp(data.handicap), 'Index', ''],
     ['Under par', withPar.length ? `${under} of ${withPar.length}` : NO_DATA, withPar.length < shown.length ? `In last ${shown.length} with par recorded` : `In last ${shown.length}`, ''],
