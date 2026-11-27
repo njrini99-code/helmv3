@@ -19,6 +19,7 @@ import { PinTile } from './PinTile';
 import { InboxSkeleton } from './InboxSkeleton';
 import { AnnouncementsSection } from '../announcements';
 import { MessageHits } from '../message-hits';
+import { Card } from '../../../ui/Card';
 
 /* Inbox */
 
@@ -75,17 +76,17 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
       ) : (
         <div className="ch-msp-list" ref={reveal}>
           {pinned.length > 0 && (
-            <section className="ch-msv-card" aria-label="Pinned">
+            <Card kind="list" className="ch-msv-card" label="Pinned">
               <h2 className="ch-msv-card__h">Pinned</h2>
               <div className="ch-msv-pins">
                 {pinned.map((c, i) => (
                   <PinTile key={c.id} api={api} c={c} place={i} />
                 ))}
               </div>
-            </section>
+            </Card>
           )}
           {recent.length > 0 && (
-            <section className="ch-msv-card" aria-label={recentTitle}>
+            <Card kind="list" className="ch-msv-card" label={recentTitle}>
               <h2 className="ch-msv-card__h">
                 {recentTitle} <small className="ch-num">{recent.length}</small>
               </h2>
@@ -94,7 +95,7 @@ export function PhoneInboxV2({ api, onNew, onTeam }: { api: ChMessagesApi; onNew
                   <ConvRow key={c.id} api={api} c={c} phone />
                 ))}
               </ListPresence>
-            </section>
+            </Card>
           )}
           {nothing && <RailEmpty filter={filter} layout="card" />}
           {/* No conversations but the inbox is not a first run (announcements to show, or their read failed, GAP-S-01):

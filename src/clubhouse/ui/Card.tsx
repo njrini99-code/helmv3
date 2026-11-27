@@ -46,6 +46,12 @@ export function Card({
   message,
   className,
   ctl,
+  id,
+  labelledBy,
+  live,
+  role,
+  busy,
+  code,
   children,
 }: {
   kind?: CardRole;
@@ -62,6 +68,18 @@ export function Card({
   className?: string;
   /** The control id (`CTL-P###-NNN`) when the card is pressable. */
   ctl?: string;
+  /** The card's id, when a link or a scroll lands on it. */
+  id?: string;
+  /** The id of a heading inside the card that names it (a page's own heading), in place of `label`. */
+  labelledBy?: string;
+  /** A card whose content swaps in place (a picked hole) and is read out when it does. */
+  live?: 'polite';
+  /** A card that is itself the answer to a search or a filter ("No messages match"). */
+  role?: 'status';
+  /** A page's own loading card that keeps its loaded shape (not `state="loading"`, which draws the kernel's skeleton). */
+  busy?: boolean;
+  /** The page's state code (`CH-NNNNN`), written to `data-ch-code`. */
+  code?: string;
   children?: ReactNode;
 }) {
   const nested = useContext(InSurface);
@@ -74,6 +92,12 @@ export function Card({
     'data-card-tone': tone,
     'data-card-bar': greenBar ? 'green' : undefined,
     'data-card-state': state === 'ready' ? undefined : state,
+    id,
+    'aria-labelledby': labelledBy,
+    'aria-live': live,
+    'aria-busy': busy || undefined,
+    role,
+    'data-ch-code': code,
   };
   const body =
     state === 'loading' ? (

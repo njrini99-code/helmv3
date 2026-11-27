@@ -52,6 +52,7 @@ import { invalidatePrefetchTabs } from '../../shell/use-prefetch-tabs';
 import type { ChDebrief } from '../../data/round-debrief-shape';
 import { plural, pluralWord } from '../../lib/plural';
 import { Abbr } from '../../ui/Abbr';
+import { Card } from '../../ui/Card';
 
 const LIE_LABEL: Record<string, string> = { fairway: 'Fairway', rough: 'Rough', sand: 'Sand', green: 'Green', hole: 'Holed', penalty: 'Penalty', other: 'Other', tee: 'Tee' };
 const pct = (hit: number, of: number) => `${Math.round((hit / of) * 100)}%`;
@@ -98,7 +99,7 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
   const scale = sgScale([sg.total, ...SG_LEGS.map(([k]) => sg[k])]);
   const tone = (v: number | null) => ' ' + changeTone(v, false, 1);
   return (
-    <section className="ch-rv-card ch-rv-sg" aria-labelledby="ch-rv-sg-h">
+    <Card kind="list" className="ch-rv-card ch-rv-sg" labelledBy="ch-rv-sg-h">
       <div className="ch-rv-card__h">
         <div>
           <h2 id="ch-rv-sg-h">Strokes gained</h2>
@@ -135,7 +136,7 @@ function StrokesGained({ review: r, onRetry, retrying }: { review: ChRoundReview
           );
         })}
       </dl>
-    </section>
+    </Card>
   );
 }
 
@@ -253,7 +254,7 @@ function HoleCard({
   const title = [`Hole ${hole.n}`, hole.par != null ? `Par ${hole.par}` : null, hole.yards ? `${hole.yards} yds` : null].filter(Boolean).join(' · ');
   const strokes = hole.shots.filter((s) => !s.penalty).length;
   return (
-    <section className="ch-rv-card ch-rv-hole" aria-labelledby="ch-rv-hole-h" aria-live="polite">
+    <Card kind="list" className="ch-rv-card ch-rv-hole" labelledBy="ch-rv-hole-h" live="polite">
       <div className="ch-rv-card__h">
         <div>
           <h3 id="ch-rv-hole-h">{title}</h3>
@@ -322,7 +323,7 @@ function HoleCard({
           </ol>
         )}
       </Swap>
-    </section>
+    </Card>
   );
 }
 
@@ -754,7 +755,7 @@ export function RoundReview({
           )}
           {!r.holesError && <RoundSays figures={says} />}
           {r.holes.length > 0 && !r.holesError && (
-            <section className="ch-rv-card" aria-labelledby="ch-rv-dist-h">
+            <Card kind="list" className="ch-rv-card" labelledBy="ch-rv-dist-h">
               <div className="ch-rv-card__h">
                 <div>
                   <h3 id="ch-rv-dist-h">Scoring distribution</h3>
@@ -772,7 +773,7 @@ export function RoundReview({
                   </div>
                 ))}
               </div>
-            </section>
+            </Card>
           )}
         </Zone>
 
@@ -957,7 +958,7 @@ export function RoundReview({
               }
             >
               <SectionBoundary surface="rounds.review.card" label="The scorecard" code="CH-11203">
-                <section className="ch-rv-card" id="ch-rz-card" aria-labelledby="ch-rv-card-h">
+                <Card kind="list" className="ch-rv-card" id="ch-rz-card" labelledBy="ch-rv-card-h">
                   <div className="ch-rv-card__h">
                     <div>
                       <h2 id="ch-rv-card-h">Scorecard</h2>
@@ -968,7 +969,7 @@ export function RoundReview({
                     <ReviewNine label="Out" holes={r.holes.filter((h) => h.n <= 9)} sel={sel} onPick={pick} />
                     <ReviewNine label="In" holes={r.holes.filter((h) => h.n > 9)} sel={sel} onPick={pick} />
                   </SideScroll>
-                </section>
+                </Card>
               </SectionBoundary>
               <SectionBoundary surface="rounds.review.hole" label="This hole" code="CH-11203">
                 {hole && (
@@ -1015,7 +1016,7 @@ export function RoundReview({
                   )
                 )}
                 {r.notes && (
-                  <section className="ch-rv-card ch-rv-notes" aria-labelledby="ch-rv-notes-h">
+                  <Card kind="list" className="ch-rv-card ch-rv-notes" labelledBy="ch-rv-notes-h">
                     <div className="ch-rv-card__h">
                       <div>
                         <h3 id="ch-rv-notes-h">{r.playerName ? `${r.playerName.split(' ')[0]}’s notes` : coach ? 'The player’s notes' : 'Your notes'}</h3>
@@ -1023,7 +1024,7 @@ export function RoundReview({
                       </div>
                     </div>
                     <p>{r.notes}</p>
-                  </section>
+                  </Card>
                 )}
                 <CoachNote roundId={r.id} note={r.coachNote} error={r.coachNoteError} canWrite={coach} playerFirst={r.playerName ? (r.playerName.split(' ')[0] ?? null) : null} />
               </Zone>

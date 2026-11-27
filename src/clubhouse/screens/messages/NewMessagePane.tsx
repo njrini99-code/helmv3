@@ -13,6 +13,7 @@ import { MS_BEATS, msAnimate, sheetCloseCurve } from './motion/messages-motion';
 import type { ChMessagesApi } from './MessagesView';
 import { personOf } from './person-of';
 import { FORMER_MEMBER } from '../../lib/person-fallback';
+import { Card } from '../../ui/Card';
 
 /**
  * Desktop New message, in the thread column (MSG-NEW-02): a glass bar, the To card, Suggested. A name makes a green token, then the
@@ -80,7 +81,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
         {api.directoryError ? (
           <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
         ) : (
-          <section className="ch-msp-panel ch-msv-suggest" aria-label="Suggested">
+          <Card kind="list" className="ch-msp-panel ch-msv-suggest" label="Suggested">
             <header className="ch-msv-members__h">
               <b>Suggested</b>
               {!term && <span>{coach ? 'Players you haven’t messaged' : 'People you haven’t messaged'}</span>}
@@ -95,7 +96,7 @@ export function NewMessagePane({ api, onCancel, onDialog }: { api: ChMessagesApi
               </button>
             ))}
             {!people.length && <p className="ch-msp-none">{term ? `No one matches “${q.trim()}”.` : 'No one to message yet.'}</p>}
-          </section>
+          </Card>
         )}
         {coach && !term && (
           <div className="ch-msp-panel ch-msv-newpane__more">

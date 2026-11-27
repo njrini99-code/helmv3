@@ -21,6 +21,7 @@ import { PhoneBar, PhoneTextAction } from '../../../ui/PhoneBar';
 import { InlineNotice } from '../../../ui/Notices';
 import { Avatar } from '../../../ui/Avatar';
 import { FORMER_MEMBER } from '../../../lib/person-fallback';
+import { Card } from '../../../ui/Card';
 
 /* New message */
 
@@ -138,7 +139,7 @@ export function PhoneNewMessage({
   const quickGroups = coach && !q ? (
 <>
               {/* Not in the design (GAP.md "Can't match as drawn"): kept as a second card in the one card style, under Suggested. */}
-              <section className="ch-msp-panel ch-msd-lcard" aria-labelledby="ch-msp-new-quick">
+              <Card kind="list" className="ch-msp-panel ch-msd-lcard" labelledBy="ch-msp-new-quick">
               <header className="ch-msd-lcard__h">
                 <b id="ch-msp-new-quick">Quick groups</b>
               </header>
@@ -184,7 +185,7 @@ export function PhoneNewMessage({
                   </button>
                 )}
               </div>
-              </section>
+              </Card>
             </>
   ) : null;
   return (
@@ -265,7 +266,7 @@ export function PhoneNewMessage({
           {api.directoryError ? (
             <InlineNotice code="CH-7205" title="Your team list didn’t load" body="Try again." onRetry={api.retryDirectory} />
           ) : !people.length && !q ? null : (
-            <section className="ch-msp-panel ch-msd-lcard ch-msd-suggest" aria-labelledby="ch-msp-new-suggested">
+            <Card kind="list" className="ch-msp-panel ch-msd-lcard ch-msd-suggest" labelledBy="ch-msp-new-suggested">
               <header className="ch-msd-lcard__h">
                 <b id="ch-msp-new-suggested">Suggested</b>
                 {!term && <small>{coach ? "Players you haven’t messaged" : "People you haven’t messaged"}</small>}
@@ -290,7 +291,7 @@ export function PhoneNewMessage({
               })}
               {!people.length && (q.trim()) && <p className="ch-msp-none">{q.trim() ? `No one matches “${q.trim()}”.` : "No one to message yet."}</p>}
             </div>
-            </section>
+            </Card>
           )}
           {group && <p className="ch-msp-hint ch-num">Messages to {to.length} people start a new group.</p>}
           {quickGroups}
