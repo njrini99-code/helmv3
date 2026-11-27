@@ -6,7 +6,7 @@
  * apart, and the contract is the thing to fix or the code is.
  */
 import type { BridgeGraph, BridgeId, PageId } from './graph';
-import { SHELL_PAGE } from './graph';
+import { SHELL_PAGE, actionCallNames } from './graph';
 import type { ChSignal } from './signal';
 
 export type DriftKind = 'unknown-code' | 'deprecated-fired' | 'reserved-fired' | 'wrong-page' | 'wrong-outcome' | 'silent-action';
@@ -20,12 +20,12 @@ export interface ResolvedSignal {
   drift: DriftKind[];
 }
 
-/** An action may be named by its ACT- ID or, once E2 sends it, by its `useAction` name. */
+/** An action may be named by its ACT- ID or by any `useAction` name it is sent under. */
 export function actionIndex(graph: BridgeGraph): Map<string, string> {
   const index = new Map<string, string>();
   for (const [id, a] of Object.entries(graph.actions)) {
     index.set(id, id);
-    if (a.useActionName) index.set(a.useActionName, id);
+    for (const name of actionCallNames(a)) index.set(name, id);
   }
   return index;
 }

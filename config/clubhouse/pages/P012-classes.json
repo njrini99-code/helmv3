@@ -67,6 +67,7 @@
       "label": "Add or edit a class (player)",
       "component": "src/clubhouse/screens/classes/ClassForm.tsx#ClassForm",
       "handler": "submit",
+      "useAction": "classes.save",
       "service": "src/clubhouse/screens/classes/writes.ts#save",
       "data": [
         "golf_player_classes"
@@ -87,6 +88,7 @@
       "label": "Put classes on the team calendar (after a save or an import, and Retry sync)",
       "component": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView",
       "handler": "syncClasses",
+      "useAction": "classes.sync",
       "service": "src/app/golf/actions/calendar-sync.ts#syncClassToCalendar",
       "data": [
         "golf_events",
@@ -107,6 +109,7 @@
       "label": "Remove a class (player)",
       "component": "src/clubhouse/screens/classes/ClassesView.tsx#ClassesView",
       "handler": "removeAction",
+      "useAction": "classes.remove",
       "service": "src/app/golf/actions/calendar-sync.ts#removeClassFromCalendar",
       "data": [
         "golf_events",
@@ -128,6 +131,7 @@
       "label": "Import the reviewed schedule (player)",
       "component": "src/clubhouse/screens/classes/ImportSchedule.tsx#ImportSchedule",
       "handler": "onImport",
+      "useAction": "classes.import",
       "service": "src/clubhouse/screens/classes/writes.ts#importRows",
       "data": [
         "golf_player_classes"

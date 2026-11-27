@@ -31,6 +31,7 @@ import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HOME_NOW } from '../preview/fixtures';
 import { PREVIEW_PLAYER_HOME, PREVIEW_PLAYER_HOME_EMPTY, PREVIEW_PLAYER_HOME_FAILED } from '../preview/fixtures-player-home';
+import { crashReported } from './_crash-report';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 function wrap(node: React.ReactNode) {
@@ -487,10 +488,11 @@ describe('Player Home · the game card on the redesign', () => {
     expect(document.querySelector('[data-ch-code="CH-2310"]')!.textContent).toMatch(/No rounds posted yet this season/);
   });
 
-  it('CH-2217 22301 the game card that crashes is contained, reported high as home.game; the rest of Home stays', () => {
+  it('CH-2217 22301 the game card that crashes is contained, reported high as home.game; the rest of Home stays', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     show(home({ legs: { ...PREVIEW_PLAYER_HOME.legs!, rows: PREVIEW_PLAYER_HOME.legs!.rows.map((l) => ({ ...l, trend: null as never })) } }));
     expect(document.querySelector('[data-ch-code="CH-2217"]')!.textContent).toMatch(/Your game couldn’t be shown/);
+    await crashReported();
     expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'home.game', severity: 'high' }));
     expect(screen.getByRole('heading', { level: 1 })).toBeTruthy();
     quiet.mockRestore();

@@ -220,7 +220,7 @@ describe('Stats team · reads that fail', () => {
     expect(within(code('CH-4203') as HTMLElement).getByRole('button', { name: 'Try again' })).toBeTruthy();
   });
 
-  it('CH-4204 CH-4205 CH-4206 CH-4207 CH-4208 42301 a section that crashes stays inside its section, and is reported high with its section', () => {
+  it('CH-4204 CH-4205 CH-4206 CH-4207 CH-4208 42301 a section that crashes stays inside its section, and is reported high with its section', async () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     wrap(stats({ figures: null as never, players: null as never, legWeeks: null as never, putting: { putts: 1, bands: null as never }, bests: null as never }));
     for (const [c, label] of [
@@ -231,6 +231,8 @@ describe('Stats team · reads that fail', () => {
       ['CH-4208', 'Season bests'],
     ] as const)
       expect(code(c)!.textContent).toMatch(new RegExp(`${label} couldn’t be shown`));
+    // No shell configures the signal queue here, so each crash's report runs a microtask after the commit (chSignalReport).
+    await act(async () => {});
     for (const surface of ['stats.team.figures', 'stats.team.trend', 'stats.team.legs', 'stats.team.putting', 'stats.team.bests'])
       expect(reportSpy).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     expect(screen.getByRole('heading', { name: 'Team stats' })).toBeTruthy();

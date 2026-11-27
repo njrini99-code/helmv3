@@ -87,6 +87,7 @@ import {
   PREVIEW_HOME_NO_EVENTS,
   PREVIEW_HOME_QUEUE_FAILED,
 } from '../preview/fixtures';
+import { crashReported } from './_crash-report';
 
 const code = (c: string) => document.querySelector(`[data-ch-code="${c}"]`);
 async function expectCode(c: string, text?: RegExp) {
@@ -1050,6 +1051,7 @@ describe('Home · the phone, the page’s own contracts', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const p = PREVIEW_HOME.phone;
     wrap(<CoachHome data={{ ...PREVIEW_HOME, phone: { ...p, next: { ...p.next!, type: 'nope' as never }, today: null as never, form: { ...p.form!, line: null as never } } }} now={PREVIEW_HOME_NOW} />);
+    await crashReported();
     for (const surface of ['home.upNext', 'home.today', 'home.form']) {
       expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     }
@@ -1215,13 +1217,14 @@ describe('Home · a section that crashes, and a form that does not load', () => 
     quiet.mockRestore();
   });
 
-  it('CH-2206 CH-2221 22301 on the desktop, a latest round or the team’s game that crashes is contained, reported high under its own surface', () => {
+  it('CH-2206 CH-2221 22301 on the desktop, a latest round or the team’s game that crashes is contained, reported high under its own surface', async () => {
     asPhone(false);
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const broken = { ...PREVIEW_HOME, latestRounds: { ...PREVIEW_HOME.latestRounds, rounds: null as never }, legs: { ...PREVIEW_HOME.legs!, rows: null as never } };
     wrap(<CoachHome data={broken} now={PREVIEW_HOME_NOW} />);
     expect(code('CH-2206')!.textContent).toMatch(/The latest round couldn’t be shown/);
     expect(code('CH-2221')!.textContent).toMatch(/The team’s game couldn’t be shown/);
+    await crashReported();
     for (const surface of ['home.latestRound', 'home.legs']) {
       expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface, severity: 'high' }));
     }

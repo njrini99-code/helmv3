@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
 import { type AdminFailure, buildIngest, type BridgeColumns } from '@/lib/admin/clubhouse/ingest';
+import { stampReport } from '@/lib/admin/clubhouse/report-stamp';
 import { type ChSignal, parseSignalBatch, redactSignal } from '@/lib/admin/clubhouse/signal';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
@@ -29,7 +30,7 @@ import { describeError } from '@/lib/utils/describe-error';
  * 4. resolves each envelope against the graph this deploy was built with and builds one ingest call per session
  *    (ingest.ts), sent to `clubhouse_ingest_signals` through the service role;
  * 5. writes a failure nobody reported yet as an `admin_events` row, and stamps the Bridge columns on the row a failure
- *    `chReport` already wrote.
+ *    `chReport` already wrote (report-stamp.ts; when the report lands after the signal, /api/log-error stamps it).
  *
  * Until the held migration 20261124090000 is applied, the ingest function doesn't exist: the route says
  * `persisted: false` and still writes failures to `admin_events` without the new columns.
@@ -48,9 +49,6 @@ const MAX_STAMPS_PER_BATCH = 5;
 const MAX_BODY_BYTES = 256 * 1024;
 /** One batch is one tab's; more sessions than this in one post is not a Clubhouse page. */
 const MAX_SESSIONS_PER_BATCH = 3;
-/** How far back a stamp looks for the row `chReport` wrote. */
-const STAMP_WINDOW_MS = 15 * 60_000;
-
 // PostgREST: the function isn't in the schema cache (the migration is held); a column isn't (same).
 const FUNCTION_MISSING = 'PGRST202';
 const COLUMN_MISSING = new Set(['PGRST204', '42703']);
@@ -143,22 +141,9 @@ async function insertAdminRows(db: SupabaseClient, rows: AdminFailure[], user: {
 }
 
 async function stampReported(db: SupabaseClient, userId: string, stamps: { sessionId: string; seq: number; columns: BridgeColumns }[]): Promise<number> {
-  const since = new Date(Date.now() - STAMP_WINDOW_MS).toISOString();
   let stamped = 0;
   // Only the caller's own rows, and no more than a batch may write: a known session id can't restamp someone else's row.
-  for (const { sessionId, seq, columns } of stamps.slice(0, MAX_STAMPS_PER_BATCH)) {
-    const { error, count } = await db
-      .from('admin_events')
-      .update(columns, { count: 'exact' })
-      .eq('source', 'client')
-      .eq('user_id', userId)
-      .eq('metadata->context->chSignal->>sessionId', sessionId)
-      .eq('metadata->context->chSignal->>seq', String(seq))
-      .is('ch_code', null)
-      .gte('created_at', since);
-    if (error) throw error;
-    stamped += count ?? 0;
-  }
+  for (const { sessionId, seq, columns } of stamps.slice(0, MAX_STAMPS_PER_BATCH)) stamped += await stampReport(db, userId, { sessionId, seq }, columns);
   return stamped;
 }
 

@@ -86,6 +86,7 @@ import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome'
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_DOCUMENTS, PREVIEW_PROSPECTS, PREVIEW_RECRUITING, PREVIEW_RECRUITING_EMPTY, PREVIEW_RECRUITING_FAILED, PREVIEW_RECRUITING_NEXT, PREVIEW_RECRUITING_NO_DIVISION, PREVIEW_RECRUITING_NOW } from '../preview/fixtures-recruiting';
+import { crashReported } from './_crash-report';
 
 // A swap's leaving copy (ui/Swap.tsx: the list as a stage is picked, CH-14603) is hidden from assistive tech while it
 // fades; jsdom never finishes the fade, so read the live copy only.
@@ -568,13 +569,14 @@ describe('Recruiting · desktop', () => {
     online.mockRestore();
   });
 
-  it('CH-14203 a section that crashes is named and reported, and the rest of the page keeps working', () => {
+  it('CH-14203 a section that crashes is named and reported, and the rest of the page keeps working', async () => {
     const broken = { ...PREVIEW_PROSPECTS[0]!, name: null as unknown as string };
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     wrap({ ...PREVIEW_RECRUITING, prospects: [broken, ...PREVIEW_PROSPECTS.slice(1)] });
     quiet.mockRestore();
     expect(codes('CH-14203').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/The prospect list couldn.t be shown/)).toBeTruthy();
+    await crashReported();
     expect(report).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ surface: 'recruiting.list', severity: 'high' }));
     // The pipeline is its own section and still reads 8 prospects.
     expect(screen.getByText('8 prospects · 1 committed')).toBeTruthy();

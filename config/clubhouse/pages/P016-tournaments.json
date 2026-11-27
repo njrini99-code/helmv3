@@ -340,6 +340,10 @@
       "label": "Save imported results or typed holes",
       "component": "src/clubhouse/screens/tournaments/ImportResults.tsx",
       "handler": "ImportResults (Save) and HoleEntry (Save holes), both through useAction",
+      "useAction": [
+        "tournaments.importResults",
+        "tournaments.enterHoles"
+      ],
       "service": "src/app/golf/actions/tournaments-import.ts#importTournamentResults",
       "data": [
         "golf_rounds",
@@ -352,7 +356,8 @@
         "loading": 160280,
         "empty": 160480,
         "validation": 160580,
-        "failure": 160680
+        "failure": 160680,
+        "holesFailure": 160681
       },
       "tests": [
         "src/app/golf/actions/__tests__/tournaments-import.test.ts",

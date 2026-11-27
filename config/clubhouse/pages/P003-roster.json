@@ -69,6 +69,7 @@
       "label": "Remove a player from the team",
       "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
       "handler": "remove.run",
+      "useAction": "roster.removePlayer",
       "service": "src/app/golf/actions/roster.ts#removePlayerFromTeam",
       "data": [
         "golf_team_members"
@@ -92,6 +93,7 @@
       "label": "Mark a player inactive or active (coach)",
       "component": "src/clubhouse/screens/roster/Roster.tsx#Roster",
       "handler": "changeStatus.run",
+      "useAction": "roster.changeStatus",
       "service": "src/app/golf/actions/team-management.ts#updatePlayerStatus",
       "data": [
         "golf_team_members (status)"
@@ -114,6 +116,7 @@
       "label": "Approve a join request",
       "component": "src/clubhouse/screens/roster/RosterRequests.tsx#RosterRequests",
       "handler": "jr.decide(request, true)",
+      "useAction": "roster.approveRequest",
       "service": "src/app/golf/actions/teams.ts#acceptJoinRequest",
       "data": [
         "golf_team_join_requests",
@@ -137,6 +140,7 @@
       "label": "Decline a join request",
       "component": "src/clubhouse/screens/roster/RosterRequests.tsx#RosterRequests",
       "handler": "jr.decide(request, false)",
+      "useAction": "roster.declineRequest",
       "service": "src/app/golf/actions/teams.ts#rejectJoinRequest",
       "data": [
         "golf_team_join_requests",
@@ -159,6 +163,7 @@
       "label": "Approve every join request (phone)",
       "component": "src/clubhouse/screens/roster/RosterPhoneCrh.tsx#RequestsSheetCrh",
       "handler": "jr.approveAll",
+      "useAction": "roster.approveAll",
       "service": "src/app/golf/actions/teams.ts#acceptJoinRequest",
       "data": [
         "golf_team_join_requests",
@@ -181,6 +186,7 @@
       "label": "Save the coach's note about a player",
       "component": "src/clubhouse/screens/roster/RosterPeek.tsx#CoachNote",
       "handler": "save.run",
+      "useAction": "roster.coachNote",
       "service": "src/app/golf/actions/v3/intent.ts#setIntent",
       "data": [
         "golf_coach_player_intent"
@@ -365,6 +371,7 @@
       "label": "Set the roster limit (on or off, and its number)",
       "component": "src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
       "handler": "save.run",
+      "useAction": "roster.saveLimit",
       "service": "src/app/golf/actions/roster-limit.ts#saveRosterLimit",
       "data": [
         "golf_team_roster_limits (migration 20261115250000, HELD)"
@@ -383,6 +390,7 @@
       "label": "Mark a player as not counting toward the roster limit, or counting again",
       "component": "src/clubhouse/screens/roster/RosterLimit.tsx#useRosterLimit",
       "handler": "mark.run",
+      "useAction": "roster.setExemption",
       "service": "src/app/golf/actions/roster-limit.ts#setRosterExemption",
       "data": [
         "golf_roster_exemptions (migration 20261115250000, HELD)"

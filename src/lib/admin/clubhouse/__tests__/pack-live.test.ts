@@ -29,7 +29,7 @@ vi.mock('../live', () => ({ readLiveSnapshot: vi.fn(), readPeopleNames: vi.fn(as
 process.env.BRIDGE_PSEUDONYM_KEY = 'test-pseudonym-key-0123456789abcdefghij';
 
 const graph = fixtureGraph();
-graph.actions['ACT-P007-SEND-MESSAGE']!.useActionName = 'messages.send';
+graph.actions['ACT-P007-SEND-MESSAGE']!.useActionNames = ['messages.send'];
 const ctx = (subject: string): PackLiveContext => ({ includeNames: false, subject });
 const labels = {
   person: (id: string | null) => (id ? `u-${id.slice(0, 4)}` : null),

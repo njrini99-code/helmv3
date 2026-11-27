@@ -157,6 +157,7 @@
       "label": "Discard an unfinished round (player)",
       "component": "src/clubhouse/screens/rounds/RoundsLibrary.tsx#RoundsLibrary",
       "handler": "confirmDiscard",
+      "useAction": "rounds.discard",
       "service": "src/app/golf/actions/round-partial.ts#deleteInProgressRound",
       "data": [
         "golf_rounds",
@@ -194,6 +195,7 @@
       "label": "Start a round (player)",
       "component": "src/clubhouse/screens/rounds/setup/RoundSetup.tsx#RoundSetup",
       "handler": "start.run (useAction rounds.start) -> ports.start -> useNewRoundSession start(form)",
+      "useAction": "rounds.start",
       "service": "src/lib/golf/round-session/use-new-round-session.ts#start",
       "data": [
         "golf_rounds",
@@ -215,6 +217,7 @@
       "label": "Save the round for later (Exit sheet, closed-qualifier sheet)",
       "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
       "handler": "save.run (useAction rounds.saveForLater) -> engine handleSaveForLater / handleSubmitSaveAndExit",
+      "useAction": "rounds.saveForLater",
       "service": "src/app/golf/actions/round-partial.ts#savePartialRound",
       "data": [
         "golf_rounds",
@@ -237,6 +240,7 @@
       "label": "Discard the round in play (Exit sheet, closed-qualifier sheet)",
       "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
       "handler": "discard.run (useAction rounds.discardRound) -> engine handleDeleteRound / handleSubmitDiscard",
+      "useAction": "rounds.discardRound",
       "service": "src/app/golf/actions/round-partial.ts#deleteInProgressRound",
       "data": [
         "golf_rounds (holes and shots cascade)",
@@ -246,7 +250,8 @@
         "confirm": 111107,
         "failure": 110612,
         "recovery": 111404,
-        "offline": 10703
+        "offline": 10703,
+        "closedFailure": 110623
       },
       "tests": [
         "src/clubhouse/__tests__/round-entry-wiring.test.tsx",
@@ -258,6 +263,7 @@
       "label": "Change a closed-qualifier round to practice",
       "component": "src/clubhouse/screens/rounds/entry/RoundRuntime.tsx#RoundRuntime",
       "handler": "practice.run (useAction rounds.saveAsPractice) -> engine handleSaveAsPractice",
+      "useAction": "rounds.saveAsPractice",
       "service": "src/app/golf/actions/round-type.ts#updateRoundType",
       "data": [
         "golf_rounds (round_type, qualifier link)"
@@ -276,6 +282,7 @@
       "label": "Change a live round's type (practice, tournament, qualifier)",
       "component": "src/clubhouse/screens/rounds/entry/ContinueRound.tsx#ContinueRound",
       "handler": "changeType.run (useAction rounds.changeType), then router.refresh",
+      "useAction": "rounds.changeType",
       "service": "src/app/golf/actions/round-type.ts#updateRoundType",
       "data": [
         "golf_rounds (round_type, qualifier_id, qualifier_round_number)",
@@ -297,6 +304,7 @@
       "label": "Change a submitted round's type from its review (player or team coach)",
       "component": "src/clubhouse/screens/rounds/RoundReview.tsx#ChangeRoundType",
       "handler": "change.run (useAction rounds.review.changeType), then router.refresh",
+      "useAction": "rounds.review.changeType",
       "service": "src/app/golf/actions/round-type.ts#updateRoundType",
       "data": [
         "golf_rounds (round_type, qualifier_id, qualifier_round_number)",
@@ -342,6 +350,7 @@
       "label": "Leave or edit the coach's note on a round (coach)",
       "component": "src/clubhouse/screens/rounds/CoachNote.tsx#CoachNote",
       "handler": "save.run (useAction rounds.review.coachNote)",
+      "useAction": "rounds.review.coachNote",
       "service": "src/app/golf/actions/round-coach-note.ts#saveRoundCoachNote",
       "data": [
         "golf_round_reviews (coach_notes)",

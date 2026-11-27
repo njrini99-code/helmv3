@@ -101,6 +101,7 @@
       "label": "Create a qualifier",
       "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm",
       "handler": "create.run",
+      "useAction": "qualifiers.create",
       "service": "src/app/golf/actions/qualifier-actions.ts#createGolfQualifier",
       "data": [
         "golf_qualifiers",
@@ -125,6 +126,7 @@
       "label": "Save an edited qualifier",
       "component": "src/clubhouse/screens/qualifiers/QualifierForm.tsx#QualifierForm",
       "handler": "save.run",
+      "useAction": "qualifiers.save",
       "service": "src/clubhouse/screens/qualifiers/writes.ts#runEditPlan",
       "data": [
         "golf_qualifiers",
@@ -155,6 +157,7 @@
       "label": "Close a qualifier",
       "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
       "handler": "close.run",
+      "useAction": "qualifiers.close",
       "service": "src/app/golf/actions/qualifier-actions.ts#updateQualifierStatus",
       "data": [
         "golf_qualifiers"
@@ -180,6 +183,7 @@
       "label": "Reopen a qualifier",
       "component": "src/clubhouse/screens/qualifiers/QualifierDetail.tsx#QualifierDetail",
       "handler": "reopen.run",
+      "useAction": "qualifiers.reopen",
       "service": "src/app/golf/actions/qualifier-actions.ts#updateQualifierStatus",
       "data": [
         "golf_qualifiers"
@@ -203,6 +207,7 @@
       "label": "Start selecting",
       "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#QualifierSelection",
       "handler": "start.run",
+      "useAction": "qualifiers.startSelecting",
       "service": "src/app/golf/actions/v3/qualifying.ts#advanceSelectionState",
       "data": [
         "golf_qualifiers"
@@ -228,6 +233,7 @@
       "label": "Save a coach’s pick",
       "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#PickDialog",
       "handler": "act.run",
+      "useAction": "qualifiers.setPick",
       "service": "src/app/golf/actions/v3/qualifying.ts#setQualifierCoachPick",
       "data": [
         "golf_qualifier_selections"
@@ -256,6 +262,7 @@
       "label": "Remove a coach’s pick",
       "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#QualifierSelection",
       "handler": "remove.run",
+      "useAction": "qualifiers.removePick",
       "service": "src/app/golf/actions/v3/qualifying.ts#removeQualifierCoachPick",
       "data": [
         "golf_qualifier_selections"
@@ -280,6 +287,7 @@
       "label": "Confirm the squad",
       "component": "src/clubhouse/screens/qualifiers/QualifierSelection.tsx#QualifierSelection",
       "handler": "confirm.run",
+      "useAction": "qualifiers.confirmSquad",
       "service": "src/app/golf/actions/v3/qualifying.ts#confirmQualifierSelection",
       "data": [
         "golf_qualifier_selections",
@@ -296,7 +304,8 @@
         "retry": 91401,
         "refresh": 91501,
         "permission": 90810,
-        "offline": 10703
+        "offline": 10703,
+        "partial": 90629
       },
       "tests": [
         "src/clubhouse/__tests__/qualifiers.test.tsx",

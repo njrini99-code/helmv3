@@ -2,7 +2,7 @@
 
 import { Component, Suspense, createContext, useCallback, useContext, useLayoutEffect, useMemo, useState, type ErrorInfo, type ReactNode } from 'react';
 import { chReport } from '../lib/track';
-import { chSignal, reportingSignal } from '../lib/signal';
+import { chSignalReport } from '../lib/signal';
 import { FAILURE_COPY, InlineNotice, partsSentence } from './Notices';
 
 type Props = { surface: string; label: string; children: ReactNode; /** Catalog number of the crash notice. */ code?: string };
@@ -54,8 +54,11 @@ class Boundary extends Component<Props & { group: Group | null }, { failed: bool
 
   override componentDidCatch(error: Error, info: ErrorInfo) {
     // E3 (Bridge plan §4.2): counted under the notice's code (CH-1206 when it has none), and the report carries its place.
-    const signal = chSignal({ kind: 'crash', code: this.props.code ?? 'CH-1206', surface: this.props.surface, message: error.message, reported: true });
-    reportingSignal(signal, () => chReport(error, { surface: this.props.surface, severity: 'high', extra: { componentStack: info.componentStack ?? undefined } }));
+    // A crash while the page first draws comes before the shell has configured the queue: the report waits for it.
+    const extra = { componentStack: info.componentStack ?? undefined };
+    chSignalReport({ kind: 'crash', code: this.props.code ?? 'CH-1206', surface: this.props.surface, message: error.message }, () =>
+      chReport(error, { surface: this.props.surface, severity: 'high', extra }),
+    );
     this.props.group?.add(this.id, { label: this.props.label, reset: this.reset });
   }
 
