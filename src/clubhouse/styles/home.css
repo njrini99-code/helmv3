@@ -6276,7 +6276,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
     padding: 0;
   }
   :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec > .ch-hm-sec__h > .ch-hm-link::after {
-    inset: min(0px, calc(50% - 22px)) min(-8px, calc(50% - 22px));
+    inset: min(0px, calc(50% - var(--ch-target-min) / 2)) min(calc(-1 * var(--ch-space-2)), calc(50% - var(--ch-target-min) / 2));
   }
 }
 
