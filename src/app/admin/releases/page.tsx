@@ -85,7 +85,13 @@ function FlagRow({ flag }: { flag: FeatureFlagRow }) {
           {/* feature_id is one unbroken snake_case token — without
               overflow-wrap it forced the row past the card edge at 375px. */}
           <p className="break-words font-fw-mono text-sm font-medium text-warm-900 [overflow-wrap:anywhere]">{flag.feature_id}</p>
-          <p className="mt-1 break-words text-xs leading-relaxed text-warm-600">{flag.purpose}</p>
+          {/* On a phone the purpose reads three lines and opens on a tap: 37 flags of full paragraphs were about
+              19,000px (2026-11-26). Wider screens show it whole. */}
+          <details className="group/purpose mt-1">
+            <summary className="cursor-pointer list-none break-words text-xs leading-relaxed text-warm-600 max-md:line-clamp-3 group-open/purpose:line-clamp-none md:cursor-auto [&::-webkit-details-marker]:hidden">
+              {flag.purpose}
+            </summary>
+          </details>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <StatusPill tone={ROLLOUT_TONE[flag.rolloutStatus]} dot size="sm">

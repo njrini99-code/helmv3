@@ -1,6 +1,8 @@
 'use client';
 
 import './admin-ivory.css';
+import './admin-phone.css';
+import { adminSans } from './admin-font';
 import { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -58,6 +60,7 @@ import {
 } from '@/components/fairway';
 import { FairwayBottomNav } from '@/components/fairway/app-shell/FairwayBottomNav';
 import { selectOverflow, summarizeMoreTab } from '@/components/fairway/app-shell/more-nav';
+import { MENU_HIDDEN_HREFS, owningSpace } from './space-tabs';
 import type { NavItem } from '@/components/fairway/app-shell/types';
 import { SessionActivityProvider } from '@/components/providers/SessionActivityProvider';
 import { createClient } from '@/lib/supabase/client';
@@ -360,9 +363,11 @@ export function AdminShell({
 
   const sections: readonly NavSection[] = useMemo(
     () => {
+      // The menu lists the spaces and the pages no space opens; a page a space reaches in one tap (its tab row,
+      // Today's "All activity") is not listed twice. ⌘K below still lists every page.
       const groups = NAV_SECTION_ORDER.map((section) => ({
         heading: section,
-        items: ADMIN_NAV.filter((entry) => entry.section === section).map((entry) => ({
+        items: ADMIN_NAV.filter((entry) => entry.section === section && !MENU_HIDDEN_HREFS.has(entry.href)).map((entry) => ({
           label: entry.label,
           href: entry.href,
           icon: NAV_ICON_BY_HREF[entry.href],
@@ -371,9 +376,9 @@ export function AdminShell({
           meta: entry.meta,
           // Longest match wins (navEntryForPath): on a Controls dossier only
           // Controls lights up, never Pages (`/admin/clubhouse`) beside it.
-          activeMatch: (p: string) => isNavEntryActive(entry.href, p),
+          activeMatch: (p: string) => isNavEntryActive(entry.href, p) || owningSpace(p) === entry.href,
         })),
-      }));
+      })).filter((group) => group.items.length > 0 || group.heading === 'More');
       // D5: the self-heal views close the More group. They never claim the
       // highlight; the tab that owns them (Incidents, Jobs) already has it.
       const moreViews: NavItem[] = ADMIN_MORE_VIEWS.map((view) => ({
@@ -589,7 +594,8 @@ export function AdminShell({
         label: BRIDGE_BOTTOM_NAV_LABELS[href],
         href,
         icon: NAV_ICON_BY_HREF[href],
-        activeMatch: (p: string) => p === href || p.startsWith(`${href}/`),
+        // A space's deeper view (Health under Product, Activity under Today) lights that space's tab.
+        activeMatch: (p: string) => p === href || p.startsWith(`${href}/`) || owningSpace(p) === href,
         // Open incidents ride on Reliability, red features on Product (the spaces that answer them).
         badge:
           href === '/admin/spaces/reliability' && errorCount !== null && errorCount > 0
@@ -725,7 +731,7 @@ export function AdminShell({
 
   return (
     <SessionActivityProvider>
-    <div className="fairway-ds bridge-ivory min-h-screen bg-canvas-gradient">
+    <div className={`fairway-ds bridge-ivory ${adminSans.variable} min-h-screen bg-canvas-gradient`}>
       <AppShell
         sections={sections}
         brand={brand}

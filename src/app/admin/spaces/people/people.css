@@ -41,21 +41,31 @@
 .bp-need-n span { font-size: 14px; color: var(--bs-ink-2); }
 .bp-need p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--bs-ink-2); }
 
-.bp-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.bp-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 0 22px 14px; }
+.bp-copy-slot { margin-left: auto; }
+@media (max-width: 640px) {
+  /* Filters span the card; the two actions share the last row, half each. */
+  .bp-controls { padding: 0 16px 14px; gap: 8px; }
+  .bp-controls > .bp-toggle, .bp-copy-slot { flex: 1 1 0; margin-left: 0; }
+  .bp-controls > .bp-toggle { justify-content: center; }
+  .bp-copy-slot > .bs-copy { width: 100%; }
+}
 .bp-toggle {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding: 0 14px;
   border-radius: 12px;
-  border: 1px solid var(--bs-line-strong);
+  border: 0;
+  background: var(--bs-key-bg);
+  box-shadow: 0 0 0 1px var(--bs-key-ring);
   font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
   color: var(--bs-ink-2);
   text-decoration: none;
 }
-.bp-toggle[aria-pressed='true'] { background: var(--bs-ink); color: var(--bs-bg); border-color: transparent; }
+.bp-toggle[aria-pressed='true'] { background: var(--bs-seg-on); box-shadow: var(--bs-seg-on-shadow); color: var(--bs-seg-on-ink); border-color: transparent; }
 .bp-toggle:focus-visible { outline: 2px solid var(--bs-good); outline-offset: 2px; }
 
 /* Ranked list: a grid row per team at desktop, a stacked card per team on a phone. */
@@ -70,8 +80,7 @@
 .bp-list-head {
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--bs-ink-3);
   padding-top: 8px;
   padding-bottom: 8px;
@@ -131,10 +140,9 @@
 }
 
 .bp-chip-sport {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
   padding: 1px 6px;
   border-radius: 5px;
   background: var(--bs-panel-2);
@@ -142,7 +150,7 @@
   color: var(--bs-ink-2);
 }
 .bp-chip-test {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   padding: 1px 7px;
   border-radius: 999px;
@@ -268,3 +276,19 @@
 
 /* Loading (xx90): static placeholders in the page's own shape. No pulse: nothing moves while it reads. */
 .bp-skel { display: block; border-radius: 8px; background: var(--bs-track); }
+
+/*
+ * A phone gets a short card a team (three lines, about 130px) instead of four with a sparkline: 27 teams were 7,500px
+ * of scrolling. The 30-day line stays on the team's own page.
+ */
+@container (max-width: 639px) {
+  .bp-team {
+    grid-template-areas:
+      'name state'
+      'active seen'
+      'rounds errors';
+    gap: 8px 12px;
+    padding: 14px 16px;
+  }
+  .bp-team > .bp-c-spark { display: none; }
+}

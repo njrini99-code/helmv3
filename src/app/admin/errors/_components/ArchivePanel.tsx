@@ -176,6 +176,9 @@ function sortForDisplay(resolutions: readonly ArchivedResolution[]): ArchivedRes
   });
 }
 
+/** Archived fixes shown before "Show older fixes"; every regression shows on top of this. */
+const ARCHIVE_SHOWN = 20;
+
 export function ArchivePanel({ result }: { result: AdminFetchResult<ResolutionArchiveSnapshot> }) {
   if (result.status === 'error') {
     return (
@@ -221,6 +224,8 @@ export function ArchivePanel({ result }: { result: AdminFetchResult<ResolutionAr
 
   const sorted = sortForDisplay(snapshot.resolutions);
   const regressedCount = sorted.filter((r) => r.regressed).length;
+  // Regressions sort first (sortForDisplay), so showing at least that many keeps every one of them on screen.
+  const shown = Math.max(ARCHIVE_SHOWN, regressedCount);
 
   return (
     <Surface as="section" aria-label="Archive">
@@ -243,9 +248,24 @@ export function ArchivePanel({ result }: { result: AdminFetchResult<ResolutionAr
         </InlineNotice>
       ) : null}
       <Surface.Body className="space-y-2">
-        {sorted.map((resolution) => (
+        {sorted.slice(0, shown).map((resolution) => (
           <ArchiveRow key={resolution.fingerprint} resolution={resolution} />
         ))}
+        {sorted.length > shown ? (
+          // 914 archived rows under the live queue were about 200,000px on a phone (2026-11-26). Every regression
+          // and the most recent fixes show; the rest are one tap away, in the same order.
+          <details className="group/more">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center text-body-sm font-medium text-accent-ink [&::-webkit-details-marker]:hidden">
+              <span className="group-open/more:hidden">Show {sorted.length - shown} older fixes</span>
+              <span className="hidden group-open/more:inline">Hide older fixes</span>
+            </summary>
+            <div className="space-y-2 pt-2">
+              {sorted.slice(shown).map((resolution) => (
+                <ArchiveRow key={resolution.fingerprint} resolution={resolution} />
+              ))}
+            </div>
+          </details>
+        ) : null}
       </Surface.Body>
     </Surface>
   );

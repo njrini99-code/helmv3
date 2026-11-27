@@ -116,7 +116,7 @@
 .bs .rl-phone-screen {
   flex: 1;
   border-radius: 22px;
-  background: var(--bs-bg);
+  background: #e8e3d5;
   border: 1px solid var(--bs-line);
   overflow: hidden;
   display: flex;
@@ -176,7 +176,7 @@
   margin-top: 1px;
 }
 
-.bs .rl-server { border-radius: 16px; border: 1px solid var(--bs-line); background: var(--bs-panel-2); padding: 16px 18px; }
+.bs .rl-server { border-radius: 12px; border: 0; background: var(--bs-panel-2); padding: 16px 18px; }
 .bs .rl-server-code { font-family: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace; font-size: 14px; color: var(--bs-bad); margin: 8px 0 6px; overflow-wrap: anywhere; }
 .bs .rl-server p { margin: 0; font-size: 14px; line-height: 1.5; color: var(--bs-ink-2); }
 
@@ -249,7 +249,7 @@
 }
 
 /* The explanation block at the head of the error detail (what happened, likely cause, what to do, still failing?). */
-.bs .rl-explain { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--bs-line); background: var(--bs-panel-2); }
+.bs .rl-explain { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 12px; border: 0; background: var(--bs-panel-2); }
 .bs .rl-explain-means { margin: 0; font-size: 14px; line-height: 1.5; color: var(--bs-ink-2); }
 .bs .rl-explain-means .bs-eyebrow { display: inline; margin-right: 6px; }
 .bs .rl-explain-cause { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; }
@@ -257,5 +257,5 @@
 .bs .rl-explain-fix { margin: 0; font-size: 13px; line-height: 1.5; padding-top: 10px; border-top: 1px solid var(--bs-line); }
 .bs .rl-explain-fix.bs-tone-muted { color: var(--bs-ink-3); }
 /* The cause chip on a feed row: words, not a coloured blob, so it reads without the colour. */
-.bs .rl-cause { display: inline-flex; align-items: center; font-size: 11px; font-weight: 600; letter-spacing: 0.02em; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.bs .rl-cause { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 8px; border: 0; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent); white-space: nowrap; }
 .bs .rl-cause.bs-tone-muted { color: var(--bs-ink-3); }

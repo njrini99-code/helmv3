@@ -313,6 +313,16 @@ export function plainActivityTitle(title: string): string {
   return t.length > 140 ? `${t.slice(0, t.lastIndexOf(' ', 138))}…` : t;
 }
 
+/**
+ * A line that starts with an email ("coach@school.edu signed in") as who, what and where: on a phone the whole
+ * address is one unbreakable word that wrapped as "demo-" / "coach@…". The row shows who and what, the domain after.
+ */
+export function splitLeadingEmail(text: string): { who: string; rest: string; domain: string } | null {
+  const m = /^([^\s@]+)@([^\s@]+\.[^\s@]+)(\s.*)?$/.exec(text);
+  if (!m) return null;
+  return { who: m[1]!, domain: m[2]!, rest: (m[3] ?? '').trim() };
+}
+
 /** "2 could not be read", "1 unknown", "1 could not be read, 1 unknown": why the total is only "at least". */
 export function needUnknownWords(n: Pick<Needs, 'unread' | 'failed'>): string {
   const unknown = n.unread - n.failed;

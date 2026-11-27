@@ -11,39 +11,55 @@
  */
 
 .bs {
-  /* Ivory, not cream (owner, 2026-11-26): the same page and card the admin shell uses (admin-ivory.css). */
-  --bs-bg: #f8f7f3;
-  --bs-panel: #fffffe;
-  --bs-panel-2: #f6f5f0;
-  --bs-line: rgb(20 40 30 / 0.1);
-  --bs-line-strong: rgb(20 40 30 / 0.18);
-  --bs-ink: #11211a;
-  --bs-ink-2: #3a4b42;
-  --bs-ink-3: #5b6b62;
-  --bs-eyebrow: #4f6a5c;
-  --bs-good: #1f7a4a;
-  --bs-good-wash: rgb(31 122 74 / 0.1);
-  --bs-watch: #8a5a00;
-  --bs-watch-wash: rgb(176 122 20 / 0.07); /* a hint of amber on ivory, never a cream panel */
-  --bs-bad: #b3381f;
-  --bs-bad-wash: rgb(179 56 31 / 0.09);
+  /*
+   * Clubhouse's material (owner, 2026-11-26: "the cards ... aren't clubhouse"). Values read off a rendered Clubhouse
+   * page and copied (the admin may not read --ch-*): the linen page under an ivory light is the shell's
+   * (admin-ivory.css), the card is ivory paper with a hairline ring and two soft shadows, titles are forest green,
+   * status lives in pills and dots, never in a tinted card.
+   */
+  --bs-bg: transparent;
+  --bs-panel: #faf7ef;
+  --bs-panel-2: #f1ede2;
+  --bs-line: rgb(28 25 18 / 0.1);
+  --bs-line-strong: rgb(28 25 18 / 0.24);
+  --bs-ink: #1c1b18;
+  --bs-ink-2: #3a3833;
+  --bs-ink-3: #46433d;
+  --bs-eyebrow: #5f5230;
+  --bs-title: rgb(18 59 41 / 0.9);
+  --bs-good: #155a39;
+  --bs-good-wash: #dfe8dc;
+  --bs-watch: #7a4e09;
+  --bs-watch-wash: #faf0dc;
+  --bs-bad: #b03a2e;
+  --bs-bad-wash: #fbe9e6;
   --bs-coach: #5b46b8;
   --bs-coach-wash: rgb(91 70 184 / 0.1);
   --bs-player: #1d6a9e;
   --bs-player-wash: rgb(29 106 158 / 0.1);
   --bs-track: rgb(20 40 30 / 0.08);
-  --bs-cta: #1f7a4a;
-  --bs-cta-ink: #ffffff;
-  --bs-radius: 22px;
-  --bs-shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 1px 2px rgb(20 40 30 / 0.06);
+  --bs-cta: #0b3a25;
+  --bs-cta-ink: #f4eedd;
+  --bs-radius: 16px;
+  --bs-shadow: 0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
+  /* Clubhouse's segmented control: a recessed linen well, a raised green thumb 3px in. */
+  --bs-seg-well: #ddd8ca;
+  --bs-seg-well-shadow: inset 0 2px 3px rgb(28 25 18 / 0.2), inset 0 4px 10px -2px rgb(28 25 18 / 0.16), inset 0 -1px 0 rgb(255 255 255 / 0.55), inset 0 0 0 1px rgb(28 25 18 / 0.13);
+  --bs-seg-on: linear-gradient(180deg, #1f6b45 0%, #0f4a2f 100%);
+  --bs-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2), inset 0 -1px 0 rgb(0 0 0 / 0.12), 0 1px 2px rgb(11 58 37 / 0.35), 0 3px 8px -2px rgb(11 58 37 / 0.3);
+  --bs-seg-on-ink: #f9f7f1;
+  /* Clubhouse's secondary key: translucent ivory with a warm ring. */
+  --bs-key-bg: rgb(255 254 250 / 0.45);
+  --bs-key-ring: rgb(110 98 62 / 0.2);
   /* The press tint laid over a row or card while a finger is on it (touch only, no transition). */
-  --bs-press: rgb(20 40 30 / 0.06);
+  --bs-press: rgb(28 25 18 / 0.06);
   /* Side gutters: 32px on a wide screen, 16px on a phone, never inside the notch or the rounded corners. */
   --bs-gutter: 32px;
 
-  /* One flat colour: no glow or wash behind the page (owner, 2026-11-26). */
+  /* The page is the shell's: the linen under the ivory light shows through. */
   background: var(--bs-bg);
   color: var(--bs-ink);
+  font-family: var(--bridge-font-sans, -apple-system), -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
   /* The space owns the whole canvas under the shell, even when its content is short. */
   min-height: calc(100dvh - var(--fw-shell-offset, 0px));
@@ -87,7 +103,15 @@
   --bs-track: rgb(255 255 255 / 0.07);
   --bs-cta: #8fe3b0;
   --bs-cta-ink: #06120c;
-  --bs-shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset;
+  --bs-shadow: 0 0 0 1px rgb(255 255 255 / 0.08);
+  --bs-title: #f1ecdf;
+  --bs-seg-well: rgb(255 255 255 / 0.06);
+  --bs-seg-well-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+  --bs-seg-on: linear-gradient(180deg, #155a39 0%, #0f4a2f 100%);
+  --bs-seg-on-shadow: inset 0 1px 0 rgb(255 255 255 / 0.16), 0 1px 2px rgb(0 0 0 / 0.5);
+  --bs-seg-on-ink: #f9f7f1;
+  --bs-key-bg: rgb(255 255 255 / 0.06);
+  --bs-key-ring: rgb(255 255 255 / 0.14);
   --bs-press: rgb(255 255 255 / 0.06);
 }
 
@@ -111,11 +135,23 @@
 }
 
 .bs-eyebrow {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  /* Clubhouse's date line over a page head: sentence case, warm brown, no tracking. */
+  font-size: 13px;
+  font-weight: 560;
+  line-height: 18px;
   color: var(--bs-eyebrow);
+}
+/* A card's title is Clubhouse's: 16px, forest green, sentence case. Status colour stays on it when the card has one. */
+.bs-panel-head > h2.bs-eyebrow,
+.bs-panel-head > .bs-eyebrow {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 22px;
+  letter-spacing: -0.02em;
+  color: var(--bs-title);
+}
+.bs-panel-head > h2.bs-eyebrow:is(.bs-tone-bad, .bs-tone-watch, .bs-tone-good, .bs-tone-coach, .bs-tone-player) {
+  color: currentColor;
 }
 
 /* The space header: copy on the left, an optional aside (a state strip, an action) right, below it on a phone. */
@@ -129,31 +165,44 @@
 }
 
 .bs-headline {
-  margin: 10px 0 12px;
-  /* 34px on a 390 phone, 68px from about 1100px wide. */
-  font-size: clamp(34px, 3.4vw + 21px, 68px);
-  line-height: 1;
-  font-weight: 600;
-  letter-spacing: -0.04em;
-  color: var(--bs-ink);
+  margin: 6px 0 10px;
+  /* Clubhouse's page head: 40px on a desk, 34px on a phone, bold at the narrower width, forest green. */
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 700;
+  font-variation-settings: 'wdth' 88;
+  letter-spacing: -0.02em;
+  color: var(--bs-title);
 }
 .bs-headline > .bs-second { display: block; }
+/* A second line with no status of its own stays the heading's green; a status line takes its tone. */
+.bs-headline > .bs-second:not(.bs-tone-good):not(.bs-tone-watch):not(.bs-tone-bad):not(.bs-tone-muted) { color: var(--bs-title); }
+@media (max-width: 640px) {
+  /* A phone's first screen is for the numbers: the headline takes two short lines, the lede a few. */
+  .bs-headline { font-size: 32px; line-height: 1.12; font-weight: 600; letter-spacing: -0.035em; margin: 6px 0 8px; }
+}
 
 .bs-lede {
   margin: 0;
   max-width: 820px;
-  font-size: 18px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
   color: var(--bs-ink-2);
+}
+@media (max-width: 640px) {
+  .bs-lede { font-size: 15px; line-height: 1.35; }
 }
 
 .bs-panel {
   border-radius: var(--bs-radius);
   background: var(--bs-panel);
-  border: 1px solid var(--bs-line);
+  border: 0;
   box-shadow: var(--bs-shadow);
   min-width: 0;
 }
+/* Never a tinted card (Clubhouse): a card that needs a look says so in its title's colour and its pills. */
+.bs .bs-panel[class*='bs-wash-'] { background: var(--bs-panel); border-color: transparent; }
 .bs-panel-pad { padding: 20px 22px; }
 .bs-panel-head {
   display: flex;
@@ -180,29 +229,35 @@
   /* A grid of Stat tiles goes two by two on a phone; a grid of panels stays one a row. */
   .bs-grid-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .bs-grid-stats > .bs-panel-pad { padding: 14px 14px 16px; }
+  /* An odd tile out spans the row instead of leaving a hole beside it. */
+  .bs-grid-stats > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
 .bs-stat-value {
-  font-size: 40px;
+  font-size: 34px;
   font-weight: 600;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.02em;
   line-height: 1.05;
   margin-top: 6px;
 }
 .bs-stat-sub { font-size: 13px; color: var(--bs-ink-3); margin-top: 4px; }
 @media (max-width: 640px) {
-  .bs-stat-value { font-size: 30px; }
+  .bs-stat-value { font-size: 28px; }
 }
 
 .bs-pill {
+  /* Clubhouse's status pill: a squared 8px chip, its tint and an inset hairline of its own ink. */
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 22px;
   font-size: 12px;
   font-weight: 600;
-  padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--bs-line-strong);
+  padding: 2px 8px;
+  border-radius: 8px;
+  border: 0;
+  background: var(--bs-panel-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 16%, transparent);
   color: var(--bs-ink-2);
   white-space: nowrap;
 }
@@ -256,6 +311,15 @@
 @media (hover: hover) {
   .bs-link:hover { text-decoration: underline; }
 }
+/*
+ * On a touch screen a text link gets a 44pt hit area without moving its text: an invisible box around it. Links sit
+ * in panel heads and notes with room around them, so the boxes do not reach a neighbour's.
+ */
+@media (pointer: coarse) {
+  .bs-link { position: relative; }
+  /* 10px down: a panel head's bottom padding, so the box never reaches the first row under it. */
+  .bs-link::after { content: ''; position: absolute; inset: -10px -8px; }
+}
 /* One focus ring for anything a keyboard reaches; the tap highlight is off, so focus has to be this visible. */
 .bs a:focus-visible,
 .bs button:focus-visible,
@@ -269,18 +333,20 @@
 }
 
 /*
- * A segmented control. It stays one line at every width: on a phone the options scroll sideways under the finger
- * (snap, no scrollbar) instead of wrapping into stacked pill rows.
+ * A segmented control. On a wide screen it is one line. On a phone it spans the column and wraps, every option a
+ * share of its row, so no option is cut off at the edge (owner, 2026-11-26: a half-hidden "De…" or "Needs attent"
+ * read as broken). It still scrolls sideways if one label alone is wider than the phone.
  */
 .bs-tabs {
   display: inline-flex;
   flex-wrap: nowrap;
-  gap: 4px;
-  padding: 4px;
+  gap: 0;
+  padding: 3px;
   max-width: 100%;
-  border-radius: 14px;
-  background: var(--bs-panel-2);
-  border: 1px solid var(--bs-line);
+  border-radius: 999px;
+  background: var(--bs-seg-well);
+  box-shadow: var(--bs-seg-well-shadow);
+  border: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
@@ -298,10 +364,10 @@
   flex: none;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
-  font-size: 14px;
+  min-height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
   color: var(--bs-ink-2);
@@ -309,12 +375,24 @@
   scroll-snap-align: start;
 }
 @media (hover: none), (max-width: 640px) {
-  .bs-tab { min-height: 44px; }
+  .bs-tab { min-height: 38px; font-size: 15px; }
+}
+@media (hover: hover) {
+  .bs-tab:not([aria-current='page']):not([aria-selected='true']):hover { color: var(--bs-ink); }
+}
+@media (max-width: 640px) {
+  /* Wrapped onto two rows, the capsule well becomes a rounded one. */
+  .bs-tabs { display: flex; flex-wrap: wrap; width: 100%; border-radius: 22px; }
+  .bs-main > .bs-tabs { align-self: stretch; }
+  .bs-tab { flex: 1 1 auto; justify-content: center; padding: 0 12px; }
+  /* Four options wrap three-and-one; two by two reads as one control. */
+  .bs-tabs:has(> .bs-tab:nth-child(4):last-child) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 .bs-tab[aria-current='page'],
 .bs-tab[aria-selected='true'] {
-  background: var(--bs-ink);
-  color: var(--bs-bg);
+  background: var(--bs-seg-on);
+  box-shadow: var(--bs-seg-on-shadow);
+  color: var(--bs-seg-on-ink);
 }
 
 .bs-button {
@@ -325,17 +403,18 @@
   min-height: 44px;
   padding: 0 16px;
   border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  border: 1px solid var(--bs-line-strong);
-  background: var(--bs-panel-2);
+  font-size: 14px;
+  font-weight: 560;
+  border: 0;
+  background: var(--bs-key-bg);
+  box-shadow: 0 0 0 1px var(--bs-key-ring);
   color: var(--bs-ink);
   cursor: pointer;
   text-decoration: none;
 }
 .bs-button-primary {
   background: var(--bs-cta);
-  border-color: transparent;
+  box-shadow: 0 0 0 1px #0e462c, inset 0 1px 0 rgb(255 255 255 / 0.1), 0 1px 2px rgb(28 25 18 / 0.05);
   color: var(--bs-cta-ink);
 }
 .bs-button[disabled] { cursor: not-allowed; color: var(--bs-ink-3); }
@@ -362,8 +441,7 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0;
   color: var(--bs-ink-3);
   padding: 10px 22px;
 }
@@ -410,10 +488,9 @@
   .bs-table-stack .bs-cell-label {
     display: block;
     margin-bottom: 3px;
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     white-space: nowrap;
     color: var(--bs-ink-3);
   }
@@ -436,11 +513,12 @@
   height: auto;
   padding: 0 16px;
   border-radius: 12px;
-  border: 1px solid var(--bs-line-strong);
-  background: var(--bs-panel-2);
+  border: 0;
+  background: var(--bs-key-bg);
+  box-shadow: 0 0 0 1px var(--bs-key-ring);
   color: var(--bs-ink);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 560;
   line-height: 1.2;
   white-space: nowrap;
   cursor: pointer;
@@ -448,7 +526,7 @@
 }
 .bs .bs-copy svg { flex: none; }
 @media (hover: hover) {
-  .bs .bs-copy:hover { border-color: var(--bs-ink-3); background: var(--bs-panel-2); }
+  .bs .bs-copy:hover { box-shadow: 0 0 0 1px var(--bs-line-strong); background: var(--bs-key-bg); }
 }
 
 /*

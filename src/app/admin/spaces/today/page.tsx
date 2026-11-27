@@ -15,6 +15,8 @@ import {
   settleRead,
 } from '@/lib/admin/data/today-space';
 import { CopyReportButton } from '../../_components/CopyReportButton';
+import { BRIDGE_BOTTOM_NAV_HREFS } from '../../_components/admin-nav';
+import { TODAY_ACTIVITY_HREF } from '../../_components/space-tabs';
 import { AreaChart } from '../_ui/AreaChart';
 import { Panel, Pill, SpaceHeader, SpaceRoot, toneClass, type Tone } from '../_ui/ui';
 import { AskList, Chevron, FailedInline, PulseTile } from '../_landing/parts';
@@ -38,6 +40,7 @@ import {
   weekTicks,
   needUnknownWords,
   plainActivityTitle,
+  splitLeadingEmail,
 } from '../_landing/model';
 
 export const metadata: Metadata = { title: 'Today' };
@@ -265,7 +268,7 @@ export default async function TodaySpacePage() {
           )}
           {activity.ok && activity.data.partial ? <p className="bs-note" style={{ padding: '0 22px 16px', margin: 0 }}>Some activity sources did not answer; the list may be short.</p> : null}
           <div style={{ padding: '0 22px 18px' }}>
-            <Link href="/admin/activity" className="bs-link">
+            <Link href={TODAY_ACTIVITY_HREF} className="bs-link">
               All activity
             </Link>
           </div>
@@ -274,13 +277,19 @@ export default async function TodaySpacePage() {
         <nav aria-label="Spaces" className="bs-split-main bs-cards">
           {spaces.map((s) =>
             s.href === HREF ? (
-              <div key={s.name} className="bs-panel bs-card" aria-current="page">
+              <div key={s.name} className="bs-panel bs-card" aria-current="page" data-tabbar="">
                 <span className="bs-card-title">{s.name}</span>
                 <span className="bs-card-q">{s.q}</span>
                 <span className="bs-card-value bs-tone-muted">{s.value}</span>
               </div>
             ) : (
-              <Link key={s.name} href={s.href} className="bs-panel bs-card bs-card-link" data-br={BR.today.spaceCard}>
+              <Link
+                key={s.name}
+                href={s.href}
+                className="bs-panel bs-card bs-card-link"
+                data-br={BR.today.spaceCard}
+                data-tabbar={(BRIDGE_BOTTOM_NAV_HREFS as readonly string[]).includes(s.href) ? '' : undefined}
+              >
                 <span className="bs-card-title">
                   {s.name}
                   <Chevron />
@@ -298,12 +307,24 @@ export default async function TodaySpacePage() {
 
 const KIND_TONE: Partial<Record<ActivityItem['kind'], Tone>> = { error: 'bad', signup: 'good', round_submitted: 'good' };
 
+function SinceText({ text }: { text: string }) {
+  const email = splitLeadingEmail(text);
+  if (!email) return <span className="bs-since-text">{text}</span>;
+  return (
+    <span className="bs-since-text">
+      <span className="bs-since-who">{email.who}</span>
+      {email.rest ? ` ${email.rest}` : null}
+      <span className="bs-since-where">@{email.domain}</span>
+    </span>
+  );
+}
+
 function SinceRow({ item }: { item: ActivityItem }) {
   const body = (
     <>
       <span className="bs-since-time">{utcClock(item.ts)}</span>
       <span className={`bs-dot ${toneClass(KIND_TONE[item.kind] ?? 'muted')}`} aria-hidden="true" />
-      <span className="bs-since-text">{plainActivityTitle(item.title)}</span>
+      <SinceText text={plainActivityTitle(item.title)} />
     </>
   );
   return item.href ? (

@@ -23,6 +23,7 @@ import {
   usageLine,
   type ReleaseCardLite,
   type TeamActivity,
+  splitLeadingEmail,
 } from '../model';
 
 const NOW = Date.parse('2026-11-26T12:40:00Z');
@@ -267,5 +268,17 @@ describe('plainActivityTitle', () => {
   });
   it('leaves a plain line alone, and an email as written', () => {
     expect(plainActivityTitle('admin@helmsportslabs.com signed in')).toBe('admin@helmsportslabs.com signed in');
+  });
+});
+
+describe('splitLeadingEmail', () => {
+  it('splits a leading address into who, what and the domain', () => {
+    expect(splitLeadingEmail('demo-coach@baseballhelmdemo.com signed in')).toEqual({ who: 'demo-coach', rest: 'signed in', domain: 'baseballhelmdemo.com' });
+    expect(splitLeadingEmail('a.b@x.co')).toEqual({ who: 'a.b', rest: '', domain: 'x.co' });
+  });
+  it('leaves a line without a leading address alone', () => {
+    expect(splitLeadingEmail('Round submitted')).toBeNull();
+    expect(splitLeadingEmail('Signed in as coach@x.edu')).toBeNull();
+    expect(splitLeadingEmail('@handle posted')).toBeNull();
   });
 });

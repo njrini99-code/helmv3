@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { DESK_TABS } from '../../_components/space-tabs';
 import { requireSuperAdmin } from '@/lib/admin/require-super-admin';
 import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { fetchHeldMigrations } from '@/lib/admin/command-deck/held-migrations';
@@ -16,12 +17,7 @@ export const dynamic = 'force-dynamic';
 const HREF = '/admin/spaces/desk';
 const SHOWN = 12;
 
-const TABS = [
-  { label: 'Engineering OS', href: '/admin/engineering', note: 'decision inbox, gates' },
-  { label: 'Work log', href: '/admin/work', note: 'PR timeline, change to proof' },
-  { label: 'Ben + Leah', href: '/admin/ben-leah', note: 'tester reports' },
-  { label: 'CRM', href: '/golf/admin/crm', note: 'coach pipeline' },
-];
+const TABS = DESK_TABS;
 
 /**
  * Desk space, B24 (plan: docs/superpowers/specs/helm-bridge/2026-11-26-bridge-spaces-build.md).

@@ -104,7 +104,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
         title="Every team · ranked"
         note={`Showing ${shown.length} of ${all.length} teams · ${bySport('golf')} GolfHelm, ${bySport('baseball')} BaseballHelm · open a team for its people`}
       >
-        <div className="bp-controls" style={{ padding: '0 22px 14px' }}>
+        <div className="bp-controls">
           <nav aria-label="Sport" className="bs-tabs">
             {(['all', 'golf', 'baseball'] as const).map((s) => (
               <Link key={s} href={teamsHref(params, { sport: s })} className="bs-tab" aria-current={params.sport === s ? 'page' : undefined} data-br={BR.teams.sport}>
@@ -122,7 +122,7 @@ export default async function PeopleSpacePage({ searchParams }: { searchParams?:
           <Link href={teamsHref(params, { hideTest: !params.hideTest })} className="bp-toggle" aria-pressed={params.hideTest} data-br={BR.teams.hideTest}>
             {params.hideTest ? 'Show test and demo' : 'Hide test and demo'}
           </Link>
-          <span data-br={BR.teams.copy} style={{ marginLeft: 'auto' }}>
+          <span data-br={BR.teams.copy} className="bp-copy-slot">
             <CopyReportButton report={teamsReport(shown, now)} variant="labeled" size="sm" label="Copy team list" className="bs-copy" />
           </span>
         </div>
@@ -171,9 +171,7 @@ function StateStrip({ counts, rows }: { counts: Record<TeamState, number>; rows:
       <div className="bp-states">
         {order.map((s) => (
           <div key={s} className="bp-state">
-            <span className={`bs-eyebrow ${toneClass(STATE_TONE[s])}`} style={{ letterSpacing: '0.06em' }}>
-              {STATE_WORDS[s]}
-            </span>
+            <span className={`bs-eyebrow ${toneClass(STATE_TONE[s])}`}>{STATE_WORDS[s].charAt(0).toUpperCase() + STATE_WORDS[s].slice(1)}</span>
             <span className={`bp-state-n ${toneClass(s === 'never' || s === 'dormant' ? 'ink' : STATE_TONE[s])}`}>{counts[s]}</span>
             <span className="bp-state-sub">{STATE_SUB[s]}</span>
           </div>
