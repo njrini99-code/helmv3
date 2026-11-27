@@ -163,7 +163,8 @@
 .ch-card[data-card-role='chart'] > .ch-card__visual {
   padding-inline: 8px;
 }
-.ch-card > :last-child:not(.ch-card__foot) {
+/* A list card's rows are its rhythm: they run to its bottom edge, so the last one takes no gutter under it. */
+.ch-card:not([data-card-role='list']) > :last-child:not(.ch-card__foot) {
   padding-bottom: var(--ch-card-pad);
 }
 .ch-card__foot {
