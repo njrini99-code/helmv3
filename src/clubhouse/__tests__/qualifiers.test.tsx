@@ -75,6 +75,7 @@ import './dialog-polyfill';
 /** Every Qualifiers screen: each page hands the route only its own (MAC-11); these tests drive every address through one route. */
 const ALL_SCREENS = { list: QualifiersList, detail: QualifierDetail, form: QualifierForm, selection: QualifierSelection };
 import { formatDate, localToday } from '../ui/date-time';
+import { crashReported } from './_crash-report';
 
 /** A date as a DateField shows it: this year's dates without the year (ui/date-time formatDate). */
 const fieldDate = (iso: string) => formatDate(iso, { omitYear: iso.slice(0, 4) === localToday().slice(0, 4) });
@@ -3662,6 +3663,7 @@ describe('Qualifiers · what is reported', () => {
     const quiet = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = detail();
     wrap(<QualifierDetail data={{ ...d, board: { ...d.board!, rows: d.board!.rows.map((r, i) => (i === 0 ? { ...r, name: null as never, rounds: null as never } : r)) } }} writes={fakeWrites()} live={false} />);
+    await crashReported();
     expect(chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'qualifiers.leaderboard', severity: 'high' }));
     quiet.mockRestore();
     // A picker read that fails.

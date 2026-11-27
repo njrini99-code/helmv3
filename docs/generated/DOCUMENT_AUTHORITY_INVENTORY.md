@@ -1096,6 +1096,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-24-desk-title.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-27-bridge-signal-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1269,6 +1270,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desktop-keys-scroll-padding.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-26-switch-time.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-27-signals-before-children.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |

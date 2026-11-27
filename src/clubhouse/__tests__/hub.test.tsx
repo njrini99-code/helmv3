@@ -52,6 +52,7 @@ import { PhoneChromeProvider, usePhoneChromeState } from '../shell/phone-chrome'
 import { ToastProvider } from '../ui/Toast';
 import './dialog-polyfill';
 import { PREVIEW_HUB_COACH, PREVIEW_HUB_COACH_EMPTY, PREVIEW_HUB_COACH_FAILED, PREVIEW_HUB_PLAYER, PREVIEW_HUB_PLAYER_EMPTY, PREVIEW_HUB_PLAYER_FAILED } from '../preview/fixtures-hub';
+import { crashReported } from './_crash-report';
 
 // A swap's leaving copy (ui/Swap.tsx) is hidden from assistive tech while it fades; jsdom never finishes the fade, so
 // read the live copy only.
@@ -473,11 +474,12 @@ describe('Team Hub · player', () => {
     for (const c of ['CH-10304']) expect(code(c)!.querySelector('.ch-es__tile svg'), c).not.toBeNull();
   });
 
-  it('CH-10205 102301 a section that crashes stays inside its section, and is reported under its own surface', () => {
+  it('CH-10205 102301 a section that crashes stays inside its section, and is reported under its own surface', async () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     show({ ...PREVIEW_HUB_PLAYER, updates: { rows: null as never, error: false } });
     expect(code('CH-10205')).not.toBeNull();
     expect(screen.getByRole('heading', { name: 'Next 7 days' })).toBeTruthy();
+    await crashReported();
     expect(track.chReport).toHaveBeenCalledWith(expect.any(Error), expect.objectContaining({ surface: 'hub.updates', severity: 'high' }));
     spy.mockRestore();
   });

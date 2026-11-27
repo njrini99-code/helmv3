@@ -90,10 +90,10 @@ export async function stampFromStoredSignal(db: SupabaseClient, userId: string, 
       .maybeSingle(),
     db.from('clubhouse_sessions').select('user_id, release, platform').eq('session_id', place.sessionId).maybeSingle(),
   ]);
-  for (const read of [event, session]) {
-    if (!read.error) continue;
-    if (notThere(read.error)) return 0;
-    throw read.error;
+  const readError = event.error ?? session.error;
+  if (readError) {
+    if (notThere(readError)) return 0;
+    throw readError;
   }
   const e = event.data as StoredEvent | null;
   const s = session.data as StoredSession | null;
