@@ -166,7 +166,8 @@ function insightVisibility(playerVisible: unknown): BaseballBlockVisibility {
  */
 export const getPracticeIntelligence = withBaseballAction(
   'getPracticeIntelligence',
-  FEATURE,
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { ...FEATURE, demoSafe: true },
   async (
     ctx,
   ): Promise<

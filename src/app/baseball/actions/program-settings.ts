@@ -42,6 +42,7 @@ import { revalidatePath } from 'next/cache';
 
 import { logServerError } from '@/lib/server-error-logger';
 import { withBaseballAction } from '@/lib/baseball/with-baseball-action';
+import { isBaseballDemoCoachEmail } from '@/lib/demo/baseball-config.server';
 import { resolveBaseballCapabilities } from '@/lib/baseball/capabilities';
 import {
   getDefaultProgramSettings,
@@ -179,7 +180,9 @@ async function writeAudit(
 
 export const getProgramSettings = withBaseballAction(
   'getProgramSettings',
-  { featureArea: 'baseball-settings' },
+  // Safe for the shared demo coach: the one write here (lazily creating the
+  // settings row) is skipped for the demo session below, so this stays a read.
+  { featureArea: 'baseball-settings', demoSafe: true },
   async (ctx): Promise<ProgramSettingsData> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -215,8 +218,9 @@ export const getProgramSettings = withBaseballAction(
 
     // Settings doc (1:1). Lazily create with variant defaults if absent AND the
     // viewer may manage settings (read-only viewers get the in-memory defaults).
+    // The shared demo coach never creates the row; it gets the defaults instead.
     let settingsRow = await readSettingsRow(teamId);
-    if (!settingsRow) {
+    if (!settingsRow && !isBaseballDemoCoachEmail(ctx.user.email)) {
       if (caps.can_manage_settings || caps.is_head_coach) {
         settingsRow = await createSettingsRow(teamId, programType, ctx.activeCoachId);
       }
@@ -268,7 +272,8 @@ export const getProgramSettings = withBaseballAction(
 
 export const getProgramBrand = withBaseballAction(
   'getProgramBrand',
-  { featureArea: 'baseball-settings' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', demoSafe: true },
   async (ctx): Promise<BaseballProgramBrand> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -518,7 +523,8 @@ async function defaultTeamIsSibling(teamId: string, candidateId: string): Promis
 
 export const listImportSources = withBaseballAction(
   'listImportSources',
-  { featureArea: 'baseball-settings', requiredCapability: 'can_manage_imports' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', requiredCapability: 'can_manage_imports', demoSafe: true },
   async (ctx): Promise<BaseballImportSourceConfig[]> => {
     const supabase = await createClient();
     const { data } = await fromUntyped(supabase, 'baseball_import_sources')
@@ -628,7 +634,8 @@ export const deleteImportSource = withBaseballAction(
 
 export const listIntegrations = withBaseballAction(
   'listIntegrations',
-  { featureArea: 'baseball-settings', requiredCapability: 'can_manage_settings' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', requiredCapability: 'can_manage_settings', demoSafe: true },
   async (ctx): Promise<BaseballIntegrationConfig[]> => {
     const supabase = await createClient();
     const { data } = await fromUntyped(supabase, 'baseball_integration_configs')
@@ -704,7 +711,8 @@ export const upsertIntegration = withBaseballAction(
 
 export const getSettingsAuditLog = withBaseballAction(
   'getSettingsAuditLog',
-  { featureArea: 'baseball-settings', requiredCapability: 'can_manage_settings' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', requiredCapability: 'can_manage_settings', demoSafe: true },
   async (ctx, limit: number = 50): Promise<BaseballSettingsAuditEntry[]> => {
     const supabase = await createClient();
     const safeLimit = Math.min(Math.max(Number(limit) || 50, 1), 200);
