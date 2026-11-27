@@ -8,6 +8,7 @@ import { PlayerLane } from '../../live/PlayerLane';
 import type { LiveGroups, LiveLane, LiveSort } from '../../live/model';
 import { Icon } from '../../ui/Icon';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import { Card } from '../../ui/Card';
 import { Segmented } from '../../ui/Segmented';
 import { EmptyState } from '../../ui/States';
 import type { LiveViewState } from './use-live-view';
@@ -32,7 +33,7 @@ export function LiveGroupsList({ v, onOpen, density }: { v: LiveViewState; onOpe
             <h2 id={`${id}-${g.key}`} className="ch-lv-group__label" data-ch-code={g.code}>
               {g.title(lanes.length)}
             </h2>
-            <div className="ch-lv-card">
+            <Card as="div" kind="list" className="ch-lv-card">
               <ul className="ch-lv-list" aria-labelledby={`${id}-${g.key}`}>
                 {lanes.map((l) => (
                   <PlayerLane
@@ -49,7 +50,7 @@ export function LiveGroupsList({ v, onOpen, density }: { v: LiveViewState; onOpe
                   />
                 ))}
               </ul>
-            </div>
+            </Card>
           </section>
         );
       })}

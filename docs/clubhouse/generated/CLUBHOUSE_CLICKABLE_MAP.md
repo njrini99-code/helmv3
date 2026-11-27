@@ -1435,8 +1435,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/live/live-parts.tsx`
 
-- CTL-P011-010 93 `button` "{sortLabel}" (button) CH-16615
-- CTL-P011-011 108 `button` "{plural}" (button, onClick)
+- CTL-P011-010 94 `button` "{sortLabel}" (button) CH-16615
+- CTL-P011-011 109 `button` "{plural}" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/CoachNote.tsx`
 
