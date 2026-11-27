@@ -33,6 +33,12 @@
     padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
   }
 }
+/* MSG-701 First run: the page has no cards or search row to carry the edge, so the page keeps its own 16 (and the
+   notch's side on its side). The rule above zeroes the sides for the inbox and is the stronger one, which used to run
+   the first-run card from glass to glass. */
+[data-ch-ms-v2] .ch-inb--phone.ch-msp-page:has(> .ch-es--page) {
+  padding-inline: max(var(--ch-page-x-phone), env(safe-area-inset-left)) max(var(--ch-page-x-phone), env(safe-area-inset-right));
+}
 [data-ch-ms-v2] .ch-inb--phone .ch-msv-top {
   display: flex;
   flex-direction: column;
