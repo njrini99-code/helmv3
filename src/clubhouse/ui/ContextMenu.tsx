@@ -8,6 +8,7 @@ import { chMenuMotion } from '../lib/menu-motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { MenuItems, menuKeyDown, type MenuItem } from './Menu';
 import { Modal } from './Modal';
+import { overlayView, placeOverlay, watchOverlayView } from '../lib/overlay-place';
 
 const W = 232;
 const EDGE = 8;
@@ -242,22 +243,14 @@ function ContextMenuSurface<T>({ at, label, items, onClose }: { at: Open<T>; lab
     const el = list.current;
     if (!el) return;
     const fit = () => {
-      const viewport = window.visualViewport;
-      const bottom = viewport ? viewport.offsetTop + viewport.height : window.innerHeight;
       const h = el.scrollHeight || el.offsetHeight || 200;
-      const left = Math.max(EDGE, Math.min(at.x, window.innerWidth - W - EDGE));
-      // Opens down from the pointer; flips up when it would run off the bottom and there is more room above.
-      const below = Math.max(0, bottom - at.y - EDGE);
-      const above = Math.max(0, at.y - EDGE);
-      const up = h > below && above > below;
-      const maxHeight = up ? above : below;
-      const top = Math.max(EDGE, up ? at.y - Math.min(h, maxHeight) : at.y);
+      // Opens down from the pointer; flips up when it would run off the bottom and there is more room above (lib/overlay-place.ts).
+      const p = placeOverlay({ top: at.y, bottom: at.y, left: at.x, right: at.x }, { width: W, height: h }, overlayView(), { gap: 0, edge: EDGE });
       // B16: it grows from the pointer's corner, the bottom one when it flipped up (and the right when pushed in from the edge).
-      setPos({ left, top, maxHeight, origin: `${up ? 'bottom' : 'top'} ${left < at.x - W / 2 ? 'right' : 'left'}` });
+      setPos({ left: p.left, top: p.top, maxHeight: p.maxHeight, origin: `${p.up ? 'bottom' : 'top'} ${p.left < at.x - W / 2 ? 'right' : 'left'}` });
     };
     fit();
-    window.addEventListener('resize', fit);
-    return () => window.removeEventListener('resize', fit);
+    return watchOverlayView(fit);
   }, [at.x, at.y, items.length]);
 
   useEffect(() => {

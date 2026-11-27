@@ -2983,8 +2983,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/ui/Menu.tsx`
 
-- CTL-P000-020 304 `Link` "{content}" (link, onClick, href)
-- CTL-P000-021 315 `button` "{content}" (button, onClick)
+- CTL-P000-020 288 `Link` "{content}" (link, onClick, href)
+- CTL-P000-021 299 `button` "{content}" (button, onClick)
 
 ### `src/clubhouse/ui/Modal.tsx`
 
