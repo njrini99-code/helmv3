@@ -41,12 +41,12 @@
   min-width: 72px;
   padding: 4px 8px;
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-34-strong);
+  font: var(--ch-type-display-xl);
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
 }
 .ch-tour-live.is-phone .ch-tour-live-team__v {
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   letter-spacing: var(--ch-track-28);
 }
 .ch-tour-live-team__t {

@@ -245,7 +245,7 @@
 @media (min-width: 414px) { .ch-akg { padding-inline: 20px; } }
 .ch-akg--one { max-width: var(--ch-measure-reading); gap: 12px; }
 .ch-akg__intro { display: flex; flex-direction: column; gap: 8px; }
-.ch-akg__intro > h1 { margin: 0; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); text-wrap: balance; }
+.ch-akg__intro > h1 { margin: 0; font: var(--ch-type-display); letter-spacing: var(--ch-track-28); text-wrap: balance; }
 .ch-akg__intro > p { max-width: 68ch; margin: 0; font: var(--ch-type-body); letter-spacing: var(--ch-track-15); color: var(--ch-text-secondary); text-wrap: pretty; }
 .ch-akg__nav { display: flex; flex-wrap: wrap; gap: 8px; }
 .ch-akg__group { display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 72px; }

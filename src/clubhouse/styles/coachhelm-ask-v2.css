@@ -237,7 +237,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 }
 .ch-ak-home .hi h2 {
   margin: 0;
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   letter-spacing: var(--ch-track-28);
   color: var(--ch-text-primary);
 }
@@ -682,7 +682,7 @@ html[data-fw-theme='dark'] .ch-ak-th {
 
 /* E-LOCKP: the announcement on a player's lock screen. */
 .ch-ak-lock { display: grid; justify-items: center; gap: 8px; margin: 12px 16px 4px; padding: 12px; border-radius: var(--ch-radius-lg); background: linear-gradient(165deg, var(--ch-ak-ak-feature), var(--ch-frame)); }
-.ch-ak-lock .tm b { font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-on-green-ink); }
+.ch-ak-lock .tm b { font: var(--ch-type-display); letter-spacing: var(--ch-track-28); color: var(--ch-on-green-ink); }
 .ch-ak-lock .ban { display: flex; gap: 8px; width: 100%; padding: 8px 12px; border-radius: var(--ch-radius-lg); background: rgb(253 251 247 / 0.9); color: var(--ch-text-secondary); -webkit-backdrop-filter: var(--ch-glass-filter); backdrop-filter: var(--ch-glass-filter); }
 .ch-ak-lock .app { display: grid; place-items: center; flex: none; width: 26px; height: 26px; border-radius: var(--ch-radius-sm); background: var(--ch-green-fill-600); color: var(--ch-on-green-plate); }
 .ch-ak-lock .tx { display: grid; gap: 1px; min-width: 0; }
@@ -865,7 +865,7 @@ html[data-fw-theme='dark'] .ch-ak-push .ch-btn--primary[data-ch-pressed]:not(:di
 .ch-ak-tk .who small { font: var(--ch-type-caption); font-weight: var(--ch-fw-600); color: var(--ch-text-secondary); }
 .ch-ak-goal { display: grid; gap: 8px; }
 .ch-ak-goal small { display: block; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
-.ch-ak-goal b { display: block; font: var(--ch-type-28-strong); letter-spacing: var(--ch-track-28); color: var(--ch-text-primary); }
+.ch-ak-goal b { display: block; font: var(--ch-type-display); letter-spacing: var(--ch-track-28); color: var(--ch-text-primary); }
 .ch-ak-nb { display: grid; gap: 4px; }
 .ch-ak-nb small { font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 .ch-ak-nb p { margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: var(--ch-text-primary); overflow-wrap: anywhere; }

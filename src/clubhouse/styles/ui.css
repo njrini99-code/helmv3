@@ -1169,7 +1169,7 @@ button.ch-feat {
 }
 .ch-intro__title {
   margin: 0;
-  font: var(--ch-type-34-strong);
+  font: var(--ch-type-display-xl);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.038em;
   font-variation-settings: 'wdth' 88;
@@ -1723,7 +1723,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-zn__id h2 {
   margin: 0;
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   /* Near-black, as every section title (owner, 11 Nov 2026): it was forest green on the phone and the Ledger's ink on a desk. */

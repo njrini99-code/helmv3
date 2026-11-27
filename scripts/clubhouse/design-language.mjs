@@ -188,6 +188,8 @@ const TYPE = [
   ['--ch-type-caption', 'Caption: axis labels, legends, chips'],
   ['--ch-type-figure-hero', 'Hero figure, tabular: the one number a screen leads with'],
   ['--ch-type-figure', 'Row figure, tabular: scores and averages in rows'],
+  ['--ch-type-display', 'Display (Title 1): a heading or big figure inside a card, at 28'],
+  ['--ch-type-display-xl', 'Display large (Large Title): the same at 34'],
 ];
 
 function colourOf(tokens, name, theme) {

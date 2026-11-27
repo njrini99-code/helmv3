@@ -24,8 +24,10 @@ Held items: none
   450, so the W1 lift (owner, 12 Nov) holds.
 - Shared stylesheets: `ui.css`, `command.css`, `hero-tones.css`,
   `quick-chat.css`, `whats-new.css`.
-- Left: 29 reads of the 28 and 34 steps on a desk (no role within 2px), and
-  the stylesheets of open PRs #2610, #2655, #2656, #2658, #2659, #2661.
+- The 29 reads of the 28 and 34 steps (no role within 2px) read a new display
+  pair, `--ch-type-display` (28/34) and `--ch-type-display-xl` (34/41), the same
+  on phone and desk, so those headings and big figures look as they did.
+- Left: the stylesheets of open PRs #2610, #2655, #2656, #2658, #2659, #2661.
   `legacy-type-roles.test.ts` lowered to match.
 
 ### Why

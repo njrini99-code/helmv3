@@ -1106,7 +1106,7 @@
     font: var(--ch-type-footnote);
   }
   .ch-hl[data-canopy] .ch-hl-focus__head h2 {
-    font: var(--ch-type-34-strong);
+    font: var(--ch-type-display-xl);
     line-height: var(--ch-lead-tight);
     letter-spacing: -0.03em;
     text-wrap: balance;

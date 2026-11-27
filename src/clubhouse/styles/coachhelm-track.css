@@ -48,7 +48,8 @@
   margin-bottom: 12px;
 }
 .ch-htr-fig b {
-  font: var(--ch-type-34-medium);
+  font: var(--ch-type-display-xl);
+  font-weight: var(--ch-fw-500);
   font-variation-settings: var(--ch-wdth-display);
   letter-spacing: var(--ch-track-34);
   color: var(--ch-text-primary);
@@ -253,7 +254,8 @@
     text-align: right;
   }
   .ch-htr-fig b {
-    font: var(--ch-type-28-medium);
+    font: var(--ch-type-display);
+    font-weight: var(--ch-fw-500);
     letter-spacing: var(--ch-track-28);
   }
 }

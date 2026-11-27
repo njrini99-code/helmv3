@@ -25,7 +25,7 @@
 }
 .ch-rcv-h h1 {
   margin: 8px 0 0;
-  font: var(--ch-type-34-strong);
+  font: var(--ch-type-display-xl);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-34);
   font-variation-settings: 'wdth' 96;

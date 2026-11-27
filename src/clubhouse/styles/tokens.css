@@ -440,6 +440,11 @@
   --ch-type-figure-hero: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-track-figure-hero: -0.025em;
   --ch-type-figure: 600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  /* The display pair (dsx-07): a heading or big figure inside a card or panel that sits between the title (22) and the
+     hero figure (40 and up), at Apple's Title 1 (28/34) and Large Title (34/41) sizes, the same on phone and desk. Not a
+     page title (that is large-title). Weight is set by the rule through --ch-fw-*. */
+  --ch-type-display: 600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-display-xl: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
 
   /* Space and layout */
   /* B2: the spacing scale (a 4px grid with 2 and 6 for tight pairs). A stylesheet in spacing-scale.test.ts's MIGRATED

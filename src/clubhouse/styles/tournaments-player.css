@@ -90,7 +90,7 @@
   flex: none;
 }
 .ch-tour-pl-next .ch-feat__title {
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-28);
 }

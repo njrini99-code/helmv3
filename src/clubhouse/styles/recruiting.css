@@ -1104,7 +1104,7 @@
     min-width: 0;
   }
   .ch-recm-hero b {
-    font: var(--ch-type-28-strong);
+    font: var(--ch-type-display);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;

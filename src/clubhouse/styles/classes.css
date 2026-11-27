@@ -1612,7 +1612,8 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
     color: var(--ch-text-secondary);
   }
   .ch-cl[data-canopy] .ch-cl-tb__wk b {
-    font: var(--ch-type-34-medium);
+    font: var(--ch-type-display-xl);
+    font-weight: var(--ch-fw-500);
     line-height: var(--ch-lead-tight);
 
     font-variant-numeric: tabular-nums;
@@ -1853,7 +1854,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   text-align: center;
 }
 [data-ch-crh='on'] .ch-cl-term__wk b {
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   letter-spacing: -0.038em;
 }
 [data-ch-crh='on'] .ch-cl-term__wk span {
@@ -2342,7 +2343,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   height: 84px;
 }
 .ch-cl-term.is-desk .ch-cl-term__wk b {
-  font: var(--ch-type-34-strong);
+  font: var(--ch-type-display-xl);
   letter-spacing: var(--ch-track-34);
 }
 .ch-cl-term.is-desk .ch-cl-term__h {
@@ -2504,7 +2505,8 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   align-items: baseline;
   gap: 8px;
   min-width: 0;
-  font: var(--ch-type-28-medium);
+  font: var(--ch-type-display);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-28);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);

@@ -135,7 +135,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hg-m__word {
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   font-variation-settings: 'wdth' 96;

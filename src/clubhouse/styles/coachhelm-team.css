@@ -691,7 +691,7 @@
   flex-wrap:wrap;
 }
 .ch-htb .cmk b {
-  font: var(--ch-type-34-strong);
+  font: var(--ch-type-display-xl);
   font-variation-settings:'wdth' 96;
   letter-spacing: -0.038em;
   }
@@ -1195,7 +1195,8 @@
   white-space:nowrap;
 }
 .ch-htb .rec .big b {
-  font: var(--ch-type-34-medium);
+  font: var(--ch-type-display-xl);
+  font-weight: var(--ch-fw-500);
   font-variation-settings:'wdth' 96;
   letter-spacing: -0.038em;
   }
@@ -1526,7 +1527,7 @@
   position:relative;
 }
 .ch-htb .sto-b h3 {
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   letter-spacing: -0.03em;
   font-variation-settings:'wdth' 88;
 }

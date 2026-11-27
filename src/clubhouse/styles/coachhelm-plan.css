@@ -20,7 +20,7 @@
 .ch-cp-sheet .pp-date {display:grid;justify-items:center;width:48px;border-radius: var(--ch-radius-sm);box-shadow:inset 0 0 0 var(--ch-hairline-w) var(--ch-pl-rule-2);padding:4px 0 6px;}
 .ch-cp-sheet .pp-date span {font: var(--ch-type-caption);font-weight: var(--ch-fw-600); letter-spacing: 0.01em;color:var(--ch-pl-ink-2);}
 .ch-cp-sheet .pp-date b {font: var(--ch-type-title); letter-spacing: var(--ch-track-22); }
-.ch-cp-sheet .pp-title {font: var(--ch-type-28-strong); font-stretch: 88%;letter-spacing: -0.03em;margin:0;text-wrap:balance;}
+.ch-cp-sheet .pp-title {font: var(--ch-type-display); font-stretch: 88%;letter-spacing: -0.03em;margin:0;text-wrap:balance;}
 .ch-cp-sheet .pp-focus {font: var(--ch-type-headline);font-weight: var(--ch-fw-400); margin-top:-8px;text-wrap:pretty; letter-spacing: var(--ch-track-16); }
 .ch-cp-sheet .pp-meta {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-block:var(--ch-hairline-w) solid var(--ch-pl-rule);}
 .ch-cp-sheet .pp-meta div {padding:8px 8px 8px 0;min-width:0;}

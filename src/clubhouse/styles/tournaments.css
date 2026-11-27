@@ -66,7 +66,7 @@
 }
 .ch-tour-head h1 {
   margin: 0;
-  font: var(--ch-type-34-strong);
+  font: var(--ch-type-display-xl);
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
   overflow-wrap: anywhere;

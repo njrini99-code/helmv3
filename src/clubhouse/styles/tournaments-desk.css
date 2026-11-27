@@ -41,7 +41,8 @@
   margin: 0;
 }
 .ch-tour-desk-res b {
-  font: var(--ch-type-34-medium);
+  font: var(--ch-type-display-xl);
+  font-weight: var(--ch-fw-500);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.038em;
   color: var(--ch-text-primary);
