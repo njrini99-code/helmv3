@@ -605,7 +605,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     expect([...rows[0]!.querySelectorAll('[role="radio"]')].map((r) => r.getAttribute('aria-label') ?? r.textContent)).toEqual(['Last 5', 'Last 10', 'Last 20', 'Season', 'Qualifiers', 'All time']);
     const titles = [...document.querySelectorAll('.ch-shs-card h3')].map((h) => h.textContent);
     // On Team stats the card is "Scoring average", as on My stats: the page is the team, and the title and its window share one line.
-    for (const t of ['Scoring average', 'Strokes gained by leg', 'Strokes gained by player']) expect(titles).toContain(t);
+    for (const t of ['Scoring average', 'Strokes gained by leg', 'Who gains and loses']) expect(titles).toContain(t);
     expect(titles).not.toContain('Team scoring average');
     // The figure is each player's last 10 rounds; "10 round days" was what the trend draws (coach audit 13 Nov).
     expect(document.querySelector('.ch-shs-feature')!.textContent).toContain('Each player’s last 10');
@@ -615,7 +615,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
   it('CH-4703 CH-4805 on Players, sorting by Avg or SG is one selection tick and the chosen sort again is silent; each row is one link read as name, rounds, average and strokes gained', async () => {
     const user = userEvent.setup();
     wrap(stats());
-    await user.click(screen.getByRole('button', { name: /^Strokes gained by player/ }));
+    await user.click(screen.getByRole('button', { name: /^Who gains and loses/ }));
     const names = () => [...document.querySelectorAll('.ch-stm-row__b b')].map((b) => b.textContent);
     expect(names().length).toBe(PREVIEW_TEAM_STATS.grid.length);
     const byAvg = names();
@@ -637,9 +637,7 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(stats());
     await user.click(screen.getByRole('button', { name: /^Team scoring average/ }));
     const detail = document.querySelector<HTMLElement>('[data-ch-shs-detail]')!;
-    // The trend's reading is written under the chart; which way is better sits in the chart's key (STATS-P-06).
-    expect(detail.querySelector('.ch-shs-mini-cap')!.textContent!.length).toBeGreaterThan(10);
-    expect(detail.querySelector('.ch-shs-mean-key')!.textContent).toMatch(/Lower is better$/);
+    expect(within(detail).getByText(/^Lower is better\. /)).toBeTruthy();
     // The same days as a table, for anyone who can't read the picture.
     expect(within(detail).getByRole('columnheader', { name: 'Team average' })).toBeTruthy();
   });

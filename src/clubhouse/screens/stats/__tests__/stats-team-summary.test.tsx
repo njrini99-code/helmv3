@@ -173,15 +173,16 @@ describe('Team Stats, figures outside the big values are tabular too', () => {
 });
 
 describe('Team Stats, The round’s note', () => {
-  it('writes each chip’s comparison on the chip, with no prose legend (STATS-TS-07, STATS-TS-08)', async () => {
+  it('labels the chips in one sentence and does not repeat the page head (W29)', async () => {
     asDesktop();
     showTeam(TEAM);
     // A desk opens Team scoring from its card, across the page.
     fireEvent.click(await painted('tscore'));
-    await waitFor(() => expect(document.querySelector('.ch-shs-m3 .ch-shs-pill')).not.toBeNull());
-    const pills = [...document.querySelectorAll('.ch-shs-m3 .ch-shs-pill')];
-    expect(pills.every((p) => /vs prev \d+$/.test(p.textContent!))).toBe(true);
-    expect([...document.querySelectorAll('.ch-shs-anote')].some((p) => p.textContent!.startsWith('Chips:'))).toBe(false);
+    await waitFor(() => expect([...document.querySelectorAll('.ch-shs-anote')].some((p) => p.textContent!.startsWith('Chips:'))).toBe(true));
+    const note = [...document.querySelectorAll('.ch-shs-anote')].find((p) => p.textContent!.startsWith('Chips:'))!;
+    expect(note.textContent).toMatch(/^Chips: the change vs each player’s previous \d+ rounds, grey when it is inside its likely error\./);
+    expect(note.textContent).not.toContain('countable rounds only');
+    expect(note.textContent).not.toContain('Varsity');
   });
 
   it('Team putting names the window its putts come from', async () => {

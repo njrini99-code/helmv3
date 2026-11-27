@@ -431,9 +431,9 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/StatsTeamPhoneShs.tsx`
 
-- CTL-P004-027 316 `Button` "Try again" (button, onClick) CH-4201
-- CTL-P004-028 523 `HowStatsCountLink` "How stats are counted (ledger)" (link)
-- CTL-P004-029 621 `button` "{label}: {formatSigned} a round" (button, onClick)
+- CTL-P004-027 317 `Button` "Try again" (button, onClick) CH-4201
+- CTL-P004-028 507 `HowStatsCountLink` "How stats are counted (ledger)" (link)
+- CTL-P004-029 611 `button` "{label}: {formatSigned} a round" (button, onClick)
 
 ### `src/clubhouse/screens/stats/SummaryCard.tsx`
 

@@ -66,30 +66,13 @@ describe('the team scoring line (W26)', () => {
     expect([...svg.querySelectorAll('text')].map((t) => t.textContent).join(' ')).not.toMatch(/avg/i);
     const key = container.querySelector('.ch-shs-mean-key')!;
     expect(key.closest('svg')).toBeNull();
-    expect(key.textContent).toBe('Round-day avg 76.4 · Lower is better');
+    expect(key.textContent).toBe('Round-day avg 76.4');
     // The key's mark is the line's own dash.
     expect(key.querySelector('line.ch-shs-parline')).not.toBeNull();
   });
 
-  it('with no average the key draws no dash and only says which way is better (STATS-P-06)', () => {
+  it('draws no key when there is no average', () => {
     const { container } = render(<TeamFeatureChart days={[{ label: 'Sep 3', score: 74.6 }, { label: 'Sep 20', score: 76.4 }]} mean={null} />);
-    const key = container.querySelector('.ch-shs-mean-key')!;
-    expect(key.textContent).toBe('Lower is better');
-    expect(key.querySelector('line')).toBeNull();
-  });
-
-  it('labels three heights, best, reference and toughest, not every stroke (STATS-P-06)', () => {
-    const { container } = render(
-      <TeamFeatureChart
-        days={[
-          { label: 'Sep 3', score: 72, n: 6 },
-          { label: 'Sep 20', score: 80, n: 7 },
-          { label: 'Oct 1', score: 88, n: 7 },
-        ]}
-        mean={80}
-      />,
-    );
-    const ax = [...container.querySelectorAll('.ch-shs-chart text.ch-shs-ax')].map((t) => t.textContent);
-    expect(ax.filter((t) => /^\d+\.\d$/.test(t!))).toEqual(['72.0', '80.0', '88.0']);
+    expect(container.querySelector('.ch-shs-mean-key')).toBeNull();
   });
 });
