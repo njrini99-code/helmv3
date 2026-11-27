@@ -60,3 +60,8 @@ Held items: real device screenshots (this environment can't run a browser); befo
   bars over par 3.76:1 day, 3.65:1 night; older bars under par 3.40:1, 3.29:1;
   the newest bar 11.3:1 and 10.8:1 (ink) or 5.87:1 and 5.60:1 (gain fill); par's
   line and its word 6.76:1 and 6.45:1.
+- The presentation gate's stats-team card-escape check passes at 390 and 1440,
+  by day and at night. The old line drew its round-day dots and an axis label
+  past the chart's edge. STATS-2's two known-failure lines come out of
+  `e2e/clubhouse-gate/known.ts`, and the 1440 failure that main shows (not
+  listed as known) clears too.
