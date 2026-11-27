@@ -601,7 +601,8 @@ const getGroupAvailabilityForWeekSchema = z.object({
  */
 export const getGroupAvailabilityForWeek = withBaseballAction(
   'getGroupAvailabilityForWeek',
-  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-lifting', requiredCapability: 'can_manage_lifting', demoSafe: true },
   async (
     ctx,
     raw: z.input<typeof getGroupAvailabilityForWeekSchema>,
