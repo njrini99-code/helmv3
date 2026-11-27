@@ -81,11 +81,11 @@ function WhatsNewRow({ it, phone, repeat = false }: { it: ChWhatsNewItem; phone:
               </>
             )}
           </span>
+          {it.detail && ' '}
           {it.detail && <span className="ch-wn-detail">{sentenceClamp(it.detail, phone)}</span>}
         </span>
       }
       href={href ?? undefined}
-      label={`${it.what}: ${it.title}, ${it.player}, ${time}`}
     />
   );
 }

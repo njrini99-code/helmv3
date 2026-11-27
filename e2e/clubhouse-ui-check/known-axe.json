@@ -1,40 +1,16 @@
 {
   "note": "axe rules (WCAG 2.2 A/AA) each live Clubhouse screen breaks today, by screen and project (e2e/clubhouse-ui-check.spec.ts, dsx-09). May only shrink.",
   "screens": {
-    "coachhelm-coach|ui-desktop": [
-      "label-content-name-mismatch"
-    ],
-    "coachhelm-coach|ui-phone": [
-      "label-content-name-mismatch"
-    ],
-    "home-coach|ui-desktop": [
-      "label-content-name-mismatch",
-      "link-in-text-block"
-    ],
     "live-coach|ui-desktop": [
-      "label-content-name-mismatch",
-      "pageerror: Hydration failed because the server rendered text didn't mat"
+      "label-content-name-mismatch"
     ],
     "live-coach|ui-phone": [
-      "label-content-name-mismatch",
-      "pageerror: Hydration failed because the server rendered text didn't mat"
+      "label-content-name-mismatch"
     ],
     "roster-coach|ui-desktop": [
       "label-content-name-mismatch"
     ],
     "roster-coach|ui-phone": [
-      "label-content-name-mismatch"
-    ],
-    "team-hub-coach|ui-desktop": [
-      "label-content-name-mismatch"
-    ],
-    "team-hub-coach|ui-phone": [
-      "label-content-name-mismatch"
-    ],
-    "whats-new-coach|ui-desktop": [
-      "label-content-name-mismatch"
-    ],
-    "whats-new-coach|ui-phone": [
       "label-content-name-mismatch"
     ]
   }
