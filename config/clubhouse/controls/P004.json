@@ -4,7 +4,6 @@
  "controls": [
   {"id":"CTL-P004-001","page":"P004","file":"src/clubhouse/routes/stats.tsx","element":"Button","label":"Back to roster","description":"\"Back to roster\" link: goes to Roster (/golf/dashboard/roster)","role":"coach","viewport":"all","actions":[],"verdict":null,"via":"button, href"},
   {"id":"CTL-P004-002","page":"P004","file":"src/clubhouse/screens/stats/DeskPane.tsx","element":"BackLink","label":null,"labelTemplate":"{back}","description":"\"{back}\" link: runs onBack","role":"coach","viewport":"desktop","actions":[],"verdict":null,"via":"link, onClick"},
-  {"id":"CTL-P004-003","page":"P004","file":"src/clubhouse/screens/stats/ScoringFeatureChart.tsx","element":"div","label":null,"labelTemplate":"Scores for {n} {pluralWord}, from {round} on {label} to {round} on {label}. Use the arrow keys to read each round.","description":"\"Scores for {n} {pluralWord}, from {round} on {label} to {round} on {label}. Use the arrow keys to read each round.\" button","role":"coach","viewport":"all","actions":[],"verdict":null,"via":"onPointerDown"},
   {"id":"CTL-P004-004","page":"P004","file":"src/clubhouse/screens/stats/ShsBlocks.tsx","element":"button","label":"How this is measured","description":"\"How this is measured\" button: runs setOpen","role":"coach","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
   {"id":"CTL-P004-005","page":"P004","file":"src/clubhouse/screens/stats/StatsFilter.tsx","element":"button","label":null,"labelTemplate":"Filter {{length}|}","description":"\"Filter {{length}|}\" button: runs setOpen","role":"coach","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
   {"id":"CTL-P004-006","page":"P004","file":"src/clubhouse/screens/stats/StatsFilter.tsx","element":"button","label":null,"labelTemplate":"Remove filter: {label}","description":"\"Remove filter: {label}\" button: runs onChange","role":"coach","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
@@ -36,5 +35,7 @@
   {"id":"CTL-P004-032","page":"P004","file":"src/clubhouse/screens/stats/SummaryCard.tsx","element":"button","label":null,"labelTemplate":"Open {toLowerCase} details","description":"\"Open {toLowerCase} details\" button: runs open","role":"coach","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
   {"id":"CTL-P004-033","page":"P004","file":"src/clubhouse/screens/stats/TeamRank.tsx","element":"Link","label":"Open player","description":"\"Open player\" link: opens a page chosen at run time (href)","role":"coach","viewport":"all","actions":[],"verdict":null,"via":"link, href"}
  ],
- "tombstones": []
+ "tombstones": [
+  {"id":"CTL-P004-003","file":"src/clubhouse/screens/stats/ScoringFeatureChart.tsx","label":"Scores for {n} {pluralWord}, from {round} on {label} to {round} on {label}. Use the arrow keys to read each round.","removedAt":"2026-11-27"}
+ ]
 }

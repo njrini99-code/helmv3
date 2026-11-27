@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Card } from '../../ui/Card';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { SkelLine, Skeleton } from '../../ui/States';
 import { PlanSheetSkeleton } from '../coachhelm/plan/sheet/PlanSheetSkeleton';
@@ -122,7 +123,7 @@ export function PracticeHomeSkeleton() {
         <Week />
       </section>
       <div className="ch-prc-home has-plans">
-        <section className="ch-prc-card ch-prc-next" aria-hidden="true">
+        <Card kind="entity" className="ch-prc-card ch-prc-next" hidden>
           <div className="ch-prc-next__k">
             <SkelLine line={18} bar={11} width={47} />
             <Skeleton width={57} height={22} radius={4} />
@@ -160,7 +161,7 @@ export function PracticeHomeSkeleton() {
           <div className="ch-prc-next__a">
             <Skeleton width={121} height={36} radius={12} />
           </div>
-        </section>
+        </Card>
         <div className="ch-prc-home__plans">
           <Plans rows={2} />
         </div>
@@ -316,7 +317,7 @@ const PHONE_LINE = 52;
  */
 function TemplateCard({ sentence, blocks }: { sentence: 0 | 1 | 2; blocks: number }) {
   return (
-    <li className="ch-prc-card ch-prc-tmpl">
+    <Card as="li" kind="entity" className="ch-prc-card ch-prc-tmpl">
       <span className="ch-prc-tmpl__go ch-prc-sk-still">
         <SkelLine line={21} bar={13} width="62%" />
         <SkelLine line={18} bar={11} width={96} />
@@ -334,7 +335,7 @@ function TemplateCard({ sentence, blocks }: { sentence: 0 | 1 | 2; blocks: numbe
           ))}
         </span>
       </span>
-    </li>
+    </Card>
   );
 }
 

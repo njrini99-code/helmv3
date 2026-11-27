@@ -48,6 +48,7 @@ import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/motion.css';
 import '../styles/ui.css';
+import '../styles/card.css';
 import '../styles/shell.css';
 import '../styles/controls.css';
 import '../styles/command.css';

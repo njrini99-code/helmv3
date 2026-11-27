@@ -99,6 +99,20 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/preview/CardLab.tsx",
+      "group": "preview",
+      "exports": [
+        "CardLab"
+      ],
+      "styles": [
+        "src/clubhouse/styles/card-lab.css",
+        "src/clubhouse/styles/roster.css",
+        "src/clubhouse/styles/shell.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/preview/ComponentCatalog.tsx",
       "group": "preview",
       "exports": [
@@ -10181,6 +10195,7 @@
         "NavRow",
         "PickerRow",
         "Problem",
+        "RowCard",
         "SliderRow",
         "SwitchRow"
       ],
@@ -12099,6 +12114,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/card.css",
         "src/clubhouse/styles/classes.css",
         "src/clubhouse/styles/coachhelm-ask-v2.css",
         "src/clubhouse/styles/coachhelm-ask.css",
@@ -13016,6 +13032,39 @@
         "IconButton"
       ],
       "fixture": "Shared gallery example"
+    },
+    {
+      "file": "src/clubhouse/ui/Card.tsx",
+      "group": "ui",
+      "exports": [
+        "Card",
+        "CardBody",
+        "CardFooter",
+        "CardHeader",
+        "CardMetric",
+        "CardVisual"
+      ],
+      "styles": [
+        "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/calendar.css",
+        "src/clubhouse/styles/card.css",
+        "src/clubhouse/styles/class-awareness.css",
+        "src/clubhouse/styles/goals.css",
+        "src/clubhouse/styles/home.css",
+        "src/clubhouse/styles/hub.css",
+        "src/clubhouse/styles/messages-details.css",
+        "src/clubhouse/styles/messages-inbox.css",
+        "src/clubhouse/styles/messages.css",
+        "src/clubhouse/styles/practice.css",
+        "src/clubhouse/styles/qualifiers.css",
+        "src/clubhouse/styles/shell.css",
+        "src/clubhouse/styles/stats-redesign.css",
+        "src/clubhouse/styles/stats.css",
+        "src/clubhouse/styles/tournaments-desk.css",
+        "src/clubhouse/styles/ui.css"
+      ],
+      "examples": [],
+      "fixture": "Contextual module"
     },
     {
       "file": "src/clubhouse/ui/Checkbox.tsx",
@@ -14182,6 +14231,7 @@
       "file": "src/clubhouse/ui/Surface.tsx",
       "group": "ui",
       "exports": [
+        "InSurface",
         "Inset",
         "Surface"
       ],
@@ -15747,6 +15797,62 @@
           "name": "--ch-plate",
           "value": "color-mix(in oklab, var(--ch-warning-600) 40%, var(--ch-bg-surface))",
           "scope": "html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber']"
+        }
+      ]
+    },
+    {
+      "file": "src/clubhouse/styles/card-lab.css",
+      "classes": [
+        "ch-card-lab",
+        "ch-card-lab__head",
+        "ch-card-lab__row",
+        "ch-card-lab__rule",
+        "ch-card-lab__sec",
+        "ch-card-lab__who",
+        "ch-card-lab__why"
+      ],
+      "tokens": []
+    },
+    {
+      "file": "src/clubhouse/styles/card.css",
+      "classes": [
+        "ch-card",
+        "ch-card__actions",
+        "ch-card__body",
+        "ch-card__delta",
+        "ch-card__eyebrow",
+        "ch-card__foot",
+        "ch-card__foot-act",
+        "ch-card__head",
+        "ch-card__head-text",
+        "ch-card__icon",
+        "ch-card__meta",
+        "ch-card__metric",
+        "ch-card__msg",
+        "ch-card__note",
+        "ch-card__skel",
+        "ch-card__skel-block",
+        "ch-card__skel-line",
+        "ch-card__title",
+        "ch-card__unit",
+        "ch-card__value",
+        "ch-card__visual"
+      ],
+      "tokens": [
+        {
+          "name": "--ch-card-pad",
+          "value": "16px",
+          "scope": ".ch-card"
+        },
+        {
+          "name": "--ch-chart-gain",
+          "value": "var(--ch-feature-gain)",
+          "scope": ".ch-card[data-card-tone='feature']"
+        },
+        {
+          "name": "--ch-chart-loss",
+          "value": "var(--ch-feature-loss)",
+          "scope": ".ch-card[data-card-tone='feature']"
         }
       ]
     },
@@ -21329,6 +21435,7 @@
         "ch-btn",
         "ch-btn--primary",
         "ch-btn--secondary",
+        "ch-card",
         "ch-cp-sheet",
         "ch-field__help",
         "ch-hscroll",

@@ -41,12 +41,17 @@ export function parLine(rounds: TrendRound[]): number | null {
   return new Set(pars).size === 1 ? pars[0]! : null;
 }
 
-/** The trailing mean for each round (null before the third round with a figure). */
-export function meanSeries(rounds: TrendRound[]): Array<number | null> {
+/**
+ * The trailing mean for each round (null before the third round with a figure). A nine-hole round's value is already per 18
+ * (doubled), so it weighs half a round in the mean (the nines rule, `NINES_LINE`): two nines of 38 and 40 next to an 18 of 74
+ * average 76, the same as 152 strokes over 36 holes, not the unweighted 76.67 that let each doubled nine count as a full round.
+ */
+export function meanSeries(rounds: readonly TrendRound[]): Array<number | null> {
   return rollingMean(
     rounds.map((r) => r.value),
     MEAN_WINDOW,
     MEAN_START,
+    rounds.map((r) => (r.holes > 0 && r.holes < 18 ? r.holes / 18 : 1)),
   );
 }
 

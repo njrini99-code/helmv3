@@ -13,6 +13,7 @@ import { haptic } from '../lib/haptics';
 import { chMenuMotion } from '../lib/menu-motion';
 import { useChReducedMotion } from '../lib/reduced-motion';
 import { chTrail } from '../lib/track';
+import { overlayView, placeOverlay, watchOverlayView } from '../lib/overlay-place';
 
 export type MenuItem =
   | {
@@ -91,21 +92,10 @@ export function Menu({
   useLayoutEffect(() => {
     if (!open || !btn.current) return;
     const place = () => {
-      const r = btn.current!.getBoundingClientRect();
-      const keyboard = document.body.classList.contains('keyboard-open')
-        ? Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--keyboard-height')) || 0 : 0;
-      const viewport = window.visualViewport;
-      const bottom = Math.min(window.innerHeight - keyboard, viewport ? viewport.offsetTop + viewport.height : window.innerHeight);
       const h = list.current?.scrollHeight || list.current?.offsetHeight || 200;
-      let left = align === 'end' ? r.right - width : r.left;
-      left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
-      const above = Math.max(0, Math.min(r.top, bottom - 8) - 14);
-      const below = Math.max(0, bottom - Math.max(8, r.bottom) - 14);
-      const up = h > below && above > below;
-      const maxHeight = up ? above : below;
-      const top = Math.max(8, Math.min(up ? r.top - Math.min(h, maxHeight) - 6 : r.bottom + 6, bottom - 8 - Math.min(h, maxHeight)));
-      // B16: it grows out of its trigger, so from the corner nearest it: the bottom when it opened upward.
-      setPos({ left, top, maxHeight, origin: `${up ? 'bottom' : 'top'} ${align === 'end' ? 'right' : 'left'}` });
+      // B16: it grows out of its trigger, so from the corner nearest it: the bottom when it opened upward (lib/overlay-place.ts).
+      const p = placeOverlay(btn.current!.getBoundingClientRect(), { width, height: h }, overlayView(), { align });
+      setPos({ left: p.left, top: p.top, maxHeight: p.maxHeight, origin: p.origin });
     };
     place();
     // Where the trigger stood when the list opened: only a scroll that moved it closes the list (F-0009).
@@ -126,16 +116,10 @@ export function Menu({
       if (list.current?.contains(document.activeElement)) btn.current?.focus({ preventScroll: true });
       close(false);
     };
-    const keyboardChanges = new MutationObserver(place);
-    keyboardChanges.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    keyboardChanges.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
-    window.visualViewport?.addEventListener('resize', place);
-    window.addEventListener('resize', place);
+    const unwatch = watchOverlayView(place);
     document.addEventListener('scroll', onScroll, true);
     return () => {
-      keyboardChanges.disconnect();
-      window.visualViewport?.removeEventListener('resize', place);
-      window.removeEventListener('resize', place);
+      unwatch();
       document.removeEventListener('scroll', onScroll, true);
     };
   }, [open, align, width, close]);

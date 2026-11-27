@@ -107,6 +107,27 @@ describe('scoring hero · a finger held still reads the round under it (0822e4af
     act(() => vi.advanceTimersByTime(120));
     expect(onRead).toHaveBeenLastCalledWith(2);
   });
+
+  it('lifting the finger lets go, so the card goes back to its average (08 criterion 68)', () => {
+    const { onRead, chart } = hold(400);
+    act(() => vi.advanceTimersByTime(120));
+    fireEvent.pointerUp(chart, { pointerType: 'touch', pointerId: 7, clientX: 400 });
+    expect(onRead).toHaveBeenLastCalledWith(null);
+  });
+
+  it('a quick tap reads nothing, and a vertical swipe stays a scroll', () => {
+    const { onRead, chart } = hold(260);
+    fireEvent.pointerMove(chart, { pointerType: 'touch', pointerId: 7, clientX: 262, clientY: 40 });
+    fireEvent.pointerCancel(chart, { pointerType: 'touch', pointerId: 7 });
+    act(() => vi.advanceTimersByTime(500));
+    expect(onRead).not.toHaveBeenCalled();
+  });
+
+  it('a sideways drag reads at once on the shared threshold, without waiting for the hold', () => {
+    const { onRead, chart } = hold(110);
+    fireEvent.pointerMove(chart, { pointerType: 'touch', pointerId: 7, clientX: 400, clientY: 0 });
+    expect(onRead).toHaveBeenLastCalledWith(2);
+  });
 });
 
 describe('scoring hero · the average is straight segments (CH-15)', () => {

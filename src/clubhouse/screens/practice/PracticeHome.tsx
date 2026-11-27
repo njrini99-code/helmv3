@@ -10,6 +10,7 @@ import { NoData } from '../../ui/NoData';
 import { pluralWord } from '../../lib/plural';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { Card } from '../../ui/Card';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
@@ -178,7 +179,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
 
       <div className={'ch-prc-home' + (listed ? ' has-plans' : '')}>
       {data.firstRun ? (
-        <section className="ch-prc-card ch-prc-first" data-ch-code="CH-13396" aria-labelledby="ch-prc-first">
+        <Card kind="entity" className="ch-prc-card ch-prc-first" code="CH-13396" labelledBy="ch-prc-first">
           <h2 id="ch-prc-first">Plan your first practice</h2>
           <p>Build it block by block, start from a template, or let CoachHelm draft it from your team’s data. Players see a plan only when you publish it.</p>
           {/* With nothing on the calendar each start asks the day and times first, and makes the practice with the plan. */}
@@ -212,12 +213,12 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
             </li>
           </ul>
           {data.open.length === 0 && <div className="ch-prc-first__a">{calendar}</div>}
-        </section>
+        </Card>
       ) : (
         <>
           {up ? (
             <SectionBoundary surface="practice.next" label="Up next" code="CH-13204">
-            <section className="ch-prc-card ch-prc-next" aria-labelledby="ch-prc-next">
+            <Card kind="entity" className="ch-prc-card ch-prc-next" labelledBy="ch-prc-next">
               <div className="ch-prc-next__k">
                 <span>Up next</span>
                 {up.state ? <StateChip state={up.state} /> : <StateChip state="No plan" />}
@@ -255,7 +256,7 @@ export function PracticeHome({ data, openNew = false, previewSheet = false, temp
                   </Button>
                 )}
               </div>
-            </section>
+            </Card>
             </SectionBoundary>
           ) : (
             // The week's tiles already say there is no practice on each day: this says only what to do about it.

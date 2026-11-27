@@ -8,7 +8,7 @@ import { emailProblem, passwordProblem, profileProblem, type ChProfileInput, typ
 import { SAVE_COPY, useAvatarUpload, useDeleteAccount } from '../hooks';
 import { focusProblemField, ReadFailed, useSaveAction } from '../parts';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
-import { FieldRow, Group, NavRow, Problem } from './ui';
+import { FieldRow, Group, NavRow, Problem, RowCard } from './ui';
 
 /**
  * Account on the phone: Profile, the sign-in details and Delete account. The edit sheets (Profile, Email, Password) are
@@ -91,9 +91,9 @@ export function AccountPhone({
         onAction={() => void del.run()}
         note="Type delete to confirm. Your account and everything tied to it goes right away."
       >
-        <div className="ch-setm-card">
+        <RowCard>
           <FieldRow id="set-delete-type" label="Type delete to confirm" autoComplete="off" autoCapitalize="none" value={typed} onChange={(e) => setTyped(e.target.value)} />
-        </div>
+        </RowCard>
       </FormSheet>
     </>
   );
@@ -174,7 +174,7 @@ export function ProfileSheet({
         />
       </div>
 
-      <div className="ch-setm-card">
+      <RowCard>
         {coach ? (
           <>
             <FieldRow id="set-fullname" label="Full name" inline autoComplete="name" value={draft.fullName} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, fullName: value })); }} />
@@ -195,7 +195,7 @@ export function ProfileSheet({
             <FieldRow id="set-last" label="Last name" inline autoComplete="family-name" value={draft.lastName} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, lastName: value })); }} />
           </>
         )}
-      </div>
+      </RowCard>
       {invalid && dirty && <Problem problem={invalid} />}
 
       <Group title="Email" note="Where GolfHelm sends sign-in links and email notifications.">
@@ -243,7 +243,7 @@ export function EmailSheet({ open, onClose, email, writes, onSent }: { open: boo
       }}
       note="We email a link to the new address. Your current email works until you open it."
     >
-      <div className="ch-setm-card">
+      <RowCard>
         <FieldRow
           id="set-newemail"
           label="New email"
@@ -257,7 +257,7 @@ export function EmailSheet({ open, onClose, email, writes, onSent }: { open: boo
           onChange={(e) => setNext(e.target.value)}
           onBlur={() => setTouched(true)}
         />
-      </div>
+      </RowCard>
     </FormSheet>
   );
 }
@@ -301,12 +301,12 @@ export function PasswordSheet({ open, onClose, hasEmail, writes }: { open: boole
       }}
       note="You’ll confirm your current password first."
     >
-      <div className="ch-setm-card">
+      <RowCard>
         {/* The field the problem names is marked invalid; its words are the Problem line under the card. */}
         <FieldRow id="set-pw-cur" label="Current password" type="password" autoComplete="current-password" aria-invalid={invalidAt('set-pw-cur')} value={cur} onChange={(e) => setCur(e.target.value)} />
         <FieldRow id="set-pw-new" label="New password" type="password" autoComplete="new-password" help="8 or more characters, with upper and lower case, a number and a symbol." aria-invalid={invalidAt('set-pw-new')} value={next} onChange={(e) => setNext(e.target.value)} />
         <FieldRow id="set-pw-confirm" label="Confirm new password" type="password" autoComplete="new-password" aria-invalid={invalidAt('set-pw-confirm')} value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-      </div>
+      </RowCard>
       {tried && problem && <Problem problem={problem} />}
     </FormSheet>
   );
