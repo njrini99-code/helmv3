@@ -311,7 +311,7 @@ describe('the desktop week takes the full width', () => {
   it('on a desk it is the narrow canvas’s stack: the summary is its own card under the week (G1b, owner 19 Nov 2026)', () => {
     expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\]:not\(\[data-open\]\) \{\s*grid-template-columns: minmax\(0, 1fr\);\s*\}/);
     expect(css).not.toMatch(/\.ch-cal-body::before/);
-    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-surface \{\s*border-radius: var\(--ch-radius-lg\);\s*background: var\(--ch-card-bg\);\s*box-shadow: var\(--ch-card-shadow\);/);
+    expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-surface \{\s*border-radius: var\(--ch-radius-lg\);\s*background: var\(--ch-card-bg\);\s*box-shadow: var\(--ch-elevation-card\);/);
     expect(css).toMatch(/\.ch-cal\[data-canopy\] \.ch-cal-body\[data-view='week'\] > \.ch-in-wrap\.ch-cal-surface\[data-under\] \{\s*padding: 4px 20px;\s*\}/);
   });
 

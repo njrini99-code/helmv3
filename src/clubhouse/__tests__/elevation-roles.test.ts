@@ -97,7 +97,7 @@ const EDGELESS: Record<string, number> = {
   'styles/home.css': 14,
   'styles/messages-inbox.css': 3,
   'styles/qualifiers.css': 5,
-  'styles/recruiting.css': 2,
+  'styles/recruiting.css': 4,
   'styles/roster.css': 10,
   'styles/shell.css': 8,
   'styles/stats.css': 4,

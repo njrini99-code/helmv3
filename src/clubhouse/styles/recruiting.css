@@ -2181,8 +2181,6 @@
   .ch-rec-panel,
   .ch-rec-danger.is-block,
   .ch-rec-form.is-phone .ch-rec-form__grp,
-  .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot,
-  .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot,
   .ch-rec-pipe.is-compact,
   .ch-recm-list {
     outline: 1px solid CanvasText;
