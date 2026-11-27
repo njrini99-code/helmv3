@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode, type Ref } from 'react';
 import { InSurface } from './Surface';
 
 /**
@@ -57,6 +57,8 @@ export function Card({
   busy,
   code,
   hidden,
+  data,
+  ref,
   children,
 }: {
   /** The element a card that is not a control draws as. */
@@ -91,6 +93,10 @@ export function Card({
   code?: string;
   /** A page's own skeleton card, which no screen reader reads (`aria-hidden`). */
   hidden?: boolean;
+  /** A page's own data attributes on the card (`{ 'data-density': 'phone' }`): hooks its stylesheet and tests read. */
+  data?: Record<`data-${string}`, string | undefined>;
+  /** The card's element, for a page that measures or scrolls to it. Only for a card that is not a control. */
+  ref?: Ref<HTMLElement>;
   children?: ReactNode;
 }) {
   const nested = useContext(InSurface);
@@ -98,13 +104,14 @@ export function Card({
   const pressable = !!(onPress || href) && state === 'ready';
   const greenBar = bar === 'green' && tone === 'paper';
   const attrs = {
+    ...data,
     className: 'ch-card' + (className ? ` ${className}` : ''),
     'data-card-role': kind,
     'data-card-tone': tone,
     'data-card-bar': greenBar ? 'green' : undefined,
     'data-card-state': state === 'ready' ? undefined : state,
     id,
-    'aria-labelledby': labelledBy,
+    'aria-labelledby': label ? undefined : labelledBy,
     'aria-live': live,
     'aria-busy': busy || undefined,
     role,
@@ -148,7 +155,7 @@ export function Card({
       </button>
     );
   return (
-    <Tag {...attrs} aria-label={label}>
+    <Tag {...attrs} ref={ref as never} aria-label={label}>
       {inner}
     </Tag>
   );

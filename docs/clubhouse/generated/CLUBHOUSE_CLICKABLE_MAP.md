@@ -2932,8 +2932,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/ui/Card.tsx`
 
-- CTL-P000-055 140 `Link` "{label}" (link, href)
-- CTL-P000-056 146 `button` "{label}" (button, onClick)
+- CTL-P000-055 147 `Link` "{label}" (link, href)
+- CTL-P000-056 153 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/ui/Checkbox.tsx`
 
