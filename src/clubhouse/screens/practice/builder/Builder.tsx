@@ -1,5 +1,6 @@
 'use client';
 
+import { Card } from '../../../ui/Card';
 import { RefreshNotice } from '../../../ui/RefreshNotice';
 import { FAILURE_COPY } from '../../../ui/Notices';
 import { ArrowDown, ArrowUp, ChevronRight, Copy, Flag, Coffee, LayoutGrid, Ellipsis, Plus, Printer, ShipWheel, Trash2, User, Users, type LucideIcon } from 'lucide-react';
@@ -607,11 +608,11 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
       )}
       {ghostList}
       {blocks.length > 0 ? blockCards : ghosts.length === 0 && helper.k !== 'running' && (
-        <div className="ch-prc-card ch-prc-empty">
+        <Card as="div" kind="entity" className="ch-prc-card ch-prc-empty">
           <h2>No blocks yet</h2>
           <p>{data.helperOn ? 'Add one, or let CoachHelm fill the draft.' : 'Add a block to start the plan.'}</p>
           {addMenu()}
-        </div>
+        </Card>
       )}
       {blocks.length > 0 && addMenu()}
     </>
@@ -730,7 +731,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
 
   const reviewStep = (
     <div className="ch-prc-review">
-      <section className="ch-prc-card ch-prc-strip" aria-label="Before you publish">
+      <Card kind="alert" className="ch-prc-card ch-prc-strip" label="Before you publish">
         {check.errors.length > 0 ? (
           <>
             <b className="is-err">Fix {plural(check.errors.length, 'problem')} to publish</b>
@@ -769,7 +770,7 @@ export function Builder({ data, autoFill = false, preview }: { data: ChBuilderDa
             </Button>
           )}
         </div>
-      </section>
+      </Card>
       <PracticePlanSheet plan={sheetModel} />
     </div>
   );

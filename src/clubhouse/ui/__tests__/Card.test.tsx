@@ -57,7 +57,7 @@ describe('Card kernel', () => {
     const { container } = render(<Card kind="chart" state="loading" onPress={() => {}} label="Loading trend" />);
     const card = container.querySelector('.ch-card')!;
     expect(card.getAttribute('aria-busy')).toBe('true');
-    expect(card.tagName).toBe('DIV');
+    expect(card.tagName).toBe('SECTION');
     expect(container.querySelector('.ch-card__skel-block')).not.toBeNull();
   });
 
