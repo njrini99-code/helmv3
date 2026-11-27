@@ -3,18 +3,18 @@ import { readTypeK } from '../../lib/type-k';
 import { pluralWord } from '../../lib/plural';
 import { formatFixed, formatToPar } from '../../lib/format';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useChReducedMotion } from '../../lib/reduced-motion';
 import { CH_MARKS_MS } from '../../lib/motion';
-import { hapticScrub } from '../../lib/haptics';
+import { useChartPin } from '../../lib/use-chart-pin';
 import { meanSeries, parLine, type TrendRound } from './round-trend';
 import { dateShares } from '../../lib/chart';
 import { straightPath, teamLineDays, type ShsTone } from './shs-figures';
 
 const H = 160;
 const BASE_PAD = { l: 4, r: 30, t: 10, b: 26 };
+/** A finger held still this long reads the round under it; a sideways move reads at once (the shared scrub's threshold). */
 const HOLD_MS = 120;
-const SIDEWAYS_PX = 6;
 /** The line's morph on a window change (07 M-STATS-10). */
 const MORPH_MS = CH_MARKS_MS;
 const morphEase = (t: number) => 1 - Math.pow(1 - t, 3.2);
@@ -38,21 +38,16 @@ function heightAt(pts: readonly Pt[], x: number): number | null {
 /**
  * The feature card's chart (08 criteria 12, 13, 68): 160 tall and never stretched, so its width is measured. Every round a dot, the
  * five-round average through them, par dashed. Press and drag reads the nearest round and tells the card; release restores the
- * average; it never opens the detail (`data-ch-no-open`). One round: one dot and the par rule, not focusable (CP-126).
+ * average; it never opens the detail (`data-ch-no-open`). One round: one dot and the par rule, not focusable (CP-126). The press,
+ * hold, scrub, ticks and arrow keys are the shared chart interaction (`useChartPin`, release 'restore'), not a copy of it.
  */
 export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly TrendRound[]; tone: ShsTone; onRead: (i: number | null) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
-  const [read, setRead] = useState<number | null>(null);
   // The axis type follows Text Size, so its gutters do too: fixed ones clip the figures at large sizes (STATS-9).
   const [k, setK] = useState(1);
   useEffect(() => setK(readTypeK(document.documentElement)), []);
   const PAD = { ...BASE_PAD, r: BASE_PAD.r * k, b: BASE_PAD.b * k };
-  const pending = useRef<{ x0: number; timer: number } | null>(null);
-  const cancelPending = () => {
-    if (pending.current) window.clearTimeout(pending.current.timer);
-    pending.current = null;
-  };
   useEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -138,40 +133,25 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
     // eslint-disable-next-line react-hooks/exhaustive-deps -- the geometry is read from this render; the keys say when it changed
   }, [roundsKey, reduced, width]);
 
-  const set = useCallback(
-    (i: number | null) => {
-      setRead((was) => {
-        if (was !== i && i != null) hapticScrub('step');
-        return i;
-      });
-      onRead(i);
-    },
-    [onRead],
-  );
-  // Takes the chart and the finger's x, not the event: a hold reads it from a timer, where an event's `currentTarget` is gone
-  // (0822e4af: every touch hold threw, so a still finger never read a round).
-  const pick = (el: HTMLElement, clientX: number) => {
-    const left = el.getBoundingClientRect().left;
-    let best = 0;
-    let bd = Infinity;
-    for (let i = 0; i < n; i++) {
-      const d = Math.abs(x(i) - (clientX - left));
-      if (d < bd) {
-        bd = d;
-        best = i;
-      }
-    }
-    set(best);
-  };
+  // Rounds sit by their dates, so the pick reads the round nearest the finger, not its even slot.
+  const pin = useChartPin(n, 'x', [PAD.l / width, 1 - PAD.r / width], n > 1 ? shown.map((_, i) => share[i]!) : undefined, { release: 'restore', hold: HOLD_MS });
+  const read = pin.active;
+  // The card hears a change of round, never the first paint's "none".
+  const tell = useRef(onRead);
+  tell.current = onRead;
+  const told = useRef<number | null>(null);
+  useEffect(() => {
+    if (told.current === read) return;
+    told.current = read;
+    tell.current(read);
+  }, [read]);
 
   if (!n) return null;
   const first = shown[0]!;
   const last = shown[n - 1]!;
   const interactive = n > 1;
   return (
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- a scrubbed chart has no native element; role and keys are on it
     <div data-ctl="CTL-P004-003"
-      ref={box}
       className="ch-shs-chart"
       data-ch="stats-hero-chart"
       data-ch-no-open=""
@@ -182,63 +162,10 @@ export function ScoringFeatureChart({ rounds, tone, onRead }: { rounds: readonly
       aria-valuemax={interactive ? n : undefined}
       aria-valuenow={interactive ? (read ?? n - 1) + 1 : undefined}
       aria-valuetext={interactive ? (read == null ? `Latest ${Math.round(last.value)}, ${last.label}` : `${Math.round(shown[read]!.value)}, ${shown[read]!.label}`) : undefined}
-      onPointerDown={(e) => {
-        if (!interactive) return;
-        // A scroll that starts here isn't a read: nothing lights and nothing buzzes until a hold or a sideways move (MOB-STATS-4).
-        if (e.pointerType !== 'touch') {
-          e.currentTarget.setPointerCapture(e.pointerId);
-          hapticScrub('start');
-          pick(e.currentTarget, e.clientX);
-          return;
-        }
-        const el = e.currentTarget;
-        const id = e.pointerId;
-        const x0 = e.clientX;
-        pending.current = {
-          x0,
-          timer: window.setTimeout(() => {
-            pending.current = null;
-            el.setPointerCapture(id);
-            hapticScrub('start');
-            pick(el, x0);
-          }, HOLD_MS),
-        };
-      }}
-      onPointerMove={(e) => {
-        const wait = pending.current;
-        if (wait && Math.abs(e.clientX - wait.x0) >= SIDEWAYS_PX) {
-          window.clearTimeout(wait.timer);
-          pending.current = null;
-          e.currentTarget.setPointerCapture(e.pointerId);
-          hapticScrub('start');
-          pick(e.currentTarget, e.clientX);
-          return;
-        }
-        if (interactive && e.currentTarget.hasPointerCapture(e.pointerId)) pick(e.currentTarget, e.clientX);
-      }}
-      onPointerUp={() => {
-        cancelPending();
-        if (read == null) return;
-        hapticScrub('end');
-        set(null);
-      }}
-      onPointerCancel={() => {
-        cancelPending();
-        set(null);
-      }}
-      onBlur={() => set(null)}
-      onKeyDown={(e) => {
-        if (!interactive) return;
-        if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-          e.preventDefault();
-          e.stopPropagation();
-          const cur = read ?? (e.key === 'ArrowLeft' ? n : -1);
-          set(Math.max(0, Math.min(n - 1, cur + (e.key === 'ArrowRight' ? 1 : -1))));
-        } else if (e.key === 'Escape' && read != null) {
-          e.preventDefault();
-          e.stopPropagation();
-          set(null);
-        }
+      {...(interactive ? { ...pin.area, ...pin.container } : {})}
+      ref={(el) => {
+        box.current = el;
+        if (interactive) pin.container.ref(el);
       }}
     >
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">

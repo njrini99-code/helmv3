@@ -16,7 +16,7 @@ the ledger knows is marked `(ledger)`. `forwards` marks a shared component's
 element that carries its caller's id. This supersedes the 2026-09-30
 snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
-1799 controls in 394 files; 15 forward their caller's id.
+1798 controls in 393 files; 15 forward their caller's id.
 
 ## P001 Shell
 
@@ -378,7 +378,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ## P004 Stats (team)
 
-33 controls.
+32 controls.
 
 ### `src/clubhouse/routes/stats.tsx`
 
@@ -387,10 +387,6 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 ### `src/clubhouse/screens/stats/DeskPane.tsx`
 
 - CTL-P004-002 78 `BackLink` "{back}" (link, onClick)
-
-### `src/clubhouse/screens/stats/ScoringFeatureChart.tsx`
-
-- CTL-P004-003 173 `div` "Scores for {n} {pluralWord}, from {r…" (onPointerDown)
 
 ### `src/clubhouse/screens/stats/ShsBlocks.tsx`
 
