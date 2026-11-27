@@ -3,6 +3,8 @@ import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
+import { bridgeCopyOf } from '@/lib/observability/sentry-bridge-copy';
+import { logCapturedErrorToBridge, setupGlobalErrorHandlers } from '@/lib/error-logging';
 import { buildClientSentryOptions, isHealthProbeFetchEcho } from '@/lib/sentry-client-options';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
@@ -214,6 +216,10 @@ Sentry.init({
       return null;
     }
 
+    // An error Sentry caught by itself (a console.error, a failed request, an SDK's own capture) reaches the Bridge
+    // too, before the repeat sampling below and whether or not Sentry accepts it. See copyToBridge.
+    copyToBridge(event, hint);
+
     // Last of the drops, so an event dropped above never uses up an error's allowance.
     if (!repeatErrors.keep(event)) {
       return null;
@@ -295,6 +301,28 @@ Sentry.init({
     return fingerprintSupabaseAutoCapture(redactEventPii(event), hint);
   },
 });
+
+/**
+ * Writes the Bridge copy of an event Sentry captured by itself (lib/observability/sentry-bridge-copy.ts decides which).
+ * It waits for the rest of this task: React logs an error a boundary caught before or after the boundary reports it,
+ * so the copy is written only if no Bridge path has claimed the same error by then.
+ */
+function copyToBridge(event: Sentry.ErrorEvent, hint: Sentry.EventHint | undefined): void {
+  if (typeof window === 'undefined') return;
+  const copy = bridgeCopyOf(event, hint, window.location.origin);
+  if (!copy) return;
+  const original = hint?.originalException;
+  setTimeout(() => {
+    if (isAlreadyBridgeLogged(original)) return;
+    logCapturedErrorToBridge(copy.error, copy.context, copy.severity);
+  }, 0);
+}
+
+// The Bridge's window handlers, installed before the page hydrates: an error while the page loads reaches the Bridge
+// too, not only Sentry. GlobalErrorHandlerSetup installs the same handlers after hydration, which then does nothing.
+if (typeof window !== 'undefined') {
+  setupGlobalErrorHandlers();
+}
 
 // Required by @sentry/nextjs v8+ for App Router navigation tracing.
 // Without this export, client-side route transitions aren't traced.
