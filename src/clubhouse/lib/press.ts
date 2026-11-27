@@ -175,7 +175,7 @@ export function useChPress(motion: boolean): void {
       tweens.delete(target);
       const probe = pressed && washes && !!target.animate && !target.matches(NO_FALLBACK);
       // A fallback still fading out from the last press lets go first, so this one reads the control at rest.
-      if (probe) for (const a of target.getAnimations()) if (a.id === 'ch-press') a.cancel();
+      if (probe) for (const a of target.getAnimations?.() ?? []) if (a.id === 'ch-press') a.cancel();
       const before = probe ? looks(target) : '';
       const had = probe ? running(target) : null;
       if (pressed) target.setAttribute('data-ch-pressed', '');
