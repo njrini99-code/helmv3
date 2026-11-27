@@ -624,7 +624,7 @@ export function RoundRow({ r, href, onOpen, bind, 'data-ctl': ctl }: { 'data-ctl
       <span className="ch-rd-sc__m">
         <Meter label="Fairways" value={r.fairways ? `${r.fairways.hit}/${r.fairways.of}` : NO_DATA} pct={r.fairways ? (r.fairways.hit / r.fairways.of) * 100 : null} />{' '}
         <Meter label="Greens" value={r.greens ? `${r.greens.hit}/${r.greens.of}` : NO_DATA} pct={r.greens ? (r.greens.hit / r.greens.of) * 100 : null} />{' '}
-        {/* Fewer putts fills more: 36 per 18 is empty, 26 is full (the board's scale). */}
+        {/* More putts fills more, per 18 on PUTTS_SCALE, the season bar's way (CH-14). */}
         <Meter label="Putts" value={r.putts == null ? NO_DATA : String(r.putts)} pct={r.putts == null ? null : puttsShare(r.putts, r.holes) * 100} muted />
       </span>{' '}
       <span className={'ch-rd-sc__s' + (under ? ' is-under' : '')}>
