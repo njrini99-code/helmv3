@@ -556,10 +556,14 @@
 .ch-ev.is-past .ch-ev__m {
   opacity: 1;
 }
-.ch-ev.is-past:hover,
 .ch-ev.is-past:focus-visible,
 .ch-ev.is-past.is-sel {
   filter: none;
+}
+@media (hover: hover) {
+  .ch-ev.is-past:hover {
+    filter: none;
+  }
 }
 .ch-mo__cell.is-past .ch-mo__ev {
   filter: saturate(0.55);
@@ -3882,8 +3886,10 @@ html[data-fw-theme='dark'] .ch-in__plate[data-tone='amber'] {
    ramp is the dark surfaces at night), deep-green ink and marks that would sink into the ground, and the light washes
    (selection, today, travel, busy hatch) drawn as ink-on-paper literals. Event kinds keep their order of weight: a
    practice is a quiet green tint, a tournament the solid green, a class a hatch, busy time a champagne hatch. */
-html[data-fw-theme='dark'] .ch-cal-title:hover {
-  background: rgb(237 231 216 / 0.05);
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-cal-title:hover {
+    background: rgb(237 231 216 / 0.05);
+  }
 }
 html[data-fw-theme='dark'] .ch-cal-jump__d.is-range {
   background: rgb(107 187 140 / 0.1);

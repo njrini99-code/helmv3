@@ -801,6 +801,12 @@ html[data-fw-theme='dark'] .ch-tour-cmp-tl__dot.is-event {
   width: 2px;
   background: var(--ch-green-600);
 }
+/* On touch the divider shows its grip at rest: a finger has no hover to find it with (dsx-08). */
+@media (hover: none) {
+  .ch-tour-cmp-div .ch-tour-cmp-div__grip {
+    opacity: 1;
+  }
+}
 @media (hover: hover) and (pointer: fine) {
   .ch-tour-cmp-div:hover .ch-tour-cmp-div__grip {
     opacity: 1;

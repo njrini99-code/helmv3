@@ -5328,6 +5328,10 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
 }
+/* The press (lib/press.ts; dsx-08): the round icon key takes the linen wash under a finger, as every quiet key does. */
+.ch-rv .ch-says__info[data-ch-pressed] {
+  background: var(--ch-sel);
+}
 .ch-rv .ch-says__about {
   margin: 8px 0 0;
   padding: 8px 12px;
@@ -5791,8 +5795,10 @@ a.ch-rd-grp__h.is-link:focus-visible {
   .ch-hmap-t {
     height: 72px;
   }
-  .ch-hmap-t:hover {
-    border-color: var(--ch-border-strong);
+  @media (hover: hover) {
+    .ch-hmap-t:hover {
+      border-color: var(--ch-border-strong);
+    }
   }
 }
 .ch-hmap-t.is-u2 {

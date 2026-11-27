@@ -62,7 +62,9 @@ describe('Tournaments home, desktop', () => {
     expect(alt).toHaveClass('ch-btn--ghost', 'ch-btn--on-green');
     // The ivory face is written from the card down, so the shared primary key's green cannot win it back by load order.
     const css = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tournaments-home.css'), 'utf8');
-    expect(css).toMatch(/\.ch-tour-home-feat \.ch-tour-home-feat__go,[^{]*\{\s*background: var\(--ch-on-green-plate\);/);
+    // At rest and, on a desk with a pointer, under hover (dsx-08 put the hover behind `(hover: hover)`).
+    expect(css).toMatch(/\.ch-tour-home-feat \.ch-tour-home-feat__go \{\s*background: var\(--ch-on-green-plate\);/);
+    expect(css).toMatch(/@media \(hover: hover\) \{\s*\.ch-tour-home-feat \.ch-tour-home-feat__go:hover[^{]*\{\s*background: var\(--ch-on-green-plate\);/);
   });
 
   it('lists the other events on the calendar with their date, course and note', () => {

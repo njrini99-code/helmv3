@@ -1,0 +1,184 @@
+/* The one header system (dsx-08, ui/Header.tsx; design lab GAP-H1). Three levels of one anatomy: a lead mark, the text
+   (eyebrow, title, one meta line), the toolbar at the end, then key figures and whatever the head carries below (a view
+   switch, a filter row). One grid, so the parts stand in the same places at every level, and this sheet is the only
+   place they are drawn: a page's sheet places its head (padding, a rule above), never its title, eyebrow or meta.
+   The page title's face is the large title's (ui/LargeTitle on the phone; styles/shell.css `[data-canopy-head] h1` on a
+   desk), so it is not set here. Every rule is at zero specificity (:where), so an older head that keeps its own classes
+   (ui/Section's `.ch-sec__*`) and a page's placing rule both win over it. */
+
+:where(.ch-head) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'text end'
+    'figs figs'
+    'below below';
+  align-items: end;
+  column-gap: 16px;
+  min-width: 0;
+}
+:where(.ch-head:has(> .ch-head__lead)) {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'lead text end'
+    'figs figs figs'
+    'below below below';
+}
+:where(.ch-head__lead) {
+  grid-area: lead;
+  align-self: center;
+  display: flex;
+}
+:where(.ch-head__text) {
+  grid-area: text;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+:where(.ch-head__end) {
+  grid-area: end;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+:where(.ch-head__figs) {
+  grid-area: figs;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 32px;
+  margin: 16px 0 0;
+}
+:where(.ch-head__below) {
+  grid-area: below;
+  min-width: 0;
+  margin-top: 16px;
+}
+
+/* The eyebrow: whose, which season. The footnote role in the eyebrow ink, untracked (P001-D5); its figures are tabular through .ch-num. */
+/* A page's text breathes a little more than a section's: eyebrow, title and meta 8px apart. */
+:where(.ch-head--page > .ch-head__text) {
+  gap: 8px;
+}
+
+:where(.ch-head__eyebrow) {
+  font: var(--ch-type-footnote);
+  letter-spacing: 0;
+  color: var(--ch-ledger-eyebrow);
+}
+/* The meta line: one quiet line, the secondary ink. */
+:where(.ch-head__meta) {
+  margin: 0;
+  max-width: 60ch;
+  font: var(--ch-type-callout);
+  letter-spacing: var(--ch-track-15);
+  color: var(--ch-text-secondary);
+}
+:where(.ch-head__title) {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Section level: the Ledger heading (ui/Section): the title role, near-black, an engraved rule under it, a caption in
+   the tertiary ink. */
+:where(.ch-head--section) {
+  padding-bottom: 12px;
+  box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
+}
+:where(.ch-head--section .ch-head__title) {
+  font: var(--ch-type-title);
+  letter-spacing: var(--ch-track-title);
+  color: var(--ch-section-ink, var(--ch-text-primary));
+}
+:where(.ch-head--section .ch-head__meta) {
+  font: var(--ch-type-footnote);
+  letter-spacing: 0;
+  color: var(--ch-text-tertiary);
+}
+
+/* Entity level: one thing's head. Its name is a title on the headline scale under the page's, its figures label over
+   value: the label a footnote in the tertiary ink, the value the row figure, tabular. */
+:where(.ch-head--entity .ch-head__title) {
+  font: var(--ch-type-title);
+  letter-spacing: var(--ch-track-title);
+  color: var(--ch-title-ink);
+}
+:where(.ch-head__fig) {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+:where(.ch-head__fig dt) {
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-tertiary);
+}
+:where(.ch-head__fig dd) {
+  margin: 0;
+  font: var(--ch-type-headline);
+  color: var(--ch-text-primary);
+}
+
+/* The toolbar: its controls in a row; while something is selected, the count leads it. */
+:where(.ch-head__tools) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+:where(.ch-head__count) {
+  margin-inline-end: 4px;
+  font: var(--ch-type-callout);
+  color: var(--ch-text-primary);
+}
+
+/* On the phone a head stacks: the toolbar stays on the title's line only while both fit, then drops under the text, left
+   aligned, so a long name never squeezes the actions off the edge (List cut, Simulator at 125%, 2026-10-14). A section's
+   head opens on the board's engraved double rule above its heading, not a rule under it. */
+@media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
+  :where(.ch-head) {
+    row-gap: 12px;
+  }
+  :where(.ch-head--page),
+  :where(.ch-head--entity) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'text'
+      'end'
+      'figs'
+      'below';
+  }
+  :where(.ch-head--page:has(> .ch-head__lead)),
+  :where(.ch-head--entity:has(> .ch-head__lead)) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'lead text'
+      'end end'
+      'figs figs'
+      'below below';
+  }
+  :where(.ch-head--page > .ch-head__end),
+  :where(.ch-head--entity > .ch-head__end) {
+    justify-content: flex-start;
+  }
+  :where(.ch-head--page > .ch-head__end:empty),
+  :where(.ch-head--entity > .ch-head__end:empty) {
+    display: none;
+  }
+  :where(.ch-head--section) {
+    padding: 12px 0 0;
+    box-shadow: none;
+    border-top: var(--ch-ledger-rule-double);
+  }
+  :where(.ch-head__figs) {
+    margin-top: 0;
+    gap: 8px 20px;
+  }
+  :where(.ch-head__below) {
+    margin-top: 0;
+  }
+}

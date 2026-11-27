@@ -2818,6 +2818,12 @@ html[data-fw-theme='dark'] .ch-ms-grp.is-ann.is-urgent {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: -2px;
 }
+/* The press: the linen wash every row takes under a finger (lib/press.ts; dsx-08). It had none, so a tap on the
+   announcements row showed nothing until the thread opened. */
+.ch-ms-fold[data-ch-pressed],
+[data-ch-ms-v2] .ch-ms-sec.is-ann .ch-ms-fold.ch-ms-fold[data-ch-pressed] {
+  background: var(--ch-sel);
+}
 .ch-ms-fold .ch-ms-grp {
   width: 44px;
   height: 44px;
@@ -3506,8 +3512,13 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
     order: -1;
     text-align: right;
   }
-  [data-ch-ms-v2] .ch-ms-msg:is(:hover, :focus-within) .ch-msv-time {
+  [data-ch-ms-v2] .ch-ms-msg:focus-within .ch-msv-time {
     opacity: 1;
+  }
+  @media (hover: hover) {
+    [data-ch-ms-v2] .ch-ms-msg:hover .ch-msv-time {
+      opacity: 1;
+    }
   }
 }
 [data-ch-ms-v2] .ch-msv-datepill {

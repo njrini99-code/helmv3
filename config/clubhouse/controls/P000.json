@@ -55,7 +55,9 @@
   {"id":"CTL-P000-051","page":"P000","file":"src/clubhouse/ui/Toast.tsx","element":"button","label":null,"labelTemplate":"{label}","description":"\"{label}\" button: runs t.action.run","role":"both","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
   {"id":"CTL-P000-052","page":"P000","file":"src/clubhouse/ui/Toast.tsx","element":"button","label":"Dismiss notification","description":"\"Dismiss notification\" button: runs close","role":"both","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
   {"id":"CTL-P000-053","page":"P000","file":"src/clubhouse/ui/WeekStrip.tsx","element":"button","label":null,"labelTemplate":"{name}","description":"\"{name}\" button: runs onSelect","role":"both","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
-  {"id":"CTL-P000-054","page":"P000","file":"src/clubhouse/ui/WeekStrip.tsx","element":"Link","label":null,"labelTemplate":"{face} {name}","description":"\"{face} {name}\" link: opens a page chosen at run time (href)","role":"both","viewport":"all","actions":[],"verdict":null,"via":"link, href"}
+  {"id":"CTL-P000-054","page":"P000","file":"src/clubhouse/ui/WeekStrip.tsx","element":"Link","label":null,"labelTemplate":"{face} {name}","description":"\"{face} {name}\" link: opens a page chosen at run time (href)","role":"both","viewport":"all","actions":[],"verdict":null,"via":"link, href"},
+  {"id":"CTL-P000-055","page":"P000","file":"src/clubhouse/ui/HeaderToolbar.tsx","element":"IconButton","label":"Clear selection","description":"\"Clear selection\" button: runs selection!.onClear","role":"both","viewport":"all","actions":[],"verdict":null,"via":"button, onClick"},
+  {"id":"CTL-P000-056","page":"P000","file":"src/clubhouse/ui/HeaderToolbar.tsx","element":"IconButton","label":"More","description":"\"More\" button","role":"both","viewport":"all","actions":[],"verdict":null,"via":"button"}
  ],
  "tombstones": []
 }

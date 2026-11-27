@@ -686,10 +686,21 @@ html[data-fw-theme='dark'] .ch-prc-ribbon__mix [data-tone='pressure']::before { 
   letter-spacing: var(--ch-track-13);
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-prc-add.is-between:hover,
 .ch-prc-add.is-between:focus-visible,
 .ch-prc-add.is-between[aria-expanded='true'] {
   opacity: 1;
+}
+@media (hover: hover) {
+  .ch-prc-add.is-between:hover {
+    opacity: 1;
+  }
+}
+/* Without hover (a touch screen on a desk) the key between blocks is never hidden: there is no pointer to find it with
+   (dsx-08: no affordance behind a hover). It stands quiet until pressed. */
+@media (hover: none) {
+  .ch-prc-add.is-between {
+    opacity: 0.72;
+  }
 }
 .ch-prc-empty {
   justify-items: start;

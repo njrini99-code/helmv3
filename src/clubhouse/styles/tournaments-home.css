@@ -61,12 +61,19 @@
    is the shared ghost for a green surface (.ch-btn--on-green, ui.css). Written from the card down so they outrank the
    shared primary key's own face whichever sheet loads last: at one class each the green key won, and the week's action
    read as a dark ghost on the dark card. */
-.ch-tour-home-feat .ch-tour-home-feat__go,
-.ch-tour-home-feat .ch-tour-home-feat__go:hover:not(:disabled):not(:focus-visible) {
+.ch-tour-home-feat .ch-tour-home-feat__go {
   background: var(--ch-on-green-plate);
   color: var(--ch-green-800);
   text-shadow: none;
   box-shadow: var(--ch-on-dark-primary-shadow);
+}
+@media (hover: hover) {
+  .ch-tour-home-feat .ch-tour-home-feat__go:hover:not(:disabled):not(:focus-visible) {
+    background: var(--ch-on-green-plate);
+    color: var(--ch-green-800);
+    text-shadow: none;
+    box-shadow: var(--ch-on-dark-primary-shadow);
+  }
 }
 .ch-tour-home-feat .ch-tour-home-feat__go[data-ch-pressed]:not(:disabled) {
   background: var(--ch-on-green-plate);

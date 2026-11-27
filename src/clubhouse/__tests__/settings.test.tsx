@@ -1371,7 +1371,7 @@ describe('Settings · what a saved value does when the person leaves the section
     await user.click(within(card('Scoring and format')).getByRole('button', { name: 'Save changes' }));
     await within(card('Scoring and format')).findByText('Saved');
     serve({ ...coachData(), teamName: 'Junior varsity' });
-    expect(document.querySelector('.ch-set-head__k')!.textContent).toContain('Junior varsity');
+    expect(document.querySelector('.ch-set-head .ch-head__eyebrow')!.textContent).toContain('Junior varsity');
     await openSection(user, /^Account/);
     await screen.findByLabelText('Full name');
     await openSection(user, /^Team/);

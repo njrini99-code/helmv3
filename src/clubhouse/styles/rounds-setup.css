@@ -1234,9 +1234,13 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   opacity: 0;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
-.ch-acs__photo:hover .ch-acs__photo-change,
 .ch-acs__photo:focus-within .ch-acs__photo-change {
   opacity: 1;
+}
+@media (hover: hover) {
+  .ch-acs__photo:hover .ch-acs__photo-change {
+    opacity: 1;
+  }
 }
 .ch-acs__photo-remove {
   all: unset;
@@ -1246,9 +1250,11 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
-.ch-acs__photo-remove:hover {
-  color: var(--ch-text-primary);
-  text-decoration: underline;
+@media (hover: hover) {
+  .ch-acs__photo-remove:hover {
+    color: var(--ch-text-primary);
+    text-decoration: underline;
+  }
 }
 .ch-acs__photo-remove:focus-visible {
   outline: 2px solid var(--ch-border-focus);

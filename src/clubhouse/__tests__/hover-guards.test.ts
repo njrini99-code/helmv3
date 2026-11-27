@@ -10,20 +10,10 @@ import { describe, expect, it } from 'vitest';
  * screen another batch is reworking. `:not(:hover)` and autofill are not hovers.
  */
 const BASELINE: Record<string, number> = {
-  'auth.css': 3,
-  'calendar.css': 2,
+  // dsx-08 guarded every other sheet's; these three sheets are in open PRs (#2610, #2658) and fall when they land.
   'home.css': 1,
-  'hub.css': 3,
-  'messages-overlays.css': 1,
-  'messages.css': 1,
-  'onboard.css': 1,
-  'practice.css': 1,
   'qualifiers.css': 2,
   'roster.css': 2,
-  'rounds-setup.css': 2,
-  'rounds-track.css': 1,
-  'rounds.css': 1,
-  'tournaments-home.css': 1,
 };
 
 const DIR = join(process.cwd(), 'src/clubhouse/styles');

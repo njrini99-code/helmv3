@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { SectionHeader } from './Header';
 import { Icon } from './Icon';
 
 /**
@@ -25,20 +26,18 @@ export function Section({
   children?: ReactNode;
 }) {
   const head = title || actions;
+  // The section's head is the header system's section level (dsx-08, ui/Header.tsx), keeping the `.ch-sec__*` hooks
+  // that pages place it by.
   return (
     <section className={'ch-sec' + (className ? ` ${className}` : '')} aria-labelledby={id && title ? `${id}-t` : undefined}>
       {head && (
-        <div className="ch-sec__head">
-          <div className="ch-sec__titles">
-            {title && (
-              <h2 id={id ? `${id}-t` : undefined} className="ch-sec__title">
-                {title}
-              </h2>
-            )}
-            {meta && <div className="ch-sec__meta">{meta}</div>}
-          </div>
-          {actions && <div className="ch-sec__actions">{actions}</div>}
-        </div>
+        <SectionHeader
+          title={title}
+          titleId={id && title ? `${id}-t` : undefined}
+          meta={meta}
+          toolbar={actions}
+          slots={{ root: 'ch-sec__head', text: 'ch-sec__titles', title: 'ch-sec__title', meta: 'ch-sec__meta', end: 'ch-sec__actions' }}
+        />
       )}
       {children}
     </section>
