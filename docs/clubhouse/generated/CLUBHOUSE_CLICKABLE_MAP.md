@@ -1187,10 +1187,10 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/settings/phone/ui.tsx`
 
-- CTL-P008-094 61 `button` "{ariaLabel}" (button, onClick)
-- CTL-P008-095 102 `a` "{label}" (link, href)
-- CTL-P008-096 111 `button` "{label}" (button, onClick)
-- CTL-P008-097 156 `NavRow` "{label}" (onClick)
+- CTL-P008-094 74 `button` "{ariaLabel}" (button, onClick)
+- CTL-P008-095 115 `a` "{label}" (link, href)
+- CTL-P008-096 124 `button` "{label}" (button, onClick)
+- CTL-P008-097 169 `NavRow` "{label}" (onClick)
 
 ### `src/clubhouse/ui/Slider.tsx`
 

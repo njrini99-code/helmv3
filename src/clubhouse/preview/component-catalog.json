@@ -10194,6 +10194,7 @@
         "NavRow",
         "PickerRow",
         "Problem",
+        "RowCard",
         "SliderRow",
         "SwitchRow"
       ],
