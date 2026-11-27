@@ -329,16 +329,19 @@ function TeamScoringCard({ data, days, onOpen }: { data: ChTeamStats; days: Read
   const par = toPar(data);
   return (
     <SummaryCard feature go="tscore" onOpen={onOpen} icon="flag" title="Scoring average" meta={windowDays(data)} ariaLabel={`Team scoring average ${f ? figureValue(f) : 'no value'}. Open details`}>
-      <div className="ch-shs-figs">
-        <div className="ch-shs-figline">
-          <span className="ch-shs-fig">{f ? figureValue(f) : <NoData />}</span>
-          {par && <span className="ch-shs-fig-sub">{par}</span>}
+      {/* The figure and the drawing: one column on a phone; side by side once the card is wide, as Health's trend cards are on iPad. */}
+      <div className="ch-shs-tscore">
+        <div className="ch-shs-figs">
+          <div className="ch-shs-figline">
+            <span className="ch-shs-fig">{f ? figureValue(f) : <NoData />}</span>
+            {par && <span className="ch-shs-fig-sub">{par}</span>}
+          </div>
+          <div className="ch-shs-delta">
+            <Change data={data} />
+          </div>
         </div>
-        <div className="ch-shs-delta">
-          <Change data={data} />
-        </div>
+        {days.length >= 2 ? <TeamFeatureChart days={days} /> : <p className="ch-shs-anote">The trend draws once the team has rounds on a second day.</p>}
       </div>
-      {days.length >= 2 ? <TeamFeatureChart days={days} /> : <p className="ch-shs-anote">The trend draws once the team has rounds on a second day.</p>}
     </SummaryCard>
   );
 }

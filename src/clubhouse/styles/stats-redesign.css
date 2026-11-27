@@ -1837,6 +1837,45 @@ li + li > .ch-shs-rrow::before {
   stroke: var(--ch-shs-s-ink);
   stroke-width: 1.5;
 }
+/* The team card's round days as bars from par (owner, 27 Nov 2026). Every fill is opaque, mixed on the card's own green, and holds
+   3:1 or better on it by day and by night: an older day over par is 65% of the plate's third ink (3.76 day, 3.65 night), an older
+   day under par 65% of the gain fill (3.40, 3.29), and the newest day full strength (ink 11.3 and 10.8; gain fill 5.87 and 5.60).
+   A one-round day keeps its colour as an outline (W26). Par is a solid line: the bars stand on it, so it is their zero, not a guide. */
+.ch-shs-tbar {
+  --ch-shs-tbar: color-mix(in srgb, var(--ch-shs-s-ink-3) 65%, var(--ch-shs-s-card));
+  fill: var(--ch-shs-tbar);
+}
+.ch-shs-tbar.is-under {
+  --ch-shs-tbar: color-mix(in srgb, var(--ch-shs-s-gain-fill) 65%, var(--ch-shs-s-card));
+}
+.ch-shs-tbar.is-last {
+  --ch-shs-tbar: var(--ch-shs-s-ink);
+}
+.ch-shs-tbar.is-last.is-under {
+  --ch-shs-tbar: var(--ch-shs-s-gain-fill);
+}
+.ch-shs-tbar.is-one {
+  fill: var(--ch-shs-s-card);
+  stroke: var(--ch-shs-tbar);
+  stroke-width: 1.5;
+}
+.ch-shs-tbars__par {
+  stroke: var(--ch-shs-s-ink-3);
+  stroke-width: 1;
+}
+/* A wide card (a desk, an iPad) sets the figure and the bars side by side, as Health's trend cards do on iPad: at 1280 the bars ran
+   936 wide under a figure that used a third of the row. A phone keeps one column. */
+@container (min-width: 600px) {
+  .ch-shs-tscore:has(> .ch-shs-tbars) {
+    display: grid;
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+    column-gap: 32px;
+    align-items: start;
+  }
+  .ch-shs-tscore > .ch-shs-tbars > .ch-shs-chart {
+    margin-top: 4px;
+  }
+}
 .ch-shs-scrub {
   stroke: var(--ch-shs-s-ink);
   stroke-opacity: 0.6;

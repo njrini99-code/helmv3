@@ -5,6 +5,7 @@ vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }
 vi.mock('../../../lib/reduced-motion', () => ({ useChReducedMotion: () => true }));
 
 import { ScoringFeatureChart, TeamFeatureChart } from '../ScoringFeatureChart';
+import { barYs } from './_bars';
 import type { TrendRound } from '../round-trend';
 
 /**
@@ -150,20 +151,26 @@ describe('team hero · against par when every day has it (CH-01)', () => {
     { label: 'Sep 15', score: 73, toPar: 2, n: 6, date: '2026-09-15' },
   ];
 
-  it('draws one flat line, the dashed line is par and named so, and the reading is against par', () => {
+  it('draws a bar from par for each day, every +2 day the same length and below par, and the reading is against par', () => {
     const c = render(<TeamFeatureChart days={days} />).container;
-    const ys = [...c.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cy')));
-    for (const y of ys) expect(y).toBeCloseTo(ys[0]!, 5);
-    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Par · under par sits higher');
-    // Under par sits higher: par's dashed line is above the +2 days.
-    expect(Number(c.querySelector('.ch-shs-parline')!.getAttribute('y1'))).toBeLessThan(ys[0]!);
-    expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(/^Team score against par, per 18 holes, by round day, from \+2\.0 to \+2\.0\. Under par sits higher\./);
+    const bars = [...c.querySelectorAll('.ch-shs-tbar')];
+    expect(bars).toHaveLength(3);
+    expect(c.querySelector('.ch-shs-avgline')).toBeNull();
+    const par = Number(c.querySelector('.ch-shs-tbars__par')!.getAttribute('y1'));
+    const ends = bars.map((b) => barYs(b.getAttribute('d')!).bottom);
+    for (const e of ends) expect(e).toBeCloseTo(ends[0]!, 5);
+    // Over par hangs below par's line.
+    expect(ends[0]!).toBeGreaterThan(par);
+    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Each bar is a round day, against par');
+    expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(
+      /^Team score against par, per 18 holes, by round day, from \+2\.0 on Sep 1 to \+2\.0 on Sep 15\. Bars hang below par for days over par/,
+    );
   });
 
   it('a day with no figure against par keeps the whole chart in strokes, with no par line', () => {
     const c = render(<TeamFeatureChart days={[...days.slice(0, 2), { ...days[2]!, toPar: null }]} />).container;
     expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Lower scores sit higher');
-    expect(c.querySelector('.ch-shs-parline')).toBeNull();
+    expect(c.querySelector('.ch-shs-parline, .ch-shs-tbars__par, .ch-shs-tbar')).toBeNull();
     expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(/^Team scoring average by round day, from 72\.0 to 73\.0\./);
   });
 });

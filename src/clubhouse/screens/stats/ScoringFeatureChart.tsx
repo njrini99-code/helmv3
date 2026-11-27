@@ -293,15 +293,13 @@ export const teamDaysVsPar = (days: ReadonlyArray<TeamDay>): boolean => days.len
 const TEAM_MIN_SPAN = 4;
 
 /**
- * The team's feature chart (08 criterion 50): a preview, as Health's trend cards are, with the full chart one tap away in Scoring
- * detail. 160 tall, the line in the gain fill, a dot each round day, the newest a size up, and the first and last dates under them.
- * No axis numbers, gridlines, fill, end values or second average: the card's figure is the average, and any other number beside it
- * read as a second average that disagreed with it (W26, F-0009, STATS-P-04; owner's screenshot, 27 Nov 2026, where the last round
- * day's 73.4 would have sat under the 73.6 headline). Better rounds sit higher, as on every Clubhouse score chart, and the line under
- * the drawing says so. Against par, par stays dashed. Not interactive: the card is the tap. Straight segments through every day in
- * the window (S2.4); a one-round day is hollow (W26).
+ * The least depth the team's bars from par span, in strokes. The bars stand on par, so their lengths are already true to one another;
+ * the floor only keeps a team within a stroke of par from filling the drawing, where +0.2 and +0.4 would look like a big change.
  */
-export function TeamFeatureChart({ days }: { days: ReadonlyArray<TeamDay> }) {
+const TEAM_BAR_MIN_SPAN = 3;
+
+/** A team preview's measured width and Text Size: the drawing is laid out in pixels, so it follows its card and iPhone Text Size. */
+function useTeamChartBox() {
   const box = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(320);
   const [k, setK] = useState(1);
@@ -317,14 +315,111 @@ export function TeamFeatureChart({ days }: { days: ReadonlyArray<TeamDay> }) {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  return { box, width, k };
+}
+
+/** Rounded at the data end, square where the bar meets par: from par at `y0` to `y1`, `x` to `x + w`. */
+export function parBarPath(x: number, w: number, y0: number, y1: number): string {
+  const len = Math.abs(y1 - y0);
+  const r = Math.min(4, w / 2, len);
+  const xr = x + w;
+  const f = (q: number) => Number(q.toFixed(2));
+  if (y1 >= y0) {
+    return `M${f(x)},${f(y0)}H${f(xr)}V${f(y1 - r)}A${f(r)},${f(r)} 0 0 1 ${f(xr - r)},${f(y1)}H${f(x + r)}A${f(r)},${f(r)} 0 0 1 ${f(x)},${f(y1 - r)}Z`;
+  }
+  return `M${f(x)},${f(y0)}V${f(y1 + r)}A${f(r)},${f(r)} 0 0 1 ${f(x + r)},${f(y1)}H${f(xr - r)}A${f(r)},${f(r)} 0 0 1 ${f(xr)},${f(y1 + r)}V${f(y0)}Z`;
+}
+
+/**
+ * The team's feature chart (08 criterion 50): a preview, as Health's trend cards are, with the full chart one tap away in Scoring
+ * detail. Against par when every round day has it (CH-01), each day is a bar from par; in strokes otherwise, the line. Neither draws
+ * axis numbers, gridlines, end values or a second average: the card's figure is the average, and any other number beside it read as a
+ * second average that disagreed with it (W26, F-0009, STATS-P-04; owner's screenshot, 27 Nov 2026). Not interactive: the card is the tap.
+ */
+export function TeamFeatureChart({ days }: { days: ReadonlyArray<TeamDay> }) {
   const known = days.filter((d): d is TeamDay & { score: number } => d.score != null);
+  if (!known.length) return null;
+  return teamDaysVsPar(known) ? <TeamParBars days={known} /> : <TeamTrendLine days={known} />;
+}
+
+/**
+ * Round days as bars from par (owner, 27 Nov 2026: "Now I want it completely redesigned"). The length of a bar is the day's strokes
+ * against par per 18, so a shorter bar is better golf: a day over par hangs below the line, a day under par rises above it in the
+ * gain fill, and the newest day is drawn bright. Bars, not a line, because each day is its own sum and the eye compares lengths from
+ * one zero (Apple HIG, Charts); a small change draws small, so the drawing cannot argue with "No clear change". The scale spans at
+ * least TEAM_BAR_MIN_SPAN strokes. Days stand in even slots: a bar's width carries no time, and a slot each keeps every day the same mark
+ * (CH-11 spaces the line's points by date; the line keeps that). A one-round day is hollow (W26). Par is named at its left end.
+ */
+function TeamParBars({ days }: { days: ReadonlyArray<TeamDay & { score: number }> }) {
+  const { box, width, k } = useTeamChartBox();
+  const n = days.length;
+  const v = days.map((d) => d.toPar!);
+  const fs = 13 * k;
+  // Par's word in the footnote role, in a gutter at the line's left end, so no bar ever runs through it.
+  const G = Math.ceil(3 * fs * 0.62) + 8;
+  const T = Math.ceil(fs * 0.6);
+  const B = Math.ceil(fs * 1.4) + 8;
+  const plot = H - T - B;
+  const up = Math.max(0, -Math.min(...v));
+  const down = Math.max(0, Math.max(...v));
+  const span = Math.max(up + down, TEAM_BAR_MIN_SPAN);
+  // The room the floor adds goes on the side the bars already take, so par sits at the top when every day is over it.
+  const above = up === 0 ? 0 : down === 0 ? span : up + ((span - up - down) * up) / (up + down);
+  const unit = plot / span;
+  // Par to the hundredth, as the bars' paths are written, so every bar meets the line exactly.
+  const par = Number((T + above * unit).toFixed(2));
+  const slot = (width - G) / n;
+  const bw = Math.max(2, Math.min(28, Math.max(6, slot * 0.5), slot - 2));
+  const cx = (i: number) => G + slot * (i + 0.5);
+  const one = teamLineDays(days).one;
+  const half = (label: string) => Math.ceil(label.length * fs * 0.3);
+  const first = days[0]!.label;
+  const last = days[n - 1]!.label;
+  // Each end date centred under its bar, kept inside the drawing; par's word sits on its line, never on the date row.
+  const dateX = (i: number, label: string) => Math.min(Math.max(cx(i), half(label)), width - half(label));
+  const say = (q: number) => (formatToPar(q, 1) === 'E' ? 'level par' : formatToPar(q, 1));
+  const label =
+    `Team score against par, per 18 holes, by round day, from ${say(v[0]!)} on ${first} to ${say(v[n - 1]!)} on ${last}. ` +
+    'Bars hang below par for days over par and rise above it for days under par.' +
+    (one.size ? ` ${one.size} ${pluralWord(one.size, 'day', 'days')} with one round ${one.size === 1 ? 'is' : 'are'} drawn hollow.` : '');
+  return (
+    <div className="ch-shs-tbars">
+      <div ref={box} className="ch-shs-chart" role="img" aria-label={label}>
+        <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
+          {v.map((q, i) => {
+            const len = Math.max(3, Math.abs(q) * unit);
+            const under = q < 0;
+            const cls = 'ch-shs-tbar' + (under ? ' is-under' : '') + (i === n - 1 ? ' is-last' : '') + (one.has(i) ? ' is-one' : '');
+            return <path key={i} className={cls} d={parBarPath(cx(i) - bw / 2, bw, par, under ? par - len : par + len)} />;
+          })}
+          <line className="ch-shs-tbars__par" x1={G} x2={width} y1={par} y2={par} />
+          <text className="ch-shs-ax" x={0} y={par} dy="0.35em">
+            Par
+          </text>
+          <text className="ch-shs-ax" x={dateX(0, first)} y={H - 5} textAnchor="middle">
+            {first}
+          </text>
+          {n > 1 && (
+            <text className="ch-shs-ax" x={dateX(n - 1, last)} y={H - 5} textAnchor="middle">
+              {last}
+            </text>
+          )}
+        </svg>
+      </div>
+      <p className="ch-shs-mean-key">Each bar is a round day, against par</p>
+    </div>
+  );
+}
+
+/**
+ * Round days as a line, in strokes, when a day has no figure against par: 160 tall, the line in the gain fill, a dot each round day,
+ * the newest a size up, and the first and last dates under them. Better rounds sit higher, as on every Clubhouse score chart, and the
+ * line under the drawing says so. Straight segments through every day in the window (S2.4); a one-round day is hollow (W26).
+ */
+function TeamTrendLine({ days: known }: { days: ReadonlyArray<TeamDay & { score: number }> }) {
+  const { box, width, k } = useTeamChartBox();
   const n = known.length;
-  if (!n) return null;
-  // Against par when every day has it (stats and charts audit 2026-11-15, CH-01): the same golf on a par-70 and a par-72 course is
-  // one level, never two strokes apart, and the dashed line is par. Raw strokes otherwise.
-  const vsPar = teamDaysVsPar(known);
-  const v = known.map((d) => (vsPar ? d.toPar! : d.score));
-  const fig = (q: number) => (vsPar ? formatToPar(q, 1) : formatFixed(q, 1));
+  const v = known.map((d) => d.score);
   // Dates in the footnote role, centred under the end dots: room for half of each, and for the newest dot's ring.
   const fs = 13 * k;
   const half = (label: string) => Math.ceil(label.length * fs * 0.3);
@@ -332,9 +427,8 @@ export function TeamFeatureChart({ days }: { days: ReadonlyArray<TeamDay> }) {
   const R = Math.max(8, half(known[n - 1]!.label));
   const T = 8;
   const B = Math.ceil(fs * 1.4) + 8;
-  const marks = vsPar ? [...v, 0] : v;
-  const min = Math.min(...marks);
-  const max = Math.max(...marks);
+  const min = Math.min(...v);
+  const max = Math.max(...v);
   // At least TEAM_MIN_SPAN strokes tall, centred on the days: with no axis numbers, a 1.7-stroke drift drawn edge to edge read as a big
   // change beside "No clear change" (owner's screenshot, 27 Nov 2026). Four strokes is the span the axis'd chart drew (72 to 76).
   const pad = Math.max(0.25, (max - min) * 0.08);
@@ -353,9 +447,8 @@ export function TeamFeatureChart({ days }: { days: ReadonlyArray<TeamDay> }) {
   const xn = pts[n - 1]![0];
   return (
     <>
-    <div ref={box} className="ch-shs-chart" role="img" aria-label={`${vsPar ? 'Team score against par, per 18 holes, by round day' : 'Team scoring average by round day'}, from ${fig(v[0]!)} to ${fig(v[n - 1]!)}. ${vsPar ? 'Under par sits higher.' : 'Lower scores sit higher.'}${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} marked as hollow points.` : ''}`}>
+    <div ref={box} className="ch-shs-chart" role="img" aria-label={`Team scoring average by round day, from ${formatFixed(v[0]!, 1)} to ${formatFixed(v[n - 1]!, 1)}. Lower scores sit higher.${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} marked as hollow points.` : ''}`}>
       <svg viewBox={`0 0 ${width} ${H}`} height={H} aria-hidden="true">
-        {vsPar && <line className="ch-shs-parline" x1={L} x2={width - R} y1={y(0)} y2={y(0)} />}
         {line && <path className="ch-shs-avgline" d={line} stroke="var(--ch-shs-s-gain-fill)" />}
         {pts.map((p, i) => (
           <circle key={i} className={'ch-shs-rdot' + (joined.one.has(i) ? ' is-one' : '')} cx={p[0]} cy={p[1]} r={i === n - 1 ? 5 : 3.4} />
@@ -371,14 +464,7 @@ export function TeamFeatureChart({ days }: { days: ReadonlyArray<TeamDay> }) {
       </svg>
     </div>
     {/* Which way is better, in words, under the drawing: no axis numbers say it on a preview (owner's screenshot, 27 Nov 2026). */}
-    <p className="ch-shs-mean-key">
-      {vsPar && (
-        <svg width="16" height="2" viewBox="0 0 16 2" aria-hidden="true">
-          <line className="ch-shs-parline" x1="0" x2="16" y1="1" y2="1" />
-        </svg>
-      )}
-      {vsPar ? 'Par · under par sits higher' : 'Lower scores sit higher'}
-    </p>
+    <p className="ch-shs-mean-key">Lower scores sit higher</p>
     </>
   );
 }
