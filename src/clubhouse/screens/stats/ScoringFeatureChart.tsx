@@ -323,7 +323,7 @@ export function parBarPath(x: number, w: number, y0: number, y1: number): string
   const len = Math.abs(y1 - y0);
   const r = Math.min(4, w / 2, len);
   const xr = x + w;
-  const f = (q: number) => Number(q.toFixed(2));
+  const f = (q: number) => Math.round(q * 100) / 100;
   if (y1 >= y0) {
     return `M${f(x)},${f(y0)}H${f(xr)}V${f(y1 - r)}A${f(r)},${f(r)} 0 0 1 ${f(xr - r)},${f(y1)}H${f(x + r)}A${f(r)},${f(r)} 0 0 1 ${f(x)},${f(y1 - r)}Z`;
   }
@@ -367,7 +367,7 @@ function TeamParBars({ days }: { days: ReadonlyArray<TeamDay & { score: number }
   const above = up === 0 ? 0 : down === 0 ? span : up + ((span - up - down) * up) / (up + down);
   const unit = plot / span;
   // Par to the hundredth, as the bars' paths are written, so every bar meets the line exactly.
-  const par = Number((T + above * unit).toFixed(2));
+  const par = Math.round((T + above * unit) * 100) / 100;
   const slot = (width - G) / n;
   const bw = Math.max(2, Math.min(28, Math.max(6, slot * 0.5), slot - 2));
   const cx = (i: number) => G + slot * (i + 0.5);
