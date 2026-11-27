@@ -358,8 +358,8 @@ export async function rollupPredictionPerformanceRolling30d(
       underconfidence_rate,
       updated_at: new Date().toISOString(),
       // Extended columns (additive migration
-      // 20261023150000_golf_prediction_perf_extended_columns.sql, held; the
-      // upsert below falls back without them until it is applied). MAE means little without
+      // 20261023150000_golf_prediction_perf_extended_columns.sql, applied
+      // 2026-11-27; the upsert below still falls back without them on PGRST204). MAE means little without
       // the naive comparator beside it, and coverage is what the band claims.
       naive_mean_absolute_error:
         b.naive_sample_count > 0 ? b.naive_abs_error_sum / b.naive_sample_count : null,
@@ -398,7 +398,7 @@ export async function rollupPredictionPerformanceRolling30d(
   return { written: inserts.length, failed: 0 };
 }
 
-/** Columns the snapshot carries beyond the original table; added by the held migration 20261023150000. */
+/** Columns the snapshot carries beyond the original table; added by migration 20261023150000 (applied 2026-11-27). */
 export const EXTENDED_COLUMNS = ['naive_mean_absolute_error', 'naive_sample_count', 'interval_coverage'] as const;
 
 function isMissingColumnError(err: { code?: string; message?: string }): boolean {

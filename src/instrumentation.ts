@@ -77,16 +77,13 @@ const sharedIgnoreErrors = [
   /Could not find the function public\.helm_debug_record_agent_run/,
   /Could not find the function public\.helm_debug_list_agent_runs/,
   /Could not find the function public\.helm_debug_get_agent_run/,
-  // Same shape, one more HELD migration (supabase/migrations/HELD.md), the
-  // object named exactly. The prediction-performance writer retries without
-  // its extended columns on PGRST204; Sentry still saw it at the driver
-  // (auto.db.supabase.postgres, -1DM, 2026-11-15). Delete the line when
-  // 20261023150000_golf_prediction_perf_extended_columns.sql is applied;
-  // src/__tests__/instrumentation-held-migration-ignore.test.ts fails once its
-  // row leaves HOLD. (The season-standing pair was removed when
-  // 20261024151000_golf_player_standing_season.sql was applied, 2026-11-18:
-  // those objects are live, so a missing one pages again.)
-  /Could not find the '(?:naive_mean_absolute_error|naive_sample_count|interval_coverage)' column of 'golf_prediction_model_performance'/,
+  // (Two earlier HELD-object lines were removed when their migrations were
+  // applied: the season-standing pair with
+  // 20261024151000_golf_player_standing_season.sql on 2026-11-18, and the
+  // golf_prediction_model_performance extended columns with
+  // 20261023150000_golf_prediction_perf_extended_columns.sql on 2026-11-27.
+  // Those objects are live, so a missing one pages again;
+  // src/__tests__/instrumentation-held-migration-ignore.test.ts checks it.)
   /Refresh Token Not Found/,
   // Baseball expected control-flow throws. withBaseballAction already
   // classifies these as handled/expected (admin_events + Sentry warning with
