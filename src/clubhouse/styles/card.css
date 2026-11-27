@@ -33,7 +33,7 @@
   width: 100%;
   margin: 0;
   padding: 0;
-  font: inherit;
+  font: var(--ch-type-body);
   cursor: pointer;
   touch-action: pan-x pan-y pinch-zoom;
   -webkit-tap-highlight-color: transparent;
@@ -64,7 +64,7 @@
   min-width: 0;
 }
 .ch-card__eyebrow {
-  font: var(--ch-type-13-medium);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
@@ -75,7 +75,7 @@
   color: inherit;
 }
 .ch-card__meta {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
@@ -118,20 +118,18 @@
   padding: 8px var(--ch-card-pad) 0;
 }
 .ch-card__value {
-  font: var(--ch-type-28-strong);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--ch-track-28);
+  /* The title role (MOTION-AND-VISUAL 4.3): a card's lead figure reads a role, never a numeric step; tabular from .ch-num. */
+  font: var(--ch-type-title);
+  letter-spacing: var(--ch-track-title);
   white-space: nowrap;
   color: inherit;
 }
 .ch-card__metric[data-size='row'] .ch-card__value {
   font: var(--ch-type-figure);
-  font-variant-numeric: tabular-nums;
   letter-spacing: 0;
 }
 .ch-card__metric[data-size='hero'] .ch-card__value {
   font: var(--ch-type-figure-hero);
-  font-variant-numeric: tabular-nums;
 }
 .ch-card__value.is-gain {
   color: var(--ch-chart-gain);
@@ -141,7 +139,7 @@
 }
 .ch-card__unit {
   margin-inline-start: 4px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
 }
@@ -163,8 +161,9 @@
 .ch-card[data-card-role='chart'] > .ch-card__visual {
   padding-inline: 8px;
 }
-/* A list card's rows are its rhythm: they run to its bottom edge, so the last one takes no gutter under it. */
-.ch-card:not([data-card-role='list']) > :last-child:not(.ch-card__foot) {
+/* The gutter under the last part is the kernel's, and only its parts take it: a list card's rows run to its bottom edge,
+   and a page's own content moved onto the card (Practice, Settings) keeps the padding its page gives it. */
+.ch-card:not([data-card-role='list']) > :is(.ch-card__head, .ch-card__body, .ch-card__metric, .ch-card__visual, .ch-card__msg, .ch-card__skel):last-child {
   padding-bottom: var(--ch-card-pad);
 }
 .ch-card__foot {
@@ -175,7 +174,7 @@
   margin-top: var(--ch-card-pad);
   padding: 12px var(--ch-card-pad);
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
