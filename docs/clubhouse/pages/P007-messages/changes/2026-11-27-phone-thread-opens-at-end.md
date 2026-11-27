@@ -20,6 +20,8 @@ Held items:     none
   hold (useThreadAnchor), the bar and composer layers and the keyboard ride
   (useThreadLayers), the drag times and the room made for a new message. They
   now run in the thread, which mounts with its scroller.
+- `ACT-P007-COPY-MESSAGE` names `PhoneThreadContent`, where `copy` now lives,
+  so the phone sheet's two Copy rows keep their action in the control ledger.
 
 ### Why
 
