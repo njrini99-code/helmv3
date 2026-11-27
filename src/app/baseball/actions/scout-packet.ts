@@ -219,7 +219,8 @@ export const mintScoutPacketLink = withBaseballAction(
 
 export const listScoutPacketLinks = withBaseballAction(
   'listScoutPacketLinks',
-  { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports', demoSafe: true },
   async (ctx, playerId: string): Promise<PassportShareLinkView[]> => {
     assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
@@ -306,7 +307,8 @@ export interface ScoutPacketRoster {
 
 export const getScoutPacketRoster = withBaseballAction(
   'getScoutPacketRoster',
-  { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports', demoSafe: true },
   async (ctx): Promise<ScoutPacketRoster> => {
     assertRecruitingShipped();
     const teamId = ctx.targetTeamId;
@@ -398,7 +400,8 @@ export const getScoutPacketRoster = withBaseballAction(
 
 export const getScoutPacketPreview = withBaseballAction(
   'getScoutPacketPreview',
-  { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-scout-packet', requiredCapability: 'can_export_reports', demoSafe: true },
   async (ctx, playerId: string): Promise<ScoutPacketModel> => {
     assertRecruitingShipped();
     const teamId = ctx.targetTeamId;

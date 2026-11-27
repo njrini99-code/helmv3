@@ -95,7 +95,8 @@ export interface TeamSettingsData {
 
 export const getTeamJoinSettings = withBaseballAction(
   'getTeamJoinSettings',
-  { featureArea: 'baseball-settings' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', demoSafe: true },
   async (ctx): Promise<TeamSettingsData> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -210,7 +211,8 @@ function mapSeasonRow(row: Record<string, unknown>): BaseballSeason {
 
 export const listSeasons = withBaseballAction(
   'listSeasons',
-  { featureArea: 'baseball-settings' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', demoSafe: true },
   async (ctx): Promise<SeasonSettingsData> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;

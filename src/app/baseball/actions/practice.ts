@@ -900,7 +900,8 @@ export interface ClassConflictSummary {
  */
 export const getClassConflictsForPractice = withBaseballAction(
   'getClassConflictsForPractice',
-  FEATURE,
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { ...FEATURE, demoSafe: true },
   async (
     ctx,
     input: { practiceId: string },

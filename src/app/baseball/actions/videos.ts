@@ -191,7 +191,8 @@ function playerDisplayName(p: VideoPlayerRef | null): string {
 
 export const getLibraryVideos = withBaseballAction(
   'getLibraryVideos',
-  { featureArea: 'baseball-video' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-video', demoSafe: true },
   async (ctx): Promise<LibraryReadModel> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -238,7 +239,8 @@ export const getLibraryVideos = withBaseballAction(
 
 export const getPlayerGroupedVideos = withBaseballAction(
   'getPlayerGroupedVideos',
-  { featureArea: 'baseball-video' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-video', demoSafe: true },
   async (ctx): Promise<PlayerReadModel> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -316,7 +318,8 @@ export const getPlayerGroupedVideos = withBaseballAction(
 
 export const getEventGroupedClips = withBaseballAction(
   'getEventGroupedClips',
-  { featureArea: 'baseball-video' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-video', demoSafe: true },
   async (ctx): Promise<EventReadModel> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -476,7 +479,8 @@ export const getEventGroupedClips = withBaseballAction(
 
 export const getTaggedClips = withBaseballAction(
   'getTaggedClips',
-  { featureArea: 'baseball-video' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-video', demoSafe: true },
   async (ctx): Promise<TaggedReadModel> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -554,7 +558,8 @@ export const getTaggedClips = withBaseballAction(
 
 export const getEvidenceClips = withBaseballAction(
   'getEvidenceClips',
-  { featureArea: 'baseball-video' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-video', demoSafe: true },
   async (ctx): Promise<EvidenceReadModel> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
