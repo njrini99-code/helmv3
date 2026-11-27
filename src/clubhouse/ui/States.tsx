@@ -162,7 +162,7 @@ export function EmptyState({
         role={danger ? 'alert' : undefined}
         data-ch-code={pageCode}
       >
-        {pageCode && <StateSignal code={pageCode} />}
+        {pageCode && <StateSignal code={pageCode} failure={danger} />}
         <div className="ch-empty-page__in">
           {glyph && (
             <span className="ch-empty-page__art" aria-hidden="true">

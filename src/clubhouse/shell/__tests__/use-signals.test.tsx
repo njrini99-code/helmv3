@@ -1,4 +1,5 @@
 import { fireEvent, render, renderHook } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** E6-E8 (Bridge plan §4.2): the shell configures the queue, counts views and the team switch, numbered taps and rage clicks. */
@@ -68,6 +69,30 @@ describe('useChSignals', () => {
     const dead = document.querySelector('span')!;
     for (let i = 0; i < RAGE_CLICKS; i++) fireEvent.click(dead);
     expect(kinds().filter((s) => s.kind === 'frustration')).toEqual([{ kind: 'frustration', code: 'CH-1951', control: 'CTL-P007-009' }]);
+  });
+
+  it("configures the queue for the new page before that page's own signals run (a child's effects run first)", () => {
+    function Page({ path }: { path: string }) {
+      useEffect(() => {
+        signals.chSignal({ kind: 'state', code: 'CH-4201', page: path } as never);
+      }, [path]);
+      return null;
+    }
+    function Shell({ pathname }: { pathname: string }) {
+      useChSignals({ enabled: true, role: 'coach', teamId: TEAM_A, pathname, search: '' });
+      return <Page path={pathname} />;
+    }
+    const { rerender } = render(<Shell pathname="/golf/dashboard/roster" />);
+    signals.chSignal.mockClear();
+    signals.configureSignals.mockClear();
+    rerender(<Shell pathname="/golf/dashboard/stats" />);
+    expect(signals.configureSignals).toHaveBeenCalledWith(expect.objectContaining({ page: 'P004' }));
+    const configured = signals.configureSignals.mock.invocationCallOrder[0]!;
+    const state = signals.chSignal.mock.calls.findIndex(([s]) => (s as { kind: string }).kind === 'state');
+    expect(state).toBeGreaterThanOrEqual(0);
+    expect(signals.chSignal.mock.invocationCallOrder[state]!).toBeGreaterThan(configured);
+    // The view goes before the page's states, too, so its timeline reads in order.
+    expect(kinds().map((k) => k.kind)).toEqual(['view', 'state']);
   });
 
   it('ignores clicks outside Clubhouse', () => {

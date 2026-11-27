@@ -158,6 +158,13 @@ export function buildSurfaces({ surfaceIndex, manifests }) {
   return out;
 }
 
+/** The `useAction` names a manifest action lists (`useAction`: one name, or several when one action has more than one). */
+export function actionCallNames(action) {
+  const names = action?.useAction;
+  if (names == null) return [];
+  return Array.isArray(names) ? names : [names];
+}
+
 const sortedObject = (entries) => Object.fromEntries([...entries].sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)));
 
 /**
@@ -232,6 +239,8 @@ export function buildBridgeGraph({ manifests, bridge, tombstones = [], catalogs,
         tables: a.data ?? [],
         outcomes: Object.fromEntries(Object.entries(a.bridge ?? {}).filter(([, id]) => id != null)),
         tests: a.tests ?? [],
+        // The names its useAction calls send (`act`), so a signal can be read back to this action.
+        ...(actionCallNames(a).length ? { useActionNames: actionCallNames(a) } : {}),
       };
     }
   }

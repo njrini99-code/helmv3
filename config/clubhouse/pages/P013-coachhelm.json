@@ -160,6 +160,7 @@
       "label": "Assign an insight as a focus (coach: the board, and a coach’s Deep dive of one player)",
       "component": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions",
       "handler": "assign",
+      "useAction": "coachhelm.assign",
       "service": "src/app/golf/actions/development.ts#createFocusAreaFromInsightV2",
       "data": [
         "golf_player_focus_areas",
@@ -183,6 +184,7 @@
       "label": "Dismiss an insight (coach: the board, and a coach’s Deep dive of one player)",
       "component": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions",
       "handler": "dismiss",
+      "useAction": "coachhelm.dismiss",
       "service": "src/app/golf/actions/insights-feed.ts#dismissInsight",
       "data": [
         "golf_coach_insights",
@@ -206,6 +208,7 @@
       "label": "Undo a dismissal (coach: the board, and a coach’s Deep dive of one player)",
       "component": "src/clubhouse/screens/coachhelm/parts.tsx#useFocusActions",
       "handler": "undo",
+      "useAction": "coachhelm.undo",
       "service": "src/app/golf/actions/insights-feed.ts#reactivateInsight",
       "data": [
         "golf_coach_insights"

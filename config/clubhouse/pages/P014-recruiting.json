@@ -73,6 +73,7 @@
       "label": "Add a prospect (coach)",
       "component": "src/clubhouse/screens/recruiting/ProspectForm.tsx#ProspectForm",
       "handler": "addAction (RecruitingView)",
+      "useAction": "recruiting.add",
       "service": "src/app/golf/actions/recruiting.ts#createRecruit",
       "data": [
         "golf_recruits"
@@ -94,6 +95,7 @@
       "label": "Save changes to a prospect (coach)",
       "component": "src/clubhouse/screens/recruiting/ProspectForm.tsx#ProspectForm",
       "handler": "saveAction (RecruitingView)",
+      "useAction": "recruiting.save",
       "service": "src/app/golf/actions/recruiting.ts#updateRecruit",
       "data": [
         "golf_recruits"
@@ -115,6 +117,7 @@
       "label": "Move a prospect to another stage, saved when picked (coach)",
       "component": "src/clubhouse/screens/recruiting/RecruitingView.tsx#RecruitingView",
       "handler": "moveAction",
+      "useAction": "recruiting.stage",
       "service": "src/app/golf/actions/recruiting.ts#updateRecruit",
       "data": [
         "golf_recruits"
@@ -136,6 +139,7 @@
       "label": "Delete a prospect and their documents (coach)",
       "component": "src/clubhouse/screens/recruiting/RecruitingView.tsx#RecruitingView",
       "handler": "deleteAction",
+      "useAction": "recruiting.delete",
       "service": "src/app/golf/actions/recruiting.ts#deleteRecruit",
       "data": [
         "golf_recruits",
@@ -177,6 +181,7 @@
       "label": "Upload a document to a prospect (coach)",
       "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
       "handler": "uploadAction",
+      "useAction": "recruiting.upload",
       "service": "src/app/golf/actions/recruit-documents.ts#prepareRecruitDocumentUpload",
       "data": [
         "golf_recruit_documents"
@@ -199,6 +204,7 @@
       "label": "Remove a prospect's document (coach)",
       "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
       "handler": "removeAction",
+      "useAction": "recruiting.removeDocument",
       "service": "src/app/golf/actions/recruit-documents.ts#deleteRecruitDocument",
       "data": [
         "golf_recruit_documents"
@@ -221,6 +227,7 @@
       "label": "Open a document through a link that expires (coach)",
       "component": "src/clubhouse/screens/recruiting/Documents.tsx#Documents",
       "handler": "openAction",
+      "useAction": "recruiting.openDocument",
       "service": "src/app/golf/actions/recruit-documents.ts#getRecruitDocumentUrl",
       "data": [
         "golf_recruit_documents"

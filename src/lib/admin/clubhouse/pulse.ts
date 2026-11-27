@@ -4,6 +4,7 @@
  * reads the same model, so the email and the screen say the same thing.
  */
 import type { BridgeGraph } from './graph';
+import { actionCallNames } from './graph';
 import {
   actionStats,
   codeTotals,
@@ -102,7 +103,7 @@ export function pulseModel(i: {
 /** The ACT- ID a useAction name resolves to, else the name itself. */
 export function actionIdFor(graph: Pick<BridgeGraph, 'actions'>, act: string): string {
   if (graph.actions[act]) return act;
-  return Object.entries(graph.actions).find(([, a]) => a.useActionName === act)?.[0] ?? act;
+  return Object.entries(graph.actions).find(([, a]) => actionCallNames(a).includes(act))?.[0] ?? act;
 }
 
 /** Where an alert opens: its code's dossier, else its action, control, session, page or release. */

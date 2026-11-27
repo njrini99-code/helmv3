@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { createAdminClient } from '@/lib/supabase/admin';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { reportedSignalOf, stampFromStoredSignal } from '@/lib/admin/clubhouse/report-stamp';
 import { createClient } from '@/lib/supabase/server';
 import { shouldPersistAdminTables, getRuntimeEnv } from '@/lib/telemetry-gate';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
@@ -461,6 +463,18 @@ export async function POST(request: NextRequest) {
 
     if (errorLogResult.error || adminEventResult.error) {
       throw errorLogResult.error ?? adminEventResult.error;
+    }
+
+    // A Clubhouse failure report names the signal it reports (context.chSignal). When that signal reached
+    // /api/ch/signal first, its stamp found no row yet, so this row takes its Bridge columns from the stored signal
+    // instead (report-stamp.ts). Best effort: the report is already stored, so this never fails the request.
+    const reportedSignal = user ? reportedSignalOf(contextWithAnonymity) : null;
+    if (user && reportedSignal) {
+      try {
+        await stampFromStoredSignal(adminClient as unknown as SupabaseClient, user.id, reportedSignal);
+      } catch (stampError) {
+        Sentry.captureException(stampError, { tags: { component: 'log-error-route', step: 'bridge-stamp' } });
+      }
     }
 
     return NextResponse.json({ success: true });

@@ -138,6 +138,7 @@
       "label": "Cancel an event, or a series from a point on",
       "component": "src/clubhouse/screens/calendar/editor.tsx#CancelEvent",
       "handler": "cancel (useAction calendar.cancelEvent)",
+      "useAction": "calendar.cancelEvent",
       "service": "src/app/golf/actions/calendar-events.ts#deleteGolfEvent",
       "data": [
         "golf_events"
@@ -159,6 +160,7 @@
       "label": "Restore a cancelled event (coach)",
       "component": "src/clubhouse/screens/calendar/Calendar.tsx#Calendar",
       "handler": "restore (useAction calendar.restoreEvent)",
+      "useAction": "calendar.restoreEvent",
       "service": "src/app/golf/actions/calendar-events.ts#updateGolfEvent",
       "data": [
         "golf_events"
@@ -179,6 +181,7 @@
       "label": "Delete a cancelled event permanently (coach)",
       "component": "src/clubhouse/screens/calendar/editor.tsx#DeleteEvent",
       "handler": "remove (useAction calendar.deleteEvent)",
+      "useAction": "calendar.deleteEvent",
       "service": "src/app/golf/actions/calendar-events.ts#deleteGolfEventPermanently",
       "data": [
         "golf_events",
@@ -215,6 +218,7 @@
       "label": "Reply to an event (player)",
       "component": "src/clubhouse/screens/calendar/inspector.tsx#PlayerReply",
       "handler": "reply (useAction calendar.rsvp)",
+      "useAction": "calendar.rsvp",
       "service": "src/app/golf/actions/calendar-events.ts#respondToEvent",
       "data": [
         "golf_event_attendance"
@@ -254,6 +258,7 @@
       "label": "Save attendance marks (coach)",
       "component": "src/clubhouse/screens/calendar/inspector.tsx#Attendance",
       "handler": "save (useAction calendar.attendance)",
+      "useAction": "calendar.attendance",
       "service": "src/app/golf/actions/attendance.ts#markAttendance",
       "data": [
         "golf_event_attendance"
@@ -274,6 +279,7 @@
       "label": "Add busy time (coach)",
       "component": "src/clubhouse/screens/calendar/extras.tsx#BusySheet",
       "handler": "save (useAction calendar.addBusy)",
+      "useAction": "calendar.addBusy",
       "service": "src/app/golf/actions/calendar-blocked-time.ts#addCoachBlockedTime",
       "data": [
         "golf_coach_blocked_time"
@@ -297,6 +303,7 @@
       "label": "Remove busy time, or the series (coach)",
       "component": "src/clubhouse/screens/calendar/extras.tsx#BusyDetail",
       "handler": "remove (useAction calendar.deleteBusy)",
+      "useAction": "calendar.deleteBusy",
       "service": "src/app/golf/actions/calendar-blocked-time.ts#deleteCoachBlockedTime",
       "data": [
         "golf_coach_blocked_time"
@@ -355,6 +362,7 @@
       "label": "Attach a document to an event (coach)",
       "component": "src/clubhouse/screens/calendar/extras.tsx#FilePicker",
       "handler": "attach (useAction calendar.attachFile)",
+      "useAction": "calendar.attachFile",
       "service": "src/app/golf/actions/event-documents.ts#attachDocumentToEvent",
       "data": [
         "golf_event_documents"
@@ -430,6 +438,7 @@
       "label": "Create a calendar-app link (team link: coach only)",
       "component": "src/clubhouse/screens/calendar/editor.tsx#SubscribeSheet",
       "handler": "create (useAction calendar.createFeed)",
+      "useAction": "calendar.createFeed",
       "service": "src/app/golf/actions/calendar-feeds.ts#createCalendarFeed",
       "data": [
         "golf_calendar_feeds"
@@ -550,6 +559,7 @@
       "label": "Save the team's practice hour limits (coach)",
       "component": "src/clubhouse/screens/calendar/hours/sheets.tsx#LimitsSheet",
       "handler": "save (useAction calendar.hours.saveLimits)",
+      "useAction": "calendar.hours.saveLimits",
       "service": "src/app/golf/actions/hours.ts#saveHoursSettings",
       "data": [
         "golf_team_hours_settings (migration 20261115232000, held)"
@@ -569,6 +579,7 @@
       "label": "Change how one event counts toward practice hours (coach)",
       "component": "src/clubhouse/screens/calendar/hours/sheets.tsx#AdjustSheet",
       "handler": "save (useAction calendar.hours.saveAdjustment)",
+      "useAction": "calendar.hours.saveAdjustment",
       "service": "src/app/golf/actions/hours.ts#saveHoursAdjustment",
       "data": [
         "golf_hours_adjustments (migration 20261115232000, held)"

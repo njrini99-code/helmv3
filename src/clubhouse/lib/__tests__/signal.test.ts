@@ -9,6 +9,7 @@ vi.mock('@/lib/error-logging', () => ({ logError: vi.fn() }));
 import { logError } from '@/lib/error-logging';
 import {
   chSignal,
+  chSignalReport,
   configureSignals,
   currentReportSignal,
   FLUSH_AT,
@@ -146,6 +147,90 @@ describe('client signals', () => {
     expect(second.sessionId).toBe(first.sessionId);
     expect(second.seq).toBe(first.seq + 1);
     expect(first.sessionId).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('carries the session through a reload for a signal sent before the shell configured (a crash on first draw)', () => {
+    configureSignals({ enabled: true, role: 'coach', page: 'P007', userId: 'coach-1' });
+    const first = chSignal({ kind: 'view' })!;
+    resetSignalsForTests();
+    chSignal({ kind: 'crash', code: 'CH-1206', message: 'boom' });
+    configureSignals({ enabled: true, role: 'coach', page: 'P003', userId: 'coach-1' });
+    flushSignals();
+    expect(beacons(beacon).at(-1)!.signals[0]).toMatchObject({ kind: 'crash', sessionId: first.sessionId, seq: first.seq + 1, page: 'P003' });
+    expect(chSignal({ kind: 'view' })).toMatchObject({ sessionId: first.sessionId, seq: first.seq + 2 });
+  });
+
+  it("moves what waited to a session of its own, numbered from 0, when the tab's stored session was someone else's", () => {
+    configureSignals({ enabled: true, role: 'coach', page: 'P007', userId: 'coach-1' });
+    const coach = chSignal({ kind: 'view' })!;
+    chSignal({ kind: 'view' });
+    resetSignalsForTests();
+    chSignal({ kind: 'state', code: 'CH-1211' });
+    chSignal({ kind: 'state', code: 'CH-1903' });
+    configureSignals({ enabled: true, role: 'player', page: 'P011', userId: 'player-2' });
+    flushSignals();
+    const sent = beacons(beacon).at(-1)!.signals;
+    expect(sent.map((s) => s.seq)).toEqual([0, 1]);
+    expect(new Set(sent.map((s) => s.sessionId))).toEqual(new Set([sent[0]!.sessionId]));
+    expect(sent[0]!.sessionId).not.toBe(coach.sessionId);
+    expect(chSignal({ kind: 'view' })).toMatchObject({ sessionId: sent[0]!.sessionId, seq: 2 });
+    expect(JSON.parse(sessionStorage.getItem('ch-signal-session')!)).toMatchObject({ id: sent[0]!.sessionId, user: 'player-2' });
+  });
+
+  describe('a crash reported with its signal (chSignalReport)', () => {
+    const crash = { kind: 'crash', code: 'CH-4204', surface: 'stats.team.figures', message: 'boom' } as const;
+    const report = vi.fn(() => chReport(new Error('boom'), { surface: 'stats.team.figures', severity: 'high' }));
+    beforeEach(() => report.mockClear());
+
+    it('reports at once, carrying its place, once the shell has configured', () => {
+      configureSignals({ enabled: true, role: 'coach', page: 'P004', userId: 'coach-1' });
+      chSignalReport(crash, report);
+      expect(report).toHaveBeenCalledOnce();
+      flushSignals();
+      const sent = beacons(beacon)[0]!.signals[0]!;
+      expect(sent).toMatchObject({ kind: 'crash', code: 'CH-4204', reported: true });
+      expect(vi.mocked(logError).mock.calls[0]![1]).toMatchObject({ chSignal: { sessionId: sent.sessionId, seq: sent.seq, page: 'P004' } });
+    });
+
+    it('before the shell configures, holds the report until it does, so the one row it writes carries the place', async () => {
+      chSignalReport(crash, report);
+      expect(report).not.toHaveBeenCalled();
+      configureSignals({ enabled: true, role: 'coach', page: 'P004', userId: 'coach-1' });
+      expect(report).toHaveBeenCalledOnce();
+      flushSignals();
+      const sent = beacons(beacon)[0]!.signals[0]!;
+      expect(sent).toMatchObject({ kind: 'crash', page: 'P004', reported: true });
+      expect(vi.mocked(logError).mock.calls[0]![1]).toMatchObject({ chSignal: { sessionId: sent.sessionId, seq: sent.seq, page: 'P004', code: 'CH-4204' } });
+      await Promise.resolve();
+      expect(report).toHaveBeenCalledOnce();
+    });
+
+    it('still reports, without a place, when the switch turns out to be off', () => {
+      chSignalReport(crash, report);
+      configureSignals({ enabled: false, role: 'coach', page: 'P004' });
+      expect(report).toHaveBeenCalledOnce();
+      expect(vi.mocked(logError).mock.calls[0]![1]).not.toHaveProperty('chSignal');
+      flushSignals();
+      expect(beacon).not.toHaveBeenCalled();
+    });
+
+    it('reports a microtask later when no shell configures, and leaves the Bridge row to the route if one ever does', async () => {
+      chSignalReport(crash, report);
+      await Promise.resolve();
+      expect(report).toHaveBeenCalledOnce();
+      expect(vi.mocked(logError).mock.calls[0]![1]).not.toHaveProperty('chSignal');
+      configureSignals({ enabled: true, role: 'coach', page: 'P004' });
+      flushSignals();
+      expect(beacons(beacon)[0]!.signals[0]).toMatchObject({ kind: 'crash', code: 'CH-4204' });
+      expect(beacons(beacon)[0]!.signals[0]).not.toHaveProperty('reported');
+      expect(report).toHaveBeenCalledOnce();
+    });
+
+    it('runs a held report when the wait buffer is full and its signal is pushed out', () => {
+      chSignalReport(crash, report);
+      for (let i = 0; i < 50; i++) chSignal({ kind: 'view' });
+      expect(report).toHaveBeenCalledOnce();
+    });
   });
 
   it('gives a failure its message, trail, replay and the envelopes before it as context', () => {

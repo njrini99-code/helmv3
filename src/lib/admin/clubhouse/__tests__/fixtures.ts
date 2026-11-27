@@ -33,7 +33,7 @@ export function fixtureGraph(): BridgeGraph {
         tables: ['golf_messages'],
         outcomes: { success: 70901, failure: 70603 },
         tests: [],
-        useActionName: 'messages.send',
+        useActionNames: ['messages.send'],
       },
     },
     ids: {

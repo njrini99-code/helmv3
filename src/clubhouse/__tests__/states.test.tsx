@@ -364,6 +364,8 @@ describe('CH-1210 sections that crash together are told once', () => {
       ['CH-4206', 'RSVPs couldn’t be shown'],
     ]);
     expect(screen.getAllByRole('button')).toHaveLength(1);
+    // No shell configures the signal queue here, so each crash's report runs a microtask after the commit (chSignalReport).
+    await act(async () => {});
     expect(reportSpy.mock.calls.map(([, ctx]) => ctx.surface)).toEqual(['stats.team.figures', 'stats.team.trend', 'hub.rsvps']);
 
     // Two come back and one still fails: that one is alone now, so it has its own notice and Try again again.

@@ -8,6 +8,7 @@
  * pseudonymous unless the pack asked for names (D7).
  */
 import type { BridgeGraph } from './graph';
+import { actionCallNames } from './graph';
 import {
   isFailureRow,
   previousRelease,
@@ -58,17 +59,18 @@ const SESSION_LIMIT = 10;
 const SPLIT_LIMIT = 12;
 
 const chOf = (graph: BridgeGraph, target: PackTarget) => (target.kind === 'code' ? graph.ids[target.key]?.ch : undefined);
-const actionNameOf = (graph: BridgeGraph, target: PackTarget) => (target.kind === 'action' ? graph.actions[target.key]?.useActionName : undefined);
+/** The `useAction` names an action target is sent under (none for any other target, or an action not sent by name). */
+const actionNamesOf = (graph: BridgeGraph, target: PackTarget): ReadonlySet<string> => new Set(target.kind === 'action' ? actionCallNames(graph.actions[target.key]) : []);
 
 /** Hourly counter rows that are about the target. A team has no hourly column, so none are. */
 export function hourlyMatches(graph: BridgeGraph, target: PackTarget): (r: HourlyRow) => boolean {
   const ch = chOf(graph, target);
-  const actionName = actionNameOf(graph, target);
+  const actionNames = actionNamesOf(graph, target);
   switch (target.kind) {
     case 'code':
       return (r) => r.bridge_id === Number(target.key) || r.code === target.key || (!!ch && r.code === ch);
     case 'action':
-      return (r) => !!actionName && r.kind === 'action' && r.act === actionName;
+      return (r) => r.kind === 'action' && actionNames.has(r.act);
     case 'control':
       return (r) => r.act === target.key;
     case 'release':
@@ -95,12 +97,12 @@ export function sessionsFor(graph: BridgeGraph, target: PackTarget, sessions: re
 /** Session events that are about the target (for a release, person or team: every event of their sessions). */
 export function eventMatches(graph: BridgeGraph, target: PackTarget): (e: SessionEventRow) => boolean {
   const ch = chOf(graph, target);
-  const actionName = actionNameOf(graph, target);
+  const actionNames = actionNamesOf(graph, target);
   switch (target.kind) {
     case 'code':
       return (e) => e.bridge_id === Number(target.key) || e.code === target.key || (!!ch && e.code === ch);
     case 'action':
-      return (e) => e.action_id === target.key || (!!actionName && e.act === actionName);
+      return (e) => e.action_id === target.key || (e.act != null && actionNames.has(e.act));
     case 'control':
       return (e) => e.control_id === target.key;
     case 'release':
@@ -115,12 +117,12 @@ export function eventMatches(graph: BridgeGraph, target: PackTarget): (e: Sessio
 /** Rule hits that name the target; for a person or team, the per-session ones (R-06, R-07) in their sessions. */
 export function alertMatches(graph: BridgeGraph, target: PackTarget, sessionIds: ReadonlySet<string>): (a: BridgeAlert) => boolean {
   const ch = chOf(graph, target);
-  const actionName = actionNameOf(graph, target);
+  const actionNames = actionNamesOf(graph, target);
   switch (target.kind) {
     case 'code':
       return (a) => a.code === target.key || (!!ch && a.code === ch);
     case 'action':
-      return (a) => a.action === target.key || (!!actionName && a.action === actionName);
+      return (a) => a.action === target.key || (a.action != null && actionNames.has(a.action));
     case 'control':
       return (a) => a.control === target.key;
     case 'release':
@@ -160,7 +162,7 @@ export function countersSection(graph: BridgeGraph, target: PackTarget, data: Pa
     // with everyone's events in that bucket. Their own sessions (below) are their evidence.
     return { source: 'counters', title, state: 'ok', note: 'Hourly counters are shared by everyone in the bucket, so a person has no counts of their own; their sessions below are the evidence.' };
   }
-  if (target.kind === 'action' && !actionNameOf(graph, target)) {
+  if (target.kind === 'action' && !actionNamesOf(graph, target).size) {
     return { source: 'counters', title, state: 'ok', note: `${target.key} has no useAction name in the graph yet, so its counters cannot be told apart; its sessions are below.` };
   }
   const mine = data.rows.filter(hourlyMatches(graph, target));

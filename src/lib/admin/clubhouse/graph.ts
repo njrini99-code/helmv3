@@ -47,8 +47,16 @@ export interface GraphAction {
   /** Outcome name (success, failure, offline, …) to the Bridge ID it lands on. */
   outcomes: Record<string, BridgeId>;
   tests: string[];
-  /** The `useAction` name the client sends, once the emitters are wired (E2). */
-  useActionName?: string;
+  /**
+   * The `useAction` names the client sends for this action (`act`), from its page manifest's `useAction`. Several when
+   * one action has more than one call (complete and uncomplete a task); none for an action not sent by name yet.
+   */
+  useActionNames?: string[];
+}
+
+/** The `useAction` names an action is sent under (none for one not wired by name). */
+export function actionCallNames(action: Pick<GraphAction, 'useActionNames'> | undefined): readonly string[] {
+  return action?.useActionNames ?? [];
 }
 
 export interface GraphId {

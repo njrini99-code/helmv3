@@ -126,6 +126,7 @@
       "label": "Mark all notifications read",
       "component": "src/clubhouse/shell/Bell.tsx#markAllButton",
       "handler": "markAll.run",
+      "useAction": "shell.markAllRead",
       "service": "src/app/golf/actions/unified-notifications.ts#markAllNotificationsRead",
       "data": [
         "golf notifications (unified feed)"
@@ -146,6 +147,7 @@
       "label": "Switch the active team (a head coach on more than one team)",
       "component": "src/clubhouse/shell/TeamSwitch.tsx#TeamSwitch",
       "handler": "useTeamSwitch.pick (useAction shell.switchTeam)",
+      "useAction": "shell.switchTeam",
       "service": "src/app/golf/actions/team-switcher.ts#setActiveTeam",
       "data": [
         "golf_team_coach_staff",

@@ -1,7 +1,7 @@
 'use client';
 
 import { useReportWebVitals } from 'next/web-vitals';
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { chSignal, configureSignals, flushSignals } from '../lib/signal';
 import { pageForPath } from '../lib/signal-page';
 
@@ -77,7 +77,12 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
   const switchStart = useRef<SwitchStart | null>(null);
   const pendingView = useRef<PendingView | null>(null);
 
-  useEffect(() => {
+  // A layout effect, not a passive one: React runs a child's effects before its parent's, so the new page's own
+  // signals (a StateSignal, an InlineNotice) would otherwise build on the page just left, and on a first load would
+  // start a session before the queue knows whose it is. Every layout effect of a commit runs before any passive one, so
+  // the queue is configured and the view counted before anything the new page sends. (A crash's componentDidCatch runs
+  // in the same layout phase, before this; chSignalReport holds its report until configure.)
+  useLayoutEffect(() => {
     configureSignals({ enabled, role, teamId, page, userId });
     if (!enabled) return undefined;
     const switched = lastTeam.current !== undefined && lastTeam.current !== teamId;

@@ -24,7 +24,7 @@ import { readFileSync, readdirSync, existsSync, writeFileSync, mkdirSync } from 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkAudits, renderAudits, renderRelated } from './docs-index.mjs';
-import { buildBridgeGraph, renderGraph, GRAPH_PATH } from './bridge-graph.mjs';
+import { buildBridgeGraph, renderGraph, GRAPH_PATH, actionCallNames } from './bridge-graph.mjs';
 
 export const CATEGORY_COUNT = 25;
 /** Categories a page may never mark N/A (D-69): loading, empty, server error, offline, permission, accessibility. */
@@ -404,6 +404,7 @@ export function checkRegistry(ctx) {
   const ids = new Set();
   const namespaces = new Map();
   const slugs = new Set();
+  const useActionOwners = new Map();
   for (const m of manifests) {
     const at = `config/clubhouse/pages/${m.id}-${m.slug}.json`;
     if (!/^P\d{3}$/.test(m.id ?? '')) v.push(`${at}: id "${m.id}" is not P###`);
@@ -488,6 +489,13 @@ export function checkRegistry(ctx) {
         else if (rec.status === 'deprecated') v.push(`${at}: ${a.id} bridge.${k} ${id} is retired; point it at the outcome that replaced it`);
       }
       for (const p of [a.component, a.service].filter(Boolean)) if (!exists(p.split('#')[0])) v.push(`${at}: ${a.id} path ${p} does not exist`);
+      // The names its useAction calls send: each one names this action and no other (Bridge reads `act` back to it).
+      if (a.useAction != null && !(typeof a.useAction === 'string' || (Array.isArray(a.useAction) && a.useAction.length))) v.push(`${at}: ${a.id} useAction is not a name or a list of names`);
+      for (const name of actionCallNames(a)) {
+        if (typeof name !== 'string' || !/^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)*$/.test(name)) v.push(`${at}: ${a.id} useAction "${name}" is not a useAction name`);
+        else if (useActionOwners.has(name)) v.push(`${at}: useAction "${name}" names both ${useActionOwners.get(name)} and ${a.id}`);
+        else useActionOwners.set(name, a.id);
+      }
     }
 
     // B11 drift list 8: a page needs a contract of its own; the Bridge's category 25 rows don't count (plan §13).
@@ -797,8 +805,8 @@ export function generateDocs({ manifests, bridge, map, tombstones, read, exists,
 
   let am = GEN_HEAD('Clubhouse action map', 'Every registered action: page, component, handler, service, data, Bridge outcomes and tests. Actions are registered when a page\'s WIRING.md is written.');
   const actions = pages.flatMap((m) => (m.actions ?? []).map((a) => ({ ...a, page: m.id })));
-  am += actions.length ? '\n| Action | Page | Label | Component | Handler | Service | Data | Bridge | Tests |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n' : '\nNo actions registered yet.\n';
-  for (const a of actions) am += `| ${a.id} | ${a.page} | ${cell(a.label)} | \`${a.component ?? ''}\` | ${cell(a.handler)} | \`${a.service ?? ''}\` | ${cell((a.data ?? []).join(', '))} | ${cell(Object.entries(a.bridge ?? {}).filter(([, id]) => id != null).map(([k, id]) => `${k} ${id}`).join(', '))} | ${cell((a.tests ?? []).join(', '))} |\n`;
+  am += actions.length ? '\n| Action | Page | Label | Component | Handler | useAction | Service | Data | Bridge | Tests |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |\n' : '\nNo actions registered yet.\n';
+  for (const a of actions) am += `| ${a.id} | ${a.page} | ${cell(a.label)} | \`${a.component ?? ''}\` | ${cell(a.handler)} | ${cell(actionCallNames(a).join(', '))} | \`${a.service ?? ''}\` | ${cell((a.data ?? []).join(', '))} | ${cell(Object.entries(a.bridge ?? {}).filter(([, id]) => id != null).map(([k, id]) => `${k} ${id}`).join(', '))} | ${cell((a.tests ?? []).join(', '))} |\n`;
   out['docs/clubhouse/generated/CLUBHOUSE_ACTION_MAP.md'] = am;
 
   let hm = GEN_HEAD('Clubhouse held map', 'Held features and data plans (D-61), by page. Nothing here is applied or active until the owner releases it.');

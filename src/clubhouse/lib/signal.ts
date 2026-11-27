@@ -13,8 +13,9 @@ import { CH_PHONE_QUERY } from './phone-query';
  * dropped.
  *
  * Off until the shell says otherwise (`configureSignals`, from the `clubhouse_signals` kill switch). Signals sent before
- * the shell has configured (a child's effect runs before its parent's) wait in a short buffer and take the shell's
- * page and role once it does, or are dropped when the switch is off.
+ * the shell has configured (a crash caught in the same commit, before the shell's layout effect) wait in a short buffer
+ * and take the shell's page and role once it does, or are dropped when the switch is off. A failure that is also
+ * reported (`chSignalReport`) holds its report with it, so the report carries the signal's place once it has one.
  */
 
 export const SIGNAL_ENDPOINT = '/api/ch/signal';
@@ -72,7 +73,15 @@ export type ChSignalRef = { sessionId: string; seq: number; code?: string; page:
 
 type Config = { enabled: boolean; role: SignalRole; teamId: string | null; page: string; userId: string | null };
 
-type Pending = { input: ChSignalInput; seq: number; at: number; trail: string[] | undefined; page: string | undefined };
+type Pending = {
+  input: ChSignalInput;
+  seq: number;
+  at: number;
+  trail: string[] | undefined;
+  page: string | undefined;
+  /** A held chReport call (chSignalReport before the shell configured): run once, when the signal goes out or can't. */
+  report?: () => void;
+};
 
 type State = {
   config: Config | null;
@@ -99,21 +108,27 @@ function randomHex32(): string {
   }
 }
 
-/** This tab's session: one id per tab, kept in sessionStorage so a reload carries on its numbering. */
+/**
+ * This tab's session: one id per tab, kept in sessionStorage so a reload carries on its numbering. A session belongs to
+ * one signed-in person: a stored session of someone else (a shared iPad) starts afresh. Before the shell has said who
+ * this is (a crash on a reload), the stored session carries on as its owner's, and the shell's first configure keeps it
+ * only if that owner is the person signed in.
+ */
 function session(): { id: string; seq: number } {
   if (state.session) return state.session;
-  let stored: { id?: unknown; seq?: unknown } | null;
+  let stored: { id?: unknown; seq?: unknown; user?: unknown } | null;
   try {
     stored = JSON.parse(sessionStorage.getItem(STORE_KEY) ?? 'null');
   } catch {
     stored = null;
   }
-  const user = state.config?.userId ?? null;
-  // A session belongs to one signed-in person: a stored session of someone else (a shared iPad) starts afresh.
-  const sameUser = (stored as { user?: unknown } | null)?.user === user;
-  const id = sameUser && typeof stored?.id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(stored.id) ? stored.id : randomHex32();
-  const seq = sameUser && typeof stored?.seq === 'number' && Number.isInteger(stored.seq) && stored.seq >= 0 ? stored.seq : 0;
-  state.session = { id, seq, user };
+  const owner = stored?.user;
+  // Before configure, an owner on record is enough; after it, the owner must be the person signed in.
+  const mine = state.config ? owner === (state.config.userId ?? null) : typeof owner === 'string' || owner === null;
+  const id = mine && typeof stored?.id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(stored.id) ? stored.id : randomHex32();
+  const seq = mine && typeof stored?.seq === 'number' && Number.isInteger(stored.seq) && stored.seq >= 0 ? stored.seq : 0;
+  // `user` undefined: a session started before configure with no owner on record, which the first configure adopts.
+  state.session = { id, seq, user: state.config ? (state.config.userId ?? null) : mine ? (owner as string | null) : undefined };
   return state.session;
 }
 
@@ -234,6 +249,31 @@ function build(p: Pending, config: Config): ChSignal | null {
   return env;
 }
 
+/** Where a queued envelope sits, for chReport to carry. */
+function refOf(env: ChSignal, input: ChSignalInput): ChSignalRef {
+  const ref: ChSignalRef = { sessionId: env.sessionId, seq: env.seq, page: env.page };
+  if (input.code) ref.code = input.code;
+  if (input.act) ref.act = input.act;
+  return ref;
+}
+
+/**
+ * Runs a held report, once. With `ref`, the row it writes carries the signal and the route stamps it. Without one (the
+ * switch is off, the signal can't be built, or the shell never configured in time) it still runs, and the signal, if it
+ * ever goes out, no longer says it was reported, so the route writes its Bridge row itself.
+ */
+function settle(p: Pending, ref: ChSignalRef | null): void {
+  const report = p.report;
+  if (!report) return;
+  p.report = undefined;
+  if (!ref) p.input = { ...p.input, reported: false };
+  try {
+    reportingSignal(ref, report);
+  } catch {
+    // A report that throws is the reporter's; the queue carries on.
+  }
+}
+
 function schedule(): void {
   if (state.queue.length >= FLUSH_AT) {
     queueMicrotask(() => flushSignals());
@@ -324,13 +364,23 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
     if (state.config && state.session && (state.config.userId ?? null) !== userId) {
       if (state.queue.length) flushSignals();
       state.session = null;
-    } else if (state.session && !state.config) state.session.user = userId;
+    } else if (state.session && !state.config) {
+      if (state.session.user !== undefined && state.session.user !== userId) {
+        // A session carried on from storage that was someone else's: what waited moves to a new one, numbered from 0.
+        // Nothing has gone out of it yet, so no reference to the old numbers exists.
+        state.session = { id: randomHex32(), seq: 0, user: userId };
+        for (const p of state.pending) p.seq = state.session.seq++;
+      } else state.session.user = userId;
+    }
     state.config = { enabled: next.enabled, role, teamId: next.teamId ?? null, page: next.page, userId };
     if (!next.enabled) {
+      // The signals are dropped; a report held with one still runs, without a place.
+      const held = state.pending;
       state.pending = [];
       state.queue = [];
       if (state.timer) clearTimeout(state.timer);
       state.timer = null;
+      for (const p of held) settle(p, null);
       return;
     }
     listen();
@@ -338,11 +388,20 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
     const waiting = state.pending;
     state.pending = [];
     for (const p of waiting) {
-      const env = build(p, state.config);
-      if (env) enqueue(env);
+      let ref: ChSignalRef | null = null;
+      try {
+        const env = build(p, state.config);
+        if (env) {
+          enqueue(env);
+          ref = refOf(env, p.input);
+        }
+      } catch {
+        // This one is dropped; its report still runs.
+      }
+      settle(p, ref);
     }
   } catch {
-    // Misconfigured: nothing goes out.
+    // Misconfigured: nothing goes out. A held report still runs on its own (chSignalReport's fallback).
   }
 }
 
@@ -356,28 +415,64 @@ export function chSignal(input: ChSignalInput): ChSignalRef | null {
     // Before the shell says signals are on, a signal waits in memory but has no place yet to report: nothing reaches
     // chReport, the error logs or Sentry while the switch is off (security review of #2611, L1).
     if (typeof window === 'undefined') return null;
-    const failure = isFailure(input.kind, input.outcome);
-    const trail = failure && state.trail.length ? state.trail.slice(-TRAIL_MAX) : undefined;
-    noteSignalTrail(trailEntry(input));
-    const { id, seq } = nextSeq();
-    const p: Pending = { input, seq, at: Date.now(), trail, page: input.page };
-    const page = (input.page && PAGE.test(input.page) ? input.page : state.config?.page) ?? 'P001';
+    const p = numbered(input);
     if (!state.config) {
-      state.pending.push(p);
-      if (state.pending.length > PENDING_MAX) state.pending.splice(0, state.pending.length - PENDING_MAX);
-    } else {
-      const env = build(p, state.config);
-      if (!env) return null;
-      enqueue(env);
+      hold(p);
+      return null;
     }
-    if (!state.config?.enabled) return null;
-    const ref: ChSignalRef = { sessionId: id, seq, page };
-    if (input.code) ref.code = input.code;
-    if (input.act) ref.act = input.act;
-    return ref;
+    const env = build(p, state.config);
+    if (!env) return null;
+    enqueue(env);
+    return refOf(env, input);
   } catch {
     return null;
   }
+}
+
+/** Numbers a signal in this tab's session, with the trail that led to it when it is a failure. */
+function numbered(input: ChSignalInput): Pending {
+  const trail = isFailure(input.kind, input.outcome) && state.trail.length ? state.trail.slice(-TRAIL_MAX) : undefined;
+  noteSignalTrail(trailEntry(input));
+  const { seq } = nextSeq();
+  return { input, seq, at: Date.now(), trail, page: input.page };
+}
+
+/** Keeps a signal for the shell's configure. The oldest go first when the buffer is full, their reports run then. */
+function hold(p: Pending): void {
+  state.pending.push(p);
+  if (state.pending.length <= PENDING_MAX) return;
+  for (const old of state.pending.splice(0, state.pending.length - PENDING_MAX)) settle(old, null);
+}
+
+/**
+ * A failure that is also reported (a section's crash): queues its signal and runs `report` (a chReport call) as that
+ * signal's report, so the one row it writes carries the signal's place and the Bridge stamps it.
+ *
+ * A crash caught while the page first draws (componentDidCatch runs in the commit's layout phase, before the shell's
+ * layout effect configures the queue) has no place yet: the signal waits, its report with it, and both go when the
+ * shell configures, later in the same commit. Should the shell not configure by then (a boundary outside it), the report
+ * runs on its own a microtask later, so a crash is never left unreported. Never throws, and runs `report` once.
+ */
+export function chSignalReport(input: ChSignalInput, report: () => void): void {
+  const failure: ChSignalInput = { ...input, reported: true };
+  let p: Pending | null = null;
+  try {
+    if (!state.config && typeof window !== 'undefined') {
+      p = numbered(failure);
+      p.report = report;
+      hold(p);
+      const held = p;
+      queueMicrotask(() => settle(held, null));
+      return;
+    }
+  } catch {
+    // Held or not, the report runs below if it hasn't.
+  }
+  if (p) {
+    settle(p, null);
+    return;
+  }
+  reportingSignal(chSignal(failure), report);
 }
 
 let reporting: ChSignalRef | null = null;

@@ -118,7 +118,7 @@ interface BridgeGraph {
                                 boardStatus: 'works'|'decided'|'GAP'|'hidden'|'data-gap';
                                 actions: ActionId[]; role: Role|'both'; viewport: 'desk'|'phone'|'both' }>;
   actions: Record<ActionId, { page: PageId; label: string; handler: string; service: string;
-                              tables: string[]; useActionName?: string; outcomes: Record<string, BridgeId>; tests: string[] }>;
+                              tables: string[]; useActionNames?: string[]; outcomes: Record<string, BridgeId>; tests: string[] }>;
   ids: Record<BridgeId, { ch?: string; page: PageId; category: number; name: string; meaning: string;
                           status: 'implemented'|'reserved'|'deprecated'; where?: string[]; tests?: string[];
                           catalogRow?: { when: string; theySee: string; how: string; test: string } }>;
@@ -170,7 +170,13 @@ of a view, a tap and an action's start, where the server names it from the
 page, the control or the action map. A failure carries `reported: true` when
 `chReport` or `logError` already wrote its `admin_events` row; the route then
 stamps the Bridge columns on that row (found by session and seq) instead of
-writing a second one.
+writing a second one. When the report lands after its signal (a beacon flush, a
+retried report), `/api/log-error` reads the stored signal back and stamps its
+own row through the same filter (`report-stamp.ts`, 2026-11-27). An action's
+`act` resolves to its ACT- ID through the page manifest's `useAction` names
+(`graph.actions[id].useActionNames`); `use-action-names.test.ts` holds every
+name the client sends to the graph, with a shrink-only list of names no
+contract has yet.
 
 ### 4.2 Where it is sent from: shared components, not the 467 call sites
 

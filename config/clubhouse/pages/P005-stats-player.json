@@ -169,6 +169,7 @@
       "label": "Propose a focus area (coach)",
       "component": "src/clubhouse/screens/stats/StatsPlayer.tsx#FocusAreaSheet",
       "handler": "submit",
+      "useAction": "stats.addFocusArea",
       "service": "src/app/golf/actions/development.ts#createFocusArea",
       "data": [
         "golf_player_focus_areas"
@@ -232,6 +233,7 @@
       "label": "Set a goal (player)",
       "component": "src/clubhouse/screens/stats/GoalSheet.tsx#GoalSheet",
       "handler": "submit (useAction stats.setGoal)",
+      "useAction": "stats.setGoal",
       "service": "src/app/golf/actions/v3/goals.ts#createGoal",
       "data": [
         "golf_goals"
@@ -252,6 +254,10 @@
       "label": "Accept or dismiss a suggested goal (player)",
       "component": "src/clubhouse/screens/stats/Goals.tsx#SuggestionRow",
       "handler": "accept.run / dismiss.run",
+      "useAction": [
+        "stats.acceptGoalSuggestion",
+        "stats.dismissGoalSuggestion"
+      ],
       "service": "src/app/golf/actions/v3/goals.ts#acceptGoalSuggestion",
       "data": [
         "golf_goal_suggestions",
@@ -272,6 +278,11 @@
       "label": "Pause, resume or abandon a goal (coach)",
       "component": "src/clubhouse/screens/stats/Goals.tsx#GoalStatus",
       "handler": "pause.run / resume.run / abandon.run",
+      "useAction": [
+        "stats.pauseGoal",
+        "stats.resumeGoal",
+        "stats.abandonGoal"
+      ],
       "service": "src/app/golf/actions/v3/goals.ts#pauseGoal",
       "data": [
         "golf_goals"

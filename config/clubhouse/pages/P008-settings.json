@@ -111,6 +111,7 @@
       "label": "Save your name and photo",
       "component": "src/clubhouse/screens/settings/Account.tsx#ProfileCard",
       "handler": "save.run (useSaveAction settings.saveProfile)",
+      "useAction": "settings.saveProfile",
       "service": "src/clubhouse/screens/settings/writes.ts#saveProfile",
       "data": [
         "golf_coaches",
@@ -155,6 +156,7 @@
       "label": "Send the email-change confirmation",
       "component": "src/clubhouse/screens/settings/Account.tsx#EmailCard",
       "handler": "send.run (useSaveAction settings.changeEmail)",
+      "useAction": "settings.changeEmail",
       "service": "src/clubhouse/screens/settings/writes.ts#changeEmail",
       "data": [
         "Supabase Auth"
@@ -175,6 +177,7 @@
       "label": "Change your password",
       "component": "src/clubhouse/screens/settings/Account.tsx#PasswordCard",
       "handler": "change.run (useSaveAction settings.changePassword)",
+      "useAction": "settings.changePassword",
       "service": "src/clubhouse/screens/settings/writes.ts#changePassword",
       "data": [
         "Supabase Auth"
@@ -314,6 +317,7 @@
       "label": "Save team and school details (coach)",
       "component": "src/clubhouse/screens/settings/Team.tsx#TeamCard",
       "handler": "save.run (useSaveAction settings.saveTeam)",
+      "useAction": "settings.saveTeam",
       "service": "src/clubhouse/screens/settings/writes.ts#saveTeam",
       "data": [
         "golf_teams",
@@ -353,6 +357,7 @@
       "label": "Make a new invite code (coach)",
       "component": "src/clubhouse/screens/settings/Team.tsx#InviteCard",
       "handler": "regen.run (useSaveAction settings.regenerateCode)",
+      "useAction": "settings.regenerateCode",
       "service": "src/app/golf/actions/teams.ts#regenerateJoinCode",
       "data": [
         "golf_teams"
@@ -375,6 +380,7 @@
       "label": "Save scoring and format (coach)",
       "component": "src/clubhouse/screens/settings/Team.tsx#ScoringCard",
       "handler": "save.run (useSaveAction settings.saveScoring)",
+      "useAction": "settings.saveScoring",
       "service": "src/clubhouse/screens/settings/writes.ts#saveScoring",
       "data": [
         "golf_team_settings"
@@ -395,6 +401,7 @@
       "label": "Save the event reminder schedule (coach)",
       "component": "src/clubhouse/screens/settings/Team.tsx#RemindersCard",
       "handler": "save.run (useSaveAction settings.saveReminders)",
+      "useAction": "settings.saveReminders",
       "service": "src/clubhouse/screens/settings/writes.ts#saveReminders",
       "data": [
         "golf_team_settings"
@@ -415,6 +422,7 @@
       "label": "Save golf details (player)",
       "component": "src/clubhouse/screens/settings/Golf.tsx#DetailsCard",
       "handler": "save.run (useSaveAction settings.saveGolf)",
+      "useAction": "settings.saveGolf",
       "service": "src/clubhouse/screens/settings/writes.ts#saveGolf",
       "data": [
         "golf_players"
@@ -437,6 +445,7 @@
       "label": "Leave the team (player)",
       "component": "src/clubhouse/screens/settings/Golf.tsx#MembershipCard",
       "handler": "leave.run (useSaveAction settings.leaveTeam)",
+      "useAction": "settings.leaveTeam",
       "service": "src/clubhouse/screens/settings/writes.ts#leaveTeam",
       "data": [
         "golf_team_members"
@@ -460,6 +469,7 @@
       "label": "Ask to join a team with an invite code (player)",
       "component": "src/clubhouse/screens/settings/Golf.tsx#MembershipCard",
       "handler": "join.run (useSaveAction settings.requestJoin)",
+      "useAction": "settings.requestJoin",
       "service": "src/app/golf/actions/teams.ts#createTeamJoinRequest",
       "data": [
         "golf_team_join_requests"
@@ -483,6 +493,7 @@
       "label": "Cancel a join request (player)",
       "component": "src/clubhouse/screens/settings/Golf.tsx#MembershipCard",
       "handler": "cancel.run (useSaveAction settings.cancelRequest)",
+      "useAction": "settings.cancelRequest",
       "service": "src/app/golf/actions/teams.ts#cancelJoinRequest",
       "data": [
         "golf_team_join_requests"
@@ -628,6 +639,7 @@
       "label": "Delete your account",
       "component": "src/clubhouse/screens/settings/Account.tsx#SessionCard",
       "handler": "del.run (useSaveAction settings.deleteAccount)",
+      "useAction": "settings.deleteAccount",
       "service": "src/app/api/account/delete/route.ts#DELETE",
       "data": [
         "the account and the rows tied to it"
