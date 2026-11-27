@@ -2186,10 +2186,12 @@ export const rollbackImport = withBaseballAction(
 
 export const getImportRuns = withBaseballAction(
   'getImportRuns',
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
   {
     featureArea: 'baseball-import',
     requiredCapability: 'can_manage_imports',
     teamFrom: (a: { teamId: string; limit?: number }) => a.teamId,
+    demoSafe: true,
   },
   async (
     _ctx,
