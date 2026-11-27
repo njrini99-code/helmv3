@@ -1745,6 +1745,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-jump-key-open-hold.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-27-first-run-edge.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-27-phone-thread-opens-at-end.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
