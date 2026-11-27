@@ -15,6 +15,8 @@ on:
       - 'e2e/clubhouse-motion-gate.spec.ts'
       - 'e2e/clubhouse-pixels.spec.ts'
       - 'e2e/clubhouse-gate/**'
+      - 'e2e/clubhouse-ui-check.spec.ts'
+      - 'e2e/clubhouse-ui-check/**'
       - 'e2e/clubhouse-playground.spec.ts'
       - 'e2e/clubhouse-quality.setup.ts'
       - 'playwright.clubhouse.config.ts'
@@ -201,6 +203,40 @@ jobs:
           name: clubhouse-quality-evidence
           path: |
             test-results/clubhouse-quality/
+            playwright-report/clubhouse-quality/
+          if-no-files-found: warn
+          retention-days: 14
+
+  # The Clubhouse UI check (design lab dsx-09, GAP-Q1): every live coach and player screen at a phone size (WebKit,
+  # iPhone 17 Pro) and a desk size (Chromium, 1440x900) renders without an uncaught error, holds its axe record
+  # (WCAG 2.2 A/AA; e2e/clubhouse-ui-check/known-axe.json may only shrink) and leaves a full-page screenshot. About 50
+  # page loads on one dev server, so it runs on every non-draft push, unlike `presentation`. It is built to block a
+  # merge but is NOT a required check: making it one is the owner's setting in GitHub branch protection (job name
+  # "Clubhouse UI check"). As a required check it would also need to report on PRs outside the path filter above.
+  ui-check:
+    name: Clubhouse UI check
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft != true
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Setup Node and install dependencies
+        uses: ./.github/actions/setup-node-npm
+      - run: ./node_modules/.bin/playwright install --with-deps chromium webkit
+      - name: Live screens render, keep their axe record and are photographed (phone and desk)
+        timeout-minutes: 30
+        run: >-
+          ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
+          --project ui-phone --project ui-desktop --output test-results/clubhouse-quality/ui-check
+      - name: Upload screenshots and the report
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: clubhouse-ui-check
+          path: |
+            test-results/clubhouse-quality/ui-check/
             playwright-report/clubhouse-quality/
           if-no-files-found: warn
           retention-days: 14

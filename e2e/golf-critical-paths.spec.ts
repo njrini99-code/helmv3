@@ -10,11 +10,12 @@ import {
 /**
  * GolfHelm critical-path smoke coverage for surfaces the rest of e2e/ does
  * not touch: Roster, Calendar, Messaging, and the coach/player CoachHelm +
- * Stats surfaces. golf-dashboard.spec.ts / golf-round.spec.ts /
+ * Stats surfaces (Clubhouse; Fairway's coach and player screens retired on
+ * 2026-11-14). golf-dashboard.spec.ts / golf-round.spec.ts /
  * golf-qualifier.spec.ts / course-library.spec.ts cover login, round entry,
  * qualifiers, and the course library — none of them ever navigate to
- * /dashboard/roster, /dashboard/calendar, /dashboard/messages, or
- * /dashboard/intelligence.
+ * /dashboard/roster, /dashboard/calendar, /dashboard/messages, /dashboard/stats
+ * or /dashboard/coachhelm.
  *
  * AUTH: the shared worker-scoped fixture signs in once per role, then each
  * test gets an isolated context with that authenticated storage state. This
@@ -59,41 +60,37 @@ coachTest.describe('GolfHelm — Coach critical paths', () => {
     await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
   });
 
-  coachTest('CoachHelm intelligence hub renders', async ({ page }) => {
+  // Fairway retired (2026-11-14): the old CoachHelm, team-stats and player-page
+  // addresses are aliases now, so these open the live Clubhouse screens and
+  // check that each old address lands on its screen (dsx-09 retargeted them).
+  coachTest('CoachHelm renders, and its old /intelligence address lands there', async ({ page }) => {
+    await page.goto('/golf/dashboard/coachhelm', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/golf\/dashboard\/coachhelm/);
+    await expect(page.locator('h1').first()).toBeVisible();
+    await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
+
     await page.goto('/golf/dashboard/intelligence', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/golf\/dashboard\/intelligence/);
-    await expect(page.locator('h1').first()).toBeVisible();
-    await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/golf\/dashboard\/coachhelm/);
   });
 
-  coachTest('team stats renders', async ({ page }) => {
+  coachTest('Stats renders, and its old /stats/team address lands there', async ({ page }) => {
+    await page.goto('/golf/dashboard/stats', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/golf\/dashboard\/stats/);
+    await expect(page.locator('h1').first()).toBeVisible();
+    await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
+
     await page.goto('/golf/dashboard/stats/team', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/golf\/dashboard\/stats\/team/);
-    await expect(page.locator('h1').first()).toBeVisible();
-    await expect(page.getByText(/something went wrong|application error/i)).toHaveCount(0);
+    await expect(page).toHaveURL(/\/golf\/dashboard\/stats(\?|$)/);
   });
 
-  coachTest('an unavailable player deep-dive resolves to the GolfHelm not-found surface', async ({ page }) => {
-    await page.goto('/golf/dashboard/players/00000000-0000-4000-8000-000000000000/game', {
-      waitUntil: 'domcontentloaded',
+  for (const old of ['game', 'genome'] as const) {
+    coachTest(`an old player ${old} address opens that player's Stats profile, not an error`, async ({ page }) => {
+      const id = '00000000-0000-4000-8000-000000000000';
+      await page.goto(`/golf/dashboard/players/${id}/${old}`, { waitUntil: 'domcontentloaded' });
+      await expect(page).toHaveURL(new RegExp(`/golf/dashboard/stats\\?player=${id}&tab=game`));
+      await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
     });
-
-    await expect(page.getByRole('heading', { name: "We couldn't find that" })).toBeVisible({
-      timeout: 15_000,
-    });
-    await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
-  });
-
-  coachTest('an unavailable player genome resolves to the GolfHelm not-found surface', async ({ page }) => {
-    await page.goto('/golf/dashboard/players/00000000-0000-4000-8000-000000000000/genome', {
-      waitUntil: 'domcontentloaded',
-    });
-
-    await expect(page.getByRole('heading', { name: "We couldn't find that" })).toBeVisible({
-      timeout: 15_000,
-    });
-    await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
-  });
+  }
 
   coachTest('an unavailable round review, at its old /review address, leaves its loading skeleton for a designed state', async ({ page }) => {
     // The old address is a next.config redirect to the review (Fairway retired, 2026-11-14).

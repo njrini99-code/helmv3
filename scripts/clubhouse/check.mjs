@@ -551,6 +551,13 @@ function main() {
 
   // Every var(--ch-*) resolves (GAP-B3, dsx-09); fallback-only hooks nothing sets may only shrink.
   if (existsSync(join(root, 'src/clubhouse'))) violations.push(...runTokenRefs(root).violations);
+  // The TSX literal ratchet (helm/clubhouse-no-raw-value) names only files that exist; ESLint holds the counts.
+  const rawValues = join(root, 'config/clubhouse/tsx-raw-values.json');
+  if (existsSync(rawValues)) {
+    for (const f of Object.keys(JSON.parse(readFileSync(rawValues, 'utf8')).files ?? {})) {
+      if (!existsSync(join(root, f))) violations.push(`config/clubhouse/tsx-raw-values.json: ${f} is gone; run npm run clubhouse:raw-values -- --update`);
+    }
+  }
 
   // The every-button map (CLUBHOUSE_CLICKABLE_MAP.md) moves with the code (D11, plan §4.7).
   if (existsSync(join(root, 'src/clubhouse'))) violations.push(...checkClickableMap(root));

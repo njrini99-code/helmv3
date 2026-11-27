@@ -284,6 +284,16 @@ jobs:
         continue-on-error: true
         run: npm run clubhouse:check
 
+      # Clubhouse stylesheet quality (design lab dsx-09, GAP-Q1): bounded
+      # Stylelint rules plus the per-file CSS ratchet (hex, raw radius, raw
+      # shadow, raw motion, keyframes, negative margin) whose counts may only
+      # fall, compared with the merge-base. A node script, about 3 s. Until
+      # 2026-11-27 it ran only in the non-required clubhouse-quality workflow.
+      - name: Clubhouse CSS quality and ratchet
+        id: clubhouse_css
+        continue-on-error: true
+        run: npm run clubhouse:css
+
       # The other direction from registry glob coverage in knowledge:check:
       # that check fails when a registry entry points at a path that no
       # longer exists, this one fails when a tracked file under a directory
