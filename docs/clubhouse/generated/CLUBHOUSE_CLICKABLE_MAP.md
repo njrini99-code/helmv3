@@ -394,17 +394,17 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/StatsFilter.tsx`
 
-- CTL-P004-005 106 `button` "Filter {{length}|}" (button, onClick)
-- CTL-P004-006 115 `button` "Remove filter: {label}" (button, onClick)
-- CTL-P004-007 132 `button` "Clear filters" (button, onClick)
-- CTL-P004-008 200 `Button` "Clear filters" (button, onClick)
-- CTL-P004-009 215 `Button` "Clear filters" (button, onClick)
-- CTL-P004-010 313 `Button` "Clear" (button, onClick)
-- CTL-P004-011 326 `Button` "Done" (button, onClick)
-- CTL-P004-012 336 `button` "All" (button, onClick)
-- CTL-P004-013 340 `button` "{KIND_LABEL}" (button, onClick)
-- CTL-P004-014 351 `button` "{label}" (button, onClick)
-- CTL-P004-015 433 `button` "{label}" (button, onClick)
+- CTL-P004-005 109 `button` "Filter {{length}|}" (button, onClick)
+- CTL-P004-006 118 `button` "Remove filter: {label}" (button, onClick)
+- CTL-P004-007 135 `button` "Clear filters" (button, onClick)
+- CTL-P004-008 203 `Button` "Clear filters" (button, onClick)
+- CTL-P004-009 218 `Button` "Clear filters" (button, onClick)
+- CTL-P004-010 318 `Button` "Clear" (button, onClick)
+- CTL-P004-011 331 `Button` "Done" (button, onClick)
+- CTL-P004-012 341 `button` "All" (button, onClick)
+- CTL-P004-013 345 `button` "{KIND_LABEL}" (button, onClick)
+- CTL-P004-014 356 `button` "{label}" (button, onClick)
+- CTL-P004-015 438 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/screens/stats/StatsTeam.tsx`
 
@@ -2988,10 +2988,10 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/ui/Modal.tsx`
 
-- CTL-P000-022 93 `dialog` "{retainContent}" (onClick)
-- CTL-P000-023 115 `div` "Modal drag handle (ledger)" (onPointerDown)
-- CTL-P000-024 122 `header` "{title} {{description}|} {{action…" (onPointerDown)
-- CTL-P000-025 136 `button` "Close" (button, onClick)
+- CTL-P000-022 100 `dialog` "{retainContent}" (onClick)
+- CTL-P000-023 123 `div` "Modal drag handle (ledger)" (onPointerDown)
+- CTL-P000-024 130 `header` "{title} {{description}|} {{action…" (onPointerDown)
+- CTL-P000-025 144 `button` "Close" (button, onClick)
 
 ### `src/clubhouse/ui/NoTeam.tsx`
 

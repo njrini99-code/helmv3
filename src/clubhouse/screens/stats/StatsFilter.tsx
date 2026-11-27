@@ -35,6 +35,9 @@ import { Checkbox } from '../../ui/Checkbox';
 import { DateField } from '../../ui/DateField';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
+
+/** The filter sheet's phone stops: medium and large, as shares of the screen. */
+const STATS_FILTER_DETENTS = [0.55, 0.92] as const;
 import { EmptyState } from '../../ui/States';
 import { haptic } from '../../lib/haptics';
 import { WindowSwitch } from './WindowSwitch';
@@ -308,6 +311,8 @@ function FilterSheet({
       title="Filter rounds"
       description="Choose which rounds every figure counts."
       width={600}
+      // Medium shows the window and round types with Apply under them; drag up, or a date field, for the rest (design lab P4).
+      detents={STATS_FILTER_DETENTS}
       footer={
         <>
           <Button data-ctl="CTL-P004-010"
