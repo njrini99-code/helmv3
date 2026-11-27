@@ -20883,6 +20883,18 @@
     },
     {
       "source": "observability_sentry",
+      "target": "admin_incidents",
+      "kind": "feature_relation",
+      "evidence": [
+        {
+          "kind": "import_graph",
+          "path": "src/lib/observability/sentry-bridge-copy.ts",
+          "anchor": "src/lib/admin/incident-grouping"
+        }
+      ]
+    },
+    {
+      "source": "observability_sentry",
       "target": "admin_platform",
       "kind": "feature_relation",
       "evidence": [
