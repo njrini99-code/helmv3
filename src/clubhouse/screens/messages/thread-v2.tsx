@@ -279,6 +279,23 @@ export function noteTappedFace(target: EventTarget | null): void {
 }
 
 /**
+ * Where the bar's face rests once the push lands. The thread first draws while its screen still sits where the push starts (PhoneScreen's
+ * `initial`, a screen's width to the right), so that offset is taken back out of the measure; otherwise the face flies off the edge.
+ */
+function restingRect(target: HTMLElement): { left: number; top: number; width: number } {
+  const r = target.getBoundingClientRect();
+  const screen = target.closest<HTMLElement>('.ch-pscreen');
+  const t = screen ? getComputedStyle(screen).transform : 'none';
+  if (!t || t === 'none' || typeof DOMMatrixReadOnly === 'undefined') return { left: r.left, top: r.top, width: r.width };
+  try {
+    const m = new DOMMatrixReadOnly(t);
+    return { left: r.left - m.m41, top: r.top - m.m42, width: r.width };
+  } catch {
+    return { left: r.left, top: r.top, width: r.width };
+  }
+}
+
+/**
  * The tapped face flies to the bar's face on the push's own clock (M-MSG-01b): a clone, translated and scaled from origin 0 0, with the
  * bar face hidden until it lands. Leaving mid-push removes the clone at once and shows the bar face. No flight under Reduce Motion.
  */
@@ -290,7 +307,7 @@ export function useFaceFlight(enabled: boolean, reduced: boolean): void {
     if (!enabled || reduced || !el || !rect) return;
     const target = document.querySelector<HTMLElement>('.ch-msp-who > :first-child');
     if (!target) return;
-    const to = target.getBoundingClientRect();
+    const to = restingRect(target);
     const clone = el.cloneNode(true) as HTMLElement;
     Object.assign(clone.style, { position: 'fixed', left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`, margin: '0', transformOrigin: '0 0', zIndex: '60', pointerEvents: 'none' });
     clone.setAttribute('aria-hidden', 'true');

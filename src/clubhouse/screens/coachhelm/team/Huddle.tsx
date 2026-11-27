@@ -59,6 +59,13 @@ export const r2 = (v: number) => Math.round(v * 100) / 100;
 const COIN = 13;
 
 /**
+ * Where a drawn coin may sit: clear of the axes on the left and bottom, and at the top and right far enough in that its 44 tap circle
+ * stays in the drawing, as huddleRange keeps the true points (TEAM-1). A coin drawn apart could be pushed up to the plot's own edge,
+ * which put its tap circle past the box, where the SVG clips it (presentation gate, team-long).
+ */
+export const COIN_BOUNDS = { x0: L + COIN, x1: W - HIT, y0: HIT, y1: H - B - COIN } as const;
+
+/**
  * Coins that land on one another (two players with the same figures, or within a coin's width) are drawn apart: each pair closer than
  * two radii is pushed along the line between them, at most 14 from the true point, and kept inside the plot. The data and the
  * tap circle's meaning don't change: the coin is a hair off, not a different figure (L-024).
@@ -124,7 +131,7 @@ export function Huddle({ data, onPlayer }: { data: ChTeamBoardData; onPlayer: (i
   const Y = (v: number) => r2(T + ((yr.hi - v) / (yr.hi - yr.lo)) * (H - T - B));
   const drawn = spreadCoins(
     plotted.map(({ at }) => ({ x: X(at.x), y: Y(at.y) })),
-    { x0: L + COIN, x1: W - R, y0: T, y1: H - B - COIN },
+    COIN_BOUNDS,
   );
   const st = data.stations;
   // A station nobody has a figure for isn't zero, so its average isn't drawn on the Tour line (FID-TEAM-17).

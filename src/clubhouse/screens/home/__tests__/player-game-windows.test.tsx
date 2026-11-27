@@ -54,4 +54,16 @@ describe('Your game names each figure’s window', () => {
     expect(sub('Under par')).toMatch(/In last 10$/);
     expect(sub('Handicap')).toMatch(/Index$/);
   });
+
+  // The presentation gate (cramped-text, home-player at 390): "Last 10 · −0.9 · Better than previous 10" ran to three lines in the
+  // phone card's half-width cell. The card's own picker says Last 10, so the caption says only the change, as coach Home's does.
+  it('on the phone the picker names the average’s window and its caption carries only the change', () => {
+    const ten = [80, 81, 79, 80, 82, 80, 79, 81, 80, 80].map((s, i) => point(i, s));
+    const better = [71, 72, 70, 71, 72, 71, 70, 72, 71, 71].map((s, i) => point(10 + i, s));
+    show(true, [...ten, ...better]);
+    const picker = screen.getByRole('radiogroup', { name: 'Rounds shown' });
+    expect(picker.querySelector('[aria-checked="true"]')!.textContent).toBe('Last 10');
+    expect(sub('Scoring avg')).toMatch(/−\d+\.\d · Better than previous 10$/);
+    expect(sub('Scoring avg')).not.toMatch(/Last/);
+  });
 });

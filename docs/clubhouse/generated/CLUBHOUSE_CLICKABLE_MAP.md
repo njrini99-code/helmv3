@@ -1004,17 +1004,17 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/messages/thread/PhoneThread.tsx`
 
-- CTL-P007-132 148 `button` "Details for {title|firstName}" (button, onClick)
-- CTL-P007-133 159 `PhoneIconAction` "Details" (onClick)
-- CTL-P007-134 231 `SheetRow` "Reply" (onClick)
-- CTL-P007-135 233 `SheetRow` "{Copy poll|Copy}" (onClick)
-- CTL-P007-136 234 `SheetRow` "Edit" (onClick)
-- CTL-P007-137 237 `SheetRow` "Delete" (onClick)
-- CTL-P007-138 255 `button` "{Remove|React} {toLower…" (button, onClick) CH-7604
-- CTL-P007-139 274 `SheetRow` "Reply" (onClick) CH-7604
-- CTL-P007-140 277 `SheetRow` "{Copy poll|Copy}" (onClick) CH-7604
-- CTL-P007-141 280 `SheetRow` "Edit" (onClick) CH-7604
-- CTL-P007-142 283 `SheetRow` "Delete" (onClick) CH-7604
+- CTL-P007-132 175 `button` "Details for {title|firstName}" (button, onClick)
+- CTL-P007-133 186 `PhoneIconAction` "Details" (onClick)
+- CTL-P007-134 258 `SheetRow` "Reply" (onClick)
+- CTL-P007-135 260 `SheetRow` "{Copy poll|Copy}" (onClick)
+- CTL-P007-136 261 `SheetRow` "Edit" (onClick)
+- CTL-P007-137 264 `SheetRow` "Delete" (onClick)
+- CTL-P007-138 282 `button` "{Remove|React} {toLower…" (button, onClick) CH-7604
+- CTL-P007-139 301 `SheetRow` "Reply" (onClick) CH-7604
+- CTL-P007-140 304 `SheetRow` "{Copy poll|Copy}" (onClick) CH-7604
+- CTL-P007-141 307 `SheetRow` "Edit" (onClick) CH-7604
+- CTL-P007-142 310 `SheetRow` "Delete" (onClick) CH-7604
 
 ### `src/clubhouse/screens/messages/thread/Thread.tsx`
 
@@ -2252,7 +2252,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/coachhelm/team/Huddle.tsx`
 
-- CTL-P013-245 185 `g` "{initials}, {name}: striking {f…" (onClick, role=button)
+- CTL-P013-245 192 `g` "{initials}, {name}: striking {f…" (onClick, role=button)
 
 ### `src/clubhouse/screens/coachhelm/team/SpotCard.tsx`
 
