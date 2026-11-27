@@ -1,6 +1,7 @@
 'use client';
 
 import type { MouseEvent, ReactNode } from 'react';
+import type { ShsChange } from './shs-figures';
 import { haptic } from '../../lib/haptics';
 
 /** The drawn 8 x 14 chevron. */
@@ -158,6 +159,36 @@ export function ShsCard({
 
 export function ShsPill({ tone, children }: { tone: 'gain' | 'loss' | 'flat'; children: ReactNode }) {
   return <span className={`ch-shs-pill is-${tone}`}>{children}</span>;
+}
+
+/**
+ * A scoring change as a chip and its words. A clear change chips its figure with an arrow ("↓ 0.9 lower", then "than the 10 before").
+ * No clear change chips the verdict and leaves the signed figure plain after it ("No clear change", then "−0.9 vs previous 10"): a
+ * boxed "−0.9" beside "No clear change" read as a change and its denial at once (owner's screenshot, 27 Nov 2026). The words are
+ * Home's, so the two screens still say the same thing (W27).
+ */
+export function ShsChangeChip({ change }: { change: Pick<ShsChange, 'chip' | 'tone' | 'direction' | 'words' | 'vs'> }) {
+  if (change.direction === 'flat' && change.chip && change.vs != null) {
+    return (
+      <>
+        <ShsPill tone="flat">No clear change</ShsPill>
+        <span>
+          <span className="ch-num">{change.chip}</span> {change.vs}
+        </span>
+      </>
+    );
+  }
+  return (
+    <>
+      {change.chip && (
+        <ShsPill tone={change.tone}>
+          {change.direction !== 'flat' && <ShsArrow direction={change.direction} />}
+          {change.chip}
+        </ShsPill>
+      )}
+      <span>{change.words}</span>
+    </>
+  );
 }
 
 export function ShsArrow({ direction }: { direction: 'down' | 'up' | 'flat' }) {

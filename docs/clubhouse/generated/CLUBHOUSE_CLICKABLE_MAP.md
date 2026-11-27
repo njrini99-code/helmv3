@@ -435,15 +435,15 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/stats/StatsTeamPhoneShs.tsx`
 
-- CTL-P004-027 317 `Button` "Try again" (button, onClick) CH-4201
-- CTL-P004-028 507 `HowStatsCountLink` "How stats are counted (ledger)" (link)
-- CTL-P004-029 611 `button` "{label}: {formatSigned} a round" (button, onClick)
+- CTL-P004-027 305 `Button` "Try again" (button, onClick) CH-4201
+- CTL-P004-028 495 `HowStatsCountLink` "How stats are counted (ledger)" (link)
+- CTL-P004-029 599 `button` "{label}: {formatSigned} a round" (button, onClick)
 
 ### `src/clubhouse/screens/stats/SummaryCard.tsx`
 
-- CTL-P004-030 92 `section` "{title} {{meta}|} {children}" (onClick)
-- CTL-P004-031 99 `button` "{ariaLabel}" (button, onClick)
-- CTL-P004-032 108 `button` "Open {toLowerCase} details" (button, onClick)
+- CTL-P004-030 93 `section` "{title} {{meta}|} {children}" (onClick)
+- CTL-P004-031 100 `button` "{ariaLabel}" (button, onClick)
+- CTL-P004-032 109 `button` "Open {toLowerCase} details" (button, onClick)
 
 ### `src/clubhouse/screens/stats/TeamRank.tsx`
 
@@ -527,12 +527,12 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 - CTL-P005-043 248 `Button` "Add focus area" (button, onClick) CH-5207
 - CTL-P005-044 367 `PhoneIconAction` "Share {first}’s stats" (onClick)
 - CTL-P005-045 400 `Link` "Message {first}" (link, href)
-- CTL-P005-046 609 `button` "{label} {value}{{unit}|} {meta}…" (button, onClick)
-- CTL-P005-047 1121 `button` "{{label}: {tag}|{label}: {form…" (button, onClick)
-- CTL-P005-048 1151 `button` "{name} {label} {|{value}{unit}…" (button, onClick)
-- CTL-P005-049 1223 `Link` "{course}, {date}: {join}. Open the ro…" (link, href)
-- CTL-P005-050 1258 `GoalSetButton` "Set a goal (ledger)" (button)
-- CTL-P005-051 1305 `Button` "Add focus area" (button, onClick)
+- CTL-P005-046 601 `button` "{label} {value}{{unit}|} {meta}…" (button, onClick)
+- CTL-P005-047 1105 `button` "{{label}: {tag}|{label}: {form…" (button, onClick)
+- CTL-P005-048 1135 `button` "{name} {label} {|{value}{unit}…" (button, onClick)
+- CTL-P005-049 1207 `Link` "{course}, {date}: {join}. Open the ro…" (link, href)
+- CTL-P005-050 1242 `GoalSetButton` "Set a goal (ledger)" (button)
+- CTL-P005-051 1289 `Button` "Add focus area" (button, onClick)
 
 ### `src/clubhouse/screens/stats/detail.tsx`
 

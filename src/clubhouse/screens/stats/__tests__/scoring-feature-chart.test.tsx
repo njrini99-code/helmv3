@@ -120,7 +120,7 @@ describe('scoring hero · the average is straight segments (CH-15)', () => {
 
 describe('team hero · round days sit by their dates (CH-11)', () => {
   const xs = (days: Array<{ label: string; score: number; n: number; date?: string }>) =>
-    [...render(<TeamFeatureChart days={days} mean={null} />).container.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cx')));
+    [...render(<TeamFeatureChart days={days} />).container.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cx')));
 
   it('a month between two round days draws wider than the days a week apart', () => {
     const x = xs([
@@ -150,21 +150,20 @@ describe('team hero · against par when every day has it (CH-01)', () => {
     { label: 'Sep 15', score: 73, toPar: 2, n: 6, date: '2026-09-15' },
   ];
 
-  it('draws one flat line, the dashed line is par and named so, and the axis reads against par', () => {
-    const c = render(<TeamFeatureChart days={days} mean={73} />).container;
+  it('draws one flat line, the dashed line is par and named so, and the reading is against par', () => {
+    const c = render(<TeamFeatureChart days={days} />).container;
     const ys = [...c.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cy')));
     for (const y of ys) expect(y).toBeCloseTo(ys[0]!, 5);
-    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Par');
-    const ticks = [...c.querySelectorAll('.ch-shs-ax')].map((t) => t.textContent);
-    expect(ticks).toContain('E');
-    expect(ticks).toContain('+2');
+    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Par · under par sits higher');
     // Under par sits higher: par's dashed line is above the +2 days.
     expect(Number(c.querySelector('.ch-shs-parline')!.getAttribute('y1'))).toBeLessThan(ys[0]!);
     expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(/^Team score against par, per 18 holes, by round day, from \+2\.0 to \+2\.0\. Under par sits higher\./);
   });
 
-  it('a day with no figure against par keeps the whole chart in strokes, against the days’ average', () => {
-    const c = render(<TeamFeatureChart days={[...days.slice(0, 2), { ...days[2]!, toPar: null }]} mean={73} />).container;
-    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Round-day avg 73.0');
+  it('a day with no figure against par keeps the whole chart in strokes, with no par line', () => {
+    const c = render(<TeamFeatureChart days={[...days.slice(0, 2), { ...days[2]!, toPar: null }]} />).container;
+    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Lower scores sit higher');
+    expect(c.querySelector('.ch-shs-parline')).toBeNull();
+    expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(/^Team scoring average by round day, from 72\.0 to 73\.0\./);
   });
 });

@@ -200,6 +200,27 @@
   color: var(--ch-shs-s-ink-3);
 }
 
+/* The feature card's window under its title (owner's screenshot, 27 Nov 2026): at 390 "Each player’s last 10" beside "Scoring
+   average" broke the title over two lines. The title and chevron keep the first row; the window takes the next, under the title's
+   words, at every Text Size. */
+.ch-shs-sum.ch-shs-feature .ch-shs-ah:has(> .ch-shs-ah__meta) {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+.ch-shs-sum.ch-shs-feature .ch-shs-ah > .ch-shs-ah__meta {
+  order: 1;
+  flex: 1 1 100%;
+  margin-left: 0;
+  white-space: normal;
+}
+.ch-shs-sum.ch-shs-feature .ch-shs-ah:has(h3 > .ch-shs-pi) > .ch-shs-ah__meta {
+  margin-left: calc(26 * var(--ch-type-k) + 8px);
+}
+.ch-shs.is-big .ch-shs-sum.ch-shs-feature .ch-shs-ah h3,
+.ch-shs-screen.is-big .ch-shs-sum.ch-shs-feature .ch-shs-ah h3 {
+  flex: 1 1 auto;
+}
+
 /* Big Text Size (1.24 and up): the title takes its own line, the meta and chevron the next. */
 .ch-shs.is-big .ch-shs-ah,
 .ch-shs-screen.is-big .ch-shs-ah {
@@ -1731,7 +1752,8 @@ li + li > .ch-shs-rrow::before {
   border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-ink);
 }
-/* The dashed mean's key, under the team chart (F-0009): on the line, the scoring line ran through its words. */
+/* The team chart's key, under the drawing: which way is better, and par's dash when the chart reads against par (F-0009: on the
+   line, the scoring line ran through its words). The preview draws no second average (owner's screenshot, 27 Nov 2026). */
 .ch-shs-mean-key {
   display: flex;
   align-items: center;
