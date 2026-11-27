@@ -312,7 +312,9 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>;
   if (!n) return null;
   const R = 30;
   const B = 24;
-  const T = 8;
+  // An axis figure's baseline sits 4 under its gridline and its 13 type's box rises 13 over that baseline, so the top gridline
+  // sits 10 down: at 8 the top figure's box rose 1 past the drawing (the gate's card-escape, desk and phone).
+  const T = 10;
   // The first day's dot is drawn whole: centred on the drawing's edge, half of it fell outside (the gate's card-escape).
   const L = 6;
   // Against par when every day has it (stats and charts audit 2026-11-15, CH-01): the same golf on a par-70 and a par-72 course is
@@ -347,8 +349,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>;
         {ticks.map((q) => (
           <g key={q}>
             <line className="ch-shs-grid" x1="0" x2={width - R + 4} y1={y(q)} y2={y(q)} />
-            {/* Its glyphs end a pixel short of the edge: anchored on the edge itself, the last figure's side bearing drew past it. */}
-            <text className="ch-shs-ax" x={width - 2} y={y(q) + 4} textAnchor="end">
+            <text className="ch-shs-ax" x={width} y={y(q) + 4} textAnchor="end">
               {vsPar ? formatToPar(q, 0) : q}
             </text>
           </g>

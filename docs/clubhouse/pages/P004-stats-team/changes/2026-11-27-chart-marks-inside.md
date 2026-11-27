@@ -15,8 +15,9 @@ Held items:     none
 
 - Team scoring chart: the first round day's dot is drawn whole, 6 in from the
   drawing's left edge (it was centred on the edge, half of it outside), and the
-  axis figures end 2 short of the right edge, where the last figure's side
-  bearing drew 1 past it.
+  top gridline sits 10 down, not 8, so the top axis figure's box (13 tall over
+  a baseline 4 under its gridline) stays inside the drawing; at 8 it rose 1 past
+  the top, measured in CI's WebKit and Chromium.
 - The gate's two known lines for this card at 390 (card-escape, light and
   dark) are removed: the same dot and figure were the finding there.
 
@@ -26,5 +27,6 @@ Held items:     none
 
 ### Verification
 
-- `scoring-feature-chart.test.tsx`: every dot is inside the drawing.
+- `scoring-feature-chart.test.tsx`: every dot is inside the drawing, and each
+  axis figure has 13 above its baseline.
 - Clubhouse quality, presentation gate, on this branch.

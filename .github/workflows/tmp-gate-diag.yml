@@ -36,3 +36,25 @@ jobs:
           for pid in $(ss -ltnpH 'sport = :3100' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do kill "$pid" || true; done
           sleep 2
           ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop -g 'stats-team '
+
+  # The axis figure test, red with the top gridline at 8 and green at 10.
+  red-green:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-node-npm
+      - name: Red with the top gridline at 8
+        run: |
+          f=src/clubhouse/screens/stats/ScoringFeatureChart.tsx
+          grep -q '  const T = 10;' "$f"
+          sed -i 's/  const T = 10;/  const T = 8;/' "$f"
+          if ./node_modules/.bin/vitest run --project unit-dom src/clubhouse/screens/stats/__tests__/scoring-feature-chart.test.tsx -t 'room for its box'; then
+            echo 'RED-GREEN: the test passed without the fix'; exit 1
+          fi
+          echo 'RED-GREEN: red as expected'
+          git checkout -- "$f"
+      - name: Green at 10, with the whole chart test file
+        run: ./node_modules/.bin/vitest run --project unit-dom src/clubhouse/screens/stats/__tests__/scoring-feature-chart.test.tsx
