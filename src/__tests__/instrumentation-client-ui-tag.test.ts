@@ -7,12 +7,22 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * fills the tag from the page address for an error raised before that, or one that takes the frame down.
  */
 const initMock = vi.fn();
+// This file runs in jsdom, so instrumentation-client builds its browser integrations list (`typeof window !==
+// 'undefined'`). Every factory that list calls needs a stub here; the node-environment privacy sentinel test never
+// reaches that branch, which is why its mock is shorter.
 vi.mock('@sentry/nextjs', () => ({
   init: initMock,
+  dedupeIntegration: () => ({ name: 'Dedupe' }),
   replayIntegration: () => ({ name: 'Replay' }),
   browserTracingIntegration: () => ({ name: 'BrowserTracing' }),
+  browserProfilingIntegration: () => ({ name: 'BrowserProfiling' }),
+  browserSessionIntegration: () => ({ name: 'BrowserSession' }),
+  httpClientIntegration: () => ({ name: 'HttpClient' }),
+  reportingObserverIntegration: () => ({ name: 'ReportingObserver' }),
   consoleLoggingIntegration: () => ({ name: 'ConsoleLogging' }),
   captureConsoleIntegration: () => ({ name: 'CaptureConsole' }),
+  thirdPartyErrorFilterIntegration: () => ({ name: 'ThirdPartyErrorsFilter' }),
+  feedbackIntegration: () => ({ name: 'Feedback' }),
   captureRouterTransitionStart: vi.fn(),
 }));
 vi.mock('@supabase/supabase-js/tracing', () => ({}));
