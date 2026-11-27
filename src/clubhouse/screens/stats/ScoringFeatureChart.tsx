@@ -257,8 +257,10 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>;
   const joined = teamLineDays(known);
   const linePts = joined.line.map((i) => pts[i]!);
   const line = straightPath(linePts);
+  // Three y labels, not one every stroke or two (prod audit 2026-11-15, STATS-P-06: nine inverted labels read as noise): the best
+  // day, the dashed reference and the toughest day, each at its own height. A label closer than 14 px to one already placed drops.
   const ticks: number[] = [];
-  for (let q = lo; q <= hi; q++) if ((q - lo) % (hi - lo > 4 ? 2 : 1) === 0) ticks.push(q);
+  for (const q of [Math.min(...v), ...(ref == null ? [] : [ref]), Math.max(...v)]) if (ticks.every((t) => Math.abs(y(t) - y(q)) >= 14)) ticks.push(q);
   return (
     <>
     <div ref={box} className="ch-shs-chart" role="img" aria-label={`${vsPar ? 'Team score against par, per 18 holes, by round day' : 'Team scoring average by round day'}, from ${fig(v[0]!)} to ${fig(v[n - 1]!)}. ${vsPar ? 'Under par sits higher.' : 'Lower scores sit higher.'}${joined.one.size ? ` ${joined.one.size} ${pluralWord(joined.one.size, 'day', 'days')} with one round ${joined.one.size === 1 ? 'is' : 'are'} marked as hollow points.` : ''}`}>
@@ -273,7 +275,7 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>;
           <g key={q}>
             <line className="ch-shs-grid" x1="0" x2={width - R + 4} y1={y(q)} y2={y(q)} />
             <text className="ch-shs-ax" x={width} y={y(q) + 4} textAnchor="end">
-              {vsPar ? formatToPar(q, 0) : q}
+              {fig(q)}
             </text>
           </g>
         ))}
@@ -293,16 +295,21 @@ export function TeamFeatureChart({ days, mean }: { days: ReadonlyArray<TeamDay>;
         )}
       </svg>
     </div>
-    {ref != null && (
-      // Named for what it is, par or an average of the round days drawn, so it never reads as a second scoring average beside the
-      // card's figure (W26, F-0009). Its mark is the line's own dash.
-      <p className="ch-shs-mean-key ch-num">
-        <svg width="16" height="2" viewBox="0 0 16 2" aria-hidden="true">
-          <line className="ch-shs-parline" x1="0" x2="16" y1="1" y2="1" />
-        </svg>
-        {vsPar ? 'Par' : `Round-day avg ${formatFixed(ref, 1)}`}
-      </p>
-    )}
+    {/* The dashed line named for what it is, par or an average of the round days drawn, so it never reads as a second scoring
+        average beside the card's figure (W26, F-0009); its mark is the line's own dash. The axis turns over, so the key says which
+        way is better, as Team scoring does (STATS-P-06). */}
+    <p className="ch-shs-mean-key ch-num">
+      {ref != null && (
+        <>
+          <svg width="16" height="2" viewBox="0 0 16 2" aria-hidden="true">
+            <line className="ch-shs-parline" x1="0" x2="16" y1="1" y2="1" />
+          </svg>
+          {vsPar ? 'Par' : `Round-day avg ${formatFixed(ref, 1)}`}
+          {' · '}
+        </>
+      )}
+      Lower is better
+    </p>
     </>
   );
 }

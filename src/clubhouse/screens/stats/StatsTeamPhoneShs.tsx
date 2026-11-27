@@ -12,7 +12,6 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DeskDetail, DeskOverview, useDeskReturn } from './DeskPane';
 import type { ChTeamStats } from '../../data/stats-team';
 import { hasRange, isFiltered, nineRoundsInWindow } from '../../data/stats-filter';
-import { holeCoverage } from '../../data/round-scope';
 import { formatFixed, formatSigned, formatToPar } from '../../lib/format';
 import { NoData } from '../../ui/NoData';
 import { TERMS } from '../../lib/glossary';
@@ -30,7 +29,7 @@ import { hashOf, type StatsDetailId, type StatsTeamDetailId } from './detail-rou
 import { LEGS_LIST } from './legs';
 import { MiniDiverging } from './MiniCharts';
 import { TeamFeatureChart, teamDaysVsPar, type TeamDay } from './ScoringFeatureChart';
-import { Ribbon, SHS_HOW } from './ShsBlocks';
+import { SHS_HOW } from './ShsBlocks';
 import { divergeBar, filterKey, scoreChangeChip, sgTone, windowShort, type ShsTone } from './shs-figures';
 import { useStuck, WindowCrossfade } from './shs-motion';
 import { EarlyRead, NineHint } from './StatsFilter';
@@ -414,8 +413,8 @@ function TeamGameCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void 
  * A player row, the bar and figure toned by sign (08 criterion 52). `scale` is the card's own largest figure (W28: on a fixed
  * ±8, −4.2 and −4.9 drew the same length); the default keeps the old fixed ±8.
  */
-function PlayerRow({ rank, name, value, scale = 8 }: { rank: string; name: string; value: number | null; scale?: number }) {
-  const tone = sgTone(value);
+function PlayerRow({ rank, name, value, scale = 8, tone: toneBy }: { rank: string; name: string; value: number | null; scale?: number; tone?: 'flat' | 'loss' }) {
+  const tone = toneBy ?? sgTone(value);
   const bar = value == null ? null : divergeBar(value, scale);
   return (
     <div className="ch-shs-prow">
@@ -435,12 +434,21 @@ function PlayerRow({ rank, name, value, scale = 8 }: { rank: string; name: strin
  * the one who loses most at their own rank, so the sentence under them names players on the card. When everyone loses, the
  * title says so. The bars run to the card's largest figure (floor 2), and players with no strokes gained are counted, not dropped.
  */
-export function playersCard<T extends { value: number | null }>(ranked: readonly T[]): { title: string; rows: Array<{ row: T; rank: number }>; scale: number } {
+export function playersCard<T extends { value: number | null }>(
+  ranked: readonly T[],
+): { title: string; rows: Array<{ row: T; rank: number; tone?: 'flat' | 'loss' }>; scale: number } {
   const known = ranked.filter((r) => r.value != null);
   const rows = known.length <= 3 ? known.map((row, i) => ({ row, rank: i + 1 })) : [{ row: known[0]!, rank: 1 }, { row: known[1]!, rank: 2 }, { row: known[known.length - 1]!, rank: known.length }];
   const scale = Math.max(2, ...rows.map((r) => Math.abs(r.row.value!)));
-  const title = known.length > 0 && known.every((r) => r.value! < 0) ? 'Who loses least and most' : 'Who gains and loses';
-  return { title, rows, scale };
+  // When everyone is below zero, sign alone paints every bar amber and "least" looks like "most" (STATS-D-07): tone by rank instead,
+  // the least loss in ink and only the worst in loss amber. The title is a statement, not a question.
+  const allLoss = known.length > 1 && known.every((r) => r.value! < 0);
+  const worst = known.length;
+  return {
+    title: 'Strokes gained by player',
+    rows: allLoss ? rows.map((r) => ({ ...r, tone: r.rank === worst ? ('loss' as const) : ('flat' as const) })) : rows,
+    scale,
+  };
 }
 
 function TeamPlayersCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => void }) {
@@ -453,8 +461,8 @@ function TeamPlayersCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => vo
   return (
     <SummaryCard go="tplayers" onOpen={onOpen} title={card.title} meta={meta} ariaLabel={`${card.title}: ${meta}. Open details`}>
       <div className="ch-shs-flushrows">
-        {card.rows.map(({ row: r, rank }) => (
-          <PlayerRow key={r.id} rank={String(rank)} name={r.name} value={r.value} scale={card.scale} />
+        {card.rows.map(({ row: r, rank, tone }) => (
+          <PlayerRow key={r.id} rank={String(rank)} name={r.name} value={r.value} scale={card.scale} tone={tone} />
         ))}
       </div>
       {said && (
@@ -470,19 +478,25 @@ function TeamPlayersCard({ data, onOpen }: { data: ChTeamStats; onOpen: () => vo
 }
 
 /**
- * The Round's note (W29, owner's preview, 11 Nov 2026: three chips with no label over four grey lines explaining grey): one
- * sentence that says what the chips are and what grey means, then coverage and the caller's context.
+ * What a change chip on The round is measured against, written on the chip itself (prod audit 2026-11-15, STATS-TS-07 and
+ * STATS-TS-08): "−3 vs prev 10" on the value's line, never a chip under "Tour average 66%" that reads as a gap to the Tour, and no
+ * prose legend under the card.
  */
-export function roundNote(data: Pick<ChTeamStats, 'window' | 'filter' | 'last'>, chips: boolean, coverage: string | null, note?: string | null): string {
-  const before = data.window === 'last10' && !isFiltered(data.filter) ? `each player’s previous ${data.last} rounds` : 'the window before';
-  return [chips ? `Chips: the change vs ${before}, grey when it is inside its likely error.` : null, coverage ? `${coverage}.` : null, note].filter(Boolean).join(' ');
+export function chipLabel(data: Pick<ChTeamStats, 'window' | 'filter' | 'last'>): string {
+  return data.window === 'last10' && !isFiltered(data.filter) ? `vs prev ${data.last}` : 'vs window before';
+}
+
+/** The round's meta line: the window, and how many rounds carry hole stats when not all do (STATS-TS-08: coverage is meta, not a footnote). */
+export function roundMeta(window: string, holeCount: number | null | undefined, roundCount: number): string {
+  if (holeCount == null || holeCount >= roundCount) return window;
+  return `${window} · ${holeCount} of ${roundCount} with holes`;
 }
 
 function TheRound({ data, note, feature = false }: { data: ChTeamStats; note?: string | null; feature?: boolean }) {
   const rows = roundRows(data);
-  const coverage = data.holeRoundCount == null ? null : holeCoverage(data.holeRoundCount, data.roundCount);
+  const chip = chipLabel(data);
   return (
-    <ShsCard title="The round" meta={windowDays(data)} feature={feature}>
+    <ShsCard title="The round" meta={roundMeta(windowDays(data), data.holeRoundCount, data.roundCount)} feature={feature}>
       <dl className="ch-shs-m3">
         {rows.map((f) => {
           const t = deltaTone(f.delta, f.se, f.lowerIsBetter);
@@ -496,14 +510,16 @@ function TheRound({ data, note, feature = false }: { data: ChTeamStats; note?: s
               {ref && <dd className="m ch-num">{ref}</dd>}
               {f.delta != null && (
                 <dd className="d">
-                  <ShsPill tone={t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat'}>{formatSigned(f.delta, f.digits)}</ShsPill>
+                  <ShsPill tone={t === 'is-gain' ? 'gain' : t === 'is-loss' ? 'loss' : 'flat'}>
+                    {formatSigned(f.delta, f.digits)} {chip}
+                  </ShsPill>
                 </dd>
               )}
             </div>
           );
         })}
       </dl>
-      <p className="ch-shs-anote">{roundNote(data, rows.some((f) => f.delta != null), coverage, note)}</p>
+      {note && <p className="ch-shs-anote">{note}</p>}
       <HowStatsCountLink data-ctl="CTL-P004-028" />
     </ShsCard>
   );
@@ -531,16 +547,10 @@ function TeamScoringDetail({
       {/* The round's figures are the drill's one green feature card, first under the head, as a player's drill opens on The figures (look-09). */}
       <TheRound data={data} feature />
       {days.length > 0 && (
-        <ShsCard title="By round day" meta={mean == null ? undefined : 'Average dashed'}>
+        <ShsCard title="By round day" meta={vsPar ? 'Par dashed' : mean == null ? undefined : 'Average dashed'}>
           {/* Against par per 18 when every day has it, par the dashed line (CH-01); strokes against the days' average otherwise. */}
-          <Ribbon
-            points={days.map((d) => ({ label: d.label, value: vsPar ? d.toPar! : d.score, ...(d.date ? { at: d.date } : {}) }))}
-            lowerIsBetter
-            reference={vsPar ? { value: 0, label: 'Par' } : mean == null ? null : { value: mean, label: 'Round-day avg' }}
-            format={(v) => (vsPar ? formatToPar(v, 1) : formatFixed(v, 1))}
-            tone={trend?.tone === 'is-gain' ? 'gain' : trend?.tone === 'is-loss' ? 'loss' : 'flat'}
-          />
-          <p className="ch-shs-mini-cap">{trend ? `${vsPar ? 'Against par, per 18 holes. Under par is up.' : 'Lower is better.'} ${trend.reading}` : 'The trend draws once the team has rounds on a second day.'}</p>
+          <TeamFeatureChart days={days} mean={mean} />
+          <p className="ch-shs-mini-cap">{trend ? `${vsPar ? 'Against par, per 18 holes.' : ''} ${trend.reading}`.trim() : 'The trend draws once the team has rounds on a second day.'}</p>
         </ShsCard>
       )}
       <ShsCard title="Round days" meta={`${days.length} ${pluralWord(days.length, 'day')}`}>
