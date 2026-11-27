@@ -175,7 +175,7 @@
     {
       "id": "ACT-P007-COPY-MESSAGE",
       "label": "Copy a message (phone)",
-      "component": "src/clubhouse/screens/messages/thread/PhoneThread.tsx#PhoneThread",
+      "component": "src/clubhouse/screens/messages/thread/PhoneThread.tsx#PhoneThreadContent",
       "handler": "copy",
       "service": null,
       "data": [],

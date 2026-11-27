@@ -814,6 +814,26 @@ describe('Messages · phone', () => {
     return screen.findByRole('region', { name: /Varsity team/ });
   };
 
+  // The nightly motion gate (messages-stress, from 2026-11-26): a thread whose messages were already loaded opened at its
+  // oldest message and stayed there, and its Jump to latest slid in. The screen's content renders a frame after the
+  // screen (POP-02), and the thread's hooks, run with the screen, never found its scroller.
+  it('phone: a thread whose messages are already loaded opens at its newest message', async () => {
+    // jsdom has no layout: the thread's scroller holds 2000 px of messages in a 500 px view.
+    const box = (size: number) => function (this: Element) { return this.classList.contains('ch-ms-scroll') ? size : 0; };
+    const content = vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockImplementation(box(2000));
+    const view = vi.spyOn(Element.prototype, 'clientHeight', 'get').mockImplementation(box(500));
+    try {
+      const user = userEvent.setup();
+      showPhone();
+      const thread = await openThread(user);
+      const scroller = thread.querySelector<HTMLElement>('.ch-ms-scroll')!;
+      await waitFor(() => expect(scroller.scrollTop).toBeGreaterThanOrEqual(1500));
+    } finally {
+      content.mockRestore();
+      view.mockRestore();
+    }
+  });
+
   it('72001 phone Return adds a line; tapping Send sends the complete text', async () => {
     const user = userEvent.setup();
     showPhone();

@@ -43,7 +43,8 @@ export interface RoleTemplatesData {
 
 export const getRoleTemplates = withBaseballAction(
   'getRoleTemplates',
-  { featureArea: 'baseball-settings' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', demoSafe: true },
   async (ctx): Promise<RoleTemplatesData> => {
     const supabase = await createClient();
     const teamId = ctx.targetTeamId;
@@ -76,7 +77,8 @@ export interface PermissionMatrixData {
 
 export const getPermissionMatrix = withBaseballAction(
   'getPermissionMatrix',
-  { featureArea: 'baseball-settings' },
+  // Read-only, so the shared demo coach may call it (see demoSafe in with-baseball-action.ts).
+  { featureArea: 'baseball-settings', demoSafe: true },
   async (ctx): Promise<PermissionMatrixData> => {
     const caps = await resolveBaseballCapabilities(ctx.targetTeamId);
     return {

@@ -65,3 +65,9 @@ Held items: real device screenshots (this environment can't run a browser); befo
   past the chart's edge. STATS-2's two known-failure lines come out of
   `e2e/clubhouse-gate/known.ts`, and the 1440 failure that main shows (not
   listed as known) clears too.
+- Merged with the browser-gate fix that moved the old line chart's first dot
+  6 in and its top gridline to 10 (`2026-11-27-chart-marks-inside.md`). Those
+  constants belong to the line this card no longer draws. The strokes line
+  that remains already insets its end dots by half their date label (at least
+  8), and it has no axis figures. That fix's dot test still holds here, and its
+  axis-figure test now checks the end dates instead.

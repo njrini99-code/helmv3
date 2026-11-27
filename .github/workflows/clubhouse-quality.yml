@@ -115,6 +115,17 @@ jobs:
           ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts
           --project chromium-no-preference --project chromium-reduce --project webkit-no-preference --project webkit-reduce
           --output test-results/clubhouse-quality/smoke
+      # A step that runs out of time is killed before Playwright can stop the next dev it started, and that server keeps
+      # port 3100: the next step's Playwright then refuses to start ("http://127.0.0.1:3100/manifest.json is already used";
+      # reuseExistingServer is off in CI). That stopped the nightly runs on main at the pixel step, so no pixel
+      # baseline was ever uploaded and every PR skipped its pixel comparison. Each later step that starts a server frees it first.
+      - name: Free the dev server port (presentation gate)
+        if: ${{ !cancelled() && !inputs.visual }}
+        run: |
+          pkill -f 'next dev --webpack --hostname 127.0.0.1 --port 3100' || true
+          for pid in $(ss -ltnpH 'sport = :3100' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do echo "Stopping $pid, left on port 3100 by an earlier step."; kill "$pid" || true; done
+          for _ in $(seq 1 20); do [ -z "$(ss -ltnH 'sport = :3100')" ] && exit 0; sleep 0.5; done
+          echo 'Port 3100 is still taken.'; exit 1
       # Boxes leaving their card, clipped text, nested cards, small type and targets, contrast, page edge: at 390x844 in WebKit and
       # 1440x900 in Chromium, light and dark, on stress fixtures. A known failure is marked with its bug and must keep failing until fixed.
       # Each step keeps its own output folder: Playwright empties its output folder when it starts, so a shared one kept
@@ -127,6 +138,13 @@ jobs:
         env:
           CH_GATE_REPORT: test-results/clubhouse-quality/gate-report.jsonl
         run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project gate-phone --project gate-desktop --output test-results/clubhouse-quality/gate
+      - name: Free the dev server port (motion gate)
+        if: ${{ !cancelled() && !inputs.visual }}
+        run: |
+          pkill -f 'next dev --webpack --hostname 127.0.0.1 --port 3100' || true
+          for pid in $(ss -ltnpH 'sport = :3100' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do echo "Stopping $pid, left on port 3100 by an earlier step."; kill "$pid" || true; done
+          for _ in $(seq 1 20); do [ -z "$(ss -ltnH 'sport = :3100')" ] && exit 0; sleep 0.5; done
+          echo 'Port 3100 is still taken.'; exit 1
       # Motion is a release gate (owner): what animates on every phone gate screen, from its first frame, with and
       # without Reduce Motion, against D-64 (e2e/clubhouse-motion-gate.spec.ts; known breaks may only shrink).
       - name: Motion gate (WebKit, phone)
@@ -134,12 +152,20 @@ jobs:
         # Advisory for its first week on main: its known list was recorded on a Mac, and a week of Linux runs shows
         # whether timing moves any entry. Then remove this line so a new break fails the job.
         continue-on-error: true
-        timeout-minutes: 20
+        # About 17 minutes on a PR run and past 20 on nightly runs on main, which killed it: room for a slow runner.
+        timeout-minutes: 30
         env:
           CH_MOTION_REPORT: test-results/clubhouse-quality/motion-report.jsonl
         run: ./node_modules/.bin/playwright test --config playwright.clubhouse.config.ts --project motion-phone --output test-results/clubhouse-quality/motion
       # Pixel regression (advisory). Nightly on main renders the baselines; a PR or dispatch run compares against the
       # newest nightly set from main, so both sides are the same Linux image and browser build.
+      - name: Free the dev server port (pixel baselines)
+        if: ${{ !cancelled() && github.event_name == 'schedule' }}
+        run: |
+          pkill -f 'next dev --webpack --hostname 127.0.0.1 --port 3100' || true
+          for pid in $(ss -ltnpH 'sport = :3100' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do echo "Stopping $pid, left on port 3100 by an earlier step."; kill "$pid" || true; done
+          for _ in $(seq 1 20); do [ -z "$(ss -ltnH 'sport = :3100')" ] && exit 0; sleep 0.5; done
+          echo 'Port 3100 is still taken.'; exit 1
       - name: Render pixel baselines (nightly on main)
         if: ${{ !cancelled() && github.event_name == 'schedule' }}
         timeout-minutes: 25
@@ -172,6 +198,13 @@ jobs:
           gh run download "$run_id" -R "$REPO" -n clubhouse-pixel-baselines -D .helm/screenshots/clubhouse/pixel-baselines
           echo "found=1" >> "$GITHUB_OUTPUT"
           echo "Comparing against nightly run $run_id."
+      - name: Free the dev server port (pixel comparison)
+        if: ${{ !cancelled() && steps.baselines.outputs.found == '1' }}
+        run: |
+          pkill -f 'next dev --webpack --hostname 127.0.0.1 --port 3100' || true
+          for pid in $(ss -ltnpH 'sport = :3100' | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u); do echo "Stopping $pid, left on port 3100 by an earlier step."; kill "$pid" || true; done
+          for _ in $(seq 1 20); do [ -z "$(ss -ltnH 'sport = :3100')" ] && exit 0; sleep 0.5; done
+          echo 'Port 3100 is still taken.'; exit 1
       - name: Pixel comparison against main (advisory)
         if: ${{ !cancelled() && steps.baselines.outputs.found == '1' }}
         continue-on-error: true
