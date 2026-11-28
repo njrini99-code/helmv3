@@ -80,7 +80,7 @@
   padding:0 16px 16px;
 }
 .ch-htb .subh {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color:var(--ch-ink-600);
   padding:6px 16px 6px;
@@ -159,7 +159,7 @@
   height:auto;
 }
 .ch-htb .tile b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-14); }
 .ch-htb .tile .tm {
   display:flex;
@@ -194,7 +194,7 @@
   box-shadow:var(--ch-elevation-card);
 }
 .ch-htb .feat .hk {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color:var(--ch-feature-ink-2);
 }
 .ch-htb .feat .hn {
@@ -209,7 +209,7 @@
   letter-spacing: -0.038em;
   }
 .ch-htb .feat .hn span {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-feature-ink-2);
   padding-bottom:2px;
@@ -222,7 +222,7 @@
 /* The hero is an estimate (every round's strokes gained came from the scorecard, none from shots): marked beside the figure. */
 .ch-htb .feat .hn b small {
   margin-left: 4px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   letter-spacing: 0;
   color: var(--ch-feature-ink-2);
@@ -454,7 +454,7 @@
 }
 .ch-htb .stchips button b {
   display:block;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color:var(--ch-feature-loss);
 
@@ -655,13 +655,13 @@
   font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .pat span:not(.ch-avatar) {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .nopat {
   margin:4px 16px 16px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -819,7 +819,7 @@
   margin:0 16px 8px;
   padding:8px 0;
   min-height:36px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color:var(--ch-green-600);
 }
@@ -981,7 +981,7 @@
   margin-left:0;
 }
 .ch-htb .ins .cnote {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);}
 .ch-htb .hud {
   padding:0 8px 4px;
@@ -1088,7 +1088,7 @@
   font: var(--ch-type-headline);
   font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-16); }
 .ch-htb .rr .m {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -1143,7 +1143,7 @@
   font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); }
 .ch-htb .wk span {
   display:block;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -1201,7 +1201,7 @@
   letter-spacing: -0.038em;
   }
 .ch-htb .rec .big span {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -1211,7 +1211,7 @@
   grid-template-columns:minmax(0,calc(128 * var(--ch-type-k, 1))) minmax(40px,1fr) auto;
   gap:8px;
   align-items:center;
-  font: var(--ch-type-callout); }
+  font: var(--ch-type-detail); }
 .ch-htb .lv .t {
   position:relative;
   height:10px;
@@ -1236,7 +1236,7 @@
   background:var(--ch-ink-900);
   border-radius: var(--ch-radius-full);}
 .ch-htb .lv .n {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 
@@ -1249,7 +1249,7 @@
   gap:8px;
   border-top:var(--ch-hairline-w) solid var(--ch-separator);
   padding:8px 16px 12px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -1312,7 +1312,7 @@
   font: var(--ch-type-headline); letter-spacing: var(--ch-track-16); }
 .ch-htb .insh .c > span {
   display:block;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -1411,7 +1411,7 @@
   font: var(--ch-type-headline); letter-spacing: var(--ch-track-16); }
 .ch-htb .drill span:not(.dicon) {
   display:block;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -1670,7 +1670,7 @@
   font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 .ch-htb .notice div > span:not([class]) {
   display:block;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
@@ -1713,13 +1713,13 @@
   font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); }
 .ch-htb .steps span {
   display:block;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }
 .ch-htb .nordss {
   padding:12px 16px 4px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color:var(--ch-ink-600);
 }

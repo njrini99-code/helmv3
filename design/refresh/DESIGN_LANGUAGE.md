@@ -182,6 +182,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | Display (Title 1): a heading or big figure inside a card, at 28 | `--ch-type-display` | 600, 28 / 34 | same |
 | Display large (Large Title): the same at 34 | `--ch-type-display-xl` | 600, 34 / 41 | same |
 | Subhead (Subheadline): a row name, a second line, a label or a row figure at 15, under the phone body | `--ch-type-subhead` | 400, 15 / 20 | same |
+| Detail: a row title, a control or a second line at 14, the same on phone and desk | `--ch-type-detail` | 500, 14 / 20 | same |
 
 Sizes are at the default Text Size: every role multiplies by `--ch-type-k`, so text follows iPhone Text Size.
 <!-- AUTOGEN:clubhouse-design-tokens:end -->

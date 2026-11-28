@@ -30,7 +30,7 @@
 .ch-hmb-quiet {
   margin: 0;
   max-width: 64ch;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -62,7 +62,7 @@
   text-wrap: balance;
 }
 .ch-hmb-lead__m {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
@@ -86,7 +86,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hmb-lead__n span {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
   text-wrap: pretty;
@@ -179,7 +179,7 @@
 }
 .ch-hmb-cleared li {
   padding: 4px 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }

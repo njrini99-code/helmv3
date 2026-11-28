@@ -19,6 +19,13 @@ describe('text on a 1x screen (W1)', () => {
     expect(decl(block, '--ch-type-12')).toContain('calc(13 * var(--ch-type-k))');
     for (const step of [13, 14, 15]) expect(decl(block, `--ch-type-${step}`)).toContain(`calc(${step} * var(--ch-type-k))`);
   });
+  it('a phone-width layout on a 1x screen keeps the phone sizes and only gets the firmer weight', () => {
+    const narrow =
+      css.match(/@media \(max-resolution: 1\.5dppx\) and \(max-width: 820px\)[^{]*\{\s*\[data-ui='clubhouse'\] \{([^}]*)\}\s*\}/)?.[1] ?? '';
+    expect(css.indexOf('@media (max-resolution: 1.5dppx) and (max-width: 820px)')).toBeGreaterThan(css.indexOf('@media (max-resolution: 1.5dppx) {'));
+    expect(decl(narrow, '--ch-type-body')).toMatch(/^450 calc\(17 \* var\(--ch-type-k\)\)\/calc\(24 /);
+    expect(decl(narrow, '--ch-type-callout')).toMatch(/^560 calc\(15 \* var\(--ch-type-k\)\)\/calc\(20 /);
+  });
   it('Retina keeps the designed weights (the base tokens are untouched)', () => {
     const base = css.slice(0, css.indexOf('@media (max-resolution: 1.5dppx)'));
     expect(decl(base, '--ch-type-14')).toMatch(/^400 calc\(14 /);

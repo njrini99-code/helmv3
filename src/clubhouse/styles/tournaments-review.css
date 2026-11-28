@@ -41,7 +41,7 @@
 }
 .ch-tour-rev-layer dd {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
@@ -88,7 +88,7 @@
 }
 .ch-tour-rev-note p {
   margin: 8px 0 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -249,7 +249,7 @@
 .ch-tour-rev-trend .ch-tour-rev-trend__note {
   margin: 12px 0 0;
   max-width: 80ch;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -425,7 +425,7 @@
   min-width: 0;
 }
 .ch-tour-links-row__n {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
@@ -507,7 +507,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }

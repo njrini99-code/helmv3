@@ -67,7 +67,7 @@
 .ch-akc-lineup { display: flex; flex-direction: column; gap: 8px; }
 .ch-akc-lineup > small { font: var(--ch-type-caption); font-weight: var(--ch-fw-600); color: var(--ch-text-tertiary); }
 .ch-akc-lineup > ol { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
-.ch-akc-lineup li { display: grid; grid-template-columns: 20px auto minmax(0, 1fr); align-items: center; gap: 8px; min-height: 36px; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); }
+.ch-akc-lineup li { display: grid; grid-template-columns: 20px auto minmax(0, 1fr); align-items: center; gap: 8px; min-height: 36px; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); }
 .ch-akc-lineup li + li { border-top: var(--ch-hairline-w) solid var(--ch-separator); }
 .ch-akc-lineup__n { font: var(--ch-type-footnote); font-weight: var(--ch-fw-600); color: var(--ch-text-tertiary); text-align: center; }
 .ch-akc-lineup li > span:last-child { display: flex; flex-direction: column; min-width: 0; padding: 4px 0; }
@@ -90,12 +90,12 @@
 .ch-akc-clamp { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .ch-akc-clamp > .ch-btn { align-self: flex-start; }
 /* Clamped, the paragraphs run on as one, so the last line shown is never a blank one; open, they are the writer's own. */
-.ch-akc-clamp__t { display: -webkit-box; overflow: hidden; margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: inherit; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: var(--ch-akc-lines, 6); line-clamp: var(--ch-akc-lines, 6); }
+.ch-akc-clamp__t { display: -webkit-box; overflow: hidden; margin: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); color: inherit; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: var(--ch-akc-lines, 6); line-clamp: var(--ch-akc-lines, 6); }
 .ch-akc-clamp[data-open] > .ch-akc-clamp__t { display: block; overflow: visible; white-space: pre-line; -webkit-line-clamp: none; line-clamp: none; }
 
 /* A message is drawn as Messages draws it: the bubbles are the thing, and nothing frames them. */
 .ch-akc-thread { display: flex; flex-direction: column; gap: 8px; }
-.ch-akc-thread__before { align-self: flex-start; max-width: 84%; margin: 0; padding: 8px 12px; border-radius: var(--ch-radius-bubble); background: var(--ch-bubble-theirs-bg); color: var(--ch-text-secondary); font: var(--ch-type-callout); font-weight: var(--ch-fw-400); overflow-wrap: anywhere; }
+.ch-akc-thread__before { align-self: flex-start; max-width: 84%; margin: 0; padding: 8px 12px; border-radius: var(--ch-radius-bubble); background: var(--ch-bubble-theirs-bg); color: var(--ch-text-secondary); font: var(--ch-type-detail); font-weight: var(--ch-fw-400); overflow-wrap: anywhere; }
 .ch-akc-thread__mine { align-items: flex-end; }
 .ch-akc-thread__mine > .ch-btn { align-self: flex-end; }
 .ch-akc-clamp__t.ch-akc-bubble { align-self: flex-end; max-width: 84%; padding: 8px 12px; border-radius: var(--ch-radius-bubble); border-end-end-radius: var(--ch-radius-tail); background: var(--ch-bubble-mine-fill); color: var(--ch-bubble-mine-ink); }
@@ -122,7 +122,7 @@
 .ch-akc-diff > .is-after > b { font: var(--ch-type-subhead); font-weight: var(--ch-fw-600); letter-spacing: var(--ch-track-15); }
 
 /* Something that cannot be taken back: amber ink and its mark, no fill. It is the one coloured line a card may carry. */
-.ch-akc-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; margin: 0; color: var(--ch-loss); font: var(--ch-type-callout); font-weight: var(--ch-fw-400); text-wrap: pretty; }
+.ch-akc-warn { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; margin: 0; color: var(--ch-loss); font: var(--ch-type-detail); font-weight: var(--ch-fw-400); text-wrap: pretty; }
 .ch-akc-warn > svg { margin-top: 2px; }
 
 /* ---------- 5. the foot: under one rule, who is told and where it appears, then only what cannot be taken back.
@@ -159,7 +159,7 @@
 /* ---------- the small things an answer can carry: a link, a note, a calculation, "not tracked" ---------- */
 .ch-akc-link { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; min-height: 44px; border-radius: var(--ch-radius-sm); color: var(--ch-text-primary); text-decoration: none; }
 .ch-akc-link > span:nth-child(2) { display: flex; flex-direction: column; min-width: 0; }
-.ch-akc-link b { font: var(--ch-type-callout); font-weight: var(--ch-fw-600); overflow-wrap: anywhere; }
+.ch-akc-link b { font: var(--ch-type-detail); font-weight: var(--ch-fw-600); overflow-wrap: anywhere; }
 .ch-akc-link small { font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
 .ch-akc-link > svg, .ch-akc-link__ico { color: var(--ch-ask-accent); }
 
@@ -167,7 +167,7 @@
 .ch-akc-noted > svg { color: var(--ch-ask-accent); }
 .ch-akc-noted__tx { display: flex; flex-direction: column; min-width: 0; padding: 2px 0; }
 .ch-akc-noted__tx > b { font: var(--ch-type-caption); font-weight: var(--ch-fw-600); color: var(--ch-text-tertiary); }
-.ch-akc-noted__tx > span { display: -webkit-box; overflow: hidden; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
+.ch-akc-noted__tx > span { display: -webkit-box; overflow: hidden; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; }
 .ch-akc-noted__tx > small { font: var(--ch-type-caption); font-weight: var(--ch-fw-400); color: var(--ch-text-tertiary); }
 .ch-akc-noted[data-op='removed'] .ch-akc-noted__tx > span { text-decoration: line-through; color: var(--ch-text-tertiary); }
 
@@ -180,7 +180,7 @@
 .ch-akc-untracked { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; }
 .ch-akc-untracked > svg { margin-top: 2px; color: var(--ch-text-tertiary); }
 .ch-akc-untracked > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-.ch-akc-untracked b { font: var(--ch-type-callout); font-weight: var(--ch-fw-600); overflow-wrap: anywhere; }
+.ch-akc-untracked b { font: var(--ch-type-detail); font-weight: var(--ch-fw-600); overflow-wrap: anywhere; }
 .ch-akc-untracked ul { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; padding: 0; list-style: none; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 
 /* ---------- drafts: a card that writes nothing ---------- */
@@ -205,9 +205,9 @@
 .ch-akc-plan__why { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 2px; }
 .ch-akc-brief { display: flex; flex-direction: column; gap: 12px; }
 .ch-akc-brief > section { display: flex; flex-direction: column; gap: 6px; }
-.ch-akc-brief h4 { margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-600); }
+.ch-akc-brief h4 { margin: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-600); }
 .ch-akc-brief ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.ch-akc-brief li { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-control); font: var(--ch-type-callout); font-weight: var(--ch-fw-400); }
+.ch-akc-brief li { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 12px; border-radius: var(--ch-radius-sm); background: var(--ch-well-bg-flat); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-border-control); font: var(--ch-type-detail); font-weight: var(--ch-fw-400); }
 .ch-akc-brief li[data-on] { background: var(--ch-selected-tint); box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-selected-pill-ring); color: var(--ch-selected-ink); font-weight:var(--ch-fw-600); }
 .ch-akc-brief li > small { font: var(--ch-type-caption); font-weight: var(--ch-fw-400); color: var(--ch-text-tertiary); }
 .ch-akc-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; }
@@ -251,7 +251,7 @@
 .ch-akg__group { display: flex; flex-direction: column; gap: 20px; scroll-margin-top: 72px; }
 .ch-akg__group > header { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; border-bottom: var(--ch-hairline-w) solid var(--ch-separator-strong); }
 .ch-akg__group > header > h2 { margin: 0; font: var(--ch-type-title); letter-spacing: var(--ch-track-22); }
-.ch-akg__group > header > p { max-width: 68ch; margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
+.ch-akg__group > header > p { max-width: 68ch; margin: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 
 .ch-akg-spec { display: flex; flex-direction: column; gap: 12px; scroll-margin-top: 72px; }
 .ch-akg-spec__hd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
@@ -272,7 +272,7 @@
 .ch-akg-form > p { margin: 0; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 .ch-akg-plain { padding: 16px; border-radius: var(--ch-radius-lg); background: var(--ch-card-bg); box-shadow: var(--ch-elevation-card); }
 .ch-akg-words { width: 100%; border-collapse: collapse; }
-.ch-akg-words th, .ch-akg-words td { padding: 12px 12px 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); font: var(--ch-type-callout); font-weight: var(--ch-fw-400); text-align: start; vertical-align: top; overflow-wrap: break-word; }
+.ch-akg-words th, .ch-akg-words td { padding: 12px 12px 12px 0; border-top: var(--ch-hairline-w) solid var(--ch-separator); font: var(--ch-type-detail); font-weight: var(--ch-fw-400); text-align: start; vertical-align: top; overflow-wrap: break-word; }
 .ch-akg-words th { width: 32%; font: var(--ch-type-footnote); font-weight: var(--ch-fw-600); color: var(--ch-text-secondary); }
 .ch-akg-words tr:first-child > * { border-top: 0; }
 .ch-akg-words td > span { display: inline-block; margin: 0 6px 4px 0; }
@@ -291,10 +291,10 @@
 .ch-akg-card__btns > :only-child { grid-column: 1 / -1; }
 .ch-akg-card__btns > .ch-btn { min-height: 44px; }
 .ch-akg-card__why { margin: 0; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-loss); text-align: end; }
-.ch-akg-card__line { margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
+.ch-akg-card__line { margin: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 .ch-akg-rcpt { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 44px; }
 .ch-akg-rcpt__tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ch-akg-rcpt__tx > b { font: var(--ch-type-callout); font-weight: var(--ch-fw-600); overflow-wrap: anywhere; }
+.ch-akg-rcpt__tx > b { font: var(--ch-type-detail); font-weight: var(--ch-fw-600); overflow-wrap: anywhere; }
 .ch-akg-rcpt__tx > span { font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); overflow-wrap: anywhere; }
 .ch-akg-rcpt__acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
 .ch-akg-ring { position: relative; display: grid; place-items: center; width: 32px; height: 32px; }

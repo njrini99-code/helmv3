@@ -149,7 +149,7 @@
   background: var(--ch-bg-surface);
   border: var(--ch-hairline-w) solid var(--ch-border-control);
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
@@ -223,7 +223,7 @@
   min-width: 0;
 }
 .ch-tfx__day b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
@@ -355,7 +355,7 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
@@ -438,7 +438,7 @@
 .ch-tfx-card .ch-tfx__plate {
   width: max(40px, calc(40px * var(--ch-type-scale, 1)));
   height: max(40px, calc(40px * var(--ch-type-scale, 1)));
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   letter-spacing: var(--ch-track-14);
 }
 .ch-tfx-card[data-status='cancelled'] .ch-tfx__plate {

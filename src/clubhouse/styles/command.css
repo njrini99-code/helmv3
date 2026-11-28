@@ -176,7 +176,7 @@
   padding: 0 8px;
   border-radius: var(--ch-radius-md);
   color: var(--ch-text-primary);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   cursor: pointer;
   scroll-margin: 6px;
 }
@@ -251,7 +251,7 @@
 .ch-cmd-sheet h3 {
   margin: 0 0 4px;
   color: var(--ch-text-primary);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
 }
 .ch-cmd-rows {

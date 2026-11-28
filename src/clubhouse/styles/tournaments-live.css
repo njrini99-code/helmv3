@@ -54,7 +54,7 @@
   flex-direction: column;
   gap: 2px;
   min-width: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
@@ -95,7 +95,7 @@
 }
 .ch-tour-live-lane__n {
   overflow: hidden;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
@@ -191,7 +191,7 @@
   padding: 12px;
   border: 0;
   background: none;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: inherit;
   text-align: start;
@@ -229,7 +229,7 @@
   gap: 12px;
   min-height: 48px;
   padding: 8px 16px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
@@ -244,12 +244,12 @@
 .ch-tour-live-field__v {
   justify-self: end;
   padding-inline: 8px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
 }
 .ch-tour-live-field__row.is-us {
   background: var(--ch-bg-selected);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
 }
 .ch-tour-live-field__row.is-us:first-child {
@@ -260,7 +260,7 @@
 }
 .ch-tour-live-field__none {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }

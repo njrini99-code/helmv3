@@ -37,7 +37,7 @@
   height: 36px;
   padding: 0 12px;
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
@@ -90,7 +90,7 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color: var(--ch-text-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -277,7 +277,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-card);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
   cursor: pointer;
@@ -337,7 +337,7 @@
   padding: 12px 8px;
   overflow: hidden;
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
   text-decoration: none;
@@ -370,7 +370,7 @@
 .ch-ask-hist__nomatch {
   margin: 0;
   padding: 8px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
@@ -380,7 +380,7 @@
   align-items: center;
   gap: 8px;
   padding: 48px 20px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   text-align: center;
@@ -407,7 +407,7 @@
   border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: var(--ch-elevation-card);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
@@ -430,7 +430,7 @@
   border-radius: var(--ch-radius-full);
   background: var(--ch-bg-surface);
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   cursor: pointer;
@@ -465,7 +465,7 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -501,7 +501,7 @@
 }
 .ch-ask-state__alt {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   text-align: center;
@@ -606,7 +606,7 @@
   border-radius: var(--ch-radius-full);
   background: none;
   box-shadow: 0 0 0 1px var(--ch-border-control);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   cursor: pointer;
@@ -891,7 +891,7 @@
   align-items: center;
   min-height: 44px;
   padding: 0 8px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
