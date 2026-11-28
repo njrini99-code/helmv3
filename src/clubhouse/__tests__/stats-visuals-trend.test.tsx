@@ -15,6 +15,12 @@ describe('round-trend helpers', () => {
     expect(m[5]).toBeCloseTo((72 + 73 + 75 + 71 + 70) / 5, 5);
   });
 
+  it('weighs a nine-hole round as half a round, so the mean is the window\'s strokes over its holes (GAP-B1, NINES_LINE)', () => {
+    // An 18 of 74, then nines of 38 and 40 (76 and 80 per 18): 152 strokes over 36 holes is 76 per 18, not the plain 76.67.
+    const rs = [round(0, 74), round(1, 76, { holes: 9 }), round(2, 80, { holes: 9 })];
+    expect(meanSeries(rs)[2]).toBeCloseTo(76, 10);
+  });
+
   it('puts par at the typical par of the rounds, and nowhere when a round has no to par', () => {
     expect(parLine(scores([74, 72, 73]))).toBe(72);
     const rs = scores([74, 72, 73]);

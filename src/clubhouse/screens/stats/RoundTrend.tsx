@@ -45,7 +45,7 @@ export function RoundTrend({
   const n = rounds.length;
   // Rounds are spaced by their dates (row 119): a three-week break looks like one, not like the day after.
   const slots = slotPositions(n, rounds.map((r) => r.at));
-  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W], slots);
+  const pin = useChartPin(n, 'x', [PAD.l / W, 1 - PAD.r / W], slots, { ids: rounds.map((r) => r.id) });
 
   const known = withValue(rounds);
   if (known.length === 0 || (kind === 'sg' && known.length < 3)) {

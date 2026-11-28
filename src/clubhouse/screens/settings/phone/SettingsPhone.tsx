@@ -20,7 +20,7 @@ import { NotificationsPhone } from './NotificationsPhone';
 import { PreferencesPhone } from './PreferencesPhone';
 import { TeamPhone } from './TeamPhone';
 import { HeldSheetsContext, type ChHeldSheet } from './sheets';
-import { ActionRow, Group, InfoRow, LinkRow, NavRow } from './ui';
+import { ActionRow, Group, InfoRow, LinkRow, NavRow, RowCard } from './ui';
 import { canvasScrollNow } from '../../../lib/smooth-scroll';
 import { poppedByUA } from '../../../lib/ua-pop';
 import { LargeTitle } from '../../../ui/LargeTitle';
@@ -298,11 +298,11 @@ function Root({ data, writes, onOpen, onProfile }: { data: ChSettingsData; write
       </button>
 
       <nav className="ch-setm-group" aria-label="Settings sections">
-        <div className="ch-setm-card">
+        <RowCard>
           {SECTIONS[data.role].map((s) => (
             <NavRow data-ctl="CTL-P008-073" key={s.id} label={s.label} value={SUMMARY[data.role][s.id]} icon={ICON[s.id]} onClick={() => onOpen(s.id)} />
           ))}
-        </div>
+        </RowCard>
       </nav>
 
       <Group title="Help and legal">

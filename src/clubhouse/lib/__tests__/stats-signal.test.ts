@@ -200,6 +200,15 @@ describe('rollingMean', () => {
     expect(out[2]).toBeNull();
     expect(out[4]).toBeCloseTo((1 + 4 + 5) / 3, 10);
   });
+
+  it('weighs each value by its weight, so a half-weight value counts half', () => {
+    const out = rollingMean([74, 76, 80], 5, 3, [1, 0.5, 0.5]);
+    expect(out[2]).toBeCloseTo((74 + 38 + 40) / 2, 10);
+  });
+
+  it('reads a missing or non-positive weight as 1, so no weights is the plain mean', () => {
+    expect(rollingMean([1, 2, 3], 5, 3, [null, 0, undefined])).toEqual(rollingMean([1, 2, 3]));
+  });
 });
 
 describe('rankWithTies', () => {

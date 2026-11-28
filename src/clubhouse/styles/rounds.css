@@ -3911,6 +3911,11 @@ html[data-fw-theme='dark'] .ch-rv .ch-rv-yn.is-y {
   margin: 4px 0 16px;
   padding: 16px 16px 8px;
 }
+/* Straight under the hole card's title bar, the bar's own 8 below it is the gap: the card is the kernel's flex column (dsx-11),
+   where margins add instead of collapsing as they did in a block card. */
+.ch-rv .ch-rv-card__h + .ch-rzplate {
+  margin-top: 0;
+}
 @container chrv (max-width: 440px) {
   .ch-rv .ch-rzstage {
     padding: 16px 12px 8px;

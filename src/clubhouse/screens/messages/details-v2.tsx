@@ -20,6 +20,7 @@ import type { ChConv, ChFile, ChMember } from './model';
 import type { ChMessagesApi } from './MessagesView';
 import { MessageHits } from './message-hits';
 import { personOf } from './person-of';
+import { Card } from '../../ui/Card';
 
 /**
  * A scale in on `pop` (MOT-DET-3, MOT-EMP-2): the picked token (0.8, fading in with it) and the mute action (0.92). Reduce Motion:
@@ -267,7 +268,7 @@ export function detailsLine(conv: ChConv, teamName: string | null | undefined, m
  */
 export function ClassStatusCard({ children }: { children: ReactNode }) {
   return (
-    <section className="ch-msd-lcard ch-msd-class" aria-label="Class status">
+    <Card kind="list" className="ch-msd-lcard ch-msd-class" label="Class status">
       <header className="ch-msd-lcard__h">
         <b>Class status</b>
       </header>
@@ -275,7 +276,7 @@ export function ClassStatusCard({ children }: { children: ReactNode }) {
         <span className="ch-msd-class__dot" aria-hidden="true" />
         <div className="ch-msd-class__t">{children}</div>
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -313,7 +314,7 @@ export function MembersCard({
   const [all, setAll] = useState(false);
   const list = api.members;
   return (
-    <section className="ch-msp-panel ch-msv-members ch-msd-lcard" aria-label="Members">
+    <Card kind="list" className="ch-msp-panel ch-msv-members ch-msd-lcard" label="Members">
       <header className="ch-msv-members__h ch-msd-lcard__h">
         <b>Members</b>
         <span className="ch-num">{conv.memberCount}</span>
@@ -357,7 +358,7 @@ export function MembersCard({
           )}
         </>
       )}
-    </section>
+    </Card>
   );
 }
 
@@ -423,7 +424,7 @@ export function PhotosAndFiles({ api, conv }: { api: ChMessagesApi; conv: ChConv
   const shownRest = all ? rest : rest.slice(0, 2);
   const more = !all && (images.length > 6 || rest.length > 2);
   return (
-    <section className="ch-msp-panel ch-msv-files ch-msd-lcard" aria-label="Photos and files">
+    <Card kind="list" className="ch-msp-panel ch-msv-files ch-msd-lcard" label="Photos and files">
       <header className="ch-msv-members__h ch-msd-lcard__h">
         <b>Photos and files</b>
         {more && (
@@ -464,7 +465,7 @@ export function PhotosAndFiles({ api, conv }: { api: ChMessagesApi; conv: ChConv
           ))}
         </>
       )}
-    </section>
+    </Card>
   );
 }
 

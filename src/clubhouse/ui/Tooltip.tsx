@@ -4,6 +4,7 @@ import { cloneElement, useCallback, useEffect, useLayoutEffect, useRef, useState
 import { createPortal } from 'react-dom';
 import { tipClock } from '../shell/command/tooltip-clock';
 import { CH_DUR } from '../lib/motion';
+import { overlayView, placeOverlay, watchOverlayView } from '../lib/overlay-place';
 
 const GAP = 8;
 const EDGE = 8;
@@ -156,13 +157,14 @@ function TipPlate({ anchor, label, shortcut, leaving }: { anchor: HTMLElement; l
   useLayoutEffect(() => {
     const el = plate.current;
     if (!el) return;
-    const r = anchor.getBoundingClientRect();
-    const w = el.offsetWidth;
-    const h = el.offsetHeight;
-    const left = Math.max(EDGE, Math.min(r.left + r.width / 2 - w / 2, window.innerWidth - w - EDGE));
-    const below = r.bottom + GAP;
-    const top = below + h + EDGE > window.innerHeight ? Math.max(EDGE, r.top - GAP - h) : below;
-    setPos({ left, top });
+    // Below its control, above when the page ends first, never past the window's edge (lib/overlay-place.ts); placed again if the
+    // window changes under it (a rotation, the toolbar).
+    const place = () => {
+      const p = placeOverlay(anchor.getBoundingClientRect(), { width: el.offsetWidth, height: el.offsetHeight }, overlayView(), { align: 'center', gap: GAP, edge: EDGE });
+      setPos({ left: p.left, top: p.top });
+    };
+    place();
+    return watchOverlayView(place);
   }, [anchor, label, shortcut]);
 
   const host = anchor.closest('dialog[open]') ?? document.querySelector('.ch-root') ?? document.body;

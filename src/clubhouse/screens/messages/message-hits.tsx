@@ -9,6 +9,7 @@ import { InlineNotice } from '../../ui/Notices';
 import { Skeleton } from '../../ui/States';
 import { chReport, chTrail } from '../../lib/track';
 import { railTime, searchSnippet, ChSearchHit } from './model';
+import { Card } from '../../ui/Card';
 
 export function MessageHits({ api, q, nameMatches, conversationId, onPicked, layout = 'flat' }: { api: ChMessagesApi; q: string; /** One conversation's hits only (Details, Search). */ conversationId?: string; onPicked?: () => void; /** Redesign: how many names matched, so an empty search says it once (S-MSG.search). */ nameMatches: number; /** The inbox's empty "Nothing here": the phone's card or the rail's flat label. */ layout?: 'card' | 'flat' }) {
   const [hits, setHits] = useState<ChSearchHit[] | null>(null);
@@ -45,10 +46,10 @@ export function MessageHits({ api, q, nameMatches, conversationId, onPicked, lay
     // A conversation's own search (Details) keeps its card; the inbox's says it as the "Nothing here" card does (MSG-115).
     if (!conversationId) return <div role="status"><RailEmpty filter="all" q={term} layout={layout} /></div>;
     return (
-      <section className="ch-msv-card ch-msv-noresults" role="status" data-ch-code="CH-7303">
+      <Card kind="list" className="ch-msv-card ch-msv-noresults" role="status" code="CH-7303">
         <b>No results</b>
         <span>Try another name or word.</span>
-      </section>
+      </Card>
     );
   }
   return (

@@ -1,4 +1,5 @@
 import { type ChConvFilter, nothingHere } from './inbox/model';
+import { Card } from '../../ui/Card';
 
 /**
  * The conversation list with nothing to list (CH-7302, MSG-108): the card the artifact draws, a "Nothing here" header and
@@ -10,10 +11,10 @@ export function RailEmpty({ filter, q = '', layout }: { filter: ChConvFilter; q?
   const line = <p className="ch-inb-note">{nothingHere(filter, q)}</p>;
   if (layout === 'card') {
     return (
-      <section className="ch-msv-card" aria-label="Nothing here" data-ch-code="CH-7302">
+      <Card kind="list" className="ch-msv-card" label="Nothing here" code="CH-7302">
         <h2 className="ch-msv-card__h">Nothing here</h2>
         {line}
-      </section>
+      </Card>
     );
   }
   return (

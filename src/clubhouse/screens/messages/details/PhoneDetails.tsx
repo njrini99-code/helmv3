@@ -20,12 +20,13 @@ import { Skeleton } from '../../../ui/States';
 import { muteLabel } from './mute-label';
 import { chMotionModeNow } from '../../../lib/reduced-motion';
 import { LeaveGroupModal, AddMembersModal, RemoveMemberModal } from './group-modals';
+import { Card } from '../../../ui/Card';
 
 /* Details */
 
 function Panel({ title, action, children, code }: { title?: string; action?: ReactNode; children: ReactNode; code?: string }) {
   return (
-    <section className={"ch-msp-panel" + (title ? "" : " is-plain")} aria-label={title} data-ch-code={code}>
+    <Card kind="list" className={"ch-msp-panel" + (title ? "" : " is-plain")} label={title} code={code}>
       {title && (
         <div className="ch-msp-panel__h">
           <h3>{title}</h3>
@@ -33,7 +34,7 @@ function Panel({ title, action, children, code }: { title?: string; action?: Rea
         </div>
       )}
       {children}
-    </section>
+    </Card>
   );
 }
 
@@ -103,7 +104,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
             {/* Schedule is not in the design (GAP.md "Can't match as drawn"): it keeps working, after the drawn cards, as one row
                 inside a card of the one card style. */}
             {calendarHref && (
-              <section className="ch-msp-panel ch-msd-lcard" aria-label="Schedule">
+              <Card kind="list" className="ch-msp-panel ch-msd-lcard" label="Schedule">
                 <Link data-ctl="CTL-P007-048" className="ch-msp-row is-btn" href={calendarHref}>
                   <span className="ch-msp-row__ic">
                     <Icon icon={CalendarPlus} size={16} />
@@ -113,7 +114,7 @@ export function PhoneDetails({ api, conv, onBack }: { api: ChMessagesApi; conv: 
                   </span>
                   <Icon icon={ChevronRight} size={16} className="ch-msp-chev" />
                 </Link>
-              </section>
+              </Card>
             )}
 
             {/* With the switch gone it can have nothing to show: then it isn't drawn. */}

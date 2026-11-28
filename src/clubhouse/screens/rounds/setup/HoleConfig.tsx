@@ -5,6 +5,7 @@ import { Segmented } from '../../../ui/Segmented';
 import { roving } from '../../../ui/use-roving';
 import { editedCount, holesForRound, MAX_HOLE_YARDS, parOf, PARS, yardsOf, type ChSetupHole } from './shape';
 import { plural } from '../../../lib/plural';
+import { Card } from '../../../ui/Card';
 
 /**
  * The round's scorecard (board `HoleConfig`): par and yardage per hole, from
@@ -45,7 +46,7 @@ export function HoleConfig({
       : []),
   ];
   return (
-    <section className="ch-rsu-card ch-rsu-hc" aria-label="Scorecard">
+    <Card kind="list" className="ch-rsu-card ch-rsu-hc" label="Scorecard">
       <div className="ch-rsu-card__h">
         <div>
           <h2>Scorecard</h2>
@@ -136,6 +137,6 @@ export function HoleConfig({
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }

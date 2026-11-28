@@ -7,6 +7,7 @@ import { useAction } from '../../lib/use-action';
 import { Button } from '../../ui/Button';
 import { InlineNotice } from '../../ui/Notices';
 import { useRefresh } from '../../lib/use-refresh';
+import { Card } from '../../ui/Card';
 
 const NOTE_MAX = 2000;
 
@@ -53,7 +54,7 @@ export function CoachNote({ roundId, note, error, canWrite, playerFirst }: { rou
   const trimmed = draft.trim();
 
   return (
-    <section className="ch-rv-card ch-rv-notes ch-rv-cn" aria-labelledby="ch-rv-cn-h" data-ch-code="CH-11523">
+    <Card kind="list" className="ch-rv-card ch-rv-notes ch-rv-cn" labelledBy="ch-rv-cn-h" code="CH-11523">
       <div className="ch-rv-card__h">
         <div>
           <h3 id="ch-rv-cn-h">{canWrite ? 'Coach note' : 'From your coach'}</h3>
@@ -108,6 +109,6 @@ export function CoachNote({ roundId, note, error, canWrite, playerFirst }: { rou
       ) : (
         <p className="ch-rv-cn__none">No note on this round yet.</p>
       )}
-    </section>
+    </Card>
   );
 }

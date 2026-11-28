@@ -2,6 +2,7 @@
 
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { useId, useState, type ComponentProps, type InputHTMLAttributes, type ReactNode } from 'react';
+import { Card } from '../../../ui/Card';
 import { Icon } from '../../../ui/Icon';
 import { Slider } from '../../../ui/Slider';
 import type { ChProblem } from '../model';
@@ -14,6 +15,18 @@ import { PickerSheet } from './sheets';
  * card of rows, with a footnote under it. Rows are 52px (56 with a second line) on the design system's surface.
  */
 
+/**
+ * The rounded card a group's rows sit on: the card kernel's list card (design lab dsx-02), so its material, radius and
+ * elevation are the one card's. The rows stay its direct children, flush to its edges, as the grouped list draws them.
+ */
+export function RowCard({ children }: { children: ReactNode }) {
+  return (
+    <Card kind="list" className="ch-setm-card">
+      {children}
+    </Card>
+  );
+}
+
 /** A group of rows: heading, card, footnote. */
 export function Group({ title, note, code, children }: { title?: string; note?: ReactNode; code?: string; children: ReactNode }) {
   const id = useId();
@@ -24,7 +37,7 @@ export function Group({ title, note, code, children }: { title?: string; note?: 
           {title}
         </h2>
       )}
-      <div className="ch-setm-card">{children}</div>
+      <RowCard>{children}</RowCard>
       {note && <p className="ch-setm-note">{note}</p>}
     </section>
   );

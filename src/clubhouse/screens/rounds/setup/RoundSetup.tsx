@@ -27,6 +27,7 @@ import { glanceFor, type ChCourseGlance } from '../../../data/course-glance';
 import { courseHref } from '../../../data/course-key';
 import { formatFixed } from '../../../lib/format';
 import '../../../styles/rounds-setup.css';
+import { Card } from '../../../ui/Card';
 
 const STEPS = ['Course', 'Scorecard', 'Track'] as const;
 const TYPES: ChRoundType[] = ['practice', 'tournament', 'qualifier'];
@@ -295,7 +296,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
 
       <div className="ch-rsu-cols">
         <div className="ch-rsu-col">
-          <section className="ch-rsu-card ch-rsu-course" aria-label="Course">
+          <Card kind="list" className="ch-rsu-card ch-rsu-course" label="Course">
             {p ? (
               <>
                 <div className="ch-rsu-course__band">
@@ -336,7 +337,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                 </button>
               </div>
             )}
-          </section>
+          </Card>
 
           {qualifiers === null && form.type !== 'qualifier' && (
             // A list that failed is said up front, before a qualifier round is started as practice (F-0013).
@@ -362,7 +363,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
             </button>
           )}
 
-          <section className="ch-rsu-card" aria-label="Round details">
+          <Card kind="list" className="ch-rsu-card" label="Round details">
             <div className="ch-rsu-card__h">
               <div>
                 <h2>Round details</h2>
@@ -473,12 +474,12 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
               )}
               {liveShare && <LiveShareField type={form.type} ports={liveShare} />}
             </div>
-          </section>
+          </Card>
         </div>
 
         <div className="ch-rsu-col">
           {holesLoad.state === 'loading' ? (
-            <section className="ch-rsu-card ch-rsu-hc" aria-busy="true" aria-label="Loading the scorecard" data-ch-code="CH-11405">
+            <Card kind="list" className="ch-rsu-card ch-rsu-hc" busy label="Loading the scorecard" code="CH-11405">
               {/* Phone only: the loaded scorecard's heading and figure row hold their places, so nothing moves when it lands. */}
               <ScorecardHead />
               <dl className="ch-rsu-hc__sum ch-rsu-ph" aria-hidden="true">
@@ -496,9 +497,9 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                   <span key={i} className="ch-skel" />
                 ))}
               </div>
-            </section>
+            </Card>
           ) : holesLoad.state === 'failed' ? (
-            <section className="ch-rsu-card ch-rsu-hc">
+            <Card kind="list" className="ch-rsu-card ch-rsu-hc">
               <ScorecardHead />
               <InlineNotice
                 code="CH-11210"
@@ -506,12 +507,12 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                 body="Your course and tees are picked; only the pars and yardages are missing. Try again."
                 onRetry={() => lastTee && void loadHoles(lastTee)}
               />
-            </section>
+            </Card>
           ) : p && form.holes.length ? (
             <HoleConfig holes={form.holes} baseline={form.baseline} count={form.count} nine={form.nine} onHoles={(holes) => set({ holes })} onNine={(nine) => set({ nine })} />
           ) : (
             // CH-11309: before a course, the scorecard's place is held.
-            <section className="ch-rsu-card ch-rsu-hc ch-rsu-hc--empty" data-ch-code="CH-11309">
+            <Card kind="list" className="ch-rsu-card ch-rsu-hc ch-rsu-hc--empty" code="CH-11309">
               <ScorecardHead />
               {/* The hole numbers alone: grey bars beside them read as loading (wave 10). */}
               <div className="ch-rsu-hc__ghost" aria-hidden="true">
@@ -522,7 +523,7 @@ export function RoundSetup({ ports, liveShare, qualifiers, today, backHref, onSt
                 ))}
               </div>
               <p>Your scorecard appears here once you pick a course and tees.</p>
-            </section>
+            </Card>
           )}
           {/* Under the scorecard, not under Round details: there the sticky dock cut its second line on a desktop. */}
           <p className="ch-rsu-note">
