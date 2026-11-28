@@ -296,11 +296,20 @@ and the `setupGlobalErrorHandlers()` call after `Sentry.init`.
 | `NEXT_PUBLIC_SENTRY_REPLAY_SESSION_SAMPLE_RATE` | `0` / `0.1` | Session Replay session sample rate (error-triggered replay stays fixed at `1.0`, not overridable). |
 | `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN` | — | DSN, first non-empty wins (unchanged). |
 | `NEXT_PUBLIC_SENTRY_RELEASE` / `VERCEL_GIT_COMMIT_SHA` | — | Release name, first non-empty wins (unchanged). |
+| `NEXT_PUBLIC_SENTRY_ERRORS_ALL_ENVIRONMENTS` | unset | Error events go to Sentry from production only, on the browser and the server (`sendsErrorEventsToSentry` in `src/lib/sentry-environment.ts`). `1` or `true` sends every environment's errors again. Traces, logs, metrics, user feedback and session-sampled replays are unaffected; outside production, an error no longer triggers its replay. |
 
-All four parse through `buildClientSentryOptions` /
+The first four parse through `buildClientSentryOptions` /
 `parseSampleRateEnv` — blank, unset, or non-numeric always falls back to the
 default; out-of-range values clamp into `[0, 1]`. Never `NaN`, never a value
 outside `[0, 1]` reaches the SDK.
+
+**Why errors are production-only.** Previews, local production builds and
+`next dev` sent their errors into the same monthly allowance as production's,
+and Sentry stopped accepting errors on Nov 19, 2026. The check is the first
+line of both `beforeSend`s and reads the event's own `environment`, which
+Sentry stamps from the init option before `beforeSend` runs (an event without
+one is filed as production, so it is sent). Roll back by deleting that line in
+`instrumentation-client.ts` and `instrumentation.ts`.
 
 ## Rollback, overall
 

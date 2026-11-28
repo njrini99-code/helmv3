@@ -23,7 +23,7 @@ import { getAppBaseUrl } from '@/lib/app-base-url';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
 import { observedUserFromHeaders } from '@/lib/observability/observed-user-from-request';
 import { uiSurfaceForRequest } from '@/lib/observability/ui-surface';
-import { resolveServerEnvironment } from '@/lib/sentry-environment';
+import { resolveServerEnvironment, sendsErrorEventsToSentry } from '@/lib/sentry-environment';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
 import { fingerprintSupabaseAutoCapture, isReadinessProbeTimeoutCapture } from '@/lib/observability/supabase-error-grouping';
@@ -282,6 +282,11 @@ function fingerprintSupabaseKeyError(event: Sentry.ErrorEvent): Sentry.ErrorEven
 }
 
 const scrubPii: Sentry.NodeOptions['beforeSend'] = (event, hint) => {
+  // Only production's errors go to Sentry: a preview's or a local build's would use up production's allowance.
+  // The Bridge's own server rows are written apart from Sentry and are unaffected. See sendsErrorEventsToSentry.
+  if (!sendsErrorEventsToSentry(event.environment, process.env.NEXT_PUBLIC_SENTRY_ERRORS_ALL_ENVIRONMENTS)) {
+    return null;
+  }
   // Already recorded by the route itself (supabase-error-grouping.ts).
   if (isReadinessProbeTimeoutCapture(event)) return null;
   if (event.request) {

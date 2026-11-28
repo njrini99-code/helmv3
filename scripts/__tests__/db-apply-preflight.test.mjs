@@ -116,8 +116,9 @@ describe('isHeldInRegister', () => {
       .filter(({ status }) => /\bHOLD\b|NOT APPLIED/i.test(status) && !/^\*\*(VERIFIED )?APPLIED\b/i.test(status));
     // A floor so a parse that matches nothing cannot pass. 2026-11-15: 52 rows moved to APPLIED after the Clubhouse
     // release (33 applied that night, 19 found already in the production ledger), leaving 26 held. 2026-11-27: four
-    // more applied and one found already in the ledger, leaving 18 held.
-    expect(rows.length).toBeGreaterThan(12);
+    // more applied and one found already in the ledger, leaving 18 held; later that day five retired as OBSOLETE and
+    // one more applied, leaving 12 held.
+    expect(rows.length).toBeGreaterThan(6);
     const leaks = rows.flatMap(({ names, status }) =>
       names.filter((name) => !isHeldInRegister(register, name)).map((name) => `${name}: ${status}`),
     );
@@ -139,8 +140,14 @@ describe('isHeldInRegister', () => {
   });
 
   it('keeps the superseded qualified HOLD blocked, which the old regex missed', () => {
+    // Locked on a fixture: the row was retired as **OBSOLETE** on 2026-11-27, so the real register no longer carries
+    // its qualified HOLD. This is that row's status as it stood until then.
+    const supersededRow =
+      '| `20260905091000_baseball_timeline_event_acks_user_id_columns.sql` | **HOLD — SUPERSEDED by `20260923000000_baseball_timeline_event_acks_contract_repair.sql`** | why | when |';
+    expect(isHeldInRegister(supersededRow, SUPERSEDED_HOLD)).toBe(true);
+    expect(heldByOldRegex(supersededRow, SUPERSEDED_HOLD)).toBe(false);
+    // Retired as OBSOLETE, the real row stays blocked.
     expect(isHeldInRegister(register, SUPERSEDED_HOLD)).toBe(true);
-    expect(heldByOldRegex(register, SUPERSEDED_HOLD)).toBe(false);
   });
 
   it.each(NOW_APPLIED)(
