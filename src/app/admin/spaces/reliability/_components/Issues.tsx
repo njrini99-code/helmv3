@@ -129,8 +129,10 @@ export function IssueList({ issues, scope, frame }: { issues: readonly Issue[]; 
   );
 }
 
+/** "views, taps and actions": which kinds of signal a page sent, so a page that never sends actions shows it. */
 function kindsWords(kinds: readonly string[]): string {
-  return kinds.map((k) => KIND_WORD.get(k) ?? k).join(' · ');
+  const w = kinds.map((k) => KIND_WORD.get(k) ?? k);
+  return w.length < 2 ? (w[0] ?? 'nothing') : `${w.slice(0, -1).join(', ')} and ${w.at(-1)}`;
 }
 
 export function PageRow({ page, scope, frame }: { page: PageHealth; scope: FeedScope; frame: SparkFrame }) {
@@ -158,7 +160,7 @@ export function PageRow({ page, scope, frame }: { page: PageHealth; scope: FeedS
         ) : (
           <>
             <b className="bs-tone-good">No failures</b>
-            <span>reported {page.views ? 'on these views' : 'with no views'}</span>
+            <span>{page.views ? `in ${plural(page.views, 'view')}` : 'and no views'}</span>
           </>
         )}
       </span>

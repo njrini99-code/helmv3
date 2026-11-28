@@ -70,37 +70,34 @@ export function isRising(spark: readonly number[]): boolean {
 // "Mostly": where an issue concentrates
 // ---------------------------------------------------------------------------
 
-export type MostlyDim = 'role' | 'platform' | 'release' | 'team';
+/** Who it hit is already on the row as people (whoWords), so roles are not repeated here as a share of failures. */
+export type MostlyDim = 'platform' | 'release' | 'team';
 
 export interface Mostly {
   dim: MostlyDim;
   text: string;
 }
 
-const ROLE_PLURAL: Readonly<Record<string, string>> = { coach: 'coaches', player: 'players', 'signed-out': 'signed-out visitors' };
-
 function valueOf(i: FeedItem, dim: MostlyDim): string | null {
-  if (dim === 'role') return i.role;
   if (dim === 'platform') return i.platform && i.platform !== 'unknown' ? i.platform : null;
   if (dim === 'release') return i.release && i.release !== 'unknown' ? i.release : null;
   return i.teamName;
 }
 
 function words(dim: MostlyDim, value: string): string {
-  if (dim === 'role') return ROLE_PLURAL[value] ?? value;
   if (dim === 'platform') return `on ${PLATFORM_WORDS[value] ?? value}`;
   if (dim === 'release') return `on release ${value.slice(0, 7)}`;
   return `at ${value}`;
 }
 
-const MOSTLY_DIMS: readonly MostlyDim[] = ['role', 'platform', 'team', 'release'];
+const MOSTLY_DIMS: readonly MostlyDim[] = ['platform', 'team', 'release'];
 /** A share at or over this, of the failures whose value is known, is "mostly". */
 export const MOSTLY_SHARE = 0.8;
 /** Fewer failures than this say nothing about where an issue concentrates. */
 export const MOSTLY_MIN = 3;
 
 /**
- * Where an issue's failures concentrate: "only coaches", "mostly on iPhone Safari (8 of 9)". A dimension is named only
+ * Where an issue's failures concentrate: "only at Demo University Golf", "mostly on iPhone Safari (8 of 9)". A dimension is named only
  * when the whole window has two or more values on it (one release live all window says nothing about this issue), the
  * value is known for most of the issue's failures, and one value holds 80% or more of them.
  */

@@ -105,7 +105,7 @@ describe('groupIssues', () => {
   });
   it('says where it concentrates only where the window has more than one value', () => {
     const [send] = issues;
-    expect(send!.mostly.map((m) => m.text)).toEqual(['mostly coaches (5 of 6)', 'mostly on iPhone Safari (5 of 6)', 'only at Demo University Golf', 'only on release b2c3d4e']);
+    expect(send!.mostly.map((m) => m.text)).toEqual(['mostly on iPhone Safari (5 of 6)', 'only at Demo University Golf', 'only on release b2c3d4e']);
   });
   it('a crash with no code is named by its kind and the page it happened on', () => {
     const crash = issues[1]!;
@@ -136,7 +136,7 @@ describe('whoWords and issuesReport', () => {
   });
   it('writes the issues for a paste, with no user or team ids', () => {
     const report = issuesReport(groupIssues(items(), { w: 'today', now: NOW }), { windowLabel: 'Today', pipeLabel: 'pipe: live' });
-    expect(report).toContain('**Couldn’t send the message** (CH-7004): 6 failures, 4 people (3 coaches and 1 signed out) on Messages; new in this release, rising, mostly coaches');
+    expect(report).toContain('**Couldn’t send the message** (CH-7004): 6 failures, 4 people (3 coaches and 1 signed out) on Messages; new in this release, rising, mostly on iPhone Safari (5 of 6)');
     expect(report).toContain('**A section crashed, with no code**: 1 failure, 1 person (1 player) on CoachHelm');
     for (const id of U) expect(report).not.toContain(id);
     expect(report).not.toContain('team-1');
