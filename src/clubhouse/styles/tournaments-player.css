@@ -45,7 +45,7 @@
 }
 .ch-tour-pl-quiet {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -128,7 +128,7 @@
 .ch-tour-pl-next__day b {
   flex: none;
   min-width: 72px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-on-green-ink);
 }
@@ -192,7 +192,7 @@
   min-width: 0;
 }
 .ch-tour-pl-next__then b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-on-green-ink);
 }
@@ -321,7 +321,7 @@
   }
 }
 .ch-tour-pl-res__n {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
 }
@@ -488,13 +488,13 @@
   min-width: 0;
 }
 .ch-tour-pl-round__t b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-tour-pl-round__v {
   flex: none;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
@@ -502,13 +502,13 @@
   padding: 12px 16px;
 }
 .ch-tour-pl-note b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-tour-pl-note p {
   margin: 4px 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }

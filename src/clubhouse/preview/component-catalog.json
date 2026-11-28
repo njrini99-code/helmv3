@@ -27344,6 +27344,11 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
+          "name": "--ch-type-detail",
+          "value": "500 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-space-0_5",
           "value": "2px",
           "scope": "[data-ui='clubhouse']"
@@ -31149,6 +31154,11 @@
           "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
         },
         {
+          "name": "--ch-type-detail",
+          "value": "560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-fw-400",
           "value": "450",
           "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
@@ -31157,6 +31167,16 @@
           "name": "--ch-fw-500",
           "value": "560",
           "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-body",
+          "value": "450 calc(17 * var(--ch-type-k))/calc(24 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) and (max-width: 820px), (max-resolution: 1.5dppx) and (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-callout",
+          "value": "560 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) and (max-width: 820px), (max-resolution: 1.5dppx) and (max-height: 500px) and (pointer: coarse) → [data-ui='clubhouse']"
         }
       ]
     },

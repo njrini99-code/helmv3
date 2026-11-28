@@ -76,7 +76,7 @@
 }
 .ch-tour-desk-warn p {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 .ch-tour-desk-warn .ch-tour-desk-warn__t {
@@ -106,7 +106,7 @@
   padding: 0;
   border: 0;
   background: none;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -455,7 +455,7 @@ button.ch-tour-desk-sc:focus-visible {
   display: none;
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__n {
-  font: var(--ch-type-footnote);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-14);
 }
@@ -495,7 +495,7 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk-fc p {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -513,7 +513,7 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 0;
   border: 0;
   background: none;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   /* Text takes the dark-safe green, never --ch-accent (2.74:1 on the dark canvas; visual pass 2026-10-28). */
   color: var(--ch-green-600);
@@ -744,7 +744,7 @@ button.ch-tour-desk-sc:focus-visible {
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__t {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }

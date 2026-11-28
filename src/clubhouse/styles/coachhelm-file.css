@@ -118,8 +118,8 @@
 .ch-hf .card__h h4 svg { width: 16px; height: 16px; color: var(--ch-hf-a-ink-2); }
 .ch-hf .card__h small { font: var(--ch-type-subhead);  color: var(--ch-hf-a-ink-2); text-align: right; letter-spacing: var(--ch-track-15); }
 .ch-hf .card__b { padding: 4px 16px 16px; }
-.ch-hf .ch-hf-partfail { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); }
-.ch-hf .ch-hf-partfail button { position: relative; flex: none; padding: 0; border: 0; background: none; font: var(--ch-type-callout); font-weight: var(--ch-fw-600); color: var(--ch-green-600); cursor: pointer; }
+.ch-hf .ch-hf-partfail { display: flex; align-items: center; justify-content: space-between; gap: 12px; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); }
+.ch-hf .ch-hf-partfail button { position: relative; flex: none; padding: 0; border: 0; background: none; font: var(--ch-type-detail); font-weight: var(--ch-fw-600); color: var(--ch-green-600); cursor: pointer; }
 .ch-hf .ch-hf-partfail button::before { content: ""; position: absolute; inset: -12px -8px; }
 .ch-hf .ch-hf-partfail button:focus-visible { outline: 2px solid var(--ch-border-focus); outline-offset: 2px; border-radius: var(--ch-radius-sm); }
 .ch-hf .card__n { margin: 0; padding: 12px 16px 16px; border-top: var(--ch-hairline-w) solid var(--ch-hf-a-sep); font: var(--ch-type-subhead);  color: var(--ch-hf-a-ink-2); letter-spacing: var(--ch-track-15); }
@@ -230,7 +230,7 @@
 .ch-hf .tr3 b { display: block; font: var(--ch-type-display); font-weight: var(--ch-fw-500);  font-stretch: 88%; letter-spacing: -0.03em;  }
 .ch-hf .tr3 b.gain { color: var(--ch-hf-a-gain); }
 .ch-hf .tr3 span { display: block; margin-top: 6px; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400);  color: var(--ch-hf-a-ink-2); }
-.ch-hf .pv { position: sticky; top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h) + 8px); z-index: var(--ch-z-raised); align-self: center; display: inline-flex; align-items: center; gap: 8px; margin: -12px 0 -8px; padding: 8px 12px 8px 8px; border-radius: var(--ch-radius-full); background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-4); font: var(--ch-type-callout);  }
+.ch-hf .pv { position: sticky; top: calc(env(safe-area-inset-top) + var(--ch-phone-topbar-h) + 8px); z-index: var(--ch-z-raised); align-self: center; display: inline-flex; align-items: center; gap: 8px; margin: -12px 0 -8px; padding: 8px 12px 8px 8px; border-radius: var(--ch-radius-full); background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-4); font: var(--ch-type-detail);  }
 .ch-hf .pv svg { width: 16px; height: 16px; color: var(--ch-hf-a-accent); }
 .ch-hf.is-desk .pv { top: 12px; }
 .ch-hf .well { border-radius: var(--ch-radius-md); background: var(--ch-hf-a-well); padding: 12px; }
@@ -255,7 +255,7 @@
 .ch-hf .corr button.is-on { border-color: var(--ch-hf-a-accent); background: var(--ch-selected-tint); }
 .ch-hf .corr button[data-ch-pressed], .ch-hf .cx__why button[data-ch-pressed] { background: var(--ch-hf-a-press); }
 .ch-hf .cx.is-done { flex-direction: row; align-items: center; justify-content: space-between; }
-.ch-hf .cx__done { margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400);  color: var(--ch-hf-a-ink-2); }
+.ch-hf .cx__done { margin: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-400);  color: var(--ch-hf-a-ink-2); }
 .ch-hf .cx__chg { display: inline-flex; align-items: center; min-height: 36px; padding: 0 4px; border: 0; background: none; font: var(--ch-type-footnote); font-weight: var(--ch-fw-600);  color: var(--ch-hf-a-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--ch-hf-a-accent); cursor: pointer; flex-shrink: 0; }
 .ch-hf .sk { display: flex; flex-direction: column; gap: 8px; padding: 4px 20px 20px; }
 /* Static blocks that wait the busy delay, as .ch-skel does (MOTION-AND-VISUAL 3.9; shell.css ch-busy-wait). */
@@ -271,7 +271,7 @@
 .ch-hf .empty__ic.warn { background: color-mix(in srgb, var(--ch-hf-a-loss) 12%, transparent); color: var(--ch-hf-a-loss); }
 .ch-hf .empty__ic svg { width: 22px; height: 22px; }
 .ch-hf .empty b { font: var(--ch-type-headline); letter-spacing: var(--ch-track-16); }
-.ch-hf .empty p { margin: 0; max-width: 34ch; font: var(--ch-type-callout); font-weight: var(--ch-fw-400);  color: var(--ch-hf-a-ink-2); }
+.ch-hf .empty p { margin: 0; max-width: 34ch; font: var(--ch-type-detail); font-weight: var(--ch-fw-400);  color: var(--ch-hf-a-ink-2); }
 .ch-hf .prog { display: flex; align-items: center; gap: 6px; }
 .ch-hf .prog i { width: 28px; height: 6px; border-radius: var(--ch-radius-full); background: color-mix(in srgb, var(--ch-feature-ink) 38%, transparent); }
 .ch-hf .prog i.on { background: var(--ch-hf-a-feat-gain); }
@@ -294,7 +294,7 @@
 .ch-hf .well__m { margin: 8px 0 0; font: var(--ch-type-footnote); font-weight: var(--ch-fw-600); color: var(--ch-hf-a-ink-2); }
 .ch-hf .stat-done-p { background: color-mix(in srgb, var(--ch-hf-a-gain) 12%, transparent); color: var(--ch-hf-a-gain); }
 .ch-hf .picks { display: flex; flex-wrap: wrap; gap: 8px; }
-.ch-hf .picks button { min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-6); font: var(--ch-type-callout);  color: var(--ch-hf-a-ink); cursor: pointer; }
+.ch-hf .picks button { min-height: 36px; padding: 0 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-hf-a-card); box-shadow: var(--ch-file-shadow-6); font: var(--ch-type-detail);  color: var(--ch-hf-a-ink); cursor: pointer; }
 .ch-hf .picks button[aria-pressed="true"] { background: linear-gradient(180deg, var(--ch-hf-seg-a), var(--ch-hf-seg-b)); color: var(--ch-hf-seg-ink); box-shadow: var(--ch-file-shadow-7); font-weight:var(--ch-fw-600); }
 .ch-hf .note { display: block; width: 100%; min-height: 76px; resize: none; padding: 8px 12px; border: 0; border-radius: var(--ch-radius-sm); background: var(--ch-hf-a-card); box-shadow: 0 0 0 var(--ch-hairline-w) var(--ch-hf-a-ring); font: var(--ch-type-subhead);  color: var(--ch-hf-a-ink); letter-spacing: var(--ch-track-15); }
 .ch-hf .note::placeholder { color: var(--ch-text-placeholder); }

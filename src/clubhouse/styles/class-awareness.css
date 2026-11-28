@@ -64,7 +64,7 @@
 .ch-ca-row__time {
   flex: none;
   color: var(--ch-ink-600);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 @media (hover: hover) {
@@ -151,7 +151,7 @@
 }
 .ch-ca-home--desktop .ch-ca-home__l1,
 .ch-ca-home--desktop .ch-ca-home__l2 {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: inherit;
 }
@@ -227,7 +227,7 @@
   font-weight: var(--ch-fw-400);
 }
 .ch-ca-names {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-ink-600);
   overflow-wrap: anywhere;
@@ -238,7 +238,7 @@
   gap: var(--ch-space-3);
   min-height: 120px;
   color: var(--ch-ink-600);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 .ch-ca-state.is-loading {
@@ -370,7 +370,7 @@
   gap: var(--ch-space-3);
   min-height: 44px;
   color: var(--ch-ink-600);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 
@@ -482,7 +482,7 @@
 }
 .ch-ca-panel__state {
   color: var(--ch-ink-600);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 .ch-ca-detail {
@@ -517,7 +517,7 @@
 }
 .ch-ca-radio > .ch-num {
   color: var(--ch-ink-600);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 .ch-ca-radio input:focus-visible {
@@ -533,7 +533,7 @@
 .ch-ca-thread__primary {
   margin: 0;
   color: var(--ch-text-primary);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 .ch-ca-thread__line {
@@ -591,7 +591,7 @@
 .ch-ca-bell__text {
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
 }
 .ch-ca-bell__deliver {

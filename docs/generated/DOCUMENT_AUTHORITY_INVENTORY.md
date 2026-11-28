@@ -1104,6 +1104,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-27-headers-and-touch.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-28-every-screen-reports.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-28-held-signals-keep-their-page.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1283,6 +1284,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-signals-before-children.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-28-front-door-signals.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P002-home/DESIGN.md` | current | - | - | - | - |
@@ -1618,6 +1620,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-no-clear-change-chip.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-team-chart-shared-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-token-refs.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1775,6 +1778,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-27-phone-thread-opens-at-end.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-27-token-refs.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
@@ -2042,6 +2046,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
@@ -2075,6 +2080,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
@@ -2211,6 +2217,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-huddle-and-read-gate.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |
@@ -2244,6 +2251,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P015-auth/DESIGN.md` | current | - | - | - | 1 |
@@ -2344,6 +2352,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CONTRACT.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/DESIGN.md` | current | - | - | - | - |

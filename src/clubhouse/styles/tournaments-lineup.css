@@ -102,7 +102,7 @@
 .ch-tour-lu-form .ch-tour-lu-form__receipt {
   margin: 0;
   padding: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -168,7 +168,7 @@
 }
 .ch-tour-lu-hint {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -256,7 +256,7 @@
 .ch-tour-lu-slot__n {
   flex: none;
   width: 24px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-secondary);
 }
@@ -277,7 +277,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 2px 6px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
@@ -389,7 +389,7 @@
 .ch-tour-lu-bar__s {
   flex: 1 1 auto;
   min-width: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
   white-space: nowrap;
