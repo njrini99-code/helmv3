@@ -418,11 +418,11 @@
   font: 500 14px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary) !important;
   text-decoration: none !important;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* CH-15611: the chevron leans back the way the link goes. */
 .ch-au-back svg {
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-au-back:hover {
@@ -586,8 +586,8 @@
   padding: 0 12px;
   background: var(--ch-bg-surface);
   border-radius: var(--ch-radius-md);
-  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-control);
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-flat);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out);
   color: var(--ch-text-tertiary);
 }
 @media (hover: hover) {
@@ -674,7 +674,7 @@
 /* CH-15610: the eye and the slashed eye share one cell and crossfade, the leaving one shrinking and turning away. */
 .ch-au-eye > svg {
   grid-area: 1 / 1;
-  transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out), transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-au-eye[aria-pressed='true'] > .ch-au-eye__show {
   opacity: 0;
@@ -700,7 +700,7 @@
 }
 /* CH-15608: while the next attempt is in flight the last refusal steps back; the answer replaces it in place. */
 .ch-au-err .ch-au-notice {
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-au-err[data-stale] .ch-au-notice {
   opacity: 0.5;
@@ -767,8 +767,8 @@
   width: 100%;
   height: 48px;
   font-size: calc(15 * var(--ch-type-k));
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease),
-    color var(--ch-dur-quick) var(--ch-ease), text-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out),
+    color var(--ch-dur-quick) var(--ch-ease-out), text-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* CH-15607: off, the key is unlit: the same shape pressed into the paper, its word engraved in it. No fade or desaturated
    green (the shared disabled look read as a washed-out key). Filling both fields lights it: the face lifts away over the
@@ -782,7 +782,7 @@
   box-shadow: var(--ch-well-soft-shadow);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-au-submit .ch-btn:disabled {
   opacity: 1;
@@ -812,7 +812,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  transition: opacity var(--ch-dur-quick) var(--ch-ease), transform var(--ch-dur-base) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out), transform var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-au-key[data-busy] .ch-au-key__idle {
   opacity: 0;
@@ -1619,7 +1619,7 @@
     z-index: 4;
     border-radius: var(--ch-radius-lg) var(--ch-radius-lg) 0 0;
     background: var(--ch-bg-page);
-    box-shadow: var(--ch-shadow-lg);
+    box-shadow: var(--ch-elevation-raised);
     transform: translateY(102%);
   }
   /* The green collapses to the bar by the parchment rising over it (above it in the stack), not by a clip-path, which
@@ -1711,7 +1711,7 @@ html[data-fw-theme='dark'] .ch-au {
 }
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   html[data-fw-theme='dark'] .ch-au-panel {
-    box-shadow: var(--ch-elevation-sheet);
+    box-shadow: var(--ch-elevation-raised);
   }
   html[data-fw-theme='dark'] .ch-au-wl-scrim {
     background: linear-gradient(180deg, rgb(17 21 18 / 0.99), rgb(17 21 18 / 0.97) 36%, rgb(17 21 18 / 0.88) 42%, transparent 62%);
@@ -1838,7 +1838,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   border-radius: var(--ch-radius-full);
   /* An empty step is a visible track (3:1 against the paper), not ivory on ivory. */
   background: var(--ch-border-strong);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-au-meter[data-s='1'] i:nth-child(-n + 1),
 .ch-au-meter[data-s='2'] i:nth-child(-n + 2) {
@@ -1863,7 +1863,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   gap: 4px;
   font: 400 13px/1 var(--ch-font-sans);
   color: var(--ch-text-secondary);
-  transition: color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-au-rules li[data-ok] {
   color: var(--ch-green-700);
@@ -1904,12 +1904,12 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   height: 52px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-control);
+  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-flat);
   font: 600 22px/1 var(--ch-font-sans);
   font-variation-settings: 'wdth' 88;
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-au-slot[data-filled] {
   animation: chAuKey var(--ch-au-t-key) var(--ch-au-ease);
@@ -1967,7 +1967,7 @@ html[data-fw-theme='dark'] .ch-au-wl:not([data-dark]) h1 {
   margin-top: 24px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-control);
+  box-shadow: 0 0 0 1px var(--ch-border-control), var(--ch-elevation-flat);
 }
 .ch-au-plate__row {
   display: flex;
@@ -2098,4 +2098,16 @@ html[data-fw-theme='dark'] .ch-au-code[data-focus] .ch-au-slot[data-cur] {
   margin-top: 16px;
   text-align: center;
   font-size: calc(13 * var(--ch-type-k));
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-au-wl-card,
+  .ch-au-wl-news li,
+  .ch-au-wl-empty,
+  .ch-au-rise,
+  .ch-au-panel {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

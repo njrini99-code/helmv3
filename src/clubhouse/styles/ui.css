@@ -12,7 +12,7 @@
   padding: 0 var(--ch-btn-pad-x);
   border: 0;
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-14);
   white-space: nowrap;
@@ -21,8 +21,8 @@
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease),
-    box-shadow var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out),
+    box-shadow var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-root .ch-btn:focus-visible {
   /* A real outline, not a box-shadow ring (premium plan batch 5, CC-6): it survives forced colours, where shadows are
@@ -354,7 +354,8 @@
   height: 22px;
   padding: 0 8px;
   border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   white-space: nowrap;
 }
@@ -503,7 +504,7 @@
   animation: none;
 }
 .ch-toast {
-  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease-sheet) backwards;
+  animation: ch-toast-in var(--ch-dur-base) var(--ch-ease-ios) backwards;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -514,7 +515,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-ink-900);
   color: #f4f2ec;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   box-shadow: var(--ch-drop-ink);
   pointer-events: auto;
   /* It follows the finger toward its edge (CH-1614): a drag on it is the toast's, not the page's scroll. */
@@ -589,7 +590,8 @@
   --ch-line-ink: var(--ch-chart-loss);
 }
 .ch-form-empty {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
@@ -634,7 +636,7 @@
   min-width: 0;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-surface--flat {
   box-shadow: 0 0 0 1px var(--ch-border-subtle);
@@ -654,7 +656,8 @@
 }
 .ch-surface__sub {
   margin-top: 2px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
@@ -681,7 +684,8 @@
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: 0 0 var(--ch-radius-lg) var(--ch-radius-lg);
   background: var(--ch-bg-inset);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
@@ -769,7 +773,8 @@
   color: var(--ch-text-secondary);
 }
 .ch-nine b {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
 }
 .ch-scoreboard .ch-nine .is-par td {
@@ -819,7 +824,8 @@
   color: var(--ch-section-ink, var(--ch-text-primary));
 }
 .ch-sec__meta {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
@@ -846,7 +852,7 @@
   font: var(--ch-type-footnote);
   color: var(--ch-green-700);
   text-decoration: none;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-backlink:hover {
@@ -908,7 +914,7 @@
   padding-inline: 12px;
   border-radius: var(--ch-radius-md);
   cursor: pointer;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 /* The tint waits a beat after the finger lands, so a scroll that starts on a row never flashes it; letting go clears it
    at once, since only the pressed state carries the delay (CH-1606). */
@@ -934,7 +940,7 @@
 .ch-lgr__lead {
   flex: none;
   min-width: 44px;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -947,7 +953,8 @@
 }
 .ch-lgr__title {
   overflow: hidden;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
@@ -955,7 +962,8 @@
 }
 .ch-lgr__meta {
   overflow: hidden;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
   text-overflow: ellipsis;
@@ -963,7 +971,7 @@
 }
 .ch-lgr__trail {
   flex: none;
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   color: var(--ch-text-primary);
@@ -1033,7 +1041,8 @@
   content: '';
 }
 .ch-fgr .ch-fgr__note {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   letter-spacing: 0;
   color: var(--ch-text-tertiary);
@@ -1046,7 +1055,7 @@
   padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
-  box-shadow: var(--ch-elevation-feature);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-on-green-ink);
   text-decoration: none;
 }
@@ -1062,7 +1071,7 @@
   border-radius: inherit;
   background: rgb(2 18 10 / 0.2);
   opacity: 0;
-  transition: opacity var(--ch-dur-press) var(--ch-ease);
+  transition: opacity var(--ch-dur-press) var(--ch-ease-out);
   content: '';
   pointer-events: none;
 }
@@ -1100,7 +1109,8 @@ button.ch-feat {
   padding: 6px 8px;
   border-radius: var(--ch-radius-sm);
   background: rgb(255 255 255 / 0.09);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-ink);
 }
@@ -1115,7 +1125,8 @@ button.ch-feat {
   color: var(--ch-on-green-ink);
 }
 .ch-feat__line {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-on-green-ink-soft);
 }
 .ch-feat__foot {
@@ -1125,7 +1136,8 @@ button.ch-feat {
   margin-top: 8px;
   padding-top: 12px;
   border-top: var(--ch-hairline-w) solid var(--ch-stage-rule);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-on-green-ink-soft);
 }
 
@@ -1157,7 +1169,7 @@ button.ch-feat {
 }
 .ch-intro__title {
   margin: 0;
-  font: var(--ch-type-34-strong);
+  font: var(--ch-type-display-xl);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.038em;
   font-variation-settings: 'wdth' 88;
@@ -1166,7 +1178,7 @@ button.ch-feat {
 .ch-intro__brief {
   margin: 0;
   max-width: 60ch;
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -1373,7 +1385,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   background: var(--ch-scrim-deep, rgb(28 25 18 / 0.38));
   /* The dim fades by its own opacity, which the dialog drives (--ch-scrim-a: open, close, drag); never a keyframe (A9). */
   opacity: var(--ch-scrim-a, 1);
-  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease));
+  transition: opacity var(--ch-scrim-dur, var(--ch-dur-base)) var(--ch-scrim-ease, var(--ch-ease-out));
 }
 .ch-peek__panel {
   position: absolute;
@@ -1468,7 +1480,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   line-height: var(--ch-lead-label);
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: var(--ch-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-flat), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 @media (hover: hover) {
   .ch-hovercard__act:hover {
@@ -1518,7 +1530,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-ppeek__who span,
 .ch-ppeek__m {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
@@ -1560,7 +1573,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-text-primary);
 }
 .ch-ppeek__figs dd small {
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
@@ -1631,7 +1644,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-text-secondary);
 }
 .ch-set-course__state {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
@@ -1668,7 +1682,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-zns__note {
   margin: 0;
   padding: 0 0 16px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-zn {
@@ -1704,11 +1719,11 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   background: linear-gradient(160deg, var(--ch-green-fill-700), var(--ch-green-900));
   color: var(--ch-on-fill-50);
   font: 700 14px/1 var(--ch-font-sans);
-  box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-mark);
+  box-shadow: 0 0 0 2px var(--ch-ivory-25), 0 0 0 3.5px var(--ch-champagne-500), var(--ch-elevation-raised);
 }
 .ch-zn__id h2 {
   margin: 0;
-  font: var(--ch-type-28-strong);
+  font: var(--ch-type-display);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.02em;
   /* Near-black, as every section title (owner, 11 Nov 2026): it was forest green on the phone and the Ledger's ink on a desk. */
@@ -1725,7 +1740,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-zn__def {
   margin: 0;
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -1740,7 +1755,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   padding: 16px 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-plate);
+  box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule), var(--ch-elevation-card);
 }
 .ch-znbig {
   font-size: 64px;
@@ -1777,7 +1792,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-znlines {
   display: grid;
   gap: 6px;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-text-secondary);
 }
 .ch-znlines b {
@@ -1796,14 +1811,16 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-znb h3 {
   margin: 0 0 4px;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-znb > p {
   margin: 0 0 16px;
   max-width: 62ch;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-znmiss {
@@ -1811,7 +1828,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   padding: 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 /* the wide zone: what the area is on one row above, the picture full width */
@@ -1865,7 +1883,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-line__read {
   min-height: 22px;
   margin: 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -1915,7 +1934,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   align-items: center;
   gap: 8px;
   margin: 6px 0 0;
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-line__key > i {
@@ -1923,7 +1943,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   border-top: 1px dashed var(--ch-chart-zero);
 }
 .ch-line__t {
-  font: var(--ch-type-11-medium);
+  font: var(--ch-type-caption);
   letter-spacing: var(--ch-track-11);
   font-variant-numeric: tabular-nums;
   fill: var(--ch-text-tertiary);
@@ -1997,7 +2017,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   clip-path: inset(0 0 0 clamp(0px, calc(100% - var(--ch-target-min)), var(--ch-wks-gap-max, 2px)) round var(--ch-radius-md));
   background: var(--ch-green-fill-600);
   transform: translateX(calc(var(--ch-wks-at, 0) * 100%));
-  transition: transform var(--ch-dur-base) var(--ch-ease);
+  transition: transform var(--ch-dur-base) var(--ch-ease-out);
   content: '';
   pointer-events: none;
 }
@@ -2021,7 +2041,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: inherit;
   text-decoration: none;
   touch-action: manipulation;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 :is(button, a).ch-wks__d {
   cursor: pointer;
@@ -2044,7 +2064,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   outline-offset: 2px;
 }
 .ch-wks__d.is-today:not(.is-on) {
-  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-inset);
 }
 .ch-wks__d em {
   overflow: hidden;
@@ -2055,15 +2075,16 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--ch-text-tertiary);
-  transition: color var(--ch-dur-base) var(--ch-ease);
+  transition: color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-wks__d b {
-  font: var(--ch-type-17-medium);
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-primary);
-  transition: color var(--ch-dur-base) var(--ch-ease);
+  transition: color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-wks__d i {
   display: flex;
@@ -2077,10 +2098,10 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   height: 4px;
   border-radius: 50%;
   background: var(--ch-green-500);
-  transition: background-color var(--ch-dur-base) var(--ch-ease);
+  transition: background-color var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-wks__d.is-today b {
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
@@ -2089,7 +2110,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-on-green-ink);
 }
 .ch-wks__d.is-on b {
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
   line-height: var(--ch-lead-tight);
   color: var(--ch-on-green-ink);
@@ -2158,7 +2179,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   color: var(--ch-text-secondary);
@@ -2187,7 +2209,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   height: 22px;
   padding: 0 8px;
   border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   white-space: nowrap;
   color: var(--ch-text-secondary);
@@ -2316,7 +2339,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-surface--feature {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-feature-bg);
-  box-shadow: var(--ch-feature-shadow);
+  box-shadow: var(--ch-elevation-card);
   color: var(--ch-feature-ink);
 }
 .ch-surface--feature .ch-surface__title {
@@ -2502,13 +2525,14 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-warn-icon);
 }
 [data-ch-crh='on'] .ch-crh-ste > b {
-  font: var(--ch-type-16-strong);
+  font: var(--ch-type-headline);
   color: var(--ch-text-primary);
   text-wrap: balance; letter-spacing: var(--ch-track-16); }
 [data-ch-crh='on'] .ch-crh-ste > p {
   max-width: 34ch;
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-crh-ink2);
   text-wrap: pretty;
 }
@@ -2545,7 +2569,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   stroke-width: 2.2;
 }
 [data-ch-crh='on'] .ch-crh-line__t {
-  font: var(--ch-type-11);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   fill: var(--ch-crh-ink4); letter-spacing: var(--ch-track-11); }
 /* The focus ring (06 CP-6.1): ink on the page and cards, champagne on the green. Never after a tap. */
 [data-ui='clubhouse'] main[data-ch-crh='on'] {
@@ -2579,7 +2604,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-es--page:not(.ch-surface *, .ch-sheet *) {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-es__copy {
   display: flex;
@@ -2662,7 +2687,8 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   justify-items: center;
   gap: 8px;
   margin: 8px 0 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
@@ -3013,7 +3039,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-crh-skcard > b {
   padding: 12px 16px;
@@ -3037,4 +3063,26 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-crh-skcard__r + .ch-crh-skcard__r {
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-separator);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-lift::after,
+  .ch-surface,
+  .ch-popover,
+  .ch-feat,
+  :where() .ch-toast,
+  .ch-peek__card,
+  .ch-peek__menu,
+  .ch-hovercard,
+  .ch-zn__n,
+  .ch-zn__read,
+  .ch-line__tip,
+  .ch-app[data-ch-refresh='on'] .ch-surface--feature,
+  .ch-surface--feature,
+  .ch-es--page:not(.ch-surface *, .ch-sheet *),
+  .ch-crh-skcard {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

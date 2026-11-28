@@ -5,6 +5,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 0,
     "raw-motion": 88,
     "keyframes": 0
   },
@@ -14,6 +16,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 21,
+    "raw-type": 30,
+    "raw-space": 114,
     "raw-motion": 3,
     "keyframes": 15
   },
@@ -23,6 +27,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 4,
     "raw-motion": 2,
     "keyframes": 0
   },
@@ -31,7 +37,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 83,
+    "raw-shadow": 76,
+    "raw-type": 9,
+    "raw-space": 235,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -41,6 +49,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 2,
+    "raw-type": 0,
+    "raw-space": 1,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -50,6 +60,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 54,
+    "raw-type": 5,
+    "raw-space": 218,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -59,6 +71,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 3,
+    "raw-type": 0,
+    "raw-space": 128,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -68,6 +82,19 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 1,
+    "raw-type": 0,
+    "raw-space": 2,
+    "raw-motion": 0,
+    "keyframes": 0
+  },
+  "src/clubhouse/styles/coachhelm-ask-studio.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 4,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -77,6 +104,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 29,
+    "raw-type": 0,
+    "raw-space": 216,
     "raw-motion": 3,
     "keyframes": 0
   },
@@ -85,7 +114,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 21,
+    "raw-shadow": 19,
+    "raw-type": 0,
+    "raw-space": 91,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -95,6 +126,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 1,
+    "raw-type": 0,
+    "raw-space": 14,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -103,7 +136,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 11,
+    "raw-shadow": 10,
+    "raw-type": 0,
+    "raw-space": 101,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -113,6 +148,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 5,
+    "raw-type": 0,
+    "raw-space": 142,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -121,7 +158,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 24,
+    "raw-shadow": 20,
+    "raw-type": 0,
+    "raw-space": 229,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -131,6 +170,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 18,
+    "raw-type": 0,
+    "raw-space": 43,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -140,6 +181,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 5,
+    "raw-type": 0,
+    "raw-space": 55,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -149,6 +192,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 10,
+    "raw-type": 2,
+    "raw-space": 77,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -158,6 +203,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 8,
+    "raw-type": 0,
+    "raw-space": 159,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -166,7 +213,20 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 9,
+    "raw-shadow": 7,
+    "raw-type": 0,
+    "raw-space": 117,
+    "raw-motion": 0,
+    "keyframes": 0
+  },
+  "src/clubhouse/styles/coachhelm-track.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 21,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -176,6 +236,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 3,
+    "raw-type": 0,
+    "raw-space": 21,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -185,6 +247,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 16,
+    "raw-type": 0,
+    "raw-space": 130,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -194,6 +258,19 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 2,
+    "raw-type": 0,
+    "raw-space": 27,
+    "raw-motion": 0,
+    "keyframes": 0
+  },
+  "src/clubhouse/styles/component-playground.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 23,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -203,8 +280,21 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 30,
+    "raw-type": 1,
+    "raw-space": 89,
     "raw-motion": 0,
     "keyframes": 3
+  },
+  "src/clubhouse/styles/goals.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 12,
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/hero-tones.css": {
     "hex": 10,
@@ -212,6 +302,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 6,
+    "raw-type": 1,
+    "raw-space": 12,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -221,6 +313,19 @@
     "crh-negative-margin": 3,
     "raw-radius": 1,
     "raw-shadow": 62,
+    "raw-type": 10,
+    "raw-space": 461,
+    "raw-motion": 0,
+    "keyframes": 0
+  },
+  "src/clubhouse/styles/hours.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 6,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -229,7 +334,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 53,
+    "raw-shadow": 49,
+    "raw-type": 3,
+    "raw-space": 297,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -239,6 +346,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 2,
+    "raw-type": 0,
+    "raw-space": 3,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -248,6 +357,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 5,
+    "raw-type": 0,
+    "raw-space": 2,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -257,6 +368,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 2,
+    "raw-type": 0,
+    "raw-space": 9,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -266,8 +379,21 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 4,
+    "raw-type": 0,
+    "raw-space": 27,
     "raw-motion": 2,
     "keyframes": 1
+  },
+  "src/clubhouse/styles/messages-thread.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 19,
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/messages.css": {
     "hex": 0,
@@ -275,6 +401,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 1,
     "raw-shadow": 24,
+    "raw-type": 0,
+    "raw-space": 269,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -284,6 +412,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 0,
     "raw-motion": 80,
     "keyframes": 0
   },
@@ -293,8 +423,21 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 46,
+    "raw-type": 14,
+    "raw-space": 134,
     "raw-motion": 0,
     "keyframes": 17
+  },
+  "src/clubhouse/styles/popup-lab.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 3,
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/practice.css": {
     "hex": 0,
@@ -302,6 +445,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 2,
     "raw-shadow": 16,
+    "raw-type": 0,
+    "raw-space": 240,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -311,6 +456,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 58,
+    "raw-type": 13,
+    "raw-space": 309,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -320,6 +467,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 10,
+    "raw-type": 0,
+    "raw-space": 44,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -329,6 +478,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 41,
+    "raw-type": 3,
+    "raw-space": 170,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -338,6 +489,19 @@
     "crh-negative-margin": 2,
     "raw-radius": 0,
     "raw-shadow": 43,
+    "raw-type": 11,
+    "raw-space": 306,
+    "raw-motion": 0,
+    "keyframes": 0
+  },
+  "src/clubhouse/styles/rounds-recover.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 11,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -346,7 +510,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 57,
+    "raw-shadow": 56,
+    "raw-type": 6,
+    "raw-space": 169,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -355,7 +521,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 53,
+    "raw-shadow": 52,
+    "raw-type": 21,
+    "raw-space": 211,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -364,7 +532,9 @@
     "svg-overflow-visible": 1,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 76,
+    "raw-shadow": 75,
+    "raw-type": 33,
+    "raw-space": 396,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -374,6 +544,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 8,
+    "raw-type": 0,
+    "raw-space": 148,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -383,8 +555,21 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 32,
+    "raw-type": 6,
+    "raw-space": 209,
     "raw-motion": 0,
     "keyframes": 11
+  },
+  "src/clubhouse/styles/stat-terms.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 9,
+    "raw-motion": 0,
+    "keyframes": 0
   },
   "src/clubhouse/styles/stats-redesign.css": {
     "hex": 2,
@@ -392,6 +577,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 3,
+    "raw-type": 0,
+    "raw-space": 207,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -401,6 +588,19 @@
     "crh-negative-margin": 0,
     "raw-radius": 1,
     "raw-shadow": 103,
+    "raw-type": 23,
+    "raw-space": 511,
+    "raw-motion": 0,
+    "keyframes": 0
+  },
+  "src/clubhouse/styles/tournament-fields.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 1,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -409,7 +609,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 19,
+    "raw-shadow": 16,
+    "raw-type": 0,
+    "raw-space": 63,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -418,7 +620,9 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 13,
+    "raw-shadow": 10,
+    "raw-type": 0,
+    "raw-space": 71,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -428,6 +632,19 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 1,
+    "raw-type": 0,
+    "raw-space": 7,
+    "raw-motion": 0,
+    "keyframes": 0
+  },
+  "src/clubhouse/styles/tournaments-import.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 58,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -437,6 +654,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 3,
+    "raw-type": 0,
+    "raw-space": 28,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -446,6 +665,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 2,
+    "raw-type": 0,
+    "raw-space": 25,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -455,6 +676,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 3,
+    "raw-type": 0,
+    "raw-space": 38,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -464,6 +687,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 5,
+    "raw-type": 0,
+    "raw-space": 46,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -473,6 +698,8 @@
     "crh-negative-margin": 0,
     "raw-radius": 0,
     "raw-shadow": 4,
+    "raw-type": 0,
+    "raw-space": 26,
     "raw-motion": 0,
     "keyframes": 0
   },
@@ -481,8 +708,21 @@
     "svg-overflow-visible": 0,
     "crh-negative-margin": 0,
     "raw-radius": 0,
-    "raw-shadow": 38,
+    "raw-shadow": 37,
+    "raw-type": 12,
+    "raw-space": 155,
     "raw-motion": 0,
     "keyframes": 1
+  },
+  "src/clubhouse/styles/whats-new.css": {
+    "hex": 0,
+    "svg-overflow-visible": 0,
+    "crh-negative-margin": 0,
+    "raw-radius": 0,
+    "raw-shadow": 0,
+    "raw-type": 0,
+    "raw-space": 1,
+    "raw-motion": 0,
+    "keyframes": 0
   }
 }

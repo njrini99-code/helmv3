@@ -22,6 +22,16 @@ describe('type roles (MOTION-AND-VISUAL 4.3)', () => {
     expect(tokens).toMatch(/--ch-type-figure-hero: 600 calc\(56 \* var\(--ch-type-k\)\)\/1/);
     expect(tokens).toMatch(/--ch-type-figure-hero: 600 calc\(44 \* var\(--ch-type-k\)\)\/1/);
   });
+  it('the subhead is 15/20 on phone and desk, a step under the phone body (dsx-07)', () => {
+    // The 15 step's reads sit on it, so secondary text keeps its 15 on a phone, where the body is 17/24.
+    const subhead = /--ch-type-subhead: (\d{3}) calc\(15 \* var\(--ch-type-k\)\)\/calc\(20 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/g;
+    expect([...tokens.matchAll(subhead)].map((m) => m[1])).toEqual(['400', '450']);
+    const phone = tokens.match(/\/\* The nine roles on a phone[\s\S]*?\n\}\n/)?.[0] ?? '';
+    expect(phone).toMatch(/--ch-type-body: 400 calc\(17 /);
+    expect(phone).not.toMatch(/--ch-type-subhead:/);
+    const oneX = tokens.match(/@media \(max-resolution: 1\.5dppx\) \{[\s\S]*?\n\}\n/)?.[0] ?? '';
+    expect(oneX).toMatch(/--ch-type-subhead: 450 /);
+  });
   it('no older named role is defined or read anywhere in Clubhouse', () => {
     expect(hits(OLD, walk(ROOT, /\.(tsx?|css)$/))).toEqual([]);
   });
@@ -40,45 +50,18 @@ describe('type roles (MOTION-AND-VISUAL 4.3)', () => {
 const STEP_READS: Record<string, number> = {
   'styles/auth.css': 1,
   'styles/calendar.css': 86,
-  'styles/class-awareness.css': 35,
-  'styles/classes.css': 74,
-  'styles/coachhelm-ask-cards.css': 87,
   'styles/coachhelm-ask-look.css': 37,
-  'styles/coachhelm-ask-studio.css': 69,
-  'styles/coachhelm-ask-v2.css': 162,
-  'styles/coachhelm-ask.css': 24,
-  'styles/coachhelm-brief.css': 10,
-  'styles/coachhelm-dive.css': 39,
-  'styles/coachhelm-file.css': 61,
-  'styles/coachhelm-plan.css': 119,
-  'styles/coachhelm-profile.css': 18,
-  'styles/coachhelm-read.css': 25,
-  'styles/coachhelm-standing.css': 18,
-  'styles/coachhelm-team.css': 79,
-  'styles/coachhelm-thread.css': 53,
-  'styles/coachhelm-track.css': 14,
-  'styles/coachhelm-views.css': 7,
-  'styles/coachhelm.css': 38,
-  'styles/command.css': 7,
   'styles/component-playground.css': 3,
   'styles/controls.css': 28,
-  'styles/goals.css': 3,
-  'styles/hero-tones.css': 3,
   'styles/home.css': 150,
   'styles/hub.css': 92,
-  'styles/live.css': 39,
-  'styles/messages-details.css': 31,
   'styles/messages-inbox.css': 12,
   'styles/messages-overlays.css': 9,
-  'styles/messages-thread.css': 9,
   'styles/messages.css': 113,
   'styles/onboard.css': 37,
   'styles/practice.css': 125,
   'styles/qualifiers.css': 66,
-  'styles/quick-chat.css': 10,
-  'styles/recruiting.css': 39,
   'styles/roster.css': 90,
-  'styles/rounds-recover.css': 7,
   'styles/rounds-setup.css': 53,
   'styles/rounds-track.css': 75,
   'styles/rounds.css': 152,
@@ -86,15 +69,6 @@ const STEP_READS: Record<string, number> = {
   'styles/shell.css': 45,
   'styles/stats-redesign.css': 94,
   'styles/stats.css': 189,
-  'styles/tournament-fields.css': 16,
   'styles/tournaments-compare.css': 32,
-  'styles/tournaments-desk.css': 38,
   'styles/tournaments-home.css': 4,
-  'styles/tournaments-lineup.css': 8,
-  'styles/tournaments-live.css': 15,
-  'styles/tournaments-player.css': 17,
-  'styles/tournaments-review.css': 18,
-  'styles/tournaments.css': 10,
-  'styles/ui.css': 40,
-  'styles/whats-new.css': 1,
 };

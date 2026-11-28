@@ -170,7 +170,7 @@ describe('the sheet: layout and motion pins', () => {
     expect(css).toMatch(/\.ch-msd-det\.is-leaving \{\s*position: absolute;/);
   });
   it('MOT-POLL-2: the bar scales (scaleX, origin left) on the smooth spring and lands under Reduce Motion', () => {
-    expect(css).toMatch(/\.ch-msd-poll__fill \{[^}]*transform: scaleX\(var\(--ch-poll-share, 0\)\);[^}]*transform-origin: 0 50%;[^}]*transition: transform var\(--ch-dur-spring-smooth\) var\(--ch-ease-spring-smooth\);/);
+    expect(css).toMatch(/\.ch-msd-poll__fill \{[^}]*transform: scaleX\(var\(--ch-poll-share, 0\)\);[^}]*transform-origin: 0 50%;[^}]*transition: transform var\(--ch-dur-reveal\) var\(--ch-ease-ios\);/);
     expect(css).toMatch(/prefers-reduced-motion: reduce\) \{[^@]*\.ch-msd-poll__fill \{\s*transition: none;/);
   });
   // MOTION-AND-VISUAL 3.12 changes MOT-POLL-1/3 on purpose: the pop spring retires, so the tapped disc, its check and your

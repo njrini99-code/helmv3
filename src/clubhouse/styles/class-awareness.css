@@ -46,7 +46,7 @@
 }
 .ch-ca-row__name {
   overflow: hidden;
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -56,14 +56,16 @@
   min-width: 0;
   overflow: hidden;
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-ca-row__time {
   flex: none;
   color: var(--ch-ink-600);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 @media (hover: hover) {
   .ch-ca-row.is-button:hover {
@@ -111,13 +113,15 @@
   min-width: 0;
 }
 .ch-ca-home__l1 {
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   overflow-wrap: anywhere;
 }
 .ch-ca-home__l2 {
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   overflow-wrap: anywhere;
 }
 .ch-ca-home--phone {
@@ -147,7 +151,8 @@
 }
 .ch-ca-home--desktop .ch-ca-home__l1,
 .ch-ca-home--desktop .ch-ca-home__l2 {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: inherit;
 }
 @media (hover: hover) {
@@ -188,7 +193,7 @@
   margin-bottom: var(--ch-space-3);
 }
 .ch-ca-pop__head h2 {
-  font: var(--ch-type-17-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-17);
 }
 .ch-ca-pop__head h2:focus-visible {
@@ -198,7 +203,8 @@
 .ch-ca-pop__head p {
   margin-top: var(--ch-space-1);
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 
 /* The sheet's body. */
@@ -209,17 +215,20 @@
 .ch-ca-sec h3 {
   margin-bottom: var(--ch-space-1);
   color: var(--ch-ink-600);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
 }
 .ch-ca-note,
 .ch-ca-names,
 .ch-ca-empty,
 .ch-ca-updated {
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-names {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-600);
   overflow-wrap: anywhere;
 }
@@ -229,12 +238,14 @@
   gap: var(--ch-space-3);
   min-height: 120px;
   color: var(--ch-ink-600);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-state.is-loading {
   justify-content: center;
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-foot {
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
@@ -247,7 +258,8 @@
   width: 100%;
   min-height: 44px;
   color: var(--ch-ink-600);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   text-align: start;
 }
 .ch-ca-foot__row.is-button {
@@ -315,7 +327,8 @@
   position: relative;
   height: 16px;
   color: var(--ch-ink-500);
-  font: var(--ch-type-11);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-11);
 }
 .ch-ca-strip__axis > span {
@@ -327,13 +340,14 @@
   display: flex;
   justify-content: space-between;
   color: var(--ch-ink-500);
-  font: var(--ch-type-11);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-11);
 }
 .ch-ca-strip__label {
   margin-top: var(--ch-space-1);
   color: var(--ch-green-600);
-  font: var(--ch-type-11-medium);
+  font: var(--ch-type-caption);
   letter-spacing: var(--ch-track-11);
 }
 
@@ -356,7 +370,8 @@
   gap: var(--ch-space-3);
   min-height: 44px;
   color: var(--ch-ink-600);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 
 /* The player's Class status panel (Classes). A card: card radius, a full hairline ring, surface fill. No left edge, no tint. */
@@ -372,7 +387,8 @@
   min-height: 96px;
 }
 .ch-ca-panel > h2 {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 .ch-ca-panel__top {
@@ -387,13 +403,14 @@
   color: var(--ch-ink-500);
 }
 .ch-ca-panel__top p {
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-ca-panel__top span {
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-panel__sec {
   display: grid;
@@ -403,11 +420,13 @@
 }
 .ch-ca-panel__sec h3 {
   color: var(--ch-ink-600);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
 }
 .ch-ca-panel__none {
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-panel__row {
   display: flex;
@@ -416,7 +435,7 @@
   gap: var(--ch-space-4);
 }
 .ch-ca-panel__row p {
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -424,7 +443,8 @@
   display: block;
   margin-top: var(--ch-space-1);
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-panel__link {
   display: flex;
@@ -436,7 +456,7 @@
   padding-top: var(--ch-space-1);
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   text-align: start;
   cursor: pointer;
@@ -457,11 +477,13 @@
   gap: var(--ch-space-3);
   min-height: 44px;
   color: var(--ch-ink-600);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-panel__state {
   color: var(--ch-ink-600);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-detail {
   display: grid;
@@ -485,7 +507,7 @@
   gap: var(--ch-space-3);
   min-height: 52px;
   color: var(--ch-text-primary);
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   cursor: pointer;
 }
@@ -495,7 +517,8 @@
 }
 .ch-ca-radio > .ch-num {
   color: var(--ch-ink-600);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-radio input:focus-visible {
   outline: 2px solid var(--ch-border-focus);
@@ -510,12 +533,14 @@
 .ch-ca-thread__primary {
   margin: 0;
   color: var(--ch-text-primary);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-thread__line {
   margin: 0;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 
 /* The player's "Pushes during class" row: the value with Change beside it, and Deliver now under it while pushes wait. */
@@ -523,7 +548,8 @@
 .ch-ca-panel__value {
   flex: none;
   color: var(--ch-ink-500);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   text-decoration: none;
 }
 /* "Held · Change" is drawn 18 high: under a finger it reaches 44 on the short side (PMAC-09), as .ch-btn does. */
@@ -565,13 +591,15 @@
 .ch-ca-bell__text {
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-ca-bell__deliver {
   flex: none;
   min-height: 44px;
   color: var(--ch-green-600);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
 }
 [data-ch-crh='on'] .ch-surface--card .ch-ca-panel {
   background: none;
@@ -583,4 +611,12 @@
   height: var(--ch-hairline-w);
   overflow: hidden;
   clip-path: inset(50%);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-ca-pop {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

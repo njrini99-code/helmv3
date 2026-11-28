@@ -191,10 +191,10 @@ describe('the phone card is laid out to hold still (rounds-track.css)', () => {
   });
 
   it('the fold eases in opacity and transform only, and the face that leaves is never moved', () => {
-    expect(rule(phone, '.ch-rt-face')).toMatch(/transition: opacity var\(--ch-dur-base\) var\(--ch-ease\);/);
+    expect(rule(phone, '.ch-rt-face')).toMatch(/transition: opacity var\(--ch-dur-base\) var\(--ch-ease-out\);/);
     const heldFace = rule(phone, '.ch-rt-face[inert]');
     expect(heldFace).not.toMatch(/transform/);
-    expect(heldFace).toMatch(/opacity var\(--ch-dur-quick\) var\(--ch-ease\)/);
+    expect(heldFace).toMatch(/opacity var\(--ch-dur-quick\) var\(--ch-ease-out\)/);
     // The arriving face no longer rises (MOTION-AND-VISUAL 3.12): it crossfades, and the sheet keeps no keyframe of its own.
     expect(phone).not.toContain('\n  .ch-rt-slot[data-turn] .ch-rt-face:not([inert]) {');
     expect(css).not.toMatch(/@keyframes/);

@@ -102,7 +102,8 @@
 .ch-tour-lu-form .ch-tour-lu-form__receipt {
   margin: 0;
   padding: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 /* The commit sits under a seam at the foot of the held column, as the qualifier form's does. */
@@ -167,7 +168,8 @@
 }
 .ch-tour-lu-hint {
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-lu-body {
@@ -223,7 +225,8 @@
 .ch-tour-lu-note {
   padding: 12px 16px;
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   background: var(--ch-warning-100);
   color: var(--ch-text-primary);
 }
@@ -237,7 +240,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-lu-slot,
 .ch-tour-lu-r {
@@ -253,7 +256,8 @@
 .ch-tour-lu-slot__n {
   flex: none;
   width: 24px;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-secondary);
 }
 .ch-tour-lu-slot__who,
@@ -273,7 +277,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 2px 6px;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-tour-lu-r__act {
@@ -283,7 +288,8 @@
   flex: none;
 }
 .ch-tour-lu-muted {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-lu-lbl {
@@ -299,7 +305,8 @@
 .ch-tour-lu-strip {
   display: inline-flex;
   gap: 8px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
 .ch-tour-lu-strip .is-out {
@@ -382,7 +389,8 @@
 .ch-tour-lu-bar__s {
   flex: 1 1 auto;
   min-width: 0;
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
   white-space: nowrap;
 }
@@ -394,4 +402,13 @@
   flex: 1 1 auto;
   max-width: 190px;
   margin-left: auto;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-lu-slots,
+  .ch-tour-lu-roster {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

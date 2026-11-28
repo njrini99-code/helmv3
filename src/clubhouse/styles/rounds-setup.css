@@ -381,7 +381,7 @@
   padding: 12px 16px;
   border-radius: var(--ch-radius-md);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 .ch-rsu-opt:disabled {
   cursor: default;
@@ -409,7 +409,7 @@
 }
 .ch-rsu-opt[aria-checked='true'] {
   background: #f2f8f4;
-  box-shadow: 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent);
 }
 .ch-rsu-opt[aria-checked='true'] .ch-rsu-radio {
   box-shadow: inset 0 0 0 5px var(--ch-green-700);
@@ -704,7 +704,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rsu-crs {
   all: unset;
@@ -848,7 +848,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform var(--ch-dur-reveal) var(--ch-ease);
+  transition: transform var(--ch-dur-reveal) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-cpk:hover .ch-cpk__media img {
@@ -858,12 +858,12 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
 /* `scale`, not `transform`: the fold owns the card's transform, and the two compose. */
 .ch-cpk[data-ch-pressed] .ch-cpk__card {
   scale: 0.985;
-  transition: scale var(--ch-dur-press) var(--ch-ease);
+  transition: scale var(--ch-dur-press) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-cpk:active .ch-cpk__card {
     scale: 0.985;
-    transition: scale var(--ch-dur-press) var(--ch-ease);
+    transition: scale var(--ch-dur-press) var(--ch-ease-out);
   }
 }
 .ch-cpk__row {
@@ -1025,8 +1025,8 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-0);
-  box-shadow: var(--ch-elevation-reading);
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  box-shadow: var(--ch-elevation-card);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rsu-tee:hover:not(:disabled) {
@@ -1232,7 +1232,7 @@ html[data-fw-theme='dark'] .ch-cpk__media.is-blank {
   color: #fff;
   background: rgb(0 0 0 / 0.55);
   opacity: 0;
-  transition: opacity var(--ch-dur-quick) var(--ch-ease);
+  transition: opacity var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-acs__photo:focus-within .ch-acs__photo-change {
   opacity: 1;
@@ -1514,7 +1514,7 @@ html[data-fw-theme='dark'] .ch-rsu-spine--sm i {
   background: linear-gradient(90deg, var(--ch-green-500) var(--ch-rsu-fill, 0%), rgb(237 231 216 / 0.1) var(--ch-rsu-fill, 0%));
 }
 html[data-fw-theme='dark'] .ch-rsu-card {
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 html[data-fw-theme='dark'] .ch-rsu-course__band {
   background: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.03) 0 14px, transparent 14px 28px), linear-gradient(160deg, var(--ch-green-fill-600), var(--ch-green-800));
@@ -1572,7 +1572,7 @@ html[data-fw-theme='dark'] .ch-rsu-crs + .ch-rsu-crs {
 }
 html[data-fw-theme='dark'] .ch-rsu-par button[aria-checked='true'] {
   background: var(--ch-ivory-200);
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 html[data-fw-theme='dark'] .ch-rsu-dock {
   background: rgb(27 32 28 / 0.97);
@@ -1727,7 +1727,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::before,
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-qual::after {
@@ -1909,7 +1909,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: none;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-rsu[data-ui='clubhouse'] .ch-rsu-crs + .ch-rsu-crs {
     border-top: 0;
@@ -2043,8 +2043,8 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   font: 600 13px/1 var(--ch-font-sans);
   font-variant-numeric: tabular-nums;
   transition:
-    background-color var(--ch-dur-base) var(--ch-ease),
-    box-shadow var(--ch-dur-base) var(--ch-ease);
+    background-color var(--ch-dur-base) var(--ch-ease-out),
+    box-shadow var(--ch-dur-base) var(--ch-ease-out);
 }
 .ch-rsu-band .ch-rsu-spine i::before {
   content: counter(ch-rsu-step);
@@ -2100,7 +2100,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     var(--ch-elevation-cast);
 }
 .ch-rsu-band__back {
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rsu-band__back:hover {
@@ -2128,22 +2128,22 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 .ch-rsu-course__ic {
   border-color: rgb(176 149 96 / 0.6);
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
 }
 /* The open qualifier: a gilt ring on its medal, a raised green Play. */
 .ch-rsu-qual {
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-champagne-rule-strong);
-  transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rsu-qual__ic {
   box-shadow:
     0 0 0 1px rgb(176 149 96 / 0.7),
-    var(--ch-elevation-control);
+    var(--ch-elevation-flat);
 }
 .ch-rsu-qual__cta {
   background: var(--ch-green-raised-bg);
   box-shadow: var(--ch-green-raised-shadow);
-  transition: transform var(--ch-dur-press) var(--ch-ease);
+  transition: transform var(--ch-dur-press) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rsu-qual:hover {
@@ -2213,7 +2213,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     background: linear-gradient(180deg, #0f4a2f, #082b1c);
     box-shadow:
       0 0 0 1px #082b1c,
-      var(--ch-elevation-board);
+      var(--ch-elevation-card);
   }
   .ch-rsu-nine__h {
     padding: 0 4px 8px;
@@ -2231,7 +2231,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     min-height: 44px;
     padding: 0 2px;
     border-bottom: var(--ch-hairline-w) solid var(--ch-board-rule);
-    transition: background-color var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-hole:last-child {
     border-bottom: 0;
@@ -2261,15 +2261,15 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     line-height: 28px;
     color: rgb(222 214 190 / 0.78);
     transition:
-      background-color var(--ch-dur-quick) var(--ch-ease),
-      color var(--ch-dur-quick) var(--ch-ease);
+      background-color var(--ch-dur-quick) var(--ch-ease-out),
+      color var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-par button.is-rare:not([aria-checked='true']) {
     color: rgb(222 214 190 / 0.5);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-par button[aria-checked='true'] {
     background: #f4f1e8;
-    box-shadow: var(--ch-elevation-control);
+    box-shadow: var(--ch-elevation-flat);
     color: #082b1c;
   }
   @media (hover: hover) {
@@ -2295,7 +2295,7 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
     color: #1c1b18;
     font: 600 14px/30px var(--ch-font-sans);
     font-variant-numeric: tabular-nums;
-    transition: box-shadow var(--ch-dur-quick) var(--ch-ease);
+    transition: box-shadow var(--ch-dur-quick) var(--ch-ease-out);
   }
   .ch-rsu .ch-rsu-nine .ch-rsu-yds input:focus-visible {
     box-shadow:
@@ -2340,14 +2340,14 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
   background: linear-gradient(180deg, var(--ch-ivory-0), var(--ch-ivory-100));
   box-shadow:
     inset 0 0 0 1px rgb(176 149 96 / 0.5),
-    var(--ch-elevation-control);
+    var(--ch-elevation-flat);
   color: var(--ch-green-700);
   transition:
-    background-color var(--ch-dur-quick) var(--ch-ease),
-    color var(--ch-dur-quick) var(--ch-ease);
+    background-color var(--ch-dur-quick) var(--ch-ease-out),
+    color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rsu-chev {
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rsu-crs:hover .ch-rsu-crs__ic {
@@ -2437,4 +2437,17 @@ html[data-fw-theme='dark'] .ch-rsu-card__h h2 {
 .ch-rsu-hist__go:focus-visible {
   outline: 2px solid var(--ch-border-focus);
   outline-offset: 2px;
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-rsu-band,
+  .ch-rsu-dock,
+  .ch-rsu-plist,
+  .ch-rsu-tee,
+  .ch-rsu-card,
+  .ch-rsu-nine {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

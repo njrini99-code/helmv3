@@ -277,7 +277,15 @@
   /* P-4: a clash line on the dark ink pill (the drag time pill): champagne on ink by day, a deep amber on ivory at night. */
   --ch-on-ink-warning: var(--ch-champagne-300);
   /* P-4: a drop target's ring (a month day, a strip day under a dragged card): 2px of green inside its edge. */
-  --ch-ring-drop: inset 0 0 0 2px var(--ch-green-600);
+  /* Rings (dsx-07): an edge drawn as a zero-blur shadow, so it never changes a box's size. Not an elevation: a selected
+     choice, a drop target, a due date. Each follows the theme through its colour token. */
+  --ch-ring-accent: 0 0 0 1.5px var(--ch-green-600);
+  --ch-ring-accent-inset: inset 0 0 0 1.5px var(--ch-green-600);
+  --ch-ring-accent-strong: inset 0 0 0 2px var(--ch-green-600);
+  --ch-ring-accent-hairline: 0 0 0 var(--ch-hairline-w) var(--ch-green-600);
+  --ch-ring-warn-inset: inset 0 0 0 1.5px var(--ch-warning-600);
+  --ch-ring-attention-inset: inset 0 0 0 1.5px var(--ch-champagne-500);
+  --ch-ring-drop: var(--ch-ring-accent-strong);
   /* P-4 4.1: the tournament fill's top sheen, and a class block's ring when a pointer rests on it. */
   --ch-ev-sheen: inset 0 1px 0 rgb(255 255 255 / 0.08);
   --ch-ev-class-ring-hover: inset 0 0 0 1px rgb(45 92 119 / 0.28);
@@ -432,6 +440,15 @@
   --ch-type-figure-hero: 600 calc(56 * var(--ch-type-k))/1 var(--ch-font-sans);
   --ch-track-figure-hero: -0.025em;
   --ch-type-figure: 600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+  /* The display pair (dsx-07): a heading or big figure inside a card or panel that sits between the title (22) and the
+     hero figure (40 and up), at Apple's Title 1 (28/34) and Large Title (34/41) sizes, the same on phone and desk. Not a
+     page title (that is large-title). Weight is set by the rule through --ch-fw-*. */
+  --ch-type-display: 600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
+  --ch-type-display-xl: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  /* The subhead (dsx-07): a row's name, a secondary line, a label or a row figure at 15/20 (Apple's Subheadline), the
+     same on phone and desk. It sits a step under the phone's 17 body, so phone secondary text keeps its hierarchy; the
+     body is 15/22 on a desk and 17/24 on a phone. Weight is set by the rule through --ch-fw-*. */
+  --ch-type-subhead: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
 
   /* Space and layout */
   /* B2: the spacing scale (a 4px grid with 2 and 6 for tight pairs). A stylesheet in spacing-scale.test.ts's MIGRATED
@@ -715,6 +732,13 @@
   /* Depth pass (27 Nov): the tile sits a step above the card it shares a page with, still one quiet green cast. */
   --ch-medallion-shadow: 0 1px 2px rgb(11 58 37 / 0.22), 0 6px 14px -6px rgb(11 58 37 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.1);
   /* A control's contact shadow only: no lit white rim and no sun drift (S1.5, nothing white). */
+  /* Named elevations (dsx-07, design lab foundation 2): four, and only four, for anything that sits on the page.
+     flat: on the surface, no lift (a pill, a chip, a strip). card: a card at rest. raised: what floats (a menu, a
+     popover, a lifted control). overlay: a sheet, a dialog, a toast (the raised step today). Every other
+     --ch-elevation-* name below that only points at one of these is retiring: elevation-names.test.ts counts its uses,
+     which may only fall. Shadows drop out under forced colours, so a surface that reads one of these also draws an
+     outline there (base.css; forced-colors-edge.test.ts). */
+  --ch-elevation-flat: 0 0 0 0 transparent;
   --ch-elevation-control: 0 0 0 0 transparent;
   /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and
      overlay (a sheet, a dialog, below). Floating was the raised level's old name and folds into it. */
@@ -999,8 +1023,11 @@
   --ch-raised-shadow: var(--ch-elevation-control);
   /* Lit upper edge, warm lower face and a contact shadow, from handoff/depth.css. */
   /* Solid: a tall sheet's gentle gradient banded visibly; the lit top edge is the elevation's inset highlight. */
+  /* The sheet's two hooks (dsx-07): a sheet reads its face and its depth through these, never the card elevation
+     directly, because the shared Section (shell.css) sets them to transparent and none so its one sheet goes flat inside
+     it: no card in a card. The depth is the card elevation. */
   --ch-sheet-bg: var(--ch-card-bg);
-  --ch-sheet-shadow: var(--ch-elevation-reading);
+  --ch-sheet-shadow: var(--ch-elevation-card);
   /* The one tint behind every sheet, dialog and drawer on the native top layer (popup audit 2026-10-13): a solid wash,
      never a blur, which re-blurs the page on every frame of a WebKit open. Read by ::backdrop, which inherits it from
      the dialog; each use keeps the light value as its fallback. */
@@ -1044,6 +1071,20 @@
      (lib/use-busy.ts). A wait, not motion: kept with reduced motion and Animations off. */
   --ch-dur-busy-delay: 150ms;
   --ch-dur-busy-min: 300ms;
+  /* Motion roles (dsx-07, design lab foundation 6): what moves names its role, not a beat and a curve, so a rule can't pair
+     them wrongly. Each is a duration and a curve for a transition or an animation shorthand. press-in: a press going down
+     (110, out curve); press-out: a press let go (280, iOS curve). popup-in: a menu, popover or toast arriving (180, iOS);
+     popup-out: one leaving (110, out). sheet-in: a sheet or pushed panel rising (520, iOS); sheet-out: one leaving (280,
+     out). page: a push, a pop (520, iOS). Under Reduce Motion the travelling roles become the quick fade (3.11): a rule
+     that reads them must also drop its transform there, which a token can't do; Animations off zeroes the beats they
+     read. motion-roles.test.ts pins the set. */
+  --ch-motion-press-in: var(--ch-dur-press) var(--ch-ease-out);
+  --ch-motion-press-out: var(--ch-dur-release) var(--ch-ease-ios);
+  --ch-motion-popup-in: var(--ch-dur-quick) var(--ch-ease-ios);
+  --ch-motion-popup-out: var(--ch-dur-press) var(--ch-ease-out);
+  --ch-motion-sheet-in: var(--ch-dur-reveal) var(--ch-ease-ios);
+  --ch-motion-sheet-out: var(--ch-dur-release) var(--ch-ease-out);
+  --ch-motion-page: var(--ch-dur-reveal) var(--ch-ease-ios);
 
   /* Retiring (3.2): every motion token below is outside the vocabulary. Each may only lose uses (the motion gate,
      src/clubhouse/__tests__/motion-gate.test.ts, holds the count in config/clubhouse/motion-ratchet.json); write the
@@ -1465,6 +1506,17 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   --ch-dur-story: 0ms;
 }
 
+/* Reduce Motion (3.11, dsx-07): the travelling roles become the quick fade. The press stays: a scale is not travel. */
+@media (prefers-reduced-motion: reduce) {
+  [data-ui='clubhouse'] {
+    --ch-motion-popup-in: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-popup-out: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-sheet-in: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-sheet-out: var(--ch-dur-quick) var(--ch-ease-out);
+    --ch-motion-page: var(--ch-dur-quick) var(--ch-ease-out);
+  }
+}
+
 /* The page crossfade's timings (RouteFrame's <ViewTransition>, shell.css). The view-transition pseudo-elements hang off
    <html>, so they read these from there. Scoped to a document showing Clubhouse. */
 html:has([data-ui='clubhouse']) {
@@ -1524,7 +1576,8 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 }
 
 /* The nine roles on a phone (MOTION-AND-VISUAL 4.3): large title 34/41, headline 17/22, body 17/24, callout 15/20,
-   hero figure 44, row figure 17/22; title, footnote and caption are the same on both. */
+   hero figure 44, row figure 17/22; title, footnote and caption are the same on both, as are the display pair and the
+   subhead (dsx-07). */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
     --ch-type-large-title: 700 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
@@ -1664,5 +1717,10 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-type-footnote: 560 calc(13 * var(--ch-type-k))/calc(18 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-caption: 560 calc(13 * var(--ch-type-k))/calc(17 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-type-callout: 560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    /* dsx-07: a rule that reads a role and keeps its old weight through --ch-fw-400/500 gets the same 1x lift. */
+    --ch-type-body: 450 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-subhead: 450 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-fw-400: 450;
+    --ch-fw-500: 560;
   }
 }

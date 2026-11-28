@@ -38,14 +38,14 @@
   border-radius: var(--ch-radius-full);
   background: var(--ch-ivory-25);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: var(--ch-elevation-control);
+  box-shadow: var(--ch-elevation-flat);
   cursor: pointer;
   touch-action: manipulation;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease), color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out), color var(--ch-dur-quick) var(--ch-ease-out);
 }
 /* The tap area reaches 44 x 44 without changing how the chip is drawn. */
 .ch-hv-chip::after {
@@ -82,7 +82,8 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 16px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-hv-basis b {
@@ -107,16 +108,18 @@
   padding: 24px 24px 8px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-50);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-hv-next h3 {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-secondary);
 }
 .ch-hv-next > p {
   max-width: 44ch;
   margin-bottom: 8px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-ink-700);
   text-wrap: pretty;
 }
@@ -130,7 +133,7 @@
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
   text-decoration: none;
-  transition: color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-hv-link span {
   display: flex;
@@ -138,18 +141,20 @@
   gap: 4px;
 }
 .ch-hv-link b {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 .ch-hv-link em {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   font-style: normal;
   color: var(--ch-text-tertiary);
 }
 .ch-hv-link svg {
   flex: none;
   color: var(--ch-green-600);
-  transition: translate var(--ch-dur-quick) var(--ch-ease);
+  transition: translate var(--ch-dur-quick) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-hv-link:hover svg {
@@ -220,7 +225,7 @@
     box-shadow: none;
   }
   .ch-hv-next h3 {
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-title);
     letter-spacing: var(--ch-track-20);
     font-variation-settings: 'wdth' 88;
     color: var(--ch-ledger-ink);

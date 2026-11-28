@@ -41,24 +41,27 @@
   margin: 0;
 }
 .ch-tour-desk-res b {
-  font: var(--ch-type-34-medium);
+  font: var(--ch-type-display-xl);
+  font-weight: var(--ch-fw-500);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.038em;
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-res > .ch-num:not(b) {
-  font: var(--ch-type-16-strong);
+  font: var(--ch-type-headline);
   letter-spacing: var(--ch-track-16);
   line-height: var(--ch-lead-tight);
 }
 .ch-tour-desk-res em {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk.is-phone .ch-tour-desk-res b {
-  font: var(--ch-type-34-medium);
+  font: var(--ch-type-large-title);
+  font-weight: var(--ch-fw-500);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-34);
 }
@@ -73,11 +76,13 @@
 }
 .ch-tour-desk-warn p {
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-tour-desk-warn .ch-tour-desk-warn__t {
   margin-bottom: 2px;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 
@@ -101,12 +106,12 @@
   padding: 0;
   border: 0;
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   white-space: nowrap;
   cursor: pointer;
-  transition: color var(--ch-dur-quick) var(--ch-ease);
+  transition: color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-tour-desk-tabs button[aria-selected='true'] {
   color: var(--ch-text-primary);
@@ -139,7 +144,8 @@
   padding: 0 4px;
   border-radius: var(--ch-radius-full);
   background: var(--ch-bg-selected);
-  font: var(--ch-type-11-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-700);
@@ -158,7 +164,8 @@
 .ch-tour-desk-line {
   margin: 0 0 12px;
   max-width: 60ch;
-  font: var(--ch-type-16);
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-16);
   color: var(--ch-text-secondary);
 }
@@ -171,7 +178,8 @@
 .ch-tour-desk .ch-tour-desk-note {
   margin: 8px 0 0;
   max-width: 80ch;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 
@@ -203,7 +211,7 @@
 }
 .ch-tour-desk-pill[aria-pressed='true'] {
   background: var(--ch-bg-selected);
-  box-shadow: inset 0 0 0 1.5px var(--ch-green-600);
+  box-shadow: var(--ch-ring-accent-inset);
   color: var(--ch-green-700);
 }
 .ch-tour-desk-pill:focus-visible {
@@ -281,18 +289,21 @@
 }
 .ch-tour-desk-ct__n {
   display: block;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ct__row.is-team > .ch-tour-desk-ct__n {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
 .ch-tour-desk-ct__s {
   display: block;
   margin-top: 4px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
@@ -302,14 +313,16 @@
 }
 .ch-tour-desk-ct__tot,
 .ch-tour-desk-ct__fin {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ct__cnt,
 .ch-tour-desk-ct__w {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
@@ -330,7 +343,8 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-15-medium);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -353,14 +367,15 @@ button.ch-tour-desk-sc:focus-visible {
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-sc em {
-  font: var(--ch-type-11-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-sc.is-tie {
-  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+  box-shadow: var(--ch-ring-attention-inset);
 }
 .ch-tour-desk-sc.is-none {
   color: var(--ch-text-secondary);
@@ -382,7 +397,8 @@ button.ch-tour-desk-sc:focus-visible {
 .ch-tour-desk-ct__alts {
   margin: 0;
   padding: 8px 8px 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -392,7 +408,8 @@ button.ch-tour-desk-sc:focus-visible {
   gap: 8px 16px;
   margin: 0;
   padding: 8px 8px 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-key > span {
@@ -413,7 +430,7 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 4px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__row {
   grid-template-columns: minmax(0, 1fr) repeat(var(--ch-tour-desk-n), 48px) 44px;
@@ -438,11 +455,13 @@ button.ch-tour-desk-sc:focus-visible {
   display: none;
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__n {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-14);
 }
 .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__s {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
 }
 
 /* Where the event turned (board .tr-find): three findings side by side, one column on the phone. */
@@ -464,18 +483,20 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 16px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-fc h3 {
   margin: 0;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
 .ch-tour-desk-fc p {
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-fc__a {
@@ -492,7 +513,7 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 0;
   border: 0;
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   /* Text takes the dark-safe green, never --ch-accent (2.74:1 on the dark canvas; visual pass 2026-10-28). */
   color: var(--ch-green-600);
@@ -514,7 +535,8 @@ button.ch-tour-desk-sc:focus-visible {
 /* The phone's floor is 12: tab counts and the NC / round marks step up from 11 (visual pass 2026-10-28). */
 .ch-tour-desk.is-phone .ch-tour-desk-tabs__n,
 .ch-tour-desk.is-phone .ch-tour-desk-sc em {
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-12);
 }
 
@@ -534,7 +556,7 @@ button.ch-tour-desk-sc:focus-visible {
   padding: 6px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-hg__row {
   display: grid;
@@ -565,7 +587,8 @@ button.ch-tour-desk-sc:focus-visible {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-hg.is-phone .ch-tour-desk-hg__row > :first-child {
@@ -595,7 +618,8 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk-hg__group {
   padding: 8px 8px 2px;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-hg__cell {
@@ -625,10 +649,11 @@ button.ch-tour-desk-sc:focus-visible {
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-hg__c.is-disputed .ch-tour-desk-hg__cell {
-  box-shadow: inset 0 0 0 1.5px var(--ch-champagne-500);
+  box-shadow: var(--ch-ring-attention-inset);
 }
 .ch-tour-desk-hg__row .ch-tour-desk-hg__tot {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-heat {
@@ -637,7 +662,8 @@ button.ch-tour-desk-sc:focus-visible {
   width: 30px;
   height: 22px;
   border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-11-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-11);
   line-height: var(--ch-lead-tight);
   font-style: normal;
@@ -645,7 +671,8 @@ button.ch-tour-desk-sc:focus-visible {
 }
 /* The phone's floor is 12 (F-0024): the row's averages step up from 11, in the same 30px chip ("+0.2" is 27 wide). */
 .ch-tour-desk-hg.is-phone .ch-tour-desk-heat {
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-12);
   line-height: var(--ch-lead-tight);
 }
@@ -688,7 +715,8 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk-ev__fig dd {
   margin: 6px 0 0;
-  font: var(--ch-type-20-medium);
+  font: var(--ch-type-title);
+  font-weight: var(--ch-fw-500);
   line-height: var(--ch-lead-tight);
   letter-spacing: -0.03em;
   color: var(--ch-text-primary);
@@ -699,7 +727,7 @@ button.ch-tour-desk-sc:focus-visible {
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-desk-ev__list li {
   display: grid;
@@ -716,19 +744,22 @@ button.ch-tour-desk-sc:focus-visible {
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__t {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ev__t em {
   display: block;
   margin-top: 4px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   font-style: normal;
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__v {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
@@ -742,20 +773,23 @@ button.ch-tour-desk-sc:focus-visible {
 }
 .ch-tour-desk-ev__card h3 {
   margin: 0 0 8px;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-tour-desk-ev__card h3 span {
   display: block;
   margin-top: 4px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__card p {
   margin: 8px 0 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-desk-ev__nine {
@@ -784,6 +818,18 @@ button.ch-tour-desk-sc:focus-visible {
   margin-bottom: 8px;
 }
 .ch-tour-desk-ev__tot {
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-desk-ct.is-phone .ch-tour-desk-ct__scroll,
+  .ch-tour-desk-fc,
+  .ch-tour-desk-hg.is-phone .ch-tour-desk-hg__scroll,
+  .ch-tour-desk-ev__list {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

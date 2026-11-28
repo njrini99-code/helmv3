@@ -18,7 +18,7 @@
   line-height: var(--ch-lead-label);
   white-space: nowrap;
   pointer-events: none;
-  animation: ch-fade var(--ch-dur-press) var(--ch-ease);
+  animation: ch-fade var(--ch-dur-press) var(--ch-ease-out);
 }
 /* Closed, it fades out over the same beat before it leaves (OVL-07). */
 .ch-popover.ch-tip[data-leaving] {
@@ -90,7 +90,7 @@
   font: var(--ch-type-footnote);
   line-height: var(--ch-lead-label);
   pointer-events: none;
-  animation: ch-fade var(--ch-dur-press) var(--ch-ease);
+  animation: ch-fade var(--ch-dur-press) var(--ch-ease-out);
 }
 .ch-cmd-hint__k {
   color: var(--ch-text-secondary);
@@ -142,7 +142,8 @@
   padding: 0;
   background: transparent;
   color: var(--ch-text-primary);
-  font: var(--ch-type-16-medium);
+  font: var(--ch-type-headline);
+  font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-16);
 }
 .ch-root .ch-cmd-input:focus-visible {
@@ -164,7 +165,8 @@
 .ch-cmd [cmdk-group-heading] {
   padding: 8px 8px 4px;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
 }
 .ch-cmd-item {
   display: flex;
@@ -174,7 +176,7 @@
   padding: 0 8px;
   border-radius: var(--ch-radius-md);
   color: var(--ch-text-primary);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   cursor: pointer;
   scroll-margin: 6px;
 }
@@ -199,7 +201,8 @@
 .ch-cmd-detail {
   flex: none;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
 }
 .ch-cmd-foot {
@@ -209,7 +212,8 @@
   padding: 8px 16px;
   border-top: var(--ch-hairline-w) solid var(--ch-border-subtle);
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
 }
 .ch-cmd-foot > span {
@@ -247,7 +251,8 @@
 .ch-cmd-sheet h3 {
   margin: 0 0 4px;
   color: var(--ch-text-primary);
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
 }
 .ch-cmd-rows {
   display: grid;
@@ -278,6 +283,7 @@
 .ch-cmd-then {
   margin: 0 4px;
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
 }

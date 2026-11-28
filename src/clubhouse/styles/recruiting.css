@@ -25,7 +25,7 @@
   letter-spacing: -0.01em;
 }
 .ch-rec-head p {
-  font: var(--ch-type-15);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -44,7 +44,7 @@
   padding: 16px 24px 20px;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rec-pipe__head {
   display: flex;
@@ -58,10 +58,12 @@
   gap: 8px;
 }
 .ch-rec-pipe__sum b {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
 }
 .ch-rec-pipe__sum span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-tertiary);
 }
@@ -143,7 +145,7 @@
   background: var(--ch-ivory-25);
   color: var(--ch-text-primary);
   box-shadow: 0 0 0 2px var(--ch-rec-ring);
-  transition: transform var(--ch-dur-quick) var(--ch-ease), box-shadow var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out), box-shadow var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
   --ch-rec-ring: color-mix(in oklab, var(--ch-green-400) 60%, var(--ch-ivory-25));
@@ -180,12 +182,14 @@
   gap: 4px;
 }
 .ch-rec-pipe__txt b {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-rec-pipe__txt span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 
@@ -202,7 +206,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   container-type: inline-size;
   container-name: ch-rec-list;
 }
@@ -220,7 +224,8 @@
 .ch-rec-tb {
   width: 100%;
   border-collapse: collapse;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
 }
 .ch-rec-tb th[scope='col'] {
   padding: 8px 12px;
@@ -235,7 +240,7 @@
   position: relative;
   height: 56px;
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rec-tb tbody tr:first-child {
   box-shadow: none;
@@ -290,7 +295,8 @@
 }
 .ch-rec-tb__sub {
   display: none;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 /* The list is narrower than the table needs once the panel is open: class and hometown move under the name, then the date goes. */
@@ -340,7 +346,8 @@
   height: 24px;
   padding: 0 8px;
   border-radius: var(--ch-radius-sm);
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   white-space: nowrap;
 }
@@ -376,7 +383,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-xl);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rec-panel__top {
   display: flex;
@@ -399,12 +406,13 @@
   min-width: 0;
 }
 .ch-rec-panel__id h2 {
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-20);
   overflow-wrap: anywhere;
 }
 .ch-rec-panel__id span {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-rec-stage .ch-seg {
@@ -434,7 +442,8 @@
   box-shadow: 0 -1px 0 var(--ch-border-hairline);
 }
 .ch-rec-meta {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-danger {
@@ -443,7 +452,7 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-danger-600);
   cursor: pointer;
@@ -459,7 +468,7 @@
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
   font-size: calc(16 * var(--ch-type-k));
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 /* Wide enough for both columns only above this; below it the panel goes under the list. */
 @container (max-width: 1000px) {
@@ -492,7 +501,8 @@
 }
 .ch-rec-sec h2,
 .ch-rec-sec h3 {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-sec__head {
@@ -549,7 +559,8 @@
 .ch-rec-row__v {
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
@@ -562,7 +573,8 @@
   padding: 12px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-100);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
@@ -610,7 +622,8 @@
 .ch-rec-doc__t {
   flex: 1;
   min-width: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   overflow-wrap: anywhere;
 }
 .ch-rec-tag {
@@ -646,7 +659,8 @@
   outline-offset: -2px;
 }
 .ch-rec-note {
-  font: var(--ch-type-12);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 /* The file drop (desktop): the section shows where a file will land while one is over it (CH-14111). */
@@ -664,7 +678,7 @@
   border: 1.5px dashed var(--ch-green-500);
   border-radius: var(--ch-radius-lg);
   background: rgb(238 245 240 / 0.94);
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   color: var(--ch-green-600);
   pointer-events: none;
 }
@@ -689,7 +703,7 @@
   border-radius: inherit;
   background: var(--ch-green-fill-500);
   transform: translateX(-100%);
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-rec-empty {
   display: flex;
@@ -698,7 +712,7 @@
   padding: 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-ivory-25);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-rec-empty__ic {
   display: grid;
@@ -718,10 +732,12 @@
   min-width: 0;
 }
 .ch-rec-empty__t b {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
 }
 .ch-rec-empty__t span {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
 .ch-rec-empty__a {
@@ -731,7 +747,7 @@
   border: 0;
   border-radius: var(--ch-radius-sm);
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
@@ -946,7 +962,7 @@
     border-radius: inherit;
     background: var(--ch-ledger-row-press);
     opacity: 0;
-    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    transition: opacity var(--ch-dur-press) var(--ch-ease-out);
     content: '';
     pointer-events: none;
   }
@@ -983,12 +999,12 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: var(--ch-type-14-medium);
+    font: var(--ch-type-footnote);
     line-height: var(--ch-lead-tight);
     color: var(--ch-green-600);
     cursor: pointer;
     touch-action: manipulation;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-recm-sort[data-ch-pressed] {
     background: var(--ch-sel);
@@ -1027,7 +1043,7 @@
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-recm-row[data-ch-pressed] {
     background: var(--ch-sel);
@@ -1049,13 +1065,15 @@
     min-width: 0;
   }
   .ch-recm-row__b b {
-    font: var(--ch-type-15-strong);
+    font: var(--ch-type-callout);
+    font-weight: var(--ch-fw-600);
     letter-spacing: var(--ch-track-15);
     color: var(--ch-text-primary);
     overflow-wrap: anywhere;
   }
   .ch-recm-row__b span {
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     line-height: var(--ch-lead-caption);
     color: var(--ch-text-tertiary);
   }
@@ -1086,7 +1104,7 @@
     min-width: 0;
   }
   .ch-recm-hero b {
-    font: var(--ch-type-28-strong);
+    font: var(--ch-type-display);
     line-height: var(--ch-lead-tight);
     letter-spacing: var(--ch-track-28);
     font-variation-settings: 'wdth' 88;
@@ -1094,7 +1112,8 @@
     overflow-wrap: anywhere;
   }
   .ch-recm-hero > span > span {
-    font: var(--ch-type-14);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
   }
   /* Email and Call: two smaller actions under the Stage row (P014 finding #8), one when only one is known. */
@@ -1124,7 +1143,8 @@
     border-radius: var(--ch-radius-md);
     background: none;
     box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-ledger-rule);
-    font: var(--ch-type-13-strong);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-600);
     color: var(--ch-green-600);
     text-decoration: none;
     cursor: pointer;
@@ -1141,7 +1161,8 @@
   }
   .ch-recm-tile__v {
     overflow: hidden;
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -1152,7 +1173,7 @@
     border-radius: inherit;
     background: var(--ch-ledger-row-press);
     opacity: 0;
-    transition: opacity var(--ch-dur-press) var(--ch-ease);
+    transition: opacity var(--ch-dur-press) var(--ch-ease-out);
     content: '';
     pointer-events: none;
   }
@@ -1182,14 +1203,14 @@
     border: 0;
     border-radius: var(--ch-radius-md);
     background: none;
-    font: var(--ch-type-16-medium);
+    font: var(--ch-type-callout);
     letter-spacing: var(--ch-track-16);
     line-height: var(--ch-lead-tight);
     color: var(--ch-text-primary);
     text-align: left;
     cursor: pointer;
     touch-action: manipulation;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-recm-stagerow::before,
   .ch-recm-stagerow::after {
@@ -1280,7 +1301,7 @@
     margin-right: -8px;
     font-size: calc(15 * var(--ch-type-k));
     touch-action: manipulation;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-recm-det .ch-rec-empty__a[data-ch-pressed] {
     background: var(--ch-sel);
@@ -1298,7 +1319,7 @@
     margin: -12px -8px -12px 0;
     font-size: calc(14 * var(--ch-type-k));
     touch-action: manipulation;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-recm-det .ch-rec-link[data-ch-pressed] {
     background: var(--ch-sel);
@@ -1339,7 +1360,7 @@
     padding-left: 12px;
     border-radius: var(--ch-radius-md);
     touch-action: manipulation;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-recm-det .ch-rec-doc__open[data-ch-pressed] {
     background: var(--ch-sel);
@@ -1357,7 +1378,7 @@
     height: 44px;
     margin-right: -8px;
     touch-action: manipulation;
-    transition: background-color var(--ch-dur-press) var(--ch-ease);
+    transition: background-color var(--ch-dur-press) var(--ch-ease-out);
   }
   .ch-recm-det .ch-rec-doc__x[data-ch-pressed] {
     background: var(--ch-sel);
@@ -1393,7 +1414,7 @@
     overflow: hidden;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-ivory-25);
-    box-shadow: var(--ch-elevation-reading);
+    box-shadow: var(--ch-elevation-card);
   }
   .ch-rec-form.is-phone .ch-rec-form__pair {
     display: contents;
@@ -1415,7 +1436,7 @@
   .ch-rec-form.is-phone .ch-rec-f .ch-field__label {
     /* The label column grows with Dynamic Type, so "Hometown" stays clear of its field at XXL. */
     width: calc(96 * var(--ch-type-k));
-    font: var(--ch-type-16);
+    font: var(--ch-type-body);
     letter-spacing: var(--ch-track-16);
     color: var(--ch-text-secondary);
   }
@@ -1477,7 +1498,7 @@
     overflow: hidden;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-ivory-25);
-    box-shadow: var(--ch-elevation-reading);
+    box-shadow: var(--ch-elevation-card);
   }
   .ch-recm-stages__row {
     display: flex;
@@ -1505,7 +1526,8 @@
   }
   .ch-recm-stages__t > span:last-child {
     padding-left: 2px;
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-tertiary);
   }
 
@@ -1551,12 +1573,13 @@
     gap: 4px;
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum b {
-    font: var(--ch-type-20-strong);
+    font: var(--ch-type-title);
     letter-spacing: var(--ch-track-20);
     color: var(--ch-text-primary);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__sum span {
-    font: var(--ch-type-13);
+    font: var(--ch-type-footnote);
+    font-weight: var(--ch-fw-400);
     line-height: var(--ch-lead-caption);
     font-variant-numeric: tabular-nums;
   }
@@ -1594,7 +1617,7 @@
     box-shadow: inset var(--ch-hairline-w) 0 0 var(--ch-ledger-rule-soft);
   }
   .ch-rec[data-canopy] .ch-rec-pipe__stage {
-    transition: background-color var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
   }
   @media (hover: hover) {
     .ch-rec[data-canopy] .ch-rec-pipe__stage:not(:disabled):hover {
@@ -1682,7 +1705,7 @@
     position: absolute;
     z-index: -1;
     inset: 0;
-    transition: background-color var(--ch-dur-quick) var(--ch-ease);
+    transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
     content: '';
     pointer-events: none;
   }
@@ -1807,7 +1830,8 @@
     border-radius: var(--ch-radius-sm);
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__t b {
-    font: var(--ch-type-14);
+    font: var(--ch-type-callout);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
   }
   .ch-rec[data-canopy] .ch-rec-panel .ch-rec-empty__t span {
@@ -1838,7 +1862,8 @@
   align-items: center;
   gap: 4px 8px;
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-rec-cal__t {
@@ -1860,11 +1885,11 @@
   border: 0;
   border-radius: var(--ch-radius-md);
   background: none;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   line-height: var(--ch-lead-tight);
   color: var(--ch-green-600);
   cursor: pointer;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 @media (hover: hover) {
   .ch-rec-cal__pick:hover {
@@ -1890,14 +1915,16 @@
     min-height: 24px;
     max-width: none;
     margin-top: 2px;
-    font: var(--ch-type-14);
+    font: var(--ch-type-callout);
+    font-weight: var(--ch-fw-400);
     color: var(--ch-text-secondary);
   }
 }
 /* A Division I note under Email and Call: never a warning colour, the coach decides. */
 .ch-rec-hint {
   margin: 8px 2px 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 
@@ -1915,7 +1942,7 @@
 /* The committed coin's gilt rim, set off from the coin by the surface's own colour. */
 .ch-rec-av.is-gilt {
   box-shadow: 0 0 0 2px var(--ch-bg-surface), 0 0 0 3.5px var(--ch-champagne-500);
-  transition: box-shadow var(--ch-dur-reveal) var(--ch-ease);
+  transition: box-shadow var(--ch-dur-reveal) var(--ch-ease-out);
 }
 
 /* C1: the next step. A due step is a small dated plate on its row, ruled, not filled. */
@@ -1961,7 +1988,8 @@
   outline-offset: -2px;
 }
 .ch-rec-tb .is-next {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
   white-space: nowrap;
@@ -2108,7 +2136,7 @@
    prospect's row carries a green rail, so the page reads as one instrument. Tokens only; presentation only. */
 .ch-rec-pipe__stage.is-offered > .ch-rec-pipe__dot,
 .ch-rec-pipe__stage.is-recruiting > .ch-rec-pipe__dot {
-  box-shadow: 0 0 0 2px var(--ch-rec-ring), var(--ch-elevation-mark);
+  box-shadow: 0 0 0 2px var(--ch-rec-ring), var(--ch-elevation-raised);
 }
 @media (hover: hover) {
   .ch-rec-pipe__stage:not(:disabled):hover > .ch-rec-pipe__dot {
@@ -2126,7 +2154,7 @@
   }
 }
 .ch-rec-pipe__seg {
-  transition: background-color var(--ch-dur-base) var(--ch-ease);
+  transition: background-color var(--ch-dur-base) var(--ch-ease-out);
 }
 
 /* Phone: touch areas reach 44 x 44 without changing how they are drawn (W4b, 2026-10-19). */
@@ -2164,12 +2192,26 @@
     border: 0;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
-    box-shadow: var(--ch-card-shadow);
+    box-shadow: var(--ch-elevation-card);
   }
   .ch-recm-list {
     padding: 4px 16px;
     border-radius: var(--ch-radius-lg);
     background: var(--ch-card-bg);
-    box-shadow: var(--ch-card-shadow);
+    box-shadow: var(--ch-elevation-card);
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-rec-pipe,
+  .ch-rec-list,
+  .ch-rec-panel,
+  .ch-rec-danger.is-block,
+  .ch-rec-form.is-phone .ch-rec-form__grp,
+  .ch-rec-pipe.is-compact,
+  .ch-recm-list {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

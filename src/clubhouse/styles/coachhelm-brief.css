@@ -30,7 +30,8 @@
 .ch-hmb-quiet {
   margin: 0;
   max-width: 64ch;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-hmb-counts {
@@ -55,13 +56,14 @@
   color: var(--ch-warning-600);
 }
 .ch-hmb-lead__t {
-  font: var(--ch-type-20-strong);
+  font: var(--ch-type-title);
   letter-spacing: var(--ch-track-20);
   color: var(--ch-text-primary);
   text-wrap: balance;
 }
 .ch-hmb-lead__m {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
 }
@@ -79,11 +81,13 @@
   margin-top: 8px;
 }
 .ch-hmb-lead__n b {
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-secondary);
 }
 .ch-hmb-lead__n span {
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
@@ -113,7 +117,7 @@
   padding: 12px 20px;
   color: inherit;
   text-decoration: none;
-  transition: background-color var(--ch-dur-quick) var(--ch-ease);
+  transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-hmb-row.is-team_pattern .ch-hmb-row__a {
   grid-template-columns: minmax(0, 1fr) 16px;
@@ -144,18 +148,21 @@
   color: var(--ch-warning-600);
 }
 .ch-hmb-row__t {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-wrap: pretty;
 }
 .ch-hmb-row__m {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-hmb-row__n,
 .ch-hmb-row__b {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
   text-wrap: pretty;
 }
@@ -166,12 +173,14 @@
 
 .ch-hmb-sub {
   margin: 0 0 6px;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-hmb-cleared li {
   padding: 4px 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-hmb-ood {

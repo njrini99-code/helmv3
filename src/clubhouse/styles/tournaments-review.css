@@ -20,7 +20,7 @@
 .ch-tour-rev-layer {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-rev-layer dl {
   margin: 0;
@@ -35,12 +35,14 @@
   box-shadow: inset 0 var(--ch-hairline-w) 0 var(--ch-border-hairline);
 }
 .ch-tour-rev-layer dt {
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-secondary);
 }
 .ch-tour-rev-layer dd {
   margin: 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
 .ch-tour-rev-layer dd.ch-tour-rev-layer__ev,
@@ -58,7 +60,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-rev-note {
   padding: 16px 16px;
@@ -72,24 +74,28 @@
   gap: 8px;
 }
 .ch-tour-rev-note__n {
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-tour-rev-note__k {
   margin-top: 2px;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 .ch-tour-rev-note p {
   margin: 8px 0 0;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-rev-missing {
   margin: 8px 0 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 /* On a phone the section is already the card (ui.css): the notes sit flush in it, on the heading's inset, with no card of
@@ -142,21 +148,23 @@
   padding: 16px 20px 16px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-rev-trend.is-phone {
   padding: 16px;
 }
 .ch-tour-rev-trend__t {
   margin: 0;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 /* Two classes: `.ch-root p` (base.css) would otherwise zero these lines' margins. */
 .ch-tour-rev-trend .ch-tour-rev-trend__s {
   margin: 4px 0 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
@@ -218,27 +226,31 @@
 }
 .ch-tour-rev-trend__labels li {
   text-align: center;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-secondary);
 }
 .ch-tour-rev-trend__labels b {
   display: block;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 /* Visual pass 2026-10-28: the key is a footnote, not another label row, so it stands clear of the event labels and
    reads in the caption ink. Two classes, as the subtitle and note: `.ch-root p` outranks one. */
 .ch-tour-rev-trend .ch-tour-rev-trend__key {
   margin: 16px 0 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-tertiary);
 }
 .ch-tour-rev-trend .ch-tour-rev-trend__note {
   margin: 12px 0 0;
   max-width: 80ch;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 /* The phone's note stands clear of the bars' event labels. */
@@ -260,7 +272,8 @@
 }
 .ch-tour-rev-bars .ch-tour-rev-bars__k {
   margin: 0 0 2px;
-  font: var(--ch-type-12-strong);
+  font: var(--ch-type-caption);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-tertiary);
 }
@@ -274,7 +287,8 @@
   text-decoration: none;
 }
 .ch-tour-rev-bar__n {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: var(--ch-lead-caption);
   color: var(--ch-text-primary);
   overflow-wrap: anywhere;
@@ -325,7 +339,8 @@
 /* Figure and event at the phone's text floor or above (Q-141). */
 .ch-tour-rev-bar b {
   text-align: right;
-  font: var(--ch-type-13-strong);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-primary);
 }
@@ -368,7 +383,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-surface);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-tour-links-row {
   display: grid;
@@ -410,11 +425,13 @@
   min-width: 0;
 }
 .ch-tour-links-row__n {
-  font: var(--ch-type-14-strong);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
 .ch-tour-links-muted {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
 .ch-tour-links-row__pick {
@@ -490,6 +507,19 @@
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-rev-layer,
+  .ch-tour-rev-notes,
+  .ch-tour-rev-trend,
+  .ch-tour-links-list,
+  .ch-tour-links-miss {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

@@ -28,7 +28,8 @@
   align-items: center;
   gap: var(--ch-space-2);
   margin: 0;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -43,7 +44,8 @@
 }
 .ch-tfx__hint {
   margin: var(--ch-space-0_5) 0 var(--ch-space-3);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
@@ -71,7 +73,8 @@
   padding: var(--ch-space-3);
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
 }
 .ch-tfx-note b {
@@ -126,7 +129,8 @@
 }
 .ch-tfx__help {
   margin: var(--ch-space-1) 0 0;
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
@@ -145,7 +149,8 @@
   background: var(--ch-bg-surface);
   border: var(--ch-hairline-w) solid var(--ch-border-control);
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-14);
+  font: var(--ch-type-callout);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
   text-align: left;
@@ -218,18 +223,20 @@
   min-width: 0;
 }
 .ch-tfx__day b {
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
 .ch-tfx__day small {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
 .ch-tfx__label36 {
   padding: var(--ch-space-2) var(--ch-space-3) var(--ch-space-0_5);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
@@ -276,7 +283,8 @@
   align-items: center;
   gap: var(--ch-space-1_5);
   margin: var(--ch-space-2) 0 var(--ch-space-3);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
@@ -306,7 +314,7 @@
    down while closed read as already open, with "Qualifier" under it as if it were the details. */
 .ch-tfx__disclose svg {
   transform: rotate(-90deg);
-  transition: transform var(--ch-dur-quick) var(--ch-ease);
+  transition: transform var(--ch-dur-quick) var(--ch-ease-out);
 }
 .ch-tfx__disclose[aria-expanded='true'] svg {
   transform: none;
@@ -317,7 +325,8 @@
   margin: 0;
   padding-top: var(--ch-space-3);
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -346,12 +355,13 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   letter-spacing: var(--ch-track-14);
   color: var(--ch-text-primary);
 }
 .ch-tfx-banner__t small {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-secondary);
 }
@@ -370,10 +380,10 @@
   background: var(--ch-bg-surface);
   border: var(--ch-hairline-w) solid var(--ch-border-hairline);
   border-radius: var(--ch-radius-lg);
-  box-shadow: var(--ch-elevation-reading);
+  box-shadow: var(--ch-elevation-card);
   color: inherit;
   text-decoration: none;
-  transition: background-color var(--ch-dur-press) var(--ch-ease);
+  transition: background-color var(--ch-dur-press) var(--ch-ease-out);
 }
 .ch-tfx-card[data-ch-pressed] {
   background: var(--ch-sel);
@@ -392,7 +402,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--ch-space-2);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
@@ -427,7 +438,7 @@
 .ch-tfx-card .ch-tfx__plate {
   width: max(40px, calc(40px * var(--ch-type-scale, 1)));
   height: max(40px, calc(40px * var(--ch-type-scale, 1)));
-  font: var(--ch-type-14-medium);
+  font: var(--ch-type-callout);
   letter-spacing: var(--ch-track-14);
 }
 .ch-tfx-card[data-status='cancelled'] .ch-tfx__plate {
@@ -442,14 +453,16 @@
 }
 .ch-tfx-card__title {
   overflow: hidden;
-  font: var(--ch-type-15-strong);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .ch-tfx-card__sub {
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   letter-spacing: var(--ch-track-13);
   color: var(--ch-text-tertiary);
 }
@@ -518,5 +531,13 @@
   .ch-tfx__disclose svg,
   .ch-tfx-card {
     transition: none;
+  }
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tfx-card {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
   }
 }

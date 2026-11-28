@@ -120,6 +120,14 @@ describe('the rules that hold the box above the fold', () => {
     expect(auto.map((r) => r.sel).sort()).toEqual(['.ch-ak-home:not(.is-phone) .hi', '.ch-ak-home:not(.is-phone) > .foot']);
   });
 
+  it('the desk greeting is 34/41 (the display large role), not the 40 page title', () => {
+    // dsx-07: the 34 step moved onto --ch-type-display-xl, which is 34/41 on a desk as on a phone; the large title is 40.
+    expect(body('coachhelm-ask-v2.css', '.ch-ak-home:not(.is-phone) .hi h2')).toMatch(/font:\s*var\(--ch-type-display-xl\);\s*font-weight:\s*var\(--ch-fw-600\)/);
+    expect(readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8')).toMatch(
+      /--ch-type-display-xl: 600 calc\(34 \* var\(--ch-type-k\)\)\/calc\(41 \* var\(--ch-type-k\)\)/,
+    );
+  });
+
   it('the starter chips and the foot’s rows are 44 targets; the box’s text starts two lines tall and still grows', () => {
     expect(px('min-height', body('coachhelm-ask-v2.css', '.ch-ak-home:not(.is-phone) .sugg button'))).toBeGreaterThanOrEqual(44);
     // The desk does not shrink ASK-10's 44 on the foot's rows.

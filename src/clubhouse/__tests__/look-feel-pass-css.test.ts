@@ -125,7 +125,7 @@ describe('type roles (B1)', () => {
   it('raw font-size and font-weight longhands only fall, file by file', () => {
     const found: Hit[] = [];
     for (const f of css) {
-      for (const m of code(f).matchAll(/(?:^|[\s;{])(font-(?:size|weight):\s*(?!inherit|initial|unset|var\()[^;}]+);/g)) {
+      for (const m of code(f).matchAll(/(?:^|[\s;{])(font-(?:size|weight):\s*(?![\s]|inherit|initial|unset|var\()[^;}]+);/g)) {
         found.push({ file: relative(ROOT, f), line: 0, text: m[1]! });
       }
     }
@@ -241,8 +241,8 @@ const RAW_LEAD: Record<string, number> = {
 
 /** Raw `font-size` and `font-weight` longhands per stylesheet on 2026-10-24 (B1). Only falls. */
 const RAW_LONGHAND: Record<string, number> = {
-  'styles/auth.css': 22,
-  'styles/base.css': 3,
+  'styles/auth.css': 20,
+  'styles/base.css': 1,
   'styles/calendar.css': 19,
   'styles/classes.css': 12,
   'styles/coachhelm-ask.css': 7,
@@ -258,9 +258,8 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/controls.css': 17,
   'styles/hero-tones.css': 2,
   'styles/home.css': 46,
-  'styles/hub.css': 44,
+  'styles/hub.css': 39,
   'styles/messages.css': 10,
-  'styles/messages-details.css': 2,
   'styles/onboard.css': 22,
   'styles/qualifiers.css': 51,
   'styles/recruiting.css': 18,
@@ -270,7 +269,7 @@ const RAW_LONGHAND: Record<string, number> = {
   'styles/rounds-track.css': 27,
   'styles/rounds.css': 71,
   'styles/settings.css': 5,
-  'styles/shell.css': 21,
+  'styles/shell.css': 18,
   'styles/stats.css': 55,
   'styles/ui.css': 19,
 };

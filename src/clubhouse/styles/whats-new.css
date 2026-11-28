@@ -11,7 +11,8 @@
 }
 .ch-wn-detail {
   color: var(--ch-text-secondary);
-  font: var(--ch-type-13);
+  font: var(--ch-type-footnote);
+  font-weight: var(--ch-fw-400);
   line-height: 1.45;
   white-space: normal;
   display: -webkit-box;

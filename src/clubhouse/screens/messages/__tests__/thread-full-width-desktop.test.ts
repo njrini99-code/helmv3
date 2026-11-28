@@ -49,6 +49,6 @@ describe('W17 the desktop thread spans its pane', () => {
   it('the day marker is 13 px, not 12', () => {
     const thread = read('messages-thread.css');
     const m = [...thread.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find((r) => r[1]!.trim() === '[data-ch-ms-v2] :is(.ch-ms-thread, .ch-msp-thread) .ch-ms-day > span');
-    expect(m?.[2]).toMatch(/font:\s*var\(--ch-type-13-strong\)/);
+    expect(m?.[2]).toMatch(/font:\s*var\(--ch-type-footnote\)/);
   });
 });

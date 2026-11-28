@@ -703,7 +703,7 @@
 }
 .ch-ox-slot[data-filled] {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  box-shadow: var(--ch-elevation-flat);
   animation: chOxKey var(--ch-ox-t-key) var(--ch-ox-ease);
 }
 .ch-ox-code[data-focus] .ch-ox-slot[data-cur] {
@@ -733,7 +733,7 @@
   animation: chOxShake var(--ch-ox-t-shake) var(--ch-ox-out);
 }
 .ch-ox-code[data-st='error'] .ch-ox-slot[data-filled] {
-  box-shadow: 0 0 0 1.5px var(--ch-danger-600), var(--ch-raised-shadow);
+  box-shadow: 0 0 0 1.5px var(--ch-danger-600), var(--ch-elevation-flat);
 }
 .ch-ox-code__foot {
   display: flex;
@@ -880,7 +880,7 @@
 @media (hover: hover) {
   .ch-ox-tile:hover {
     background: var(--ch-raised-bg);
-    box-shadow: var(--ch-raised-shadow);
+    box-shadow: var(--ch-elevation-flat);
   }
 }
 .ch-ox-tile[data-ch-pressed] {
@@ -913,7 +913,7 @@
 }
 .ch-ox-tile[aria-checked='true'] {
   background: linear-gradient(162deg, #165c3b, var(--ch-ox-felt));
-  box-shadow: var(--ch-elevation-reading-accent);
+  box-shadow: var(--ch-elevation-card);
 }
 .ch-ox-tile[aria-checked='true'] b {
   color: #f7f3e8;
@@ -1126,7 +1126,7 @@
   height: 44px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  box-shadow: var(--ch-elevation-flat);
   color: var(--ch-text-primary);
 }
 .ch-ox-step:focus-visible {
@@ -1172,7 +1172,7 @@
   margin-top: -8px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, var(--ch-green-600) 0 4px, transparent 4.5px), var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
+  box-shadow: var(--ch-elevation-flat), 0 0 0 var(--ch-hairline-w) var(--ch-border-subtle);
 }
 .ch-ox-range::-moz-range-thumb {
   width: 26px;
@@ -1185,7 +1185,7 @@
   outline: none;
 }
 .ch-ox-range:focus-visible::-webkit-slider-thumb {
-  box-shadow: var(--ch-raised-shadow), 0 0 0 4px var(--ch-focus-halo);
+  box-shadow: var(--ch-elevation-flat), 0 0 0 4px var(--ch-focus-halo);
 }
 .ch-ox-scale {
   position: relative;
@@ -1479,7 +1479,7 @@
   color: var(--ch-ox-felt);
   background: var(--ch-ox-grain), radial-gradient(120% 90% at 30% 20%, #fbf7ec, #f2ebd8 70%, #eae1ca);
   /* A card lifted off the green: the Frame's gilt edge and contact shadow, over the overlay's soft fall. */
-  box-shadow: var(--ch-elevation-on-frame), var(--ch-elevation-overlay);
+  box-shadow: var(--ch-elevation-card), var(--ch-elevation-overlay);
 }
 .ch-ox-mc::before {
   content: '';
@@ -2295,7 +2295,7 @@ html[data-fw-theme='dark'] .ch-ox-slot {
 }
 html[data-fw-theme='dark'] .ch-ox-slot[data-filled] {
   background: var(--ch-raised-bg);
-  box-shadow: var(--ch-raised-shadow);
+  box-shadow: var(--ch-elevation-flat);
 }
 html[data-fw-theme='dark'] .ch-ox-code[data-focus] .ch-ox-slot[data-cur] {
   background: rgb(255 255 255 / 0.07);
@@ -2307,7 +2307,7 @@ html[data-fw-theme='dark'] .ch-ox-code[data-st='ok'] .ch-ox-slot {
   color: var(--ch-green-700);
 }
 html[data-fw-theme='dark'] .ch-ox-code[data-st='error'] .ch-ox-slot[data-filled] {
-  box-shadow: 0 0 0 1.5px var(--ch-danger-600), var(--ch-raised-shadow);
+  box-shadow: 0 0 0 1.5px var(--ch-danger-600), var(--ch-elevation-flat);
 }
 html[data-fw-theme='dark'] .ch-ox-big input::placeholder {
   color: var(--ch-text-placeholder);
@@ -2319,10 +2319,10 @@ html[data-fw-theme='dark'] .ch-ox-hcp__val[data-none] {
   color: var(--ch-text-tertiary);
 }
 html[data-fw-theme='dark'] .ch-ox-range::-webkit-slider-thumb {
-  box-shadow: var(--ch-raised-shadow), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
+  box-shadow: var(--ch-elevation-flat), 0 0 0 var(--ch-hairline-w) var(--ch-border-hairline);
 }
 html[data-fw-theme='dark'] .ch-ox-range:focus-visible::-webkit-slider-thumb {
-  box-shadow: var(--ch-raised-shadow), 0 0 0 4px var(--ch-focus-halo);
+  box-shadow: var(--ch-elevation-flat), 0 0 0 4px var(--ch-focus-halo);
 }
 html[data-fw-theme='dark'] .ch-ox-range::-moz-range-thumb {
   background: radial-gradient(circle at 50% 50%, var(--ch-green-600) 0 4px, transparent 4.5px), #262d27;
@@ -2428,4 +2428,20 @@ html[data-fw-theme='dark'] .ch-ox[data-phase='fold'] {
 :root[data-reduce-transparency][data-fw-theme='dark'] .ch-ox-lock,
 :root[data-reduce-transparency][data-fw-theme='dark'] .ch-ox-rail {
   background: var(--ch-bg-surface);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-ox-team,
+  .ch-ox-tile[aria-checked='true'],
+  .ch-ox-hcp,
+  .ch-ox-prow,
+  .ch-ox-list,
+  .ch-ox-sum,
+  .ch-ox-lock,
+  .ch-ox-rail,
+  .ch-ox-signin {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

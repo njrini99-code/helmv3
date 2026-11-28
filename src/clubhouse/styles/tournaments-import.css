@@ -260,7 +260,7 @@
   list-style: none;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   overflow: hidden;
 }
 .ch-tour-imp-p {
@@ -456,7 +456,7 @@
   overflow-x: auto;
   border-radius: var(--ch-radius-md);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow-flat);
+  box-shadow: var(--ch-elevation-card);
   overscroll-behavior-x: contain;
 }
 .ch-tour-imp-peek:focus-visible {
@@ -566,7 +566,7 @@
   overflow-x: auto;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-card-bg);
-  box-shadow: var(--ch-card-shadow);
+  box-shadow: var(--ch-elevation-card);
   overscroll-behavior-x: contain;
 }
 .ch-tour-imp-g {
@@ -666,4 +666,15 @@
   font: var(--ch-type-footnote);
   line-height: var(--ch-lead-caption);
   color: var(--ch-danger-600);
+}
+
+/* Forced colours drop shadows: each surface above that reads a named elevation keeps a visible edge (dsx-07). */
+@media (forced-colors: active) {
+  .ch-tour-imp-ps,
+  .ch-tour-imp-ts,
+  .ch-tour-imp-peek,
+  .ch-tour-imp-g-wrap {
+    outline: 1px solid CanvasText;
+    outline-offset: -1px;
+  }
 }

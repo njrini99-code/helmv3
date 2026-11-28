@@ -1098,6 +1098,8 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-27-bridge-signal-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-27-gate-wells.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-27-headers-and-touch.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
@@ -1274,6 +1276,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-26-switch-time.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-signals-before-children.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
@@ -1361,6 +1365,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-21-desk-dashboard.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-21-stat-card-title-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-27-gate-green.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
@@ -1518,6 +1523,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-chart-marks-inside.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-scoring-average-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-scoring-average-preview.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-token-refs.md` | current | - | - | - | - |
@@ -1605,6 +1611,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-25-shared-stats-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-no-clear-change-chip.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-team-chart-shared-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-token-refs.md` | current | - | - | - | - |
@@ -1681,6 +1688,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-21-week-lanes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-25-live-drop-reporter.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P006-calendar/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/CHANGELOG.md` | current | - | - | yes | 1 |
 | `docs/clubhouse/pages/P007-messages/CONTRACT.md` | current | - | - | yes | - |
@@ -1758,6 +1766,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-jump-key-open-hold.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-27-first-run-edge.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-27-phone-thread-opens-at-end.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-27-token-refs.md` | current | - | - | - | - |
@@ -1805,6 +1815,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-24-dual-team-codes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-25-auth-scrub.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P008-settings/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P009-qualifiers/CONTRACT.md` | current | - | - | yes | - |
@@ -1923,6 +1934,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-19-waiting-window-trip-count.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P010-hub/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P010-hub/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/CHANGELOG.md` | current | - | - | - | - |
@@ -2023,6 +2035,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-25-live-drop-reporter.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
@@ -2056,6 +2070,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-17-silent-errors-rest.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P012-classes/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/CHANGELOG.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P013-coachhelm/DESIGN.md` | current | - | - | - | - |
@@ -2188,6 +2204,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-25-only-you-ink.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-huddle-and-read-gate.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
@@ -2220,6 +2238,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-18-polish-w5-w6.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P014-recruiting/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/CONTRACT.md` | current | - | - | yes | - |
@@ -2259,6 +2279,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-25-auth-scrub.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-26-sky-script-json.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P015-auth/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P015-auth/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/CONTRACT.md` | current | - | - | - | - |
@@ -2317,6 +2338,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-25-live-drop-reporter.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-26-paste-markup-scanner.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P016-tournaments/changes/2026-11-27-dsx-07-type-roles.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P016-tournaments/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/CONTRACT.md` | current | - | - | - | - |
@@ -2327,6 +2350,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P017-practice/changes/2026-11-18-polish.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/changes/2026-11-20-phone-clarity.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P017-practice/changes/2026-11-27-dsx-07-tokens.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P017-practice/changes/2026-11-27-touch-feedback.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/auth.md` | current | - | - | - | - |
 | `docs/clubhouse/phone/calendar.md` | current | - | - | - | - |

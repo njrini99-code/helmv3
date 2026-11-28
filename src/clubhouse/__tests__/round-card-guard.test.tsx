@@ -56,7 +56,7 @@ describe('P-5 RoundCard', () => {
     expect(sideBarViolations(['border-left-width: 4px'])).toHaveLength(1);
     expect(sideBarViolations(['box-shadow: inset 3px 0 0 var(--ch-green-600)'])).toHaveLength(1);
     expect(sideBarViolations(['box-shadow: 0 1px 2px rgb(0 0 0 / 0.1), inset 4px 0 0 green'])).toHaveLength(1);
-    expect(sideBarViolations(['border: var(--ch-hairline-w) solid var(--ch-border-hairline)', 'box-shadow: var(--ch-elevation-reading)', 'border-left: 1px solid red'])).toEqual([]);
+    expect(sideBarViolations(['border: var(--ch-hairline-w) solid var(--ch-border-hairline)', 'box-shadow: var(--ch-elevation-card)', 'border-left: 1px solid red'])).toEqual([]);
     const tokens = readFileSync(join(process.cwd(), 'src/clubhouse/styles/tokens.css'), 'utf8');
     const reading = [...tokens.matchAll(/--ch-elevation-reading:\s*([^;]+);/g)].map((m) => `box-shadow: ${m[1]!.replace(/\s+/g, ' ')}`);
     expect(reading.length).toBeGreaterThan(0);
@@ -68,7 +68,7 @@ describe('P-5 RoundCard', () => {
     const decls = declarationsFor(css, '.ch-tfx-card');
     expect(decls.length).toBeGreaterThan(10);
     expect(sideBarViolations(decls)).toEqual([]);
-    expect(decls).toContain('box-shadow: var(--ch-elevation-reading)');
+    expect(decls).toContain('box-shadow: var(--ch-elevation-card)');
   });
 
   it('every status reads in a word, and the whole card is one link with a spoken name', () => {
