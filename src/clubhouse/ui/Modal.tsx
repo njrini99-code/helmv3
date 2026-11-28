@@ -31,6 +31,7 @@ export function Modal({
   initialFocus,
   className,
   detent,
+  detents,
   atRest = false,
   bare = false,
   variant = 'default',
@@ -69,6 +70,11 @@ export function Modal({
   children?: ReactNode;
   /** A fixed phone height as a share of the screen (0.9, 0.74, 0.62), capped at 92dvh. Absent: content height, as every other sheet. */
   detent?: number;
+  /**
+   * Phone stops as shares of the screen, ascending ([0.55, 0.92]; design lab pilot P4): the sheet opens on the first, a drag or a
+   * flick settles it on the nearest, a field taking focus grows it to the largest, and its footer stays on screen at every stop.
+   */
+  detents?: readonly number[];
   /** Opened by a link: on screen at its resting place with no rise (classes-roster-home 07 M-CRH-46). */
   atRest?: boolean;
 }) {
@@ -85,7 +91,8 @@ export function Modal({
     fallbackFocus,
     pop: pop === 'quick' || role === 'alertdialog' ? 'quick' : 'dialog',
   });
-  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced, variant });
+  const drag = useSheetDrag(ref, onClose, { enabled: phone, reduced, variant, detents, pin: '.ch-modal__foot' });
+  const tallest = detents?.length ? detents[detents.length - 1]! : detent;
 
   return (
     // The click is only the backdrop dismiss; the keyboard path is Esc, which <dialog> handles through onCancel.
@@ -96,10 +103,11 @@ export function Modal({
       role={role === 'alertdialog' ? 'alertdialog' : undefined}
       className={'ch-modal' + (className ? ` ${className}` : '')}
       data-ch-code={code}
-      data-ch-detent={detent ? '' : undefined}
+      data-ch-detent={detent && !detents?.length ? '' : undefined}
+      data-ch-detents={detents?.length ? '' : undefined}
       data-ch-at-rest={atRest ? '' : undefined}
       data-ch-pop={pop}
-      style={{ ['--ch-modal-w' as string]: `${width}px`, ...(detent ? { ['--ch-modal-detent' as string]: `${detent * 100}dvh` } : {}) }}
+      style={{ ['--ch-modal-w' as string]: `${width}px`, ...(tallest ? { ['--ch-modal-detent' as string]: `${tallest * 100}dvh` } : {}) }}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onCancel={(e) => {

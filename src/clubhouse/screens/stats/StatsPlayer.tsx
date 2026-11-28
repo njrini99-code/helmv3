@@ -61,6 +61,7 @@ import { NoData } from '../../ui/NoData';
 import { usePushOnce } from '../../lib/nav-once';
 import { areaDetail, desktopTabOfHash, tabOfDetail } from './detail-route';
 import { Abbr } from '../../ui/Abbr';
+import { Card } from '../../ui/Card';
 
 type Tab = 'overview' | 'game' | 'rounds' | 'dev';
 const TABS: readonly Tab[] = ['overview', 'game', 'rounds', 'dev'];
@@ -491,9 +492,9 @@ export function StatsPlayer({
                 ) : data.stats && data.stats.roundsPlayed > 0 ? (
                   <GameDetail s={data.stats} x={data.extra} bench={data.bench} tour={data.tour} first={coach ? first : 'You'} rounds={w.rounds} window={data.window} basis={basisWords(data.filter)} holes={data.filter.holes} puttBands={data.puttBands} reads={reads} onRetry={() => router.refresh()} />
                 ) : (
-                  <div className="ch-st-card">
+                  <Card kind="list" as="div" className="ch-st-card">
                     <EmptyState code="CH-5301" title="No shot-by-shot rounds in this window." body="Game detail fills in from rounds posted hole by hole with shots. Totals-only rounds still count toward scoring." />
-                  </div>
+                  </Card>
                 )}
               </SectionBoundary>
             )}

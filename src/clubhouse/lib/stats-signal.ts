@@ -210,12 +210,29 @@ export function wilson(made: number, attempts: number, z = 1.96): { lo: number; 
 /**
  * A trailing mean over the last `window` values (fewer at the start), drawn only from the `start`-th value on: before that
  * there is no line, a gap rather than a bridge. `null` values are skipped when averaging and give a null point.
+ *
+ * `weights`, when given, weighs each value in its window (the nines rule, `NINES_LINE`: a per-18 figure from a 9-hole round
+ * counts as half a round, weight 0.5). The weighted mean of per-18 values is then the same figure as the window's strokes over
+ * its holes, times 18, so the line agrees with every pooled average on the page. A missing or non-positive weight counts as 1.
  */
-export function rollingMean(values: Array<number | null>, window = 5, start = 3): Array<number | null> {
+export function rollingMean(values: Array<number | null>, window = 5, start = 3, weights?: ReadonlyArray<number | null | undefined>): Array<number | null> {
+  const w = (i: number) => {
+    const v = weights?.[i];
+    return v != null && Number.isFinite(v) && v > 0 ? v : 1;
+  };
   return values.map((_, i) => {
     if (i + 1 < start) return null;
-    const slice = values.slice(Math.max(0, i + 1 - window), i + 1).filter((v): v is number => v != null);
-    return slice.length >= Math.min(start, window) ? slice.reduce((a, b) => a + b, 0) / slice.length : null;
+    let n = 0;
+    let sum = 0;
+    let total = 0;
+    for (let j = Math.max(0, i + 1 - window); j <= i; j++) {
+      const v = values[j];
+      if (v == null) continue;
+      n += 1;
+      sum += v * w(j);
+      total += w(j);
+    }
+    return n >= Math.min(start, window) && total > 0 ? sum / total : null;
   });
 }
 

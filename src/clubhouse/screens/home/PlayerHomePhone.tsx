@@ -29,6 +29,7 @@ import { TeammatesLiveCard } from './TeammatesLiveCard';
 import { PlayerGame } from './PlayerGame';
 import { messageCoachHref, MY_STATS, postRoundHref, roundHref } from './player-links';
 import { GirViz, PuttsViz, SgViz } from './RoundViz';
+import { Card } from '../../ui/Card';
 
 /**
  * The player's phone Home (v2, design/handoff/Player - Home - Mobile.html,
@@ -214,7 +215,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
       ) : !r ? (
         <EmptyState code="CH-2302" shape="rows" shapeCount={2} title="No rounds posted yet this season." body="Your newest 18-hole round appears here, hole by hole, as soon as you post it." />
       ) : (
-        <div className="ch-ph-card">
+        <Card kind="list" as="div" className="ch-ph-card">
           <div className="ch-ph-rd">
             <span className="ch-h-flag" aria-hidden="true">
               <Icon icon={Flag} size={16} />
@@ -250,7 +251,7 @@ function Latest({ data, covered }: { data: ChPlayerHome['latest']; covered: bool
           <Button data-ctl="CTL-P002-068" variant="ghost" rightIcon={ArrowRight} href={roundHref(r.id, 'player') ?? MY_STATS} ahead={!!roundHref(r.id, 'player')} className="ch-ph-card__more ch-btn--flush-end">
             {roundHref(r.id, 'player') ? 'Open recap' : 'My stats'}
           </Button>
-        </div>
+        </Card>
       )}
     </section>
   );

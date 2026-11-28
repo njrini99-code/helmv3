@@ -123,6 +123,37 @@ export function releaseSpeed(samples: ReadonlyArray<readonly [number, number]>, 
   return dt > 0 ? ((last[1] - first[1]) / dt) * fade : 0;
 }
 
+/** How far ahead a release is projected to pick its detent: a flick carries to the next stop, a slow let-go settles nearest. */
+export const CH_DETENT_PROJECT_MS = 200;
+
+/**
+ * Where each detent rests, as an offset from fully open (the largest detent, 0) toward closing, for a sheet `size` px tall in a
+ * window `view` px tall. `detents` are shares of the window, ascending (0.55 for medium, 0.92 for large); the sheet is laid out at
+ * its largest, so a smaller detent is the same sheet moved down, never a resized one (no layout per frame).
+ */
+export function detentRests(detents: readonly number[], size: number, view: number): number[] {
+  return detents.map((d) => Math.max(0, Math.round(size - d * view)));
+}
+
+/**
+ * Where a let-go settles a sheet with detents (vaul's rules, not vaul; design lab pilot P4): projected `CH_DETENT_PROJECT_MS` ahead at
+ * its speed, it settles on the nearest detent, so a flick up from medium goes large and a flick down from large goes medium.
+ * Below the smallest detent it closes past a quarter of what that detent shows, or on a flick faster than 0.4 px/ms that would
+ * carry it past that detent, as a sheet without detents does. `rests` from `detentRests` (descending offsets).
+ */
+export function detentTarget(offset: number, speed: number, rests: readonly number[], size: number): number | 'close' {
+  const low = Math.max(...rests);
+  const projected = offset + speed * CH_DETENT_PROJECT_MS;
+  const shows = Math.max(1, size - low);
+  if (offset > low + shows * CH_SHEET_CLOSE_FRACTION) return 'close';
+  if (offset > low + 10 && speed > CH_SHEET_FLICK_PX_PER_MS && projected > low) return 'close';
+  let best = 0;
+  rests.forEach((r, i) => {
+    if (Math.abs(projected - r) < Math.abs(projected - rests[best]!)) best = i;
+  });
+  return best;
+}
+
 /** An exit starts on the frame after it is asked for; a thrown sheet has already travelled that frame at its speed. */
 const EXIT_LEAD_MS = 16;
 
@@ -174,7 +205,23 @@ export function chScrimAt(offset: number, size: number): number {
 export function useSheetDrag(
   sheet: RefObject<HTMLElement | null>,
   onClose: () => void,
-  { enabled = true, direction = 'down', reduced = false, variant = 'default' }: { enabled?: boolean; direction?: ChSheetDirection; reduced?: boolean; variant?: 'default' | 'messages' } = {},
+  {
+    enabled = true,
+    direction = 'down',
+    reduced = false,
+    variant = 'default',
+    detents,
+    pin,
+  }: {
+    enabled?: boolean;
+    direction?: ChSheetDirection;
+    reduced?: boolean;
+    variant?: 'default' | 'messages';
+    /** Stops as shares of the window, ascending ([0.55, 0.92]): the sheet opens at the first and settles on the nearest (P4). */
+    detents?: readonly number[];
+    /** A selector inside the sheet kept at the bottom of the screen at every detent (its actions), so Apply is never below the fold. */
+    pin?: string;
+  } = {},
 ) {
   const reducedRef = useRef(reduced);
   reducedRef.current = reduced;
@@ -187,6 +234,22 @@ export function useSheetDrag(
   useEffect(() => {
     close.current = onClose;
   }, [onClose]);
+  /** Which detent the sheet rests on (an index into `detents`), and the stops themselves, read inside the drag. */
+  const atStop = useRef(0);
+  const stops = useRef(detents);
+  stops.current = detents && detents.length > 1 && direction === 'down' ? detents : undefined;
+  const pinSel = useRef(pin);
+  pinSel.current = pin;
+  /** The offsets the sheet's detents rest at now (none: one stop, fully open). */
+  const restsOf = useCallback((el: HTMLElement) => (stops.current ? detentRests(stops.current, el.offsetHeight, window.innerHeight) : [0]), []);
+  /** Keeps the pinned part (the actions) at the foot of the screen while the sheet sits between its detents. */
+  const placePin = useCallback((el: HTMLElement, offset: number) => {
+    if (!stops.current || !pinSel.current) return;
+    const p = el.querySelector<HTMLElement>(pinSel.current);
+    if (!p) return;
+    const lift = Math.min(Math.max(0, offset), Math.max(...restsOf(el)));
+    p.style.translate = lift ? `0 ${-lift}px` : '';
+  }, [restsOf]);
   // A sheet that mounts only while open (More, the bell) arrives after the hook: follow the element itself. It runs
   // after every render on purpose, since a ref changing is no dependency React can see; it settles once it matches.
   const [host, setHost] = useState<HTMLElement | null>(null);
@@ -194,6 +257,23 @@ export function useSheetDrag(
   useLayoutEffect(() => {
     if (sheet.current !== host) setHost(sheet.current);
   });
+  // A sheet with detents opens on its first (medium): placed before its rise, which composes with `translate`, and again when
+  // the window changes size (rotation, the toolbar), at the detent it rests on.
+  useLayoutEffect(() => {
+    const el = host;
+    if (!enabled || !el || !stops.current) return;
+    atStop.current = 0;
+    const place = () => {
+      if (stop.current || settling.current) return;
+      const r = restsOf(el)[atStop.current] ?? 0;
+      el.style.translate = r ? `0 ${r}px` : '';
+      placePin(el, r);
+    };
+    place();
+    window.addEventListener('resize', place);
+    return () => window.removeEventListener('resize', place);
+  }, [host, enabled, restsOf, placePin]);
+
   useEffect(() => {
     if (!enabled) {
       stop.current?.();
@@ -210,7 +290,8 @@ export function useSheetDrag(
     (el: HTMLElement, pointerId: number, at: number, timeStamp: number, capture: Element | null) => {
       const coordinate = (event: { clientX: number; clientY: number }) => (direction === 'left' ? -event.clientX : direction === 'up' ? -event.clientY : event.clientY);
       flings.delete(el);
-      const shown = settling.current ? offsetNow(el, direction) : 0;
+      const rests = restsOf(el);
+      const shown = settling.current ? offsetNow(el, direction) : stops.current ? (rests[atStop.current] ?? 0) : 0;
       settling.current?.();
       // Mid spring-back above its open position, the finger takes it from where the band had it.
       const messages = variant === 'messages';
@@ -228,10 +309,13 @@ export function useSheetDrag(
       // The dim follows the finger, at once, as a sheet's does on iOS (A9): lighter as the sheet goes, back as it returns.
       const dialog = el.closest('dialog');
       const size = direction === 'left' ? el.offsetWidth : el.offsetHeight;
+      const low = Math.max(...rests);
       const put = (offset: number) => {
         if (offset < 0 && direction === 'down') floor();
-        el.style.translate = direction === 'left' ? `${-offset}px 0` : direction === 'up' ? `0 ${-offset}px` : `0 ${offset}px`;
-        if (dialog) chSetScrim(dialog, chScrimAt(offset, size), 0);
+        el.style.translate = direction === 'left' ? `${-offset}px 0` : direction === 'up' ? `0 ${-offset}px` : offset ? `0 ${offset}px` : '';
+        placePin(el, offset);
+        // With detents the dim is full down to the smallest and clears over what that detent shows.
+        if (dialog) chSetScrim(dialog, chScrimAt(Math.max(0, offset - low), size - low), 0);
       };
       el.style.transition = 'none';
       // Caught mid spring-back, it stays under the finger (dropping its transition would jump it to rest).
@@ -247,12 +331,15 @@ export function useSheetDrag(
         samples.push([ev.timeStamp, dy]);
         if (samples.length > 12) samples.shift();
       };
-      const springBack = (speed: number) => {
+      const springBack = (speed: number, to = 0) => {
+        // The pinned footer moves with the sheet; read before settle, which clears its transition.
+        const pinned = stops.current && pinSel.current ? el.querySelector<HTMLElement>(pinSel.current) : null;
         let timer = 0;
         const settle = () => {
           window.clearTimeout(timer);
           el.removeEventListener('transitionend', onEnd);
           if (floored) el.style.boxShadow = '';
+          if (pinned) pinned.style.transition = '';
           settling.current = null;
         };
         const onEnd = (e: TransitionEvent) => {
@@ -262,26 +349,31 @@ export function useSheetDrag(
         if (reducedRef.current) {
           // Reduce Motion: back at once (F-0018).
           el.style.transition = 'none';
-          el.style.translate = '';
+          el.style.translate = to ? `0 ${to}px` : '';
+          placePin(el, to);
           if (dialog) chSetScrim(dialog, 1, 0);
           settle();
           return;
         }
-        if (Math.abs(dy) >= 0.5 && chSupportsLinear()) {
+        const gap = dy - to;
+        if (Math.abs(gap) >= 0.5 && chSupportsLinear()) {
           // Toward rest from wherever it is, at the speed it was moving (progress per second), cut within half a pixel.
           // Thrown back hard, a sheet carries on past its open position as when pulled there, over its floor; a drawer
           // stops at its open edge, so thrown back too hard to stop there it starts slower instead.
-          const curve = chSpringCurve('smooth', { velocity: (-speed * 1000) / dy, rest: 0.5 / Math.abs(dy), hold: direction !== 'down' });
-          if (direction === 'down' && dy > 0 && Array.from({ length: 49 }, (_, i) => curve.ease(i / 48)).some((p) => p > 1)) floor();
+          const curve = chSpringCurve('smooth', { velocity: (-speed * 1000) / gap, rest: 0.5 / Math.abs(gap), hold: direction !== 'down' });
+          if (direction === 'down' && to === 0 && dy > 0 && Array.from({ length: 49 }, (_, i) => curve.ease(i / 48)).some((p) => p > 1)) floor();
           ms = curve.ms;
           el.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
+          if (pinned) pinned.style.transition = `translate ${curve.ms}ms ${curve.linear}`;
           // The dim comes back with the panel, on its spring (A9).
           if (dialog) chSetScrim(dialog, 1, curve.ms, curve.linear);
         } else {
-          el.style.transition = 'translate var(--ch-dur-release) var(--ch-ease)';
+          el.style.transition = 'translate var(--ch-dur-release) var(--ch-ease-ios)';
+          if (pinned) pinned.style.transition = 'translate var(--ch-dur-release) var(--ch-ease-ios)';
           if (dialog) chSetScrim(dialog, 1, CH_DUR.release * 1000);
         }
-        el.style.translate = '';
+        el.style.translate = to ? `0 ${to}px` : '';
+        placePin(el, to);
         el.addEventListener('transitionend', onEnd);
         timer = window.setTimeout(settle, ms + 80);
         settling.current = settle;
@@ -290,6 +382,22 @@ export function useSheetDrag(
         if (ev.pointerId !== pointerId) return;
         stop.current?.();
         const speed = releaseSpeed(samples, ev.timeStamp);
+        if (stops.current) {
+          // Detents: settle on the nearest stop the throw carries to, or close below the smallest (P4).
+          const target = ev.type === 'pointerup' ? detentTarget(dy, speed, rests, size) : atStop.current;
+          if (target === 'close') {
+            if (floored) el.style.boxShadow = '';
+            flings.set(el, { speed: Math.max(0, speed), at: performance.now() });
+            haptic('commit');
+            close.current();
+            return;
+          }
+          // A new stop ticks once, as a picker does (D-70 selection); the medium settle stays a close's.
+          if (target !== atStop.current) haptic('select');
+          atStop.current = target;
+          springBack(speed, rests[target] ?? 0);
+          return;
+        }
         const past = messages ? size * MS_CLOSE_FRACTION : size > 0 ? size * CH_SHEET_CLOSE_FRACTION : CH_SHEET_CLOSE_PX;
         if (ev.type === 'pointerup' && (dy > past || (dy > 10 && speed > CH_SHEET_FLICK_PX_PER_MS))) {
           if (floored) el.style.boxShadow = '';
@@ -312,7 +420,7 @@ export function useSheetDrag(
       window.addEventListener('pointerup', end);
       window.addEventListener('pointercancel', end);
     },
-    [direction, variant],
+    [direction, variant, restsOf, placePin],
   );
 
   const onPointerDown = useCallback(
@@ -361,7 +469,9 @@ export function useSheetDrag(
       const dy = e.clientY - pending.y;
       if (Math.max(Math.abs(dx), Math.abs(dy)) < BODY_SLOP_PX) return;
       pending = null;
-      if (dy <= 0 || Math.abs(dx) > dy) return;
+      // Below its largest detent a sheet takes an upward drag too: the sheet grows before its content scrolls, as on iOS (P4).
+      const grows = !!stops.current && atStop.current < stops.current.length - 1;
+      if (Math.abs(dx) > Math.abs(dy) || (dy <= 0 && !(grows && dy < 0))) return;
       fromBody.current = true;
       unguard();
       guard = (c: MouseEvent) => {
@@ -382,11 +492,24 @@ export function useSheetDrag(
       const t = e.touches[0];
       if (!t || !e.cancelable) return;
       const down = pending ? t.clientY - pending.y : 0;
-      if (fromBody.current || (pending && down >= BODY_CLAIM_PX && down >= Math.abs(t.clientX - pending.x))) e.preventDefault();
+      const grows = !!stops.current && atStop.current < stops.current.length - 1;
+      const claim = grows ? Math.abs(down) : down;
+      if (fromBody.current || (pending && claim >= BODY_CLAIM_PX && claim >= Math.abs(t.clientX - pending.x))) e.preventDefault();
     };
     const scrolled = () => {
       scrolledAt = performance.now();
     };
+    // A field taking focus below the largest detent grows the sheet first, so the keyboard never covers what is being typed (P4).
+    const focused = (e: FocusEvent) => {
+      const list = stops.current;
+      if (!list || atStop.current === list.length - 1 || !(e.target as Element).closest?.(TEXT_ENTRY) || stop.current) return;
+      atStop.current = list.length - 1;
+      settling.current?.();
+      el.style.transition = reducedRef.current ? 'none' : 'translate var(--ch-dur-base) var(--ch-ease-ios)';
+      el.style.translate = '';
+      placePin(el, 0);
+    };
+    el.addEventListener('focusin', focused);
     el.addEventListener('pointerdown', down);
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -401,8 +524,9 @@ export function useSheetDrag(
       window.removeEventListener('pointercancel', up);
       el.removeEventListener('touchmove', touchMove);
       el.removeEventListener('scroll', scrolled, { capture: true });
+      el.removeEventListener('focusin', focused);
     };
-  }, [host, enabled, direction, begin]);
+  }, [host, enabled, direction, begin, placePin]);
 
   return { onPointerDown };
 }

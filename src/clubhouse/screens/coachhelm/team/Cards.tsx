@@ -14,6 +14,7 @@ import { formatSigned } from '../../../lib/format';
 import { Coin, Notice, readTitle } from './parts';
 import { STATION_SHORT } from './hole-geometry';
 import { sgIsEstimate } from '../../../data/stats-sg-mix';
+import { Card } from '../../../ui/Card';
 
 /** The fingerprint's height, and its most points a stroke: 20pt is 1.1 strokes (AC-ROSTER-03). */
 const FP_H = 34;
@@ -158,7 +159,7 @@ export function workingRows(working: readonly ChBriefWorking[]): Array<{ key: st
 export function WorkingCard({ working, proposed, failed, onRetry }: { working: readonly ChBriefWorking[]; proposed: ReadonlyArray<{ player: ChTeamPlayer; read: ChInsight }>; failed: boolean; onRetry?: () => void }) {
   const n = working.length + proposed.length;
   return (
-    <section className="card work" data-ch-team-card="work" aria-label="Working on">
+    <Card kind="list" className="card work" label="Working on" data={{ 'data-ch-team-card': 'work' }}>
       <div className="ch">
         <h4>Working on</h4>
         {!failed && (
@@ -214,28 +215,28 @@ export function WorkingCard({ working, proposed, failed, onRetry }: { working: r
           {!n && <p className="nordss ch-htb-workempty">Nothing in progress yet. Assign a read as a focus and it shows here.</p>}
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 
 /** The rungs' own words; a rung under 10 rechecked says "Not enough yet", never a share (AC-RECORD-02, 03). */
 export function RecordCard({ part, desk = false, recheck = null }: { part: ChTeamPart<ChTrackRecord>; desk?: boolean; recheck?: ReactNode }) {
   const notice = (title: string, body: string) => (
-    <section className="card recc" data-ch-team-card="record">
+    <Card kind="list" className="card recc" data={{ 'data-ch-team-card': 'record' }}>
       <div className="ch">
         <h4>How often CoachHelm is right</h4>
       </div>
       <Notice title={title} body={body} />
       {/* The way to run the check stays, whatever the record says (the design's failed state draws none; this is the coach's only way). */}
       {recheck && <div className="recfoot">{recheck}</div>}
-    </section>
+    </Card>
   );
   if (part.status === 'failed' || part.value.state === 'unavailable') return notice('Track record unavailable right now', 'It shows again once the check runs. No number is shown in its place.');
   const r = part.value;
   const { held, rechecked: checked } = r;
   if (r.empty) return notice('No reads to check yet', 'Reads are re-checked against new rounds once the team has some.');
   return (
-    <section className="card recc" data-ch-team-card="record" aria-label="How often CoachHelm is right">
+    <Card kind="list" className="card recc" label="How often CoachHelm is right" data={{ 'data-ch-team-card': 'record' }}>
       <div className="ch">
         <h4>How often CoachHelm is right</h4>
       </div>
@@ -277,7 +278,7 @@ export function RecordCard({ part, desk = false, recheck = null }: { part: ChTea
         {r.rungs.some((g) => g.bar) && <span>Line: the target for that level</span>}
         {recheck}
       </div>
-    </section>
+    </Card>
   );
 }
 

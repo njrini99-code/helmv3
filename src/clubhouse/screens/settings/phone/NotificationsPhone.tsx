@@ -9,7 +9,7 @@ import { DELIVERY_GROUPS } from '../Notifications';
 import { EmailPaused, ReadFailed, ReadsFailed } from '../parts';
 import { notificationReadsFailed } from '../Notifications';
 import { ListSheet } from './sheets';
-import { ActionRow, Group, InfoRow, NavRow, SwitchRow } from './ui';
+import { ActionRow, Group, InfoRow, NavRow, SwitchRow, RowCard } from './ui';
 
 /**
  * Notifications on the phone: the notification matrix becomes one row per kind of update, which opens a sheet with
@@ -153,7 +153,7 @@ function DeliveryPhone({
         }
       >
         {open && (
-          <div className="ch-setm-card">
+          <RowCard>
             <SwitchRow
               label="Email"
               checked={!!p[open.emailKey]}
@@ -170,7 +170,7 @@ function DeliveryPhone({
                 onChange={flip(open.pushKey, `${open.label.toLowerCase()} push`)}
               />
             )}
-          </div>
+          </RowCard>
         )}
       </ListSheet>
     </>
@@ -277,7 +277,7 @@ function RoutingPhone({ initial, writes, emailPaused }: { initial: { prefs: Pref
         }
       >
         {open && (
-          <div className="ch-setm-card">
+          <RowCard>
             {CHANNELS.map((c) => {
               const { state, n } = channelState(r.prefs, open.categories, c.key);
               const key = `group:${open.label}:${c.key}`;
@@ -293,7 +293,7 @@ function RoutingPhone({ initial, writes, emailPaused }: { initial: { prefs: Pref
                 />
               );
             })}
-          </div>
+          </RowCard>
         )}
       </ListSheet>
     </>

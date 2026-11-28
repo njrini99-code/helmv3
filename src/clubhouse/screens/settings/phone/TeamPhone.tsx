@@ -28,7 +28,7 @@ import { TEES } from '../Team';
 import { ActionSheet, FormSheet, useSheetDraft } from './sheets';
 import { StaffPhone } from './StaffPhone';
 import { CourseLocationPhone } from '../course-location';
-import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow } from './ui';
+import { FieldRow, Group, NavRow, PickerRow, Problem, SliderRow, SwitchRow, RowCard } from './ui';
 import { NoTeam } from '../../../ui/NoTeam';
 
 /**
@@ -254,10 +254,10 @@ function TeamSheet({ open, onClose, team, writes }: { open: boolean; onClose: ()
       onAction={() => void save.run(draft)}
       note="Shown to your players, and on invites and exports."
     >
-      <div className="ch-setm-card">
+      <RowCard>
         <FieldRow id="set-team-name" label="Team name" inline value={draft.name} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, name: value })); }} />
         <FieldRow id="set-team-season" label="Season" inline placeholder="2026–27" value={draft.season} onChange={(e) => { const value = e.target.value; setDraft((d) => ({ ...d, season: value })); }} />
-      </div>
+      </RowCard>
       {org && (
         <Group title="School">
           <FieldRow id="set-org-name" label="Name" inline value={org.name} onChange={(e) => setOrg('name', e.target.value)} />
@@ -374,13 +374,13 @@ function ReminderSheet({ field, reminders, writes, onClose, onSaved }: { field: 
       onAction={() => void save.run(next)}
       note={f === 'earlyHours' ? 'How long before an event players who haven’t replied get the first nudge.' : 'How long before an event the last nudge goes out.'}
     >
-      <div className="ch-setm-card">
+      <RowCard>
         {f === 'earlyHours' ? (
           <SliderRow label="First reminder" value={draft} {...REMINDER_RANGES.earlyHours} format={hoursLabel} onChange={setDraft} />
         ) : (
           <SliderRow label="Final reminder" value={draft} {...REMINDER_RANGES.lateMinutes} format={minutesLabel} onChange={setDraft} />
         )}
-      </div>
+      </RowCard>
       {invalid && <Problem problem={invalid} />}
     </FormSheet>
   );

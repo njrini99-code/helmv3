@@ -14,6 +14,7 @@ import { formatFixed, MINUS } from '../../../lib/format';
 import { weekShares } from '../../../lib/chart';
 import { Chevron, ReadRow } from './parts';
 import { useContentIn } from './team-motion';
+import { Card } from '../../../ui/Card';
 
 const COURSE_CAP = 4;
 const READ_CAP = 3;
@@ -206,7 +207,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
     </div>
   );
   return (
-    <section ref={card} className="card spot cm" data-spot="" data-ch-team-card="spot" aria-label="Course and scoring">
+    <Card kind="list" ref={card} className="card spot cm" label="Course and scoring" data={{ 'data-spot': '', 'data-ch-team-card': 'spot' }}>
       <div className="ch">
         <h4>Course and scoring</h4>
         <span className="meta">Not on the hole · {reads.length ? `${reads.length} open ${pluralWord(reads.length, 'read', 'reads')}` : 'No open reads yet'}</span>
@@ -231,7 +232,7 @@ export function CourseCard({ data, initialAll = false, onRead, onCourse, onRetry
           </div>
         </div>
       )}
-    </section>
+    </Card>
   );
 }
 

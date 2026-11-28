@@ -13,6 +13,7 @@ import { useChReducedMotion } from '../../lib/reduced-motion';
 import { useHScroll, useKeepInView } from '../../ui/use-hscroll';
 import { plural, pluralWord } from '../../lib/plural';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { Card } from '../../ui/Card';
 import { PhoneIconAction } from '../../ui/PhoneBar';
 import { Avatar } from '../../ui/Avatar';
 import { Badge } from '../../ui/Badge';
@@ -400,7 +401,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
         <ul className="ch-prc-cards">
           {groups.map((g) => (
             <li key={g.id}>
-              <button data-ctl="CTL-P017-022" type="button" className="ch-prc-gcard" data-ch-press=".97" onClick={() => open(g)}>
+              <Card data-ctl="CTL-P017-022" kind="entity" className="ch-prc-gcard" onPress={() => open(g)}>
                 <b>{g.name}</b>
                 <span className="ch-prc-faces" aria-hidden="true">
                   {g.playerIds.slice(0, 8).map((id) => (
@@ -409,7 +410,7 @@ export function GroupsPage({ teamId, groups: fromServer, roster, preview = false
                   {g.playerIds.length > 8 && <small className="ch-num">+{g.playerIds.length - 8}</small>}
                 </span>
                 <span className="ch-num">{plural(g.playerIds.length, 'player')}</span>
-              </button>
+              </Card>
             </li>
           ))}
         </ul>
@@ -554,7 +555,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
           <SectionBoundary surface="practice.templates.starters" label="From GolfHelm" code="CH-13204">
           <ul className="ch-prc-cards">
             {PLAN_STARTERS.map((s) => (
-              <li key={s.id} className="ch-prc-card ch-prc-tmpl">
+              <Card as="li" key={s.id} kind="entity" className="ch-prc-card ch-prc-tmpl">
                 <button data-ctl="CTL-P017-027" type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(s.id)}>
                   <b>{s.name}</b>
                   <span className="ch-num">Session · {hours(s.minutes)}</span>
@@ -562,7 +563,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
                   <BodyGlance body={s.body} />
                 </button>
                 <Menu label={`${s.name}: more`} align="end" trigger={(p) => <IconButton data-ctl="CTL-P017-028" icon={Ellipsis} size="sm" label={`${s.name}: more`} menu={p} />} items={[{ label: 'Use', onSelect: () => startFrom(s.id) }, { label: 'Duplicate to your templates', onSelect: () => void duplicate({ name: s.name, minutes: s.minutes, body: s.body, kind: 'session' }) }]} />
-              </li>
+              </Card>
             ))}
           </ul>
           </SectionBoundary>
@@ -580,7 +581,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
         ) : (
           <ul className="ch-prc-cards">
             {mine.map((t) => (
-              <li key={t.id} className="ch-prc-card ch-prc-tmpl">
+              <Card as="li" key={t.id} kind="entity" className="ch-prc-card ch-prc-tmpl">
                 <button data-ctl="CTL-P017-029" type="button" className="ch-prc-tmpl__go" onClick={() => startFrom(t.id)}>
                   <b>{t.name}</b>
                   <span className="ch-num">{t.kind === 'block' ? 'Block' : t.kind === 'week' ? 'Week' : 'Session'}{t.minutes ? ` · ${hours(t.minutes)}` : ''}</span>
@@ -603,7 +604,7 @@ export function TemplatesPage({ teamId, templates, preview = false }: { teamId: 
                     { label: 'Delete', danger: true, onSelect: () => setDeleting(t) },
                   ]}
                 />
-              </li>
+              </Card>
             ))}
           </ul>
         )}

@@ -17,6 +17,7 @@ import { Button } from '../../ui/Button';
 import { Icon } from '../../ui/Icon';
 import { PlayerLiveSheet } from '../live/PlayerLiveSheet';
 import '../../styles/live.css';
+import { Card } from '../../ui/Card';
 
 /** Phone shows four lanes, a wide screen six (4.2). The Rounds band shows three (4.9). */
 const LIMIT = { phone: 4, desk: 6 } as const;
@@ -82,7 +83,7 @@ export function LiveNowCard({
   const href = variant === 'qualifier' && scope?.qualifierId ? `${LIVE_ROUTE}?qualifier=${scope.qualifierId}` : LIVE_ROUTE;
 
   return (
-    <section className="ch-lv-card" aria-labelledby="ch-lv-home-title" data-density={phone ? 'phone' : 'desk'}>
+    <Card kind="list" className="ch-lv-card" labelledBy="ch-lv-home-title" data={{ 'data-density': phone ? 'phone' : 'desk' }}>
       <header className="ch-lv-card__head">
         {out.length > 0 && !problem && <span className="ch-lv-dot" aria-hidden="true" />}
         <h2 id="ch-lv-home-title" data-ch-code={titleCode}>
@@ -124,6 +125,6 @@ export function LiveNowCard({
       )}
       <LiveAnnouncer moments={live.moments} enabled />
       <PlayerLiveSheet lane={selected} moments={live.moments} now={now} coach hours={hours} onClose={() => setOpen(null)} />
-    </section>
+    </Card>
   );
 }

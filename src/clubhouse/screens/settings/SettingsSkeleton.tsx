@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Skeleton } from '../../ui/States';
+import { RowCard } from './phone/ui';
 import '../../styles/settings.css';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { useClubhouseRole } from '../../shell/context';
@@ -90,7 +91,7 @@ export function SettingsSkeleton({ role = 'coach', section = 'account', opened =
             <LargeTitleSkeleton width={150} className="ch-setm-title" />
             {cards.map((rows, g) => (
               <div key={g} className="ch-setm-group">
-                <div className="ch-setm-card">
+                <RowCard>
                   {Array.from({ length: rows }, (_, i) => (
                     <div key={i} className="ch-setm-row" style={{ cursor: 'default' }}>
                       <span className="ch-setm-row__l">
@@ -99,7 +100,7 @@ export function SettingsSkeleton({ role = 'coach', section = 'account', opened =
                       <Skeleton width={60} height={12} />
                     </div>
                   ))}
-                </div>
+                </RowCard>
               </div>
             ))}
           </div>
@@ -114,7 +115,7 @@ export function SettingsSkeleton({ role = 'coach', section = 'account', opened =
             </span>
           </div>
           <div className="ch-setm-group">
-            <div className="ch-setm-card">
+            <RowCard>
               {Array.from({ length: 5 }, (_, i) => (
                 <div key={i} className="ch-setm-row has-tile" style={{ cursor: 'default' }}>
                   <Skeleton width={30} height={30} radius={8} />
@@ -124,7 +125,7 @@ export function SettingsSkeleton({ role = 'coach', section = 'account', opened =
                   <Skeleton width={70} height={12} />
                 </div>
               ))}
-            </div>
+            </RowCard>
           </div>
         </div>
         )}
