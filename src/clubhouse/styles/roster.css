@@ -3087,6 +3087,9 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
     font: var(--ch-type-callout);
+    /* A name with a word wider than the column (Featherstonehaugh- at the phone's 15px in a 390 row) breaks inside it and
+       ends in the clamp's ellipsis; it is never cut off at the side (the row's label carries the full name). */
+    overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
@@ -3484,6 +3487,8 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
   [data-ch-crh='on'] .ch-rsx-row__b > b {
     overflow: hidden;
     font: var(--ch-type-callout);
+    /* As on the phone: a word wider than the column breaks inside it and never clips at the side. */
+    overflow-wrap: anywhere;
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;

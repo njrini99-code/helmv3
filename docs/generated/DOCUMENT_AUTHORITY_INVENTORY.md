@@ -1444,6 +1444,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-27-first-label-edge.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-28-long-name-wraps.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
