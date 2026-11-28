@@ -6272,6 +6272,16 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
   :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec > .ch-hm-sec__h > .ch-hm-meta {
     text-align: left;
   }
+  /* A section's link (Calendar) sits on the card's 16, as the desk's does: the negative margin that bought its 44 drew its
+     box 8 from the card's edge. The reach is the hit layer now, 44 tall and at least 8 past the words on each side. */
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec > .ch-hm-sec__h > .ch-hm-link {
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+  }
+  :is(.ch-hm--player, .ch-hm--coach) .ch-hm-body > .ch-hm-sec > .ch-hm-sec__h > .ch-hm-link::after {
+    inset: min(0px, calc(50% - 22px)) min(-8px, calc(50% - 22px));
+  }
 }
 
 /*

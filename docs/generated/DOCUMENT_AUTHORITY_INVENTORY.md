@@ -1097,6 +1097,8 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-24-join-hardening.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-27-bridge-signal-fixes.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-27-gate-wells.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/MOTION.md` | current | - | - | - | - |
@@ -1270,6 +1272,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-24-desktop-keys-scroll-padding.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-26-switch-time.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-signals-before-children.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
@@ -1356,6 +1359,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P002-home/changes/2026-11-21-desk-dashboard.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-21-stat-card-title-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P002-home/changes/2026-11-27-gate-green.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P003-roster/DESIGN.md` | current | - | - | - | - |
@@ -1422,6 +1426,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-21-desk-table-default.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P003-roster/changes/2026-11-25-design-home.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P003-roster/changes/2026-11-27-first-label-edge.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P004-stats-team/DESIGN.md` | current | - | - | - | - |
@@ -1507,6 +1512,10 @@ them would bury everything above.
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-24-scoring-chart-hold.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P004-stats-team/changes/2026-11-25-design-home.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-chart-marks-inside.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-scoring-average-bars.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P004-stats-team/changes/2026-11-27-scoring-average-preview.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P005-stats-player/DESIGN.md` | current | - | - | - | - |
@@ -1590,6 +1599,9 @@ them would bury everything above.
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P005-stats-player/changes/2026-11-25-shared-stats-control-ids.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-no-clear-change-chip.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P005-stats-player/changes/2026-11-27-team-chart-shared-file.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P006-calendar/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P006-calendar/DESIGN.md` | current | - | - | - | - |
@@ -1739,6 +1751,8 @@ them would bury everything above.
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P007-messages/changes/2026-11-25-jump-key-open-hold.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-27-first-run-edge.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P007-messages/changes/2026-11-27-phone-thread-opens-at-end.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P008-settings/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P008-settings/DESIGN.md` | current | - | - | - | - |
@@ -1996,6 +2010,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-21-stat-card-title-bars.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P011-rounds/changes/2026-11-25-live-drop-reporter.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P011-rounds/changes/2026-11-27-depth-and-contrast.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P012-classes/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P012-classes/DESIGN.md` | current | - | - | - | - |
@@ -2159,6 +2174,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-25-control-ids.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-25-design-home.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-25-only-you-ink.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P013-coachhelm/changes/2026-11-27-huddle-and-read-gate.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P014-recruiting/CONTRACT.md` | current | - | - | yes | - |
 | `docs/clubhouse/pages/P014-recruiting/DESIGN.md` | current | - | - | - | - |

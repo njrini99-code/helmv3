@@ -188,6 +188,9 @@ function redactClientPayloadForStorage(rawUrl: string | null, rawContext: unknow
  */
 const LOG_ERROR_RATE_LIMIT = { maxAttempts: 30, windowMs: 60 * 1000 };
 
+/** A release as the browser reports it: a commit SHA or a dotted version name. */
+const RELEASE_PATTERN = /^[\w.-]{1,64}$/;
+
 export async function POST(request: NextRequest) {
   // This is the one route that accepts ANONYMOUS writes into error_logs +
   // admin_events via the service-role client, so its cap has to actually hold.
@@ -264,6 +267,9 @@ export async function POST(request: NextRequest) {
       url: typeof rawReport.url === 'string' ? rawReport.url : undefined,
       timestamp: typeof rawReport.timestamp === 'string' ? rawReport.timestamp : undefined,
       context: rawReport.context,
+      // The deploy the tab runs (a commit SHA or a named release). Same shape the Clubhouse signal route accepts
+      // (src/lib/admin/clubhouse/signal.ts); anything else is dropped rather than stored.
+      release: typeof rawReport.release === 'string' && RELEASE_PATTERN.test(rawReport.release) ? rawReport.release : null,
     };
 
     const adminClient = createAdminClient();
@@ -458,6 +464,7 @@ export async function POST(request: NextRequest) {
         source: 'client',
         sport: finalSport as TraceSport | null,
         feature: finalFeature,
+        release: errorReport.release,
       }),
     ]);
 

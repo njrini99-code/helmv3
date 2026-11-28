@@ -37,6 +37,12 @@ import { Modal } from '../../../ui/Modal';
 import { EditMessageModal, DeleteMessageModal } from '../overlays/message-modals';
 import { FORMER_MEMBER } from '../../../lib/person-fallback';
 
+/**
+ * A conversation on the phone: the pushed screen, and the thread inside it. The screen's content renders a frame after
+ * the screen itself (POP-02), so the thread is a component of its own that mounts with its scroller: hooks given the
+ * scroller here, at the screen, found none and never attached. A thread whose messages were already loaded then stayed
+ * at its oldest message, and its Jump to latest slid in as it opened (nightly motion gate, messages-stress, 2026-11-26).
+ */
 export function PhoneThread({
   api,
   conv,
@@ -54,6 +60,38 @@ export function PhoneThread({
   onFirstSent: () => void;
   /** Details is pushed over the thread. */
   covered: boolean;
+}) {
+  // A coach's own group run-ends keep room for the receipt's 44 px tap box (changelog P-01).
+  const seenListAccess = conv.group && seenByAccess(SEEN_BY_VISIBILITY, api.viewer.role, true).list;
+  // The first message as it was handed over: the parent clears its copy below, and the composer, which renders with the
+  // screen's content a moment after the screen itself (POP-02), still takes it.
+  const [first] = useState(firstMessage);
+  useEffect(() => {
+    if (firstMessage) onFirstSent();
+    // The composer has taken the first message; nothing else to hand over.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const titleId = `ch-msp-thread-${conv.id}`;
+  return (
+    <PhoneScreen labelledBy={titleId} className={"ch-msp-thread" + (seenListAccess ? " is-seen-list" : "")} keyboardAware covered={covered}>
+      <PhoneThreadContent api={api} conv={conv} onBack={onBack} onDetails={onDetails} first={first} titleId={titleId} />
+    </PhoneScreen>
+  );
+}
+
+function PhoneThreadContent({
+  api,
+  conv,
+  onBack,
+  onDetails,
+  first,
+  titleId,
+}: {
+  api: ChMessagesApi;
+  conv: ChConv;
+  onBack: () => void;
+  onDetails: () => void;
+  first: FirstMessage | undefined;
+  titleId: string;
 }) {
   const toast = useToast();
   const threadReduced = useChReducedMotion();
@@ -73,8 +111,6 @@ export function PhoneThread({
     [api.msgs, api.viewer.userId, conv.group],
   );
   const seenList = useSeenByList();
-  // A coach's own group run-ends keep room for the receipt's 44 px tap box (changelog P-01).
-  const seenListAccess = conv.group && seenByAccess(SEEN_BY_VISIBILITY, api.viewer.role, true).list;
   // D30: Remind and Share result reply to the poll with a prefilled draft (the coach presses Send).
   const [seed, setSeed] = useState<{ text: string; nonce: number } | null>(null);
   const pollThread = useMemo<PollThreadActions>(
@@ -108,13 +144,6 @@ export function PhoneThread({
   const anchor = useThreadAnchor(scroller, { convId: conv.id, count: api.msgs.length, lastMine: !!api.msgs.at(-1)?.mine, typing: api.typing, paused: focusing });
   const reducedMotion = useChReducedMotion();
   useFocusMessage(scroller, { target: api.focusMessageId ?? null, loading: api.msgsLoading, count: api.msgs.length, reduced: reducedMotion, onDone: (id) => api.messageFocused?.(id), toEnd: anchor.toEnd });
-  // The first message as it was handed over: the parent clears its copy below, and the composer, which renders with the
-  // screen's content a moment after the screen itself (POP-02), still takes it.
-  const [first] = useState(firstMessage);
-  useEffect(() => {
-    if (firstMessage) onFirstSent();
-    // The composer has taken the first message; nothing else to hand over.
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useThreadDragTimes(scroller, true, threadReduced);
   useThreadMakeRoom(scroller, api.msgs.length, true, threadReduced);
   const jumpToEnd = useSpringToEnd(scroller, anchor.toEnd, threadReduced);
@@ -122,7 +151,6 @@ export function PhoneThread({
   useSendStamps(scroller, api.msgs.length, true);
   // MSG-201/203/307: the scroller runs under the bar and the composer, and both ride the keyboard.
   useThreadLayers(scroller, { kind: 'phone', convId: conv.id, reduced: threadReduced });
-  const titleId = `ch-msp-thread-${conv.id}`;
   const sub = conv.group ? `${conv.memberCount} members` : conv.subtitle;
   const copy = async (m: ChMsg) => {
     try {
@@ -137,7 +165,6 @@ export function PhoneThread({
   };
   return (
     <PollThreadContext.Provider value={pollThread}>
-    <PhoneScreen labelledBy={titleId} className={"ch-msp-thread" + (seenListAccess ? " is-seen-list" : "")} keyboardAware covered={covered}>
       <PhoneBar
         lead
         back={{ onBack, ariaLabel: "Back to Messages" }}
@@ -289,7 +316,6 @@ export function PhoneThread({
       <EditMessageModal api={api} message={null} onClose={() => setEditing(null)} />
       <DeleteMessageModal api={api} message={deleting} onClose={() => setDeleting(null)} />
       {seenList.render(api, true)}
-    </PhoneScreen>
     </PollThreadContext.Provider>
   );
 }

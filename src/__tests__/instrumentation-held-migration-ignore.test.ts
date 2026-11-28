@@ -1,25 +1,21 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 /**
- * Server Sentry `ignoreErrors` for objects whose migration is deliberately
- * HELD (supabase/migrations/HELD.md).
+ * Server Sentry `ignoreErrors` once held for objects whose migration was
+ * deliberately HELD (supabase/migrations/HELD.md):
+ * - the season-standing RPC and table (20261024151000, applied 2026-11-18);
+ * - the three extended columns of `golf_prediction_model_performance`
+ *   (20261023150000, applied 2026-11-27).
  *
- * The code already handles each missing object as designed:
- * - the three extended columns of `golf_prediction_model_performance` — the
- *   prediction-performance writer retries without them on PGRST204.
- *
- * Sentry records them anyway, because the Supabase integration captures the
- * failed call at the driver (`mechanism: auto.db.supabase.postgres`,
- * handled: no) before the application classifies it. Measured 2026-11-15:
+ * Sentry recorded them because the Supabase integration captures the failed
+ * call at the driver (`mechanism: auto.db.supabase.postgres`, handled: no)
+ * before the application classifies it. Measured 2026-11-15:
  * JAVASCRIPT-NEXTJS-1M6 at 119 events in 24h (one per 5-minute cron tick),
  * plus -1ME (04:00 UTC lifecycle cron) and -1DM.
  *
- * Each pattern names the exact object, so the SAME failure on a live object
- * still pages. The HELD.md guard below fails the moment one of these
- * migrations stops being HOLD: delete its pattern in the change that applies
- * it, as the comment in src/instrumentation.ts says.
+ * Both migrations are applied now, so their objects are live and the same
+ * failure must page again. This file guards that no pattern still hides
+ * them, and that a broad pattern never hides a LIVE object.
  */
 const mocks = vi.hoisted(() => ({
   init: vi.fn(),
@@ -61,18 +57,19 @@ async function serverIgnoreErrors(runtime: 'nodejs' | 'edge'): Promise<Array<str
 }
 
 /**
- * The PostgREST messages Sentry recorded in production, verbatim. The season
- * pair is no longer held: 20261024151000 was applied on 2026-11-18, so a
- * missing season RPC or table must page again.
+ * The PostgREST messages Sentry recorded in production, verbatim. Neither set
+ * is held any more: 20261024151000 was applied on 2026-11-18 and
+ * 20261023150000 on 2026-11-27, so a missing season RPC, season table or
+ * extended column must page again.
  */
 const APPLIED_SEASON_RPC =
   'Could not find the function public.refresh_player_standing_season(p_team_ids) in the schema cache';
 const APPLIED_SEASON_TABLE = "Could not find the table 'public.golf_player_standing_season' in the schema cache";
-const heldPerfColumn = (column: string) =>
+const perfColumn = (column: string) =>
   `Could not find the '${column}' column of 'golf_prediction_model_performance' in the schema cache`;
 const EXTENDED_COLUMNS = ['naive_mean_absolute_error', 'naive_sample_count', 'interval_coverage'];
 
-describe('server ignoreErrors — objects whose migration is HELD', () => {
+describe('server ignoreErrors — objects whose migration was HELD', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
   });
@@ -89,9 +86,9 @@ describe('server ignoreErrors — objects whose migration is HELD', () => {
         expect(isIgnored(patterns, APPLIED_SEASON_TABLE)).toBe(false);
       });
 
-      it('drops each held extended column of golf_prediction_model_performance', () => {
+      it('pages again for each extended column of golf_prediction_model_performance, now that 20261023150000 is applied', () => {
         for (const column of EXTENDED_COLUMNS) {
-          expect(isIgnored(patterns, heldPerfColumn(column)), column).toBe(true);
+          expect(isIgnored(patterns, perfColumn(column)), column).toBe(false);
         }
       });
 
@@ -119,24 +116,8 @@ describe('server ignoreErrors — objects whose migration is HELD', () => {
           isIgnored(patterns, "Could not find the 'interval_coverage' column of 'golf_rounds' in the schema cache"),
         ).toBe(false);
         // Any other column of the performance table.
-        expect(isIgnored(patterns, heldPerfColumn('mean_absolute_error'))).toBe(false);
+        expect(isIgnored(patterns, perfColumn('mean_absolute_error'))).toBe(false);
       });
     });
   }
-});
-
-describe('the suppressed migrations are still HELD', () => {
-  // If one of these flips to APPLIED, its pattern in src/instrumentation.ts is
-  // now hiding a live object: remove the pattern in the same change.
-  const held = readFileSync(join(process.cwd(), 'supabase/migrations/HELD.md'), 'utf8');
-
-  it.each([
-    ['20261023150000_golf_prediction_perf_extended_columns.sql'],
-  ])('%s is listed as HOLD', (file) => {
-    const row = held.split('\n').find((line) => line.startsWith(`| \`${file}\``));
-    expect(row, `${file} has no row in HELD.md`).toBeDefined();
-    // A status cell annotated while the file is still held (`**HOLD — waiting on Step 7**`) is still HOLD; only a
-    // status that no longer starts with HOLD (APPLIED, DROPPED, ...) means the ignore pattern hides a live object.
-    expect(row!.split('|')[2]!.trim().startsWith('**HOLD')).toBe(true);
-  });
 });
