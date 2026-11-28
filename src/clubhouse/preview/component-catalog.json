@@ -16115,7 +16115,7 @@
         },
         {
           "name": "--ch-classes-x1",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -16721,7 +16721,7 @@
         },
         {
           "name": "--ch-ask-shadow-2",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-card)",
           "scope": ".ch-ak-th"
         },
         {
@@ -17361,7 +17361,7 @@
         },
         {
           "name": "--ch-hf-a-shadow",
-          "value": "var(--ch-card-shadow)",
+          "value": "var(--ch-elevation-card)",
           "scope": ".ch-hf"
         },
         {
@@ -17466,7 +17466,7 @@
         },
         {
           "name": "--ch-file-shadow-3",
-          "value": "var(--ch-feature-shadow)",
+          "value": "var(--ch-elevation-card)",
           "scope": ".ch-hf"
         },
         {
@@ -17476,7 +17476,7 @@
         },
         {
           "name": "--ch-file-shadow-5",
-          "value": "inset 0 0 0 999px color-mix(in srgb, var(--ch-ivory-0) 5%, transparent), var(--ch-feature-shadow)",
+          "value": "inset 0 0 0 999px color-mix(in srgb, var(--ch-ivory-0) 5%, transparent), var(--ch-elevation-card)",
           "scope": ".ch-hf"
         },
         {
@@ -20587,7 +20587,7 @@
         },
         {
           "name": "--ch-messages-x2",
-          "value": "0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-card-shadow)",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-card-ring), var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -20612,7 +20612,7 @@
         },
         {
           "name": "--ch-messages-x7",
-          "value": "0 0 0 4px var(--ch-grouped-bg), var(--ch-card-shadow)",
+          "value": "0 0 0 4px var(--ch-grouped-bg), var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         }
       ]
@@ -26671,8 +26671,38 @@
           "scope": "[data-ui='clubhouse']"
         },
         {
-          "name": "--ch-ring-drop",
+          "name": "--ch-ring-accent",
+          "value": "0 0 0 1.5px var(--ch-green-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-accent-inset",
+          "value": "inset 0 0 0 1.5px var(--ch-green-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-accent-strong",
           "value": "inset 0 0 0 2px var(--ch-green-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-accent-hairline",
+          "value": "0 0 0 var(--ch-hairline-w) var(--ch-green-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-warn-inset",
+          "value": "inset 0 0 0 1.5px var(--ch-warning-600)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-attention-inset",
+          "value": "inset 0 0 0 1.5px var(--ch-champagne-500)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-ring-drop",
+          "value": "var(--ch-ring-accent-strong)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27203,6 +27233,21 @@
         {
           "name": "--ch-type-figure",
           "value": "600 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-display",
+          "value": "600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-display-xl",
+          "value": "600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-subhead",
+          "value": "400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27843,6 +27888,11 @@
         {
           "name": "--ch-medallion-shadow",
           "value": "0 1px 2px rgb(11 58 37 / 0.22), 0 6px 14px -6px rgb(11 58 37 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.1)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-elevation-flat",
+          "value": "0 0 0 0 transparent",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -28807,7 +28857,7 @@
         },
         {
           "name": "--ch-sheet-shadow",
-          "value": "var(--ch-elevation-reading)",
+          "value": "var(--ch-elevation-card)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -28913,6 +28963,41 @@
         {
           "name": "--ch-dur-busy-min",
           "value": "300ms",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-press-in",
+          "value": "var(--ch-dur-press) var(--ch-ease-out)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-press-out",
+          "value": "var(--ch-dur-release) var(--ch-ease-ios)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-popup-in",
+          "value": "var(--ch-dur-quick) var(--ch-ease-ios)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-popup-out",
+          "value": "var(--ch-dur-press) var(--ch-ease-out)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-sheet-in",
+          "value": "var(--ch-dur-reveal) var(--ch-ease-ios)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-sheet-out",
+          "value": "var(--ch-dur-release) var(--ch-ease-out)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-page",
+          "value": "var(--ch-dur-reveal) var(--ch-ease-ios)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -30461,6 +30546,31 @@
           "scope": "[data-ui='clubhouse'][data-motion='off'],\n[data-motion='off'] [data-ui='clubhouse']"
         },
         {
+          "name": "--ch-motion-popup-in",
+          "value": "var(--ch-dur-quick) var(--ch-ease-out)",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-popup-out",
+          "value": "var(--ch-dur-quick) var(--ch-ease-out)",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-sheet-in",
+          "value": "var(--ch-dur-quick) var(--ch-ease-out)",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-sheet-out",
+          "value": "var(--ch-dur-quick) var(--ch-ease-out)",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-motion-page",
+          "value": "var(--ch-dur-quick) var(--ch-ease-out)",
+          "scope": "@media (prefers-reduced-motion: reduce) → [data-ui='clubhouse']"
+        },
+        {
           "name": "--ch-dur-vt-out",
           "value": "120ms",
           "scope": "html:has([data-ui='clubhouse'])"
@@ -30933,6 +31043,26 @@
         {
           "name": "--ch-type-callout",
           "value": "560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-body",
+          "value": "450 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-type-subhead",
+          "value": "450 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans)",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-fw-400",
+          "value": "450",
+          "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-fw-500",
+          "value": "560",
           "scope": "@media (max-resolution: 1.5dppx) → [data-ui='clubhouse']"
         }
       ]
