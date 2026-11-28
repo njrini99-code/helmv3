@@ -637,7 +637,8 @@ describe('Stats team · phone (v2, Coach - Stats - Mobile.html)', () => {
     wrap(stats());
     await user.click(screen.getByRole('button', { name: /^Team scoring average/ }));
     const detail = document.querySelector<HTMLElement>('[data-ch-shs-detail]')!;
-    expect(within(detail).getByText(/^Lower is better\. /)).toBeTruthy();
+    // The preview's round days carry par (as the loader's do), so the reading is against par (CH-01).
+    expect(within(detail).getByText(/^Against par, per 18 holes\. Under par is up\. /)).toBeTruthy();
     // The same days as a table, for anyone who can't read the picture.
     expect(within(detail).getByRole('columnheader', { name: 'Team average' })).toBeTruthy();
   });

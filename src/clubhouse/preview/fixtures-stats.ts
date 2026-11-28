@@ -120,7 +120,7 @@ export const PREVIEW_TEAM_STATS: ChTeamStats = {
     { key: 'birdies', series: [2.1, 2.3, 2.3, 2.5, 2.6, 2.8, 2.7], label: 'Birdies per round', value: 2.6, unit: '', digits: 1, delta: 0.2, se: 0.25, lowerIsBetter: false, context: 'Eagles not counted', gauge: { kind: 'holes' } },
   ],
   weeks: WEEKS,
-  days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: TEAM_DAYS[i]! })),
+  days: ['Aug 30', 'Sep 3', 'Sep 9', 'Sep 14', 'Sep 20', 'Sep 25', 'Sep 29', 'Oct 4', 'Oct 8', 'Oct 12'].map((label, i) => ({ label, score: TEAM_DAYS[i]!, toPar: Math.round((TEAM_DAYS[i]! - 72) * 10) / 10 })),
   // About six rounds a round day, nine a week (64 rounds), on the team's own spread: scoring's halves clear their standard error.
   daysHalves: halvesOf(TEAM_DAYS, 3.4, 6.4),
   team: { sg: [...TEAM_SG], score: [...TEAM_SCORE], sgMean: PREVIEW_TEAM_SG.total, scoreMean: 73.6, parMean: 72, sgHalves: halvesOf(TEAM_SG, 3.8, 9), scoreHalves: halvesOf(TEAM_SCORE, 3.4, 9) },
