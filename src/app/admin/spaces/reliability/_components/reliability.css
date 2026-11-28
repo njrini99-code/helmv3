@@ -259,3 +259,71 @@
 /* The cause chip on a feed row: words, not a coloured blob, so it reads without the colour. */
 .bs .rl-cause { display: inline-flex; align-items: center; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 8px; border: 0; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 30%, transparent); white-space: nowrap; }
 .bs .rl-cause.bs-tone-muted { color: var(--bs-ink-3); }
+
+/* Issues and Pages views (B19): one row per issue or page, most people hurt first. */
+.bs .rl-list-head {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 120px;
+  gap: 14px;
+  padding: 10px 20px;
+  font-size: 12px;
+  color: var(--bs-ink-3);
+  border-bottom: 1px solid var(--bs-line);
+}
+.bs .rl-list-head > :last-child { text-align: right; }
+.bs .rl-list-head + .rl-row { border-top: 0; }
+.bs .rl-row.rl-issue { grid-template-columns: 64px minmax(0, 1fr) 120px; align-items: start; }
+.bs .rl-row.rl-page { grid-template-columns: minmax(0, 1fr) minmax(150px, auto) 120px; align-items: center; }
+.bs .rl-issue .rl-where,
+.bs .rl-page .rl-where { display: block; }
+.bs .rl-main { min-width: 0; }
+
+.bs .rl-issue-people { display: flex; flex-direction: column; line-height: 1; padding-top: 1px; }
+.bs .rl-issue-people > b { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; color: var(--bs-ink); font-variant-numeric: tabular-nums; }
+.bs .rl-issue-people > span { font-size: 12px; color: var(--bs-ink-3); margin-top: 5px; }
+
+.bs .rl-flags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 8px; }
+.bs .rl-mostly { font-size: 12px; color: var(--bs-ink-2); padding: 2px 8px; border-radius: 8px; background: var(--bs-panel-2); }
+
+.bs .rl-issue-trend { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; font-size: 12px; color: var(--bs-ink-3); white-space: nowrap; }
+.bs .rl-spark { display: block; overflow: visible; }
+.bs .rl-spark-zero { fill: var(--bs-line-strong); }
+.bs .rl-spark-bar { fill: var(--bs-bad); opacity: 0.45; }
+.bs .rl-spark-now { opacity: 1; }
+
+.bs .rl-page-fail { display: flex; flex-direction: column; gap: 3px; text-align: right; font-size: 12px; color: var(--bs-ink-3); }
+.bs .rl-page-fail > b { font-size: 14px; font-weight: 600; }
+
+.bs .rl-silent { display: flex; flex-direction: column; gap: 10px; }
+.bs .rl-silent-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.bs .rl-silent-names { margin: 0; font-size: 14px; line-height: 1.6; color: var(--bs-ink-2); overflow-wrap: anywhere; }
+
+/* The j/k hint: only where there is a keyboard and room for it. */
+.bs .rl-keys-hint { font-size: 12px; color: var(--bs-ink-3); white-space: nowrap; }
+.bs .rl-keys-hint kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--bs-line-strong);
+  background: var(--bs-key-bg);
+  font: 600 11px/1.5 ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  color: var(--bs-ink-2);
+  text-align: center;
+}
+@media (hover: none), (max-width: 640px) {
+  .bs .rl-keys-hint { display: none; }
+}
+
+@media (max-width: 640px) {
+  .bs .rl-list-head { display: none; }
+  .bs .rl-row.rl-issue { grid-template-columns: 52px minmax(0, 1fr); padding: 14px 16px; }
+  .bs .rl-row.rl-issue > .rl-issue-people { grid-column: 1; grid-row: 1; }
+  .bs .rl-row.rl-issue > .rl-main { grid-column: 2; grid-row: 1; }
+  .bs .rl-row.rl-issue > .rl-issue-trend { grid-column: 2; flex-direction: row; align-items: center; justify-content: space-between; }
+  .bs .rl-issue-people > b { font-size: 22px; }
+  .bs .rl-row.rl-page { grid-template-columns: minmax(0, 1fr) auto; padding: 14px 16px; }
+  .bs .rl-row.rl-page > .rl-main { grid-column: 1 / -1; }
+  .bs .rl-row.rl-page > .rl-page-fail { grid-column: 1; text-align: left; }
+  .bs .rl-row.rl-page > .rl-issue-trend { grid-column: 2; }
+}
