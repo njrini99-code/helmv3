@@ -21,7 +21,7 @@
   color: var(--ch-hero-ink);
 }
 .ch-hero[data-tone]:not([data-tone='canopy']) .ch-hero__line {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: #4f5a52;
 }

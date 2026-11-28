@@ -24,8 +24,8 @@
 }
 .ch-hr-page.is-desk .ch-hd-dos__h { padding: 24px 24px 20px; }
 .ch-hr-page .ch-hd-dos__h > * { position: relative; }
-.ch-hr-page .ch-hd-dos__h .ch-hl-focus__k { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font: var(--ch-type-callout); }
-.ch-hr-page .ch-hd-dos__h .ch-hl-focus__k > span:first-child { font: var(--ch-type-callout); color: var(--ch-on-green-ink-muted); }
+.ch-hr-page .ch-hd-dos__h .ch-hl-focus__k { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font: var(--ch-type-detail); }
+.ch-hr-page .ch-hd-dos__h .ch-hl-focus__k > span:first-child { font: var(--ch-type-detail); color: var(--ch-on-green-ink-muted); }
 .ch-hr-page .ch-hd-dos__h .ch-hl-pri { display: inline-flex; align-items: center; padding: 4px 8px; border-radius: var(--ch-radius-sm); font: var(--ch-type-footnote); font-weight: var(--ch-fw-600); background: var(--ch-hr-st-warn-bg); color: var(--ch-hr-st-warn); }
 .ch-hr-page .ch-hd-dos__h .ch-hl-pri:is(.is-ok, .is-done) { background: var(--ch-hr-st-good-bg); color: var(--ch-hr-st-good); }
 .ch-hr-page .ch-hd-dos__h .ch-hl-pri:is(.is-low, .is-stale, .is-note) { background: var(--ch-on-green-rule); color: var(--ch-on-green-ink-soft); }
@@ -100,29 +100,29 @@
 /* bars: the board's ch-hl-bars, label column wide enough for a count on one line */
 .ch-hr-bars { margin: 0; }
 .ch-hr-bars li { grid-template-columns: minmax(96px, 40%) minmax(0, 1fr) 44px; align-items: center; column-gap: 12px; }
-.ch-hr-bars li > span:first-child { display: flex; flex-direction: column; min-width: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); }
+.ch-hr-bars li > span:first-child { display: flex; flex-direction: column; min-width: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); }
 .ch-hr-bars li > span:first-child small { margin-top: 1px; font: var(--ch-type-caption); font-weight: var(--ch-fw-400); color: var(--ch-text-tertiary); text-wrap: balance; }
-.ch-hr-bars li.is-you > span:first-child { font: var(--ch-type-callout); font-weight: var(--ch-fw-600); }
+.ch-hr-bars li.is-you > span:first-child { font: var(--ch-type-detail); font-weight: var(--ch-fw-600); }
 .ch-hr-bars b { text-align: right; }
 .ch-hr.is-desk .ch-hr-bars li { grid-template-columns: minmax(120px, 28%) minmax(0, 1fr) 48px; }
 .ch-hr-bars b svg { vertical-align: -2px; color: var(--ch-green-fill-600); }
 
 /* since it was first seen: the stored before and after, one quiet row under the measure */
 .ch-hr-since { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin: 0; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-tertiary); }
-.ch-hr-since b { font: var(--ch-type-callout); color: var(--ch-text-primary); }
+.ch-hr-since b { font: var(--ch-type-detail); color: var(--ch-text-primary); }
 /* how it has moved: the line across the card, its caption under it */
 .ch-hr-sec .ch-hd-strip__chart { display: block; width: 100%; max-width: 320px; }
 .ch-hr-sec .ch-hd-strip__chart svg { display: block; width: 100%; height: auto; }
 .ch-hr-sec .ch-hd-tr { margin: 0; padding: 0; list-style: none; }
 .ch-hr-sec .ch-hd-strip { display: flex; flex-direction: column; align-items: stretch; gap: 8px; padding: 0; border: 0; }
 .ch-hr-sec .ch-hd-tr__k { font: var(--ch-type-footnote); color: var(--ch-text-tertiary); }
-.ch-hr-sec .ch-hd-strip__c { display: flex; flex-direction: column; gap: 2px; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); }
-.ch-hr-sec .ch-hd-strip__c b { font: var(--ch-type-callout); font-weight: var(--ch-fw-600); }
+.ch-hr-sec .ch-hd-strip__c { display: flex; flex-direction: column; gap: 2px; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); }
+.ch-hr-sec .ch-hd-strip__c b { font: var(--ch-type-detail); font-weight: var(--ch-fw-600); }
 .ch-hr-sec .ch-hd-strip__c em { margin: 0; padding: 0; font: var(--ch-type-caption); font-weight: var(--ch-fw-400); font-style: normal; color: var(--ch-text-tertiary); }
 
 /* the counted path: whole steps wrap together, never an arrow alone at the start of a line */
 .ch-hr-trace { margin: 0; }
-.ch-hr-path { display: flex; flex-wrap: wrap; gap: 6px 0; margin: 0; padding: 0; list-style: none; font: var(--ch-type-callout); color: var(--ch-text-primary); }
+.ch-hr-path { display: flex; flex-wrap: wrap; gap: 6px 0; margin: 0; padding: 0; list-style: none; font: var(--ch-type-detail); color: var(--ch-text-primary); }
 .ch-hr-path li { white-space: nowrap; }
 .ch-hr-path li + li::before { content: '→'; margin: 0 8px; color: var(--ch-text-tertiary); }
 /* the split and the verdict: an Inset */
@@ -132,7 +132,7 @@
 .ch-hr-sec .ch-hd-dx__d dt { font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-tertiary); }
 .ch-hr-sec .ch-hd-dx__d dd { margin: 0; font: var(--ch-type-headline); letter-spacing: var(--ch-track-17); color: var(--ch-text-primary); }
 .ch-hr-sec .ch-hd-dx__d dd em { font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); font-style: normal; letter-spacing: 0; color: var(--ch-text-tertiary); }
-.ch-hr-sec .ch-hd-dx__r { margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
+.ch-hr-sec .ch-hd-dx__r { margin: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 .ch-hr-sec .ch-hd-dx__d + .ch-hd-dx__r { margin-top: 12px; }
 
 /* rows: rounds and holes, flush in the card, the course on a second line under a hole's path */
@@ -153,7 +153,7 @@
 .ch-hr-surekey svg { transition: transform var(--ch-dur-reveal) var(--ch-ease-ios); }
 .ch-hr-surekey[aria-expanded='true'] svg { transform: rotate(180deg); }
 .ch-hr-sure { display: flex; flex-direction: column; gap: 12px; margin: 0; padding: 0 0 16px; }
-.ch-hr-sure p { margin: 0; font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
+.ch-hr-sure p { margin: 0; font: var(--ch-type-detail); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 /* The panel a tap opens crossfades in over the quick beat, with no rise (motion.css ch-in; MOTION-AND-VISUAL 3.5, 3.12);
    under Reduce Motion the same 180ms fade (3.11). */
 .ch-hr-sure:not([hidden]) { animation: ch-in var(--ch-dur-quick) var(--ch-ease-ios); }
@@ -163,7 +163,7 @@
 .ch-hr-week { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .ch-hr-week p { margin: 0; }
 .ch-hr-week .ch-hl-week__t { margin-bottom: 4px; font: var(--ch-type-subhead); letter-spacing: var(--ch-track-15); }
-.ch-hr-week p + p { font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
+.ch-hr-week p + p { font: var(--ch-type-detail); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 
 /* is this right: the chips flush on the page, at the end */
 .ch-hr-cx { margin: 8px 0 0; }

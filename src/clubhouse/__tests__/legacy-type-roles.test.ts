@@ -32,6 +32,16 @@ describe('type roles (MOTION-AND-VISUAL 4.3)', () => {
     const oneX = tokens.match(/@media \(max-resolution: 1\.5dppx\) \{[\s\S]*?\n\}\n/)?.[0] ?? '';
     expect(oneX).toMatch(/--ch-type-subhead: 450 /);
   });
+  it('the detail is 14/20 on phone and desk, so the old 14 step keeps its 14 on a phone (owner, 28 Nov 2026)', () => {
+    // The callout is 15/20 on a phone; the rules that read the 14 step before dsx-07 read the detail instead.
+    const detail = /--ch-type-detail: (\d{3}) calc\(14 \* var\(--ch-type-k\)\)\/calc\(20 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/g;
+    expect([...tokens.matchAll(detail)].map((m) => m[1])).toEqual(['500', '560']);
+    const phone = tokens.match(/\/\* The nine roles on a phone[\s\S]*?\n\}\n/)?.[0] ?? '';
+    expect(phone).not.toMatch(/--ch-type-detail:/);
+    expect(phone).toMatch(/--ch-type-callout: 500 calc\(15 /);
+    const reads = hits(/var\(--ch-type-detail\)/, css);
+    expect(reads.length).toBe(302);
+  });
   it('no older named role is defined or read anywhere in Clubhouse', () => {
     expect(hits(OLD, walk(ROOT, /\.(tsx?|css)$/))).toEqual([]);
   });

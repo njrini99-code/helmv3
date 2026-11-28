@@ -331,7 +331,7 @@
   gap: 4px;
 }
 .ch-cl-note b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
@@ -391,7 +391,7 @@
   margin-bottom: 6px;
 }
 .ch-cl-over__e b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
 }
 .ch-cl-over__e em {
@@ -426,7 +426,7 @@
   min-width: 0;
 }
 .ch-cl-over__r b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
 }
@@ -511,7 +511,7 @@
   border-radius: var(--ch-radius-md);
   background: none;
   color: var(--ch-ink-600);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   cursor: pointer;
   transition: background-color var(--ch-dur-quick) var(--ch-ease-out);
@@ -554,12 +554,12 @@
 }
 .ch-cl-facts dd {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   overflow-wrap: anywhere;
 }
 .ch-cl-meet h3 {
   margin: 0 0 8px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
 }
@@ -576,7 +576,7 @@
   align-items: center;
   gap: 12px;
   height: 38px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
 }
 .ch-cl-meet li::before {
@@ -929,7 +929,7 @@
   gap: 4px;
 }
 .ch-cl-rv__b > b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
 }
 .ch-cl-rv__b > span {
@@ -1125,7 +1125,7 @@
 /* On the green card: ivory, never the page's secondary ink. */
 .ch-cl-tb__one {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-variant-numeric: tabular-nums;
   color: var(--ch-on-fill-100);
 }
@@ -1138,7 +1138,7 @@
 }
 .ch-cl-tb.is-compact .ch-cl-tb__over span {
   max-width: none;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
 }
 .ch-cl-tb.is-compact .ch-cl-tb__over b {
   font-size: calc(14 * var(--ch-type-k));
@@ -1176,7 +1176,7 @@
 }
 .ch-cl-today__t {
   grid-row: span 2;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
@@ -1874,7 +1874,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
   letter-spacing: -0.02em;
 }
 [data-ch-crh='on'] .ch-cl-term__h span {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-on-green-2);
 }

@@ -15,7 +15,7 @@
   align-items: baseline;
   gap: 8px;
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-text-primary);
 }
@@ -50,7 +50,7 @@
 .ch-gs__row span.ch-num {
   display: block;
   margin-top: 2px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }

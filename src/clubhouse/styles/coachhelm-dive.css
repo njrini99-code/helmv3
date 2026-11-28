@@ -135,7 +135,7 @@
   color: var(--ch-hd-ink);
 }
 .ch-hd-it__b b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   text-wrap: pretty;
 }
 .ch-hd-it__v {
@@ -186,7 +186,7 @@
   min-width: 0;
 }
 .ch-hd-cl__b b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color: var(--ch-text-secondary);
 }
 .ch-hd-cl__b em {
@@ -304,7 +304,7 @@
 .ch-hd-read__stale {
   display: block;
   margin-top: 4px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color: var(--ch-text-secondary);
 }
 .ch-hd-sec {
@@ -370,7 +370,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-hd-meas__w {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-ink-700);
 }
@@ -443,7 +443,7 @@
   fill: var(--ch-ivory-25);
 }
 .ch-hd-strip__c {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-hd-fig);
 }
@@ -504,7 +504,7 @@
   min-width: 0;
 }
 .ch-hd-where__b b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
 }
 .ch-hd-where__b b span {
   font-weight: 400;
@@ -565,7 +565,7 @@
   flex-wrap: wrap;
   gap: 2px 8px;
   min-width: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
 }
 .ch-hd-r__c em {
   font: var(--ch-type-caption);
@@ -659,7 +659,7 @@
 .ch-hd-dx__d dd {
   margin: 0;
   flex: none;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   color: var(--ch-ink-700);
 }
@@ -1298,7 +1298,7 @@ main[data-canopy] .ch-hd-it.is-on,
   gap: 6px;
   min-height: 40px;
   padding: 0 6px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   color: var(--ch-text-secondary);
   text-decoration: none;

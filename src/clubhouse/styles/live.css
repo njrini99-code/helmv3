@@ -70,7 +70,7 @@ section.ch-lv-card {
 }
 .ch-lv-card__more {
   width: 100%;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color: var(--ch-green-600);
 }
 .ch-lv-card__open[data-ch-pressed],
@@ -98,7 +98,7 @@ section.ch-lv-card {
   gap: var(--ch-space-2);
   min-height: 44px;
   padding: 0 var(--ch-space-3) 0 var(--ch-space-4);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color: var(--ch-text-primary);
   text-decoration: none;
   touch-action: manipulation;
@@ -883,7 +883,7 @@ section.ch-lv-card {
 }
 .ch-lv-own__next {
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-primary);
 }
@@ -938,7 +938,7 @@ section.ch-lv-card {
   padding: 0 var(--ch-space-3);
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color: var(--ch-text-primary);
   text-decoration: none;
   touch-action: manipulation;

@@ -12,7 +12,7 @@
   padding: 0 var(--ch-btn-pad-x);
   border: 0;
   border-radius: var(--ch-radius-md);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-tight);
   letter-spacing: var(--ch-track-14);
   white-space: nowrap;
@@ -515,7 +515,7 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-ink-900);
   color: #f4f2ec;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   box-shadow: var(--ch-drop-ink);
   pointer-events: auto;
   /* It follows the finger toward its edge (CH-1614): a drag on it is the toast's, not the page's scroll. */
@@ -773,7 +773,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-nine b {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-600);
   line-height: var(--ch-lead-tight);
 }
@@ -940,7 +940,7 @@
 .ch-lgr__lead {
   flex: none;
   min-width: 44px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
@@ -1125,7 +1125,7 @@ button.ch-feat {
   color: var(--ch-on-green-ink);
 }
 .ch-feat__line {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-on-green-ink-soft);
 }
@@ -1573,7 +1573,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   color: var(--ch-text-primary);
 }
 .ch-ppeek__figs dd small {
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   line-height: var(--ch-lead-label);
   color: var(--ch-text-secondary);
 }
@@ -1792,7 +1792,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-znlines {
   display: grid;
   gap: 6px;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   color: var(--ch-text-secondary);
 }
 .ch-znlines b {
@@ -1819,7 +1819,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 .ch-znb > p {
   margin: 0 0 16px;
   max-width: 62ch;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-tertiary);
 }
@@ -1828,7 +1828,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
   padding: 16px 20px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-bg-inset);
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-text-secondary);
 }
@@ -2531,7 +2531,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 [data-ch-crh='on'] .ch-crh-ste > p {
   max-width: 34ch;
   margin: 0;
-  font: var(--ch-type-callout);
+  font: var(--ch-type-detail);
   font-weight: var(--ch-fw-400);
   color: var(--ch-crh-ink2);
   text-wrap: pretty;
