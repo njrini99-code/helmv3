@@ -14,7 +14,7 @@
     'figs figs'
     'below below';
   align-items: end;
-  column-gap: 16px;
+  column-gap: var(--ch-space-4);
   min-width: 0;
 }
 :where(.ch-head:has(> .ch-head__lead)) {
@@ -33,7 +33,7 @@
   grid-area: text;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--ch-space-1);
   min-width: 0;
 }
 :where(.ch-head__end) {
@@ -41,26 +41,26 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--ch-space-2);
   min-width: 0;
 }
 :where(.ch-head__figs) {
   grid-area: figs;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 32px;
-  margin: 16px 0 0;
+  gap: var(--ch-space-2) var(--ch-space-8);
+  margin: var(--ch-space-4) 0 0;
 }
 :where(.ch-head__below) {
   grid-area: below;
   min-width: 0;
-  margin-top: 16px;
+  margin-top: var(--ch-space-4);
 }
 
 /* The eyebrow: whose, which season. The footnote role in the eyebrow ink, untracked (P001-D5); its figures are tabular through .ch-num. */
 /* A page's text breathes a little more than a section's: eyebrow, title and meta 8px apart. */
 :where(.ch-head--page > .ch-head__text) {
-  gap: 8px;
+  gap: var(--ch-space-2);
 }
 
 :where(.ch-head__eyebrow) {
@@ -89,7 +89,7 @@
      reads the ledger rule and the hairline where the head sits: Qualifiers, CoachHelm and Ask darken the rule in light,
      and print greys it. */
   --ch-head-rule: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
-  padding-bottom: 12px;
+  padding-bottom: var(--ch-space-3);
   box-shadow: var(--ch-head-rule);
 }
 :where(.ch-head--section .ch-head__title) {
@@ -113,7 +113,7 @@
 :where(.ch-head__fig) {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--ch-space-0_5);
   min-width: 0;
 }
 :where(.ch-head__fig dt) {
@@ -132,10 +132,10 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--ch-space-2);
 }
 :where(.ch-head__count) {
-  margin-inline-end: 4px;
+  margin-inline-end: var(--ch-space-1);
   font: var(--ch-type-callout);
   color: var(--ch-text-primary);
 }
@@ -145,7 +145,7 @@
    head opens on the board's engraved double rule above its heading, not a rule under it. */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   :where(.ch-head) {
-    row-gap: 12px;
+    row-gap: var(--ch-space-3);
   }
   :where(.ch-head--page),
   :where(.ch-head--entity) {
@@ -174,13 +174,13 @@
     display: none;
   }
   :where(.ch-head--section) {
-    padding: 12px 0 0;
+    padding: var(--ch-space-3) 0 0;
     box-shadow: none;
     border-top: var(--ch-ledger-rule-double);
   }
   :where(.ch-head__figs) {
     margin-top: 0;
-    gap: 8px 20px;
+    gap: var(--ch-space-2) var(--ch-space-5);
   }
   :where(.ch-head__below) {
     margin-top: 0;
