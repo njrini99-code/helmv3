@@ -1,0 +1,15 @@
+{
+  "note": "var(--ch-*, fallback) hooks that nothing sets, so the fallback is what renders (dsx-09, GAP-B3). May only shrink: remove a name when its reference goes, never add one.",
+  "hooks": [
+    "--ch-dh-inset",
+    "--ch-fg-n",
+    "--ch-gain-tint",
+    "--ch-on-green-glass",
+    "--ch-pre-hm-empty-align",
+    "--ch-pre-hm-empty-dir",
+    "--ch-pre-hm-empty-gap",
+    "--ch-pre-hm-empty-pad",
+    "--ch-sample-paper",
+    "--ch-sp-x"
+  ]
+}

@@ -24,7 +24,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/whats-new/WhatsNew.tsx`
 
-- CTL-P001-001 70 `LedgerRow` "{what}: {title}, {player}, {time}" (href)
+- CTL-P001-001 70 `LedgerRow` "{title}" (href)
 
 ### `src/clubhouse/shell/AccountSheet.tsx`
 
@@ -162,7 +162,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 ### `src/clubhouse/screens/home/CoachQueue.tsx`
 
 - CTL-P002-007 77 `Link` "{text}" (link, href)
-- CTL-P002-008 115 `Link` "{text}" (link, href)
+- CTL-P002-008 115 `Link` "{text}, {VERB}" (link, href)
 
 ### `src/clubhouse/screens/home/DayCard.tsx`
 
@@ -300,16 +300,16 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 - CTL-P003-006 545 `Button` "Invite players" (button, onClick)
 - CTL-P003-007 599 `Button` "Invite players" (button, onClick) CH-3301
 - CTL-P003-008 605 `Button` "Copy team code" (button, onClick) CH-3301
-- CTL-P003-009 648 `Button` "{Sort players, by }" (button)
+- CTL-P003-009 648 `Button` "{Sort: }" (button)
 - CTL-P003-010 779 `button` "{name}" (button, onClick)
-- CTL-P003-011 850 `IconButton` "{Actions for }" (button)
-- CTL-P003-012 862 `Button` "Show everyone" (button, onClick)
-- CTL-P003-013 867 `button` "{{Active|Inactive}|{…}} {name} …" (button, onClick)
-- CTL-P003-014 1024 `Button` "Done" (button, onClick)
-- CTL-P003-015 1031 `Button` "Copy" (button, onClick)
-- CTL-P003-016 1049 `Button` "Share" (button, onClick)
-- CTL-P003-017 1053 `Button` "Copy" (button, onClick)
-- CTL-P003-018 1077 `Button` "Open team settings" (button, href) CH-3304
+- CTL-P003-011 853 `IconButton` "{Actions for }" (button)
+- CTL-P003-012 865 `Button` "Show everyone" (button, onClick)
+- CTL-P003-013 870 `button` "{{Active|Inactive}|{…}} {name} …" (button, onClick)
+- CTL-P003-014 1030 `Button` "Done" (button, onClick)
+- CTL-P003-015 1037 `Button` "Copy" (button, onClick)
+- CTL-P003-016 1055 `Button` "Share" (button, onClick)
+- CTL-P003-017 1059 `Button` "Copy" (button, onClick)
+- CTL-P003-018 1083 `Button` "Open team settings" (button, href) CH-3304
 
 ### `src/clubhouse/screens/roster/RosterLeaders.tsx`
 
@@ -1396,7 +1396,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 - CTL-P010-064 554 `button` "{name} {{join}|All square}{, {l…" (button, onClick)
 - CTL-P010-065 582 `button` "{label}{30 d|}" (button, onClick)
 - CTL-P010-066 611 `button` "{name}" (button, onClick)
-- CTL-P010-067 706 `button` "{n}" (button, onClick)
+- CTL-P010-067 706 `button` "{initials}, {n}" (button, onClick)
 - CTL-P010-068 731 `More` "{Open post|All announcements}" (onClick)
 - CTL-P010-069 753 `More` "All tasks" (onClick)
 - CTL-P010-070 763 `Button` "Assign a task" (button, onClick) CH-10303
@@ -1416,7 +1416,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/live/PlayerLane.tsx`
 
-- CTL-P011-002 94 `button` "{label}" (button, onClick)
+- CTL-P011-002 99 `button` "{label}" (button, onClick)
 
 ### `src/clubhouse/routes/course-history.tsx`
 

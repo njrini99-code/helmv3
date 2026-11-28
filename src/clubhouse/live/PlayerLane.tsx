@@ -4,6 +4,7 @@ import { ChartColumn, Flag, MessageSquare, Radio } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { messagesPrefillHref } from '../screens/messages/prefill';
 import { firstName } from '../lib/names';
+import { useHydrated } from '../lib/use-hydrated';
 import { rebuiltHref } from '../shell/nav';
 import { PeekTarget, type PeekAction } from '../ui/Peek';
 import { HoleBeads, useRing } from './HoleBeads';
@@ -48,14 +49,18 @@ function subFor(lane: LiveLane, f: LaneFreshness, hours: '12' | '24'): { code: s
 }
 
 export function PlayerLane({ lane, density, now, hours, change, reduced, selected = false, onOpen, actions = false, rowAttr = true }: PlayerLaneProps) {
-  const f: LaneFreshness = now == null ? { kind: 'fresh' } : laneFreshness(lane, now);
+  // A quiet lane names a time of day in the reader's own time zone, which the server cannot know, so a lane given a
+  // `now` on the server (the preview's frozen clock) waits for hydration before it says how fresh it is (dsx-09).
+  const hydrated = useHydrated();
+  const at = hydrated ? now : null;
+  const f: LaneFreshness = at == null ? { kind: 'fresh' } : laneFreshness(lane, at);
   const sub = subFor(lane, f, hours);
   const ring = useRing(reduced ? change?.n : undefined);
   const under = lane.toPar != null && lane.toPar < 0;
   const posted = lane.phase === 'posted';
   const stopped = f.kind === 'stopped';
   const thru = stopped ? 'Stopped' : posted ? (lane.strokes != null ? String(lane.strokes) : 'Posted') : thruText(lane);
-  const label = laneAria(lane, now ?? Date.parse(lane.heardAt), hours);
+  const label = laneAria(lane, at ?? Date.parse(lane.heardAt), hours);
   const wash = !reduced && change?.wash ? change.wash : undefined;
 
   const body: ReactNode = (

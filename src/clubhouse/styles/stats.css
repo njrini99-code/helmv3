@@ -4940,7 +4940,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   opacity: 1;
 }
 .ch-st[data-canopy] .ch-sgt__reflab {
-  fill: var(--ch-champagne-600, var(--ch-text-tertiary));
+  fill: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-sgt__scrub {
   pointer-events: none;

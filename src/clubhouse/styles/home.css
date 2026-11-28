@@ -6194,7 +6194,12 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 .ch-ph-leg__who {
   color: var(--ch-green-600);
-  text-decoration: none;
+  /* A name that is a link says so by more than its colour (WCAG 1.4.1, axe link-in-text-block; dsx-09): a quiet
+     green rule under it, which hover darkens to the ink. */
+  text-decoration: underline;
+  text-decoration-color: var(--ch-green-rule);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
 }
 @media (pointer: coarse) {
   /* A name in a sentence stays a name, but a finger gets a 44px-tall hit area (L-050). */
@@ -6209,8 +6214,7 @@ html[data-fw-theme='dark'] .ch-h-form__bar {
 }
 @media (hover: hover) {
   .ch-ph-leg__who:hover {
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    text-decoration-color: currentColor;
   }
 }
 .ch-ph-tm-noline {
