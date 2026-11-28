@@ -66,7 +66,7 @@ describe('the player’s Tournaments list · Played is a table on the sheet', ()
     expect(decls('.ch-tour-pl:not(.is-phone) .ch-tour-pl-res.ch-sheet')).toEqual({
       'border-radius': 'var(--ch-radius-lg)',
       background: 'var(--ch-sheet-bg)',
-      'box-shadow': 'var(--ch-elevation-card)',
+      'box-shadow': 'var(--ch-sheet-shadow)',
     });
   });
 

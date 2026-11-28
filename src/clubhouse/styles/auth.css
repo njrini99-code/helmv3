@@ -1102,7 +1102,7 @@
   padding: 8px 16px 8px 8px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-sheet-shadow);
 }
 .ch-au-wl-empty {
   background: var(--ch-well-soft-bg);

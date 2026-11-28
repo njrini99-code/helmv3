@@ -1285,7 +1285,7 @@
   padding: 24px 32px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-sheet-shadow);
 }
 .ch-ms-ann__title {
   margin: 0;

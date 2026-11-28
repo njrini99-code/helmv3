@@ -280,7 +280,7 @@ svg .ch-num {
 /* A reading sheet is a card on the page, so it takes the card's 16 (H17); 20 belongs to a bottom sheet's top corners. */
 .ch-sheet {
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-sheet-shadow);
   border-radius: var(--ch-radius-lg);
 }
 /* System contrast modes suppress shadows; retain a visible surface boundary there. */

@@ -1019,8 +1019,11 @@
   --ch-raised-shadow: var(--ch-elevation-control);
   /* Lit upper edge, warm lower face and a contact shadow, from handoff/depth.css. */
   /* Solid: a tall sheet's gentle gradient banded visibly; the lit top edge is the elevation's inset highlight. */
+  /* The sheet's two hooks (dsx-07): a sheet reads its face and its depth through these, never the card elevation
+     directly, because the shared Section (shell.css) sets them to transparent and none so its one sheet goes flat inside
+     it: no card in a card. The depth is the card elevation. */
   --ch-sheet-bg: var(--ch-card-bg);
-  --ch-sheet-shadow: var(--ch-elevation-reading);
+  --ch-sheet-shadow: var(--ch-elevation-card);
   /* The one tint behind every sheet, dialog and drawer on the native top layer (popup audit 2026-10-13): a solid wash,
      never a blur, which re-blurs the page on every frame of a WebKit open. Read by ::backdrop, which inherits it from
      the dialog; each use keeps the light value as its fallback. */

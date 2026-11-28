@@ -8,14 +8,17 @@ import { hits, ratchet, ROOT, slack, walk, type Hit } from './_scan';
  * Named elevations (dsx-07, design lab foundation 2): flat, card, raised and overlay are the only depth names a surface
  * reads. The older names that only point at one of them (reading, lifted, framed, board, plate, mark, glass, strip,
  * control, the shadow-sm/md/lg and per-lane card shadows) are retiring: their reads are counted per file and may only
- * fall. Shadows drop out under forced colours (Windows High Contrast), so every surface that reads a named elevation
+ * fall. The reading sheet's `--ch-sheet-shadow` is not one of them: it is a hook, like `--ch-sheet-bg`, that the shared
+ * Section sets to none so its one sheet goes flat inside it (shell.css, no card in a card), and a surface that read the
+ * card elevation directly in its place would draw its shadow inside the Section's card. Its value is the card elevation.
+ * Shadows drop out under forced colours (Windows High Contrast), so every surface that reads a named elevation
  * also draws an outline in a `@media (forced-colors: active)` rule (its own stylesheet's, or base.css's shared list); the surfaces that don't yet
  * are counted per file and may only fall.
  */
 const tokens = readFileSync(join(ROOT, 'styles/tokens.css'), 'utf8');
 const css = walk(join(ROOT, 'styles'), /\.css$/).filter((f) => !f.endsWith('tokens.css'));
 const RETIRING =
-  /var\(\s*--ch-(?:elevation-(?:reading(?:-hover|-accent)?|lifted|framed|on-frame(?:-hover|-card-hover)?|feature|board(?:-hover)?|plate|row-card-hover|mark(?:-warn|-ink)?|glass-(?:card|edge)|sheet|control|strip(?:-plate)?)|card-shadow-flat|crh-card-shadow|nav-well-shadow|sheet-shadow|shadow-(?:sm|md|lg)|card-shadow|feature-shadow|raised-shadow)\s*[,)]/;
+  /var\(\s*--ch-(?:elevation-(?:reading(?:-hover|-accent)?|lifted|framed|on-frame(?:-hover|-card-hover)?|feature|board(?:-hover)?|plate|row-card-hover|mark(?:-warn|-ink)?|glass-(?:card|edge)|sheet|control|strip(?:-plate)?)|card-shadow-flat|crh-card-shadow|nav-well-shadow|shadow-(?:sm|md|lg)|card-shadow|feature-shadow|raised-shadow)\s*[,)]/;
 const NAMED = /var\(--ch-(?:elevation-(?:card|raised|overlay)|card-shadow|shadow-(?:sm|md|lg)|sheet-shadow)\)/;
 
 const strip = (s: string) =>
@@ -69,6 +72,21 @@ describe('named elevations (dsx-07)', () => {
     expect(ratchet(found, RETIRING_READS)).toEqual({ over: [], stale: [] });
     expect(slack(found, RETIRING_READS)).toEqual([]);
   });
+  it('the sheet reads its depth through its hook, which the shared Section flattens', () => {
+    const base = postcss.parse(readFileSync(join(ROOT, 'styles/base.css'), 'utf8'));
+    const sheet: Record<string, string> = {};
+    base.walkRules('.ch-sheet', (r) => {
+      if (r.parent?.type === 'root') r.walkDecls((d) => void (sheet[d.prop] = d.value));
+    });
+    expect(sheet).toMatchObject({ background: 'var(--ch-sheet-bg)', 'box-shadow': 'var(--ch-sheet-shadow)' });
+    expect(tokens).toMatch(/--ch-sheet-shadow: var\(--ch-elevation-card\);/);
+    const shell = postcss.parse(readFileSync(join(ROOT, 'styles/shell.css'), 'utf8'));
+    const flat: Record<string, string> = {};
+    shell.walkRules(/\bmain \.ch-sec:not\(/, (r) =>
+      r.walkDecls(/^--ch-sheet-/, (d) => void (flat[d.prop] = d.value)),
+    );
+    expect(flat).toEqual({ '--ch-sheet-bg': 'transparent', '--ch-sheet-shadow': 'none' });
+  });
   it('a surface that reads a named elevation keeps an edge under forced colours', () => {
     const found = edgeless();
     expect(ratchet(found, EDGELESS)).toEqual({ over: [], stale: [] });
@@ -87,7 +105,7 @@ const RETIRING_READS: Record<string, number> = {
   'styles/roster.css': 16,
   'styles/shell.css': 19,
   'styles/stats-redesign.css': 3,
-  'styles/stats.css': 16,
+  'styles/stats.css': 13,
 };
 
 /** Surfaces with no forced-colours edge on 27 Nov 2026 (files other open PRs hold, and modules not live). Only falls. */

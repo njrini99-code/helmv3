@@ -105,7 +105,7 @@
 .ch-hb-card {
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-sheet-shadow);
 }
 .ch-hb-card__h {
   display: flex;
@@ -319,7 +319,7 @@
   padding: 24px 32px;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-sheet-shadow);
 }
 .ch-hb-ann.is-featured {
   box-shadow: var(--ch-elevation-raised);
@@ -577,7 +577,7 @@
   overflow: hidden;
   border-radius: var(--ch-radius-lg);
   background: var(--ch-sheet-bg);
-  box-shadow: var(--ch-elevation-card);
+  box-shadow: var(--ch-sheet-shadow);
 }
 .ch-hb-pass.is-big {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
