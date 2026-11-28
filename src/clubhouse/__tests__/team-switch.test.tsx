@@ -18,6 +18,8 @@ vi.mock('@/contexts/notification-badge-context', () => ({
 }));
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: vi.fn(), markNotificationRead: vi.fn(), markAllNotificationsRead: vi.fn() }));
 vi.mock('../lib/sign-out', () => ({ chSignOut: vi.fn() }));
+// The frame's presence heartbeat (usePresence) talks to Supabase; it has its own suite (use-presence.test.tsx).
+vi.mock('@/hooks/use-presence', () => ({ usePresence: vi.fn() }));
 const setActiveTeam = vi.hoisted(() => vi.fn());
 vi.mock('@/app/golf/actions/team-switcher', () => ({ setActiveTeam }));
 

@@ -71,6 +71,7 @@ import { noticeToast, useRoundPorts } from '../screens/rounds/entry/ports';
 import { POSTED_OPEN_MS, RoundRuntime, SUBMIT_SLOW_MS } from '../screens/rounds/entry/RoundRuntime';
 import { cardHoles, monthDay, outcomeOf, recoveryFacts, summaryHoles, thrownReason, trackingRound, type ChRoundSession } from '../screens/rounds/entry/session';
 import { listCoursesRead, listTeesRead, placeParts, startRefusal, teeFrom, teeHolesRead, toStartForm } from '../screens/rounds/entry/setup-reads';
+import { chReport } from '../lib/track';
 // PMAC-03: the list is read by the route on the server now, with the same rules.
 import { loadSetupQualifiers } from '../data/setup-qualifiers';
 import type { ChSetupForm } from '../screens/rounds/setup/shape';
@@ -351,6 +352,16 @@ describe('Round entry: setup over the course library and the engine (ChSetupPort
     mocks.getCourseDetail.mockResolvedValueOnce(null);
     expect((await listTeesRead('zzz')).ok).toBe(false);
     expect(teeFrom({ id: 'x', tee_name: 'Championship', tee_color: null, category: null, holes_count: 18, is_draft: false } as never).color).toBeNull();
+  });
+
+  it('a setup read that throws (a tab left open across a deploy) is recorded even as a stale action, as Fairway’s picker was', async () => {
+    mocks.getCourseDetail.mockRejectedValueOnce(new Error('Failed to find Server Action "7f3a". This request might be from an older or newer deployment.'));
+    expect((await listTeesRead('a')).ok).toBe(false);
+    expect(chReport).toHaveBeenLastCalledWith(expect.any(Error), {
+      surface: 'rounds',
+      action: 'rounds.tees',
+      extra: { featureArea: 'round_tracking', bypassStaleActionFilter: true },
+    });
   });
 
   it('CH-11210 a tee’s card in hole order, a missing yardage left blank; a tee that cannot be read is a failure', async () => {

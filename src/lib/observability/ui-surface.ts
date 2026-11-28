@@ -10,7 +10,11 @@ import * as Sentry from '@sentry/nextjs';
  *    page, the /api/log-error route (`uiSurfaceForPath` on the reported route);
  *  - a server read, through `chLogServer` (explicit tag) or, for every other server log, `ambientUiSurface()` below,
  *    which `server-error-logger` consults when the caller passed no `ui` tag;
- *  - Next's `onRequestError` hook (src/instrumentation.ts), from the failed request's own path.
+ *  - Next's `onRequestError` hook (src/instrumentation.ts), from the failed request's own path;
+ *  - background golf work (a cron, the job queue, a webhook, or work left running after its request), through
+ *    `ambientIsBackgroundWork()` below: server-error-logger tags a golf warning or error from there, because the person
+ *    it failed for is a golf coach or player. Before this, the same push failure was tagged when it ran inside a
+ *    Clubhouse request and hidden from the Bridge when the queue ran it.
  *
  * Telemetry only: nothing here decides what a person sees, and every function answers null rather than throw.
  */
@@ -88,5 +92,24 @@ export function ambientUiSurface(): UiSurface | null {
     return uiSurfaceForRequest({ url: request.url ?? null, referer: request.headers?.referer ?? null });
   } catch {
     return null;
+  }
+}
+
+/** Routes that serve no page a person has open: scheduled jobs, the job queue and inbound webhooks. */
+const BACKGROUND_ROUTE_PREFIXES = ['/api/cron', '/api/jobs', '/api/webhooks'] as const;
+
+/**
+ * Whether the code logging right now serves no page: no request is recorded for this isolation scope (a job, work that
+ * outlived its request), or the request is a cron, queue or webhook route. A page or an admin request answers false,
+ * and so does any failure to read the scope, so a partial Sentry mock never tags anything.
+ */
+export function ambientIsBackgroundWork(): boolean {
+  try {
+    const data = Sentry.getIsolationScope().getScopeData() as IsolationScopeDataLike;
+    const path = pathnameOf(data.sdkProcessingMetadata?.normalizedRequest?.url ?? null);
+    if (!path) return true;
+    return BACKGROUND_ROUTE_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+  } catch {
+    return false;
   }
 }

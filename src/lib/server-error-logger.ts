@@ -39,7 +39,7 @@ import { redactSensitiveUrl } from '@/lib/security/redact-url';
 import { resolveFeatureKey } from '@/lib/admin/feature-registry';
 import { absorbIntoRecentEvent } from '@/lib/admin/durable-collapse';
 import { drainCollapsedCount, releaseEmit, shouldEmit } from '@/lib/admin/emit-throttle';
-import { ambientUiSurface } from '@/lib/observability/ui-surface';
+import { ambientIsBackgroundWork, ambientUiSurface, CLUBHOUSE_UI } from '@/lib/observability/ui-surface';
 
 export type ServerTraceSeverity = 'info' | 'warning' | 'error' | 'critical';
 export type ServerTraceSource =
@@ -120,6 +120,20 @@ interface RoundErrorContext {
    * durable-collapse.ts for why the per-process throttle was not enough.
    */
   durableCollapse?: boolean;
+}
+
+/** A release as the browser path stores it (api/log-error RELEASE_PATTERN): a commit SHA or a dotted version name. */
+const RELEASE_PATTERN = /^[\w.-]{1,64}$/;
+
+/**
+ * The deploy that wrote a server row: the stamped release (a CLI deploy stamps NEXT_PUBLIC_SENTRY_RELEASE and leaves
+ * VERCEL_GIT_COMMIT_SHA empty, AGENTS.md "Production"), else Vercel's commit SHA, as next.config.mjs picks Sentry's.
+ * Browser rows carry the tab's release since #2667; server rows carried none, so a spike on the Bridge (every Clubhouse
+ * loader failure is a server row) could not be tied to a deploy.
+ */
+function serverRelease(): string | null {
+  const release = process.env.NEXT_PUBLIC_SENTRY_RELEASE || process.env.VERCEL_GIT_COMMIT_SHA || '';
+  return RELEASE_PATTERN.test(release) ? release : null;
 }
 
 const SENTRY_SEVERITY_MAP: Record<ServerTraceSeverity, Sentry.SeverityLevel> = {
@@ -286,7 +300,7 @@ function inferSport(message: string, context: RoundErrorContext): NonNullable<Ro
   return null;
 }
 
-function enrichTraceContext(message: string, rawContext: RoundErrorContext): RoundErrorContext {
+function enrichTraceContext(message: string, rawContext: RoundErrorContext, severity?: ServerTraceSeverity): RoundErrorContext {
   // Default requestId from the ambient correlation scope opened by
   // withAdminObserved. Done HERE, centrally, because the per-call-site
   // approach is the one that demonstrably failed: the field existed for
@@ -350,8 +364,9 @@ function enrichTraceContext(message: string, rawContext: RoundErrorContext): Rou
             : {}),
         };
 
-  const tagged = withAmbientUi(context);
-  const sport = inferSport(message, tagged);
+  const ambient = withAmbientUi(context);
+  const sport = inferSport(message, ambient);
+  const tagged = withGolfBackgroundUi(ambient, sport, severity);
   if (!sport) return tagged;
   const classified = classifyTraceFeature(
     { route: context.route ?? null, url: context.url ?? null, action: context.action ?? null },
@@ -376,6 +391,23 @@ function withAmbientUi(context: RoundErrorContext): RoundErrorContext {
   const ui = ambientUiSurface();
   if (!ui) return context;
   return { ...context, tags: { ...(context.tags ?? {}), ui } };
+}
+
+/**
+ * A golf warning or error from background work (a cron, the job queue, a webhook, or work that outlived its request)
+ * is tagged Clubhouse too: Clubhouse is the only golf coach and player UI, so the person it failed for is a Clubhouse
+ * user. Without this, a push that failed for 9 golf people on 2026-11-18 was hidden from the Bridge's Clubhouse-only
+ * views whenever the queue sent it, and shown when a Clubhouse request did. Info rows (integrity passes, sweep
+ * chatter) stay untagged, an admin page's request is not background, and an explicit or ambient tag always wins.
+ */
+function withGolfBackgroundUi(
+  context: RoundErrorContext,
+  sport: RoundErrorContext['sport'] | null,
+  severity: ServerTraceSeverity | undefined,
+): RoundErrorContext {
+  if (context.tags?.ui || sport !== 'golf' || !severity || severity === 'info') return context;
+  if (!ambientIsBackgroundWork()) return context;
+  return { ...context, tags: { ...(context.tags ?? {}), ui: CLUBHOUSE_UI } };
 }
 
 // Ceiling on 'bridge_write_failed' Sentry alerts (mirrors instrumentation.ts's
@@ -512,7 +544,7 @@ async function writeAdminTables(
   context: RoundErrorContext,
   severity: ServerTraceSeverity
 ) {
-  const enriched = enrichTraceContext(message, context);
+  const enriched = enrichTraceContext(message, context, severity);
   const admin = createAdminClient();
   const normalizedContext = normalizeContext(enriched);
   const url = buildUrl(enriched);
@@ -586,6 +618,7 @@ async function writeAdminTables(
     fingerprint: dbFingerprint,
     source: enriched.source ?? 'server_action',
     feature: resolveFeatureKey(enriched.feature, enriched.featureArea),
+    release: serverRelease(),
   }, { onConflict: 'id' });
 
   const [errorLogResult, adminEventResult] = await Promise.allSettled([
@@ -798,7 +831,7 @@ async function captureServerTrace(
     10000,
     (err) => reportRedactionFailure(err, 'message'),
   );
-  const enriched = enrichTraceContext(message, context);
+  const enriched = enrichTraceContext(message, context, severity);
   const normalizedError = error ?? syntheticTraceError(message, enriched);
 
   // Skip, don't rethrow: callers already decide how the original error

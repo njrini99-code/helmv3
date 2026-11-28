@@ -522,3 +522,54 @@ describe('sendPushNotification — deployed-vs-repo edge-function drift', () => 
     expect(payload).not.toHaveProperty('active');
   });
 });
+
+describe('sendPushNotification — a failure names a golf recipient, so the Bridge can show it as Clubhouse', () => {
+  beforeEach(() => {
+    logServerEventMock.mockClear();
+    logServerErrorMock.mockClear();
+    vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://xyz.supabase.co');
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'service-role-key');
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  /** device_tokens as the other tests mock it, plus the two golf role reads (`select().eq().limit()`). */
+  function withGolfRoles(rows: { coach?: boolean; player?: boolean }, golfReads: string[]) {
+    const tokensFrom = makeDeviceTokensFromMock({ tokens: [{ token: 'flaky-token-1234567890', platform: 'ios' }], currentFailedCount: 0, updateSpy: vi.fn() });
+    return vi.fn((table: string) => {
+      if (table !== 'golf_coaches' && table !== 'golf_players') return tokensFrom(table);
+      golfReads.push(table);
+      const found = table === 'golf_coaches' ? rows.coach : rows.player;
+      const chain = { select: () => chain, eq: () => chain, limit: async () => ({ data: found ? [{ id: 'x' }] : [], error: null }) };
+      return chain;
+    });
+  }
+
+  async function failOnce(from: ReturnType<typeof vi.fn>) {
+    const invokeMock = makeFunctionsInvokeMock(new Response(JSON.stringify({ success: false, error: 'APNs error 502: upstream timeout' }), { status: 502 }));
+    vi.doMock('@/lib/supabase/admin', () => ({ createAdminClient: () => ({ from, functions: { invoke: invokeMock } }) }));
+    const { sendPushNotification } = await import('@/lib/notifications/push');
+    return sendPushNotification('task_reminder', 'user-1', { taskTitle: 'Log rounds' });
+  }
+
+  it('stamps sport golf on the token failure and the delivery failure, reading the roles once', async () => {
+    const golfReads: string[] = [];
+    const result = await failOnce(withGolfRoles({ player: true }, golfReads));
+    expect(result.success).toBe(false);
+    const invokeCall = logServerEventMock.mock.calls.find(([msg]) => String(msg).includes('token invoke failed'))!;
+    expect(invokeCall[1]).toMatchObject({ action: 'push.sendPushNotification.tokenInvoke', sport: 'golf' });
+    const deliverCall = logServerErrorMock.mock.calls.find(([, ctx]) => (ctx as { action?: string }).action === 'push.sendPushNotification.deliver')!;
+    expect(deliverCall[1]).toMatchObject({ sport: 'golf' });
+    expect(golfReads.sort()).toEqual(['golf_coaches', 'golf_players']);
+  });
+
+  it('leaves the sport unset for someone who is not a golf coach or player', async () => {
+    const result = await failOnce(withGolfRoles({}, []));
+    expect(result.success).toBe(false);
+    const deliverCall = logServerErrorMock.mock.calls.find(([, ctx]) => (ctx as { action?: string }).action === 'push.sendPushNotification.deliver')!;
+    expect((deliverCall[1] as { sport?: string }).sport).toBeUndefined();
+  });
+});

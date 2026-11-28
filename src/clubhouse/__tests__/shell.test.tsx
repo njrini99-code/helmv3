@@ -34,6 +34,8 @@ vi.mock('@/contexts/notification-badge-context', () => ({ useNotificationBadges:
 vi.mock('@/app/golf/actions/unified-notifications', () => ({ getUnifiedNotifications: vi.fn(), markNotificationRead: vi.fn(), markAllNotificationsRead: vi.fn() }));
 const signOutSpy = vi.hoisted(() => vi.fn());
 vi.mock('../lib/sign-out', () => ({ chSignOut: signOutSpy }));
+const presenceSpy = vi.hoisted(() => vi.fn());
+vi.mock('@/hooks/use-presence', () => ({ usePresence: presenceSpy }));
 
 import type { UnifiedNotificationItem } from '@/app/golf/actions/unified-notifications-model';
 import { ToastProvider, useToast } from '../ui/Toast';
@@ -518,6 +520,16 @@ describe('Shell · sidebar data', () => {
 
 describe('Shell · navigation and accessibility', () => {
   const shell: ChShellData = { pendingJoinRequests: 2 };
+
+  it('the frame sends the presence heartbeat Fairway’s shell sent (the only writer of users.last_seen)', () => {
+    presenceSpy.mockClear();
+    render(
+      <ClubhouseFrame userData={coach} shell={shell} pathname="/golf/dashboard" forceRebuilt>
+        <p>Page body</p>
+      </ClubhouseFrame>,
+    );
+    expect(presenceSpy).toHaveBeenCalled();
+  });
 
   it('CH-1801 the first Tab reaches Skip to content, which lands on the page', async () => {
     const user = userEvent.setup();

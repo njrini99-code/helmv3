@@ -59,7 +59,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/shell/ClubhouseFrame.tsx`
 
-- CTL-P001-021 195 `a` "Skip to content" (link, href) CH-1801
+- CTL-P001-021 201 `a` "Skip to content" (link, href) CH-1801
 
 ### `src/clubhouse/shell/Dock.tsx`
 
@@ -1486,16 +1486,16 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/rounds/RoundReview.tsx`
 
-- CTL-P011-033 172 `button` "Hole {n}" (button, onClick)
-- CTL-P011-034 193 `td` "(no label)" (onClick)
-- CTL-P011-035 272 `button` "Previous hole" (button, onClick)
-- CTL-P011-036 278 `button` "Next hole" (button, onClick)
-- CTL-P011-037 290 `Link` "Hole {n} at {course}" (link, href)
-- CTL-P011-038 371 `Button` "Change round type" (button, onClick) CH-11522
-- CTL-P011-039 446 `Link` "Why?" (link, href)
-- CTL-P011-040 608 `Link` "{label}" (link, onClick, href)
-- CTL-P011-041 634 `CourseLink` "(no label)" (link)
-- CTL-P011-042 809 `button` "{n} Hole {n} · Par {par} {{scor…" (button, onClick)
+- CTL-P011-033 173 `button` "Hole {n}" (button, onClick)
+- CTL-P011-034 194 `td` "(no label)" (onClick)
+- CTL-P011-035 273 `button` "Previous hole" (button, onClick)
+- CTL-P011-036 279 `button` "Next hole" (button, onClick)
+- CTL-P011-037 291 `Link` "Hole {n} at {course}" (link, href)
+- CTL-P011-038 372 `Button` "Change round type" (button, onClick) CH-11522
+- CTL-P011-039 447 `Link` "Why?" (link, href)
+- CTL-P011-040 612 `Link` "{label}" (link, onClick, href)
+- CTL-P011-041 638 `CourseLink` "(no label)" (link)
+- CTL-P011-042 813 `button` "{n} Hole {n} · Par {par} {{scor…" (button, onClick)
 
 ### `src/clubhouse/screens/rounds/RoundSays.tsx`
 

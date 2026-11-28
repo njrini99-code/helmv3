@@ -249,8 +249,16 @@ alongside (not duplicated here).
   (`chTagSession`), a Clubhouse render carries it (`gate.ts`), every
   `server-error-logger` capture carries it when the request was serving
   Clubhouse (`ambientUiSurface`, `src/lib/observability/ui-surface.ts`), and
-  `onRequestError` adds it to an unhandled Clubhouse request error. A new
-  capture path that bypasses these loses the tag and drops out of the Bridge.
+  `onRequestError` adds it to an unhandled Clubhouse request error. Golf work
+  with no Clubhouse request behind it (a cron, job or webhook route, or no
+  request at all) carries it too when the row is golf and warning or worse
+  (`withGolfBackgroundUi`, `ambientIsBackgroundWork`), because Fairway is
+  retired and those failures only reach Clubhouse users. A new capture path
+  that bypasses these loses the tag and drops out of the Bridge.
+- Server rows in `admin_events` carry `release` (`serverRelease()` in
+  `server-error-logger.ts`: `NEXT_PUBLIC_SENTRY_RELEASE`, else
+  `VERCEL_GIT_COMMIT_SHA`, null when neither is a safe short id), the same
+  field the client stamps through `/api/log-error`.
 - Never capture request/response bodies or auth headers in Replay —
   `networkDetailAllowUrls` stays unset.
 - Breadcrumb `data` is allow-listed; never an id, name, or email.

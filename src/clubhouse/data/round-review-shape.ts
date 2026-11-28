@@ -105,6 +105,12 @@ export interface ChRoundReview {
    * round page does (`recapPending`). Absent in a fixture: nothing is asked for.
    */
   recapPending?: boolean;
+  /**
+   * A completed round with no CoachHelm review row (golf_round_reviews) yet: the review asks for one once it opens
+   * (`useCoachHelmReview`), as the Fairway review page did on open. Absent in a fixture, or when the row's read failed:
+   * nothing is asked for.
+   */
+  coachHelmPending?: boolean;
   /** What the player wrote about the round when posting it. */
   notes: string | null;
   /**
@@ -301,6 +307,8 @@ export function toReview(
     tourError?: boolean;
     coachNote?: string | null;
     coachNoteError?: boolean;
+    /** The round's golf_round_reviews row was read and there is none (a failed read is not "none"). */
+    reviewRowMissing?: boolean;
   },
 ): ChRoundReview {
   // F-0003: the round's card when every hole is in, else its nines, else the stored total (round-scope `roundTotals`), so the header,
@@ -333,6 +341,7 @@ export function toReview(
     tour: input.tour ?? null,
     recap: r.ai_recap?.trim() || null,
     ...(r.status === 'completed' && !r.ai_recap?.trim() ? { recapPending: true } : {}),
+    ...(r.status === 'completed' && input.reviewRowMissing ? { coachHelmPending: true } : {}),
     notes: r.notes?.trim() || null,
     coachNote: input.coachNote?.trim() || null,
     ...(input.coachNoteError ? { coachNoteError: true } : {}),

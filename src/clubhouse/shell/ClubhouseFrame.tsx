@@ -14,6 +14,7 @@ import { chLoadMotionFeatures } from '../lib/motion-features';
 import { chKeepFocusThroughDisable } from '../lib/focus-keeper';
 import { liftHandoffCurtain } from '../lib/handoff';
 import { useAppearancePreferences } from '@/hooks/golf/use-appearance-preferences';
+import { usePresence } from '@/hooks/use-presence';
 import { ToastProvider } from '../ui/Toast';
 import type { ChShellData } from '../data/shell';
 import { useRouter } from 'next/navigation';
@@ -154,6 +155,11 @@ export function ClubhouseFrame({
   // …and every other box that scrolls: lists, panes, a modal's body, a sheet.
   useSmoothWheelEverywhere();
   useEffect(() => chTagSession(), []);
+  // The presence heartbeat Fairway's shell sent (FairwayDashboardShell, retired Nov 15): it is the only writer of
+  // users.last_seen, which the roster's online dot, the welcome's "since your last visit", the Bridge's Active users
+  // today, user recency, a coach's last seen and the dormant briefing all read. Without it golf last_seen went from 34
+  // people (Nov 1-14) to 2. Deferred and rate-limited inside the hook, so it never competes with the first paint.
+  usePresence();
   // The Bridge's signals (plan §4.2, E6-E8): views, the team switch, vitals, numbered taps and rage clicks. Off unless
   // the `clubhouse_signals` switch is on.
   useChSignals({ enabled: shell.signals === true, role, teamId: userData.teamId ?? null, userId: userData.userId ?? null, pathname, search });
