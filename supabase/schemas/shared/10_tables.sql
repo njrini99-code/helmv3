@@ -950,6 +950,7 @@ CREATE TABLE IF NOT EXISTS "public"."clubhouse_signal_hourly" (
     "p99_ms" integer,
     "first_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "last_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "route" "text" DEFAULT ''::"text" NOT NULL,
     CONSTRAINT "clubhouse_signal_hourly_kind_check" CHECK (("kind" = ANY (ARRAY['state'::"text", 'toast'::"text", 'action'::"text", 'crash'::"text", 'view'::"text", 'vital'::"text", 'frustration'::"text", 'tap'::"text"]))),
     CONSTRAINT "clubhouse_signal_hourly_platform_check" CHECK (("platform" = ANY (ARRAY['ios-app'::"text", 'ios-safari'::"text", 'desktop'::"text", 'other'::"text"]))),
     CONSTRAINT "clubhouse_signal_hourly_role_check" CHECK (("role" = ANY (ARRAY['coach'::"text", 'player'::"text", 'signed-out'::"text"]))),

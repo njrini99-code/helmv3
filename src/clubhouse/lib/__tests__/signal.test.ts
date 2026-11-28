@@ -111,6 +111,56 @@ describe('client signals', () => {
     expect(beacons(beacon)[0]!.signals[0]).toMatchObject({ page: 'P003', code: 'CH-1211', seq: 0 });
   });
 
+  it('keeps a held signal under the page it was sent from when the shell configures on another (a sign-in, then Home)', () => {
+    window.history.pushState(null, '', '/golf/login?returnTo=%2Fgolf%2Fdashboard');
+    try {
+      chSignal({ kind: 'tap', control: 'CTL-P015-001' });
+      window.history.pushState(null, '', '/golf/dashboard');
+      configureSignals({ enabled: true, role: 'coach', page: 'P002', userId: 'coach-1' });
+      chSignal({ kind: 'view' });
+      flushSignals();
+      expect(beacons(beacon)[0]!.signals.map((s) => [s.kind, s.page])).toEqual([
+        ['tap', 'P015'],
+        ['view', 'P002'],
+      ]);
+    } finally {
+      window.history.pushState(null, '', '/');
+    }
+  });
+
+  it('carries the screen the shell is on, and a held signal the screen it was sent from', () => {
+    window.history.pushState(null, '', '/golf/join/ABC123');
+    try {
+      chSignal({ kind: 'tap', control: 'CTL-P015-017' });
+      window.history.pushState(null, '', '/golf/dashboard/rounds/new');
+      configureSignals({ enabled: true, role: 'player', page: 'P011', route: '/golf/dashboard/rounds/new', userId: 'player-2' });
+      chSignal({ kind: 'view' });
+      chSignal({ kind: 'vital', code: 'CH-1954', act: 'LCP', durationMs: 1200 });
+      flushSignals();
+      expect(beacons(beacon)[0]!.signals.map((s) => [s.kind, s.page, s.route])).toEqual([
+        ['tap', 'P015', '/golf/join/[code]'],
+        ['view', 'P011', '/golf/dashboard/rounds/new'],
+        ['vital', 'P011', '/golf/dashboard/rounds/new'],
+      ]);
+    } finally {
+      window.history.pushState(null, '', '/');
+    }
+  });
+
+  it('sends no route it does not know, and none for a page the signal names without one', () => {
+    configureSignals({ enabled: true, role: 'coach', page: 'P003', route: '/golf/dashboard/roster/3f9a1c2e', userId: 'coach-1' });
+    chSignal({ kind: 'view' });
+    configureSignals({ enabled: true, role: 'coach', page: 'P003', route: '/golf/dashboard/roster', userId: 'coach-1' });
+    chSignal({ kind: 'view', page: 'P007' });
+    chSignal({ kind: 'view', page: 'P007', route: '/golf/dashboard/messages' });
+    flushSignals();
+    expect(beacons(beacon)[0]!.signals.map((s) => [s.page, s.route ?? null])).toEqual([
+      ['P003', null],
+      ['P007', null],
+      ['P007', '/golf/dashboard/messages'],
+    ]);
+  });
+
   it('drops what waited when the switch turns out to be off', () => {
     chSignal({ kind: 'state', code: 'CH-1211' });
     configureSignals({ enabled: false, role: 'coach', page: 'P003' });

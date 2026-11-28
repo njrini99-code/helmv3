@@ -40,6 +40,11 @@ const envelope = z.object({
   kind: z.enum(SIGNAL_KINDS),
   outcome: z.enum(SIGNAL_OUTCOMES).optional(),
   page: z.string().regex(/^P\d{3}$/),
+  /**
+   * The screen it fired on, as a route key (src/clubhouse/lib/signal-route.ts): a route template and, for a query view
+   * that is its own screen, the view's parameter names. The ingest keeps it only where the graph lists it on `page`.
+   */
+  route: z.string().regex(/^\/golf(?:\/[\w.[\]-]+)*(?:\?[\w=&|-]+)?$/).max(120).optional(),
   surface: z.string().regex(/^[a-z][\w-]*(?:\.[\w-]+)+$/).max(80).optional(),
   control: z.string().regex(/^CTL-P\d{3}-\d{3}$/).optional(),
   /** The `useAction` name; the route resolves it to an ACT- ID. */

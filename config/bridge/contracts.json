@@ -1528,6 +1528,27 @@
       "does": "Switches between the error feed, How it counts (B20) and Speed (B21)"
     },
     {
+      "code": "BR-1912",
+      "screen": "B19",
+      "key": "feed.view",
+      "label": "View",
+      "does": "Switches the feed between Issues, Pages and Every error"
+    },
+    {
+      "code": "BR-1913",
+      "screen": "B19",
+      "key": "feed.issueRow",
+      "label": "Issue row",
+      "does": "Opens one issue's failures in Every error, newest first"
+    },
+    {
+      "code": "BR-1914",
+      "screen": "B19",
+      "key": "feed.pageRow",
+      "label": "Page row",
+      "does": "Opens one page's failures in Every error"
+    },
+    {
       "code": "BR-1990",
       "screen": "B19",
       "key": "feed.loading",

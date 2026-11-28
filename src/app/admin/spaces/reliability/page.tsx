@@ -16,6 +16,7 @@ import {
   eventKey,
   feedHref,
   feedReport,
+  feedView,
   filterFeed,
   fixStatus,
   hourlyCodeOf,
@@ -36,10 +37,13 @@ import {
   windowWords,
   type FeedItem,
   type FeedScope,
+  type FeedView,
   type RoleCard,
 } from '@/lib/admin/clubhouse/feed';
+import { groupIssues, issuesReport, sparkFrame } from '@/lib/admin/clubhouse/issues';
+import { coverageOf, coverageWords, pageHealth, pagesReport } from '@/lib/admin/clubhouse/page-health';
 import { readErrorLogForSession, readEventByKey, readFailureCodeReleases, readFailures, readSessionsByIds, readTeamNames } from '@/lib/admin/clubhouse/feed-server';
-import { readNotes, readPipe, readSessionEvents } from '@/lib/admin/clubhouse/live';
+import { readHourly, readNotes, readPipe, readSessionEvents } from '@/lib/admin/clubhouse/live';
 import { OWNER_TONE } from '@/lib/admin/clubhouse/explain';
 import { PLATFORM_WORDS, type LiveState } from '@/lib/admin/clubhouse/live-model';
 import { EMPTY_NOTES } from '@/lib/admin/clubhouse/notes';
@@ -47,11 +51,13 @@ import { RULE_LINES } from '@/lib/admin/clubhouse/rule-book';
 import { liveRef } from '@/lib/admin/clubhouse/screens';
 import { CopyReportButton } from '@/app/admin/_components/CopyReportButton';
 import { LocalTime } from '@/app/admin/_components/LocalTime';
-import { Pill, RoleBadge, SpaceHeader, SpaceRoot, SpaceState } from '../_ui/ui';
+import { LinkTabs, Pill, RoleBadge, SpaceHeader, SpaceRoot, SpaceState } from '../_ui/ui';
 import { SignalNotThere, ReadFailed } from '../_ui/states';
 import { ExpectedNote, WatchControl } from '@/app/admin/clubhouse/_components/CodeNotes';
 import { ErrorDetail, noteBlocker } from './_components/ErrorDetail';
 import { LinkGroup, ReliabilityTabs, PipeTruth } from './_components/shared';
+import { IssueList, PageList, SilentScreens } from './_components/Issues';
+import { FeedKeys } from './_components/FeedKeys';
 
 export const metadata: Metadata = { title: 'Reliability · Error feed' };
 
@@ -60,6 +66,7 @@ export const dynamic = 'force-dynamic';
 const DAY_MS = 24 * 3_600_000;
 const DEVICE_LABEL: Record<(typeof FEED_DEVICES)[number], string> = { all: 'Every device', 'ios-app': 'iOS app', 'ios-safari': 'iPhone Safari', desktop: 'Desktop', other: 'Other' };
 const STATE_TONE = { expected: 'muted', watching: 'watch', new: 'bad' } as const;
+const VIEW_LABEL: Record<FeedView, string> = { issues: 'Issues', pages: 'Pages', errors: 'Every error' };
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -109,6 +116,7 @@ function FeedRow({ item, scope, selected }: { item: FeedItem; scope: FeedScope; 
       className="rl-row"
       aria-current={selected ? 'true' : undefined}
       data-br={BR.feed.row}
+      data-feed-row=""
     >
       <span className="rl-time bs-mono">
         <LocalTime iso={item.at} variant="time" />
@@ -149,6 +157,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
   await requireSuperAdmin();
   const sp = (await searchParams) ?? {};
   const scope = parseFeedScope(sp);
+  const view = feedView(scope);
   const graph = loadBridgeGraph();
   const header = <ReliabilityTabs current="feed" />;
   if (!graph) {
@@ -163,11 +172,13 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
 
   const now = Date.now();
   const since = new Date(windowStart(scope.w, now)).toISOString();
-  const [pipe, failures, notes, releaseRows] = await Promise.all([
+  const [pipe, failures, notes, releaseRows, hourly] = await Promise.all([
     readPipe(now),
     readFailures(since),
     readNotes(),
     readFailureCodeReleases(new Date(now - 8 * DAY_MS).toISOString()),
+    // Every kind, for the Pages view and the coverage line on all three: which pages reported at all.
+    readHourly({ sinceIso: since }),
   ]);
   if (failures.state === 'error') {
     await logServerError('Reliability feed: failures could not be read', { action: 'admin.spaces.reliability.feed', route: '/admin/spaces/reliability', feature: 'admin_dashboard' });
@@ -182,11 +193,18 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
   const unscopedRole = filterFeed(all, { ...scope, role: 'all' });
   const summary = roleSummary(unscopedRole);
   const items = filterFeed(all, scope);
+  // Issues group the failures in the role, device and page filter (an issue's own code filter is Every error's).
+  const issueItems = filterFeed(all, { ...scope, code: null });
+  const frame = sparkFrame(scope.w, now);
+  const issues = groupIssues(issueItems, { w: scope.w, now });
+  const health = hourly.state === 'ok' ? pageHealth(hourly.data, graph, { w: scope.w, now }) : [];
+  const coverage = hourly.state === 'ok' ? coverageOf(health, graph) : null;
+  const heardPages = health.filter((p) => p.lastAt !== null);
 
-  // The selected failure: the URL's, else the newest in view. An older stored link is read on its own.
-  let selected: FeedItem | null = scope.e ? (all.find((i) => i.key === eventKey(scope.e!)) ?? null) : (items[0] ?? null);
+  // The selected failure (Every error only): the URL's, else the newest in view. An older stored link is read on its own.
+  let selected: FeedItem | null = view !== 'errors' ? null : scope.e ? (all.find((i) => i.key === eventKey(scope.e!)) ?? null) : (items[0] ?? null);
   let outsideWindow = false;
-  if (scope.e && !selected) {
+  if (view === 'errors' && scope.e && !selected) {
     const one = await readEventByKey(scope.e.sessionId, scope.e.seq);
     if (one.state === 'ok' && one.data) {
       const sess = await readSessionsByIds([one.data.session_id]);
@@ -250,8 +268,56 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
     );
   }
 
+  const listed = view === 'issues' ? issues.length : items.length;
   const stateCode =
-    failures.state === 'error' ? BR.feed.failed : failures.state === 'no-signal' ? BR.feed.noSignal : !items.length ? (pipe.untrusted ? BR.feed.noSignal : BR.feed.empty) : BR.feed.row;
+    view === 'pages'
+      ? hourly.state === 'error'
+        ? BR.feed.failed
+        : hourly.state === 'no-signal'
+          ? BR.feed.noSignal
+          : !heardPages.length
+            ? pipe.untrusted
+              ? BR.feed.noSignal
+              : BR.feed.empty
+            : BR.feed.pageRow
+      : failures.state === 'error'
+        ? BR.feed.failed
+        : failures.state === 'no-signal'
+          ? BR.feed.noSignal
+          : !listed
+            ? pipe.untrusted
+              ? BR.feed.noSignal
+              : BR.feed.empty
+            : view === 'issues'
+              ? BR.feed.issueRow
+              : BR.feed.row;
+  const filtered = scope.role !== 'all' || scope.pf !== 'all' || Boolean(scope.page) || Boolean(scope.sc) || Boolean(scope.code);
+  // What a "no errors" covers: the pages that reported at all. Named on every empty state, never left to be assumed.
+  const silentNote =
+    coverage && (coverage.silent.length || coverage.screensHeard < coverage.screensTotal) ? (
+      <>
+        {' '}
+        {coverage.heard} of {coverage.total} pages
+        {coverage.screensTotal ? ` and ${coverage.screensHeard} of ${coverage.screensTotal} screens` : ''} sent any signal; the rest sent nothing, so this
+        zero does not cover them.{' '}
+        <Link className="bs-link" href={feedHref(scope, { v: 'pages', e: null, code: null })} data-br={BR.feed.view}>
+          See the pages
+        </Link>
+      </>
+    ) : null;
+  const viewTabs = (
+    <LinkTabs
+      label="View"
+      current={view}
+      tabs={(['issues', 'pages', 'errors'] as const).map((v) => ({
+        key: v,
+        label: VIEW_LABEL[v],
+        href: feedHref(scope, { v, e: null, code: null }),
+        br: BR.feed.view,
+        count: v === 'issues' ? (failures.state === 'ok' ? issues.length : undefined) : v === 'pages' ? (coverage ? `${coverage.heard}/${coverage.total}` : undefined) : failures.state === 'ok' ? issueItems.length : undefined,
+      }))}
+    />
+  );
   const filters = (
     <div className="rl-bar">
       <LinkGroup
@@ -274,6 +340,11 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
           Server code {scope.sc} · clear
         </Link>
       ) : null}
+      {scope.code ? (
+        <Link className="bs-pill" href={feedHref(scope, { code: null, e: null, v: 'issues' })} data-br={BR.feed.filter}>
+          Issue {scope.code} · back to issues
+        </Link>
+      ) : null}
     </div>
   );
 
@@ -282,7 +353,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
       {header}
       <div className="rl-top">
         <SpaceHeader
-          eyebrow={`Reliability · error feed · ${WINDOW_LABEL[scope.w].toLowerCase()}`}
+          eyebrow={`Reliability · ${VIEW_LABEL[view].toLowerCase()} · ${WINDOW_LABEL[scope.w].toLowerCase()}`}
           title="Every error a person saw,"
           second="where, on which button."
           secondTone="ink"
@@ -303,33 +374,92 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
         </div>
       </div>
 
+      {viewTabs}
       {filters}
       <PipeTruth pipe={pipe}>
-        <span>
-          {all.length} {all.length === 1 ? 'failure' : 'failures'} {windowWords(scope.w)} · {scope.pf === 'all' ? 'every device' : PLATFORM_WORDS[scope.pf]} · from the session store (clubhouse_session_events), every failure kept
-        </span>
+        {view === 'pages' ? (
+          <span>
+            {coverage ? coverageWords(coverage) : 'Pages not read'} {windowWords(scope.w)} · from the hourly store (clubhouse_signal_hourly), every signal counted
+          </span>
+        ) : (
+          <span>
+            {all.length} {all.length === 1 ? 'failure' : 'failures'} {windowWords(scope.w)} · {scope.pf === 'all' ? 'every device' : PLATFORM_WORDS[scope.pf]} · from the session store (clubhouse_session_events), every failure kept
+            {coverage ? (
+              <>
+                {' · '}
+                <Link className="bs-link" href={feedHref(scope, { v: 'pages', e: null, code: null })} data-br={BR.feed.view}>
+                  {coverageWords(coverage).toLowerCase()}
+                </Link>
+              </>
+            ) : null}
+          </span>
+        )}
+        {view === 'pages' && 'truncated' in hourly && hourly.truncated ? <Pill tone="watch">More signals than one read keeps: the oldest hours are not counted</Pill> : null}
+        {view !== 'pages' && hourly.state === 'error' ? <Pill tone="watch">Which pages reported could not be read</Pill> : null}
         {failures.truncated ? <Pill tone="watch">More failures than one read keeps: the oldest are not shown</Pill> : null}
         {!baselineComplete ? <Pill tone="watch">New in this release: unknown (the 8-day history could not be read whole), so nothing is marked new</Pill> : null}
         {notes.state === 'error' ? <p className="bs-panel-note bs-tone-watch" style={{ margin: 0 }}>The Bridge notes could not be read: nothing shows as Expected or Watching.</p> : null}
         <span data-br={BR.feed.copy}>
-          <CopyReportButton report={feedReport(items, summary, scope.w, pipe.label)} variant="labeled" size="sm" label="Copy report" className="bs-copy" />
+          <CopyReportButton
+            report={
+              view === 'issues'
+                ? issuesReport(issues, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label })
+                : view === 'pages'
+                  ? pagesReport(health, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label, coverage })
+                  : feedReport(items, summary, scope.w, pipe.label)
+            }
+            variant="labeled"
+            size="sm"
+            label="Copy report"
+            className="bs-copy"
+          />
+        </span>
+        <span className="rl-keys-hint" aria-hidden="true">
+          <kbd>j</kbd> <kbd>k</kbd> to move · <kbd>Enter</kbd> to open
         </span>
       </PipeTruth>
+      <FeedKeys />
 
-      {failures.state === 'error' ? (
+      {view === 'pages' ? (
+        hourly.state === 'error' ? (
+          <ReadFailed br={BR.feed.failed} what="The pages" why={hourly.error} action="admin.spaces.reliability.feed" />
+        ) : hourly.state === 'no-signal' ? (
+          <SignalNotThere br={BR.feed.noSignal} why={`The hourly store is not there yet, so no page can be read (${pipe.label}).`} />
+        ) : (
+          <>
+            {heardPages.length ? (
+              <PageList pages={heardPages} scope={scope} frame={frame} />
+            ) : (
+              <SpaceState br={pipe.untrusted ? BR.feed.noSignal : BR.feed.empty} title={`No page sent a signal ${windowWords(scope.w)}.`}>
+                {pipe.label}. With nothing arriving, no page can be called healthy.
+              </SpaceState>
+            )}
+            {coverage ? <SilentScreens coverage={coverage} windowWords={windowWords(scope.w)} /> : null}
+          </>
+        )
+      ) : failures.state === 'error' ? (
         <ReadFailed br={BR.feed.failed} what="The failures" why={failures.errors[0]} action="admin.spaces.reliability.feed" />
       ) : failures.state === 'no-signal' ? (
         <SignalNotThere br={BR.feed.noSignal} why={`The session store is not there yet, so no error can be listed (${pipe.label}).`} />
-      ) : !items.length ? (
+      ) : !listed ? (
         pipe.untrusted ? (
           <SpaceState br={BR.feed.noSignal} title={`No errors arrived ${windowWords(scope.w)}, but the pipe cannot vouch for it.`}>
-            {pipe.label}. Until signals arrive, an empty feed is not an all clear.
+            {pipe.label}. Until signals arrive, an empty feed is not an all clear.{silentNote}
           </SpaceState>
         ) : (
-          <SpaceState br={BR.feed.empty} title={`No one saw an error ${windowWords(scope.w)}${scope.role !== 'all' || scope.pf !== 'all' || scope.page || scope.sc ? ' in this filter' : ''}.`}>
-            The pipe is live, so this is a real zero. Widen the window or clear a filter to see older errors.
+          <SpaceState br={BR.feed.empty} title={`No one saw an error ${windowWords(scope.w)}${filtered ? ' in this filter' : ''}.`}>
+            The pipe is live, so this is a real zero for the pages that reported. Widen the window or clear a filter to see older errors.{silentNote}
           </SpaceState>
         )
+      ) : view === 'issues' ? (
+        <>
+          {pipe.untrusted ? (
+            <div className="bs-panel bs-panel-pad bs-wash-watch" role="status">
+              <span className="bs-tone-watch" style={{ fontWeight: 600 }}>The pipe is not live ({pipe.label}).</span> These issues are real, but newer failures may be missing.
+            </div>
+          ) : null}
+          <IssueList issues={issues} scope={scope} frame={frame} />
+        </>
       ) : (
         <>
           {pipe.untrusted ? (

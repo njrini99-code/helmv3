@@ -9,7 +9,7 @@ vi.mock('../../lib/signal', () => signals);
 vi.mock('next/web-vitals', () => ({ useReportWebVitals: vi.fn() }));
 
 import { useReportWebVitals } from 'next/web-vitals';
-import { RAGE_CLICKS, SWITCH_MAX_MS, useChSignals } from '../use-signals';
+import { RAGE_CLICKS, SWITCH_MAX_MS, resetVitalsForTests, useChSignals } from '../use-signals';
 
 const TEAM_A = '66666666-7777-4888-9999-000000000000';
 const TEAM_B = '66666666-7777-4888-9999-000000000001';
@@ -19,12 +19,14 @@ describe('useChSignals', () => {
   beforeEach(() => {
     signals.chSignal.mockClear();
     signals.configureSignals.mockClear();
+    vi.mocked(useReportWebVitals).mockClear();
+    resetVitalsForTests();
   });
   afterEach(() => document.body.replaceChildren());
 
   it('tells the queue it is off, and counts nothing', () => {
     renderHook(() => useChSignals({ enabled: false, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/messages', search: '' }));
-    expect(signals.configureSignals).toHaveBeenCalledWith({ enabled: false, role: 'coach', teamId: TEAM_A, page: 'P007', userId: null });
+    expect(signals.configureSignals).toHaveBeenCalledWith({ enabled: false, role: 'coach', teamId: TEAM_A, page: 'P007', route: '/golf/dashboard/messages', userId: null });
     expect(signals.chSignal).not.toHaveBeenCalled();
   });
 
@@ -35,7 +37,7 @@ describe('useChSignals', () => {
     rerender({ pathname: '/golf/dashboard/roster', teamId: TEAM_A });
     rerender({ pathname: '/golf/dashboard/roster', teamId: TEAM_B });
     expect(kinds()).toEqual([{ kind: 'view' }, { kind: 'view' }, { kind: 'view', code: '10103' }]);
-    expect(signals.configureSignals).toHaveBeenLastCalledWith({ enabled: true, role: 'coach', teamId: TEAM_B, page: 'P003', userId: null });
+    expect(signals.configureSignals).toHaveBeenLastCalledWith({ enabled: true, role: 'coach', teamId: TEAM_B, page: 'P003', route: '/golf/dashboard/roster', userId: null });
   });
 
   it('reports the three vitals CH-1954 names, CLS in thousandths', () => {
@@ -49,6 +51,36 @@ describe('useChSignals', () => {
       { kind: 'vital', code: 'CH-1954', act: 'CLS', durationMs: 120 },
       { kind: 'vital', code: 'CH-1954', act: 'INP', durationMs: 240 },
     ]);
+  });
+
+  it('counts each vital once when the front door and then the shell mount in one document', () => {
+    const gate = renderHook(() => useChSignals({ enabled: true, hold: true, role: 'signed-out', teamId: null, pathname: '/golf/login', search: '' }));
+    gate.unmount();
+    renderHook(() => useChSignals({ enabled: true, role: 'coach', teamId: null, pathname: '/golf/dashboard', search: '' }));
+    signals.chSignal.mockClear();
+    // web-vitals keeps every reporter it was handed: each one sees the same metric.
+    for (const [report] of vi.mocked(useReportWebVitals).mock.calls) (report as (m: { name: string; value: number }) => void)({ name: 'LCP', value: 1800 });
+    expect(kinds()).toEqual([{ kind: 'vital', code: 'CH-1954', act: 'LCP', durationMs: 1800 }]);
+  });
+
+  it('holds while nobody is signed in: tells the queue nothing, and a sign-in on that page does not count its view twice', () => {
+    const { rerender } = renderHook((p: { hold: boolean; role: string; userId: string | null }) => useChSignals({ enabled: true, teamId: null, pathname: '/golf/login', search: '', ...p }), {
+      initialProps: { hold: true, role: 'signed-out', userId: null as string | null },
+    });
+    expect(signals.configureSignals).not.toHaveBeenCalled();
+    expect(kinds()).toEqual([{ kind: 'view' }]);
+    rerender({ hold: false, role: 'coach', userId: 'coach-1' });
+    expect(signals.configureSignals).toHaveBeenCalledWith({ enabled: true, role: 'coach', teamId: null, page: 'P015', route: '/golf/login', userId: 'coach-1' });
+    expect(kinds()).toEqual([{ kind: 'view' }]);
+  });
+
+  it('counts the next page after a sign-in as its own view', () => {
+    const { rerender } = renderHook((p: { hold: boolean; pathname: string; userId: string | null }) => useChSignals({ enabled: true, role: 'player', teamId: null, search: '', ...p }), {
+      initialProps: { hold: true, pathname: '/golf/login', userId: null as string | null },
+    });
+    rerender({ hold: false, pathname: '/golf/player', userId: 'player-2' });
+    expect(kinds()).toEqual([{ kind: 'view' }, { kind: 'view' }]);
+    expect(signals.configureSignals).toHaveBeenLastCalledWith({ enabled: true, role: 'player', teamId: null, page: 'P015', route: '/golf/player', userId: 'player-2' });
   });
 
   it('counts a tap on a numbered control, and three clicks on a dead one as a rage click', () => {
@@ -162,7 +194,7 @@ describe('useChSignals switch time', () => {
     expect(kinds()).toEqual([]);
     now = 1240;
     runFrame();
-    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', durationMs: 240 }]);
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', route: '/golf/dashboard/roster', durationMs: 240 }]);
   });
 
   it('times a back or forward step from the moment the browser moved', () => {
@@ -174,7 +206,7 @@ describe('useChSignals switch time', () => {
     rerender({ pathname: '/golf/dashboard/roster' });
     runFrame();
     runFrame();
-    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', durationMs: 100 }]);
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', route: '/golf/dashboard/roster', durationMs: 100 }]);
   });
 
   it('sends no duration when the start is unknown: a push from code, or a tap that went somewhere else', () => {
@@ -213,12 +245,12 @@ describe('useChSignals switch time', () => {
     rerender({ pathname: '/golf/dashboard/calendar' });
     runFrame();
     runFrame();
-    expect(kinds()).toEqual([{ kind: 'view', page: 'P003' }, { kind: 'view' }]);
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', route: '/golf/dashboard/roster' }, { kind: 'view' }]);
     signals.chSignal.mockClear();
     tapLink('/golf/dashboard/messages');
     rerender({ pathname: '/golf/dashboard/messages' });
     unmount();
-    expect(kinds()).toEqual([{ kind: 'view', page: 'P007' }]);
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P007', route: '/golf/dashboard/messages' }]);
   });
 
   it('sends a waiting view untimed when the tab is put away', () => {
@@ -231,7 +263,7 @@ describe('useChSignals switch time', () => {
     visibility.mockRestore();
     runFrame();
     runFrame();
-    expect(kinds()).toEqual([{ kind: 'view', page: 'P003' }]);
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P003', route: '/golf/dashboard/roster' }]);
   });
   it('times a switch that only the query makes: Team stats to one player is P004 to P005', () => {
     window.history.replaceState(null, '', '/golf/dashboard/stats');
@@ -244,7 +276,32 @@ describe('useChSignals switch time', () => {
     rerender({ search: '?player=p1' });
     runFrame();
     runFrame();
-    expect(kinds()).toEqual([{ kind: 'view', page: 'P005', durationMs: 150 }]);
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P005', route: '/golf/dashboard/stats?player', durationMs: 150 }]);
+  });
+
+  it('counts a query that opens a screen of its own (CoachHelm to Ask) as a view on that screen, timed', () => {
+    window.history.replaceState(null, '', '/golf/dashboard/coachhelm');
+    const { rerender } = renderHook((p: { search: string }) => useChSignals({ enabled: true, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/coachhelm', search: p.search }), {
+      initialProps: { search: '' },
+    });
+    signals.chSignal.mockClear();
+    tapLink('/golf/dashboard/coachhelm?view=ask');
+    now = 1090;
+    rerender({ search: '?view=ask' });
+    runFrame();
+    runFrame();
+    expect(kinds()).toEqual([{ kind: 'view', page: 'P013', route: '/golf/dashboard/coachhelm?view=ask', durationMs: 90 }]);
+    expect(signals.configureSignals).toHaveBeenLastCalledWith(expect.objectContaining({ page: 'P013', route: '/golf/dashboard/coachhelm?view=ask' }));
+  });
+
+  it('counts no new view for a query that only filters the screen', () => {
+    const { rerender } = renderHook((p: { search: string }) => useChSignals({ enabled: true, role: 'coach', teamId: TEAM_A, pathname: '/golf/dashboard/rounds', search: p.search }), {
+      initialProps: { search: '' },
+    });
+    signals.chSignal.mockClear();
+    rerender({ search: '?range=week' });
+    rerender({ search: '?range=season' });
+    expect(kinds()).toEqual([]);
   });
 
   it('does not time a query that stays on the same page, or a tap on a link to the same page with a filter', () => {

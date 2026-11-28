@@ -51,18 +51,56 @@ export const HOURLY_CAP = 6000;
 /**
  * The rest of clubhouse_signal_hourly's primary key after (bucket_hour, code). Paging with LIMIT/OFFSET needs a total
  * order: rows tied on the first keys come back in any order per call, so a row at a page edge can be read twice or
- * not at all.
+ * not at all. Once the held migration 20261128090000 is applied, route sits in the key after page_id.
  */
 export const HOURLY_KEY_TAIL = ['kind', 'outcome', 'act', 'page_id', 'role', 'platform', 'release'] as const;
+const HOURLY_KEY_TAIL_WITH_ROUTE = ['kind', 'outcome', 'act', 'page_id', 'route', 'role', 'platform', 'release'] as const;
 
-/** Appends HOURLY_KEY_TAIL to a query already ordered by bucket_hour and code. */
-export function orderByHourlyKeyTail<Q extends { order: (c: string) => Q }>(q: Q): Q {
-  return HOURLY_KEY_TAIL.reduce((acc, c) => acc.order(c), q);
+/** Appends the rest of the key to a query already ordered by bucket_hour and code. */
+export function orderByHourlyKeyTail<Q extends { order: (c: string) => Q }>(q: Q, withRoute = false): Q {
+  return (withRoute ? HOURLY_KEY_TAIL_WITH_ROUTE : HOURLY_KEY_TAIL).reduce((acc, c) => acc.order(c), q);
+}
+
+/**
+ * Whether to read the route column (the screen a row fired on). Until the held migration 20261128090000 is applied it
+ * isn't there: the first read that asks for it is refused (42703, or PGRST204), the same read runs again without it,
+ * and the column isn't asked for again for a while, so a screen costs one refused read per server instance per
+ * ROUTE_RETRY_MS, not one per page view.
+ */
+export const ROUTE_RETRY_MS = 10 * 60_000;
+const ROUTE_MISSING = new Set(['42703', 'PGRST204']);
+let routeMissingUntil = 0;
+
+/** Tests only: forget that the route column was missing. */
+export function resetRouteColumnForTests(): void {
+  routeMissingUntil = 0;
+}
+
+function isRouteMissing(error: DbError): boolean {
+  if (!error) return false;
+  if (error.code && ROUTE_MISSING.has(error.code)) return /route/i.test(error.message ?? 'route');
+  return /column .*route.* does not exist/i.test(error.message ?? '');
+}
+
+/**
+ * Runs an hourly read with the route column while it may be there, and once more without it when the database says
+ * it isn't.
+ */
+async function withRouteColumn<T>(read: (withRoute: boolean, refused: (error: DbError) => void) => Promise<LiveRead<T>>): Promise<LiveRead<T>> {
+  if (Date.now() < routeMissingUntil) return read(false, () => {});
+  let missing = false;
+  const first = await read(true, (error) => {
+    if (isRouteMissing(error)) missing = true;
+  });
+  if (!missing) return first;
+  routeMissingUntil = Date.now() + ROUTE_RETRY_MS;
+  return read(false, () => {});
 }
 export const EVENT_CAP = 3000;
 
 const HOURLY_COLUMNS =
   'bucket_hour, code, kind, outcome, act, role, platform, release, bridge_id, page_id, signal_count, user_ids, duration_buckets, last_at';
+const hourlyColumns = (withRoute: boolean) => (withRoute ? `${HOURLY_COLUMNS}, route` : HOURLY_COLUMNS);
 const SESSION_COLUMNS = 'session_id, user_id, role, team_id, platform, release, started_at, last_at, ended_at, pages, signal_count, failure_count, replay_id';
 const EVENT_COLUMNS =
   'session_id, seq, sent_at, kind, outcome, code, bridge_id, page_id, act, action_id, control_id, duration_ms, server_code, message, trail, drift';
@@ -78,6 +116,8 @@ function normalizeHourly(r: Record<string, unknown>): HourlyRow {
     signal_count: Number(r.signal_count ?? 0),
     user_ids: Array.isArray(r.user_ids) ? (r.user_ids as string[]) : [],
     duration_buckets: Array.isArray(r.duration_buckets) ? (r.duration_buckets as number[]).map(Number) : [],
+    // Absent while the route column isn't there; '' when the row's screen wasn't told.
+    route: typeof r.route === 'string' ? r.route : undefined,
   };
 }
 
@@ -86,12 +126,16 @@ async function paged<T>(
   run: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: DbError }>,
   cap: number,
   map: (r: Record<string, unknown>) => T,
+  refused: (error: DbError) => void = () => {},
 ): Promise<LiveRead<T[]>> {
   const out: T[] = [];
   for (let from = 0; from < cap; from += PAGE_SIZE) {
     const to = Math.min(from + PAGE_SIZE, cap) - 1;
     const { data, error } = await run(from, to);
-    if (error) return fail(error, []);
+    if (error) {
+      refused(error);
+      return fail(error, []);
+    }
     const rows = (data ?? []) as Record<string, unknown>[];
     out.push(...rows.map(map));
     if (rows.length < to - from + 1) return { state: 'ok', data: out };
@@ -125,19 +169,22 @@ export async function readHourly(o: {
 }): Promise<LiveRead<HourlyRow[]>> {
   try {
     const client = db();
-    return await paged(
-      (from, to) => {
-        let q = client.from('clubhouse_signal_hourly').select(HOURLY_COLUMNS);
-        if (o.sinceIso) q = q.gte('bucket_hour', hourFloorIso(o.sinceIso));
-        if (o.untilIso) q = q.lt('bucket_hour', hourFloorIso(o.untilIso));
-        if (o.release) q = q.eq('release', o.release);
-        if (o.kinds?.length) q = q.in('kind', o.kinds);
-        if (o.pages?.length) q = q.in('page_id', o.pages);
-        if (o.failuresOnly) q = q.or('kind.eq.crash,outcome.eq.failure');
-        return orderByHourlyKeyTail(q.order('bucket_hour', { ascending: Boolean(o.ascending) }).order('code')).range(from, to);
-      },
-      o.cap ?? HOURLY_CAP,
-      normalizeHourly,
+    return await withRouteColumn((withRoute, refused) =>
+      paged(
+        (from, to) => {
+          let q = client.from('clubhouse_signal_hourly').select(hourlyColumns(withRoute));
+          if (o.sinceIso) q = q.gte('bucket_hour', hourFloorIso(o.sinceIso));
+          if (o.untilIso) q = q.lt('bucket_hour', hourFloorIso(o.untilIso));
+          if (o.release) q = q.eq('release', o.release);
+          if (o.kinds?.length) q = q.in('kind', o.kinds);
+          if (o.pages?.length) q = q.in('page_id', o.pages);
+          if (o.failuresOnly) q = q.or('kind.eq.crash,outcome.eq.failure');
+          return orderByHourlyKeyTail(q.order('bucket_hour', { ascending: Boolean(o.ascending) }).order('code'), withRoute).range(from, to);
+        },
+        o.cap ?? HOURLY_CAP,
+        normalizeHourly,
+        refused,
+      ),
     );
   } catch (e) {
     return { state: 'error', data: [], error: e instanceof Error ? e.message : String(e) };
@@ -149,10 +196,14 @@ export async function readHourlyAt(hoursIso: readonly string[]): Promise<LiveRea
   if (!hoursIso.length) return { state: 'ok', data: [] };
   try {
     const client = db();
-    return await paged(
-      (from, to) => orderByHourlyKeyTail(client.from('clubhouse_signal_hourly').select(HOURLY_COLUMNS).in('bucket_hour', [...hoursIso]).order('bucket_hour').order('code')).range(from, to),
-      HOURLY_CAP,
-      normalizeHourly,
+    return await withRouteColumn((withRoute, refused) =>
+      paged(
+        (from, to) =>
+          orderByHourlyKeyTail(client.from('clubhouse_signal_hourly').select(hourlyColumns(withRoute)).in('bucket_hour', [...hoursIso]).order('bucket_hour').order('code'), withRoute).range(from, to),
+        HOURLY_CAP,
+        normalizeHourly,
+        refused,
+      ),
     );
   } catch (e) {
     return { state: 'error', data: [], error: e instanceof Error ? e.message : String(e) };

@@ -48,6 +48,11 @@ export interface HourlyRow {
   user_ids: string[];
   duration_buckets: number[];
   last_at: string;
+  /**
+   * The screen the row fired on: a route key the graph lists on page_id (route-key.ts), '' when the client didn't say.
+   * Absent while the held migration 20261128090000 isn't applied.
+   */
+  route?: string;
 }
 
 export interface SessionRow {

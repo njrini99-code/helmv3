@@ -224,6 +224,12 @@ export const BR = {
     copy: 'BR-1910',
     /** Feed / How it counts / Speed, at the top of all three Reliability screens. */
     spaceTab: 'BR-1911',
+    /** Issues / Pages / Every error: the three views of the feed. */
+    view: 'BR-1912',
+    /** One issue: the failures of one code, most people first; opens them in Every error. */
+    issueRow: 'BR-1913',
+    /** One page's health from the hourly store; opens its failures in Every error. */
+    pageRow: 'BR-1914',
     ...states('19'),
   },
   /** B20 Counting rules (/admin/spaces/reliability/rules; plan 2026-11-26-bridge-spaces-build.md). */

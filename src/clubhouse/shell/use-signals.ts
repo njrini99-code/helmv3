@@ -1,9 +1,10 @@
 'use client';
 
 import { useReportWebVitals } from 'next/web-vitals';
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { chSignal, configureSignals, flushSignals } from '../lib/signal';
 import { pageForPath } from '../lib/signal-page';
+import { routeForPath } from '../lib/signal-route';
 
 /** Three clicks on the same thing inside this window is a rage click (CH-1951). */
 export const RAGE_CLICKS = 3;
@@ -20,18 +21,19 @@ const ENABLED_CONTROL = 'button:not([disabled]):not([aria-disabled="true"]),a[hr
 /** Where a switch started: when, and the address it was going to. */
 type SwitchStart = { at: number; to: string };
 /** A view waiting for its page's first frame, with what it will carry. */
-type PendingView = { input: { kind: 'view'; code?: string; page: string }; start: number; frame: number };
+type PendingView = { input: { kind: 'view'; code?: string; page: string; route?: string }; start: number; frame: number };
 
 function trimPath(path: string): string {
   return path.length > 1 && path.endsWith('/') ? path.slice(0, -1) : path;
 }
 
 /**
- * Where an address lands, for switch timing: the path and the Bridge page it is. A query that changes the page
- * (Team stats to one player, `?player=`) is a switch; a query that only filters one page, or a hash, is not.
+ * Where an address lands, for views and switch timing: the path, the Bridge page and the screen it is. A query that
+ * changes the page (Team stats to one player, `?player=`) or the screen (CoachHelm to Ask, `?view=ask`) is a switch; a
+ * query that only filters one screen, or a hash, is not.
  */
 export function switchKey(pathname: string, search: string, role: string): string {
-  return `${trimPath(pathname)}|${pageForPath(pathname, search, role)}`;
+  return `${trimPath(pathname)}|${pageForPath(pathname, search, role)}|${routeForPath(pathname, search) ?? ''}`;
 }
 
 /**
@@ -55,6 +57,32 @@ function reportVital(metric: { name: string; value: number }) {
   chSignal({ kind: 'vital', code: 'CH-1954', act: metric.name, durationMs: metric.name === 'CLS' ? metric.value * 1000 : metric.value });
 }
 
+function ignoreVital(): void {}
+
+/**
+ * Whether a mount in this document already reports the vitals. web-vitals keeps every observer it starts (it has no way
+ * to stop one), and this hook mounts on the front door and again in the shell a sign-in leads to: each would count the
+ * same vital, so only the first mount reports. Its observers outlive it and keep reporting under whatever page the
+ * queue is on.
+ */
+let vitalsTaken = false;
+
+/** The vitals reporter for this mount: the real one for the first mount in the document, else one that does nothing. */
+function useVitalsOnce(): (metric: { name: string; value: number }) => void {
+  const [report, setReport] = useState<(metric: { name: string; value: number }) => void>(() => ignoreVital);
+  useEffect(() => {
+    if (vitalsTaken) return;
+    vitalsTaken = true;
+    setReport(() => reportVital);
+  }, []);
+  return report;
+}
+
+/** Lets a test mount the hook as the document's first again. */
+export function resetVitalsForTests(): void {
+  vitalsTaken = false;
+}
+
 /**
  * The shell's half of the Bridge signals (plan §4.2, E6-E8), mounted once by ClubhouseFrame:
  *
@@ -64,11 +92,21 @@ function reportVital(metric: { name: string; value: number }) {
  * - E7: a tap on a numbered control (`data-ctl="CTL-P007-004"`) is counted under its control.
  * - E8: three clicks inside 600 ms on the same thing that isn't a working control (a disabled button, a label that looks
  *   like one) is a rage click, CH-1951. A text selection (a triple-click to select a paragraph) is not.
+ *
+ * The front door mounts it too (GateSignals), with `hold` while nobody is signed in: then it tells the queue nothing, so
+ * what happens there waits in memory and nothing leaves the browser until a sign-in says whose it is. The view a
+ * sign-in finds already counted on its page is not counted again.
  */
-export function useChSignals({ enabled, role, teamId, userId = null, pathname, search }: { enabled: boolean; role: string; teamId: string | null; userId?: string | null; pathname: string; search: string }): void {
+export function useChSignals({ enabled, hold = false, role, teamId, userId = null, pathname, search }: { enabled: boolean; hold?: boolean; role: string; teamId: string | null; userId?: string | null; pathname: string; search: string }): void {
   const page = pageForPath(pathname, search, role);
+  // The screen (signal-route.ts): every signal carries it, so the Bridge can tell which of a page's screens reported.
+  const route = routeForPath(pathname, search);
+  // What makes this a new view: the path, the page and the screen, never a filter in the query.
+  const here = switchKey(pathname, search, role);
   const lastTeam = useRef<string | null | undefined>(undefined);
   const lastPath = useRef<string | null>(null);
+  // The address a view was counted on while held, until a sign-in there makes it someone's.
+  const heldPath = useRef<string | null>(null);
   // The listeners below are added once per enable; they read the role a link's page is judged as from here.
   const roleRef = useRef(role);
   useEffect(() => {
@@ -83,15 +121,23 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
   // the queue is configured and the view counted before anything the new page sends. (A crash's componentDidCatch runs
   // in the same layout phase, before this; chSignalReport holds its report until configure.)
   useLayoutEffect(() => {
-    configureSignals({ enabled, role, teamId, page, userId });
+    if (!hold) configureSignals({ enabled, role, teamId, page, route, userId });
     if (!enabled) return undefined;
+    const path = here;
+    // A sign-in on the page whose view was held: that view goes out now as theirs, so this is not another one.
+    const signedInHere = !hold && heldPath.current === path;
+    heldPath.current = hold ? path : null;
+    if (signedInHere) {
+      lastPath.current = path;
+      lastTeam.current = teamId;
+      return undefined;
+    }
     const switched = lastTeam.current !== undefined && lastTeam.current !== teamId;
     lastTeam.current = teamId;
     const input = switched ? { kind: 'view' as const, code: TEAM_SWITCH } : { kind: 'view' as const };
     // Switch time (Bridge Speed): from the tap or the back gesture that changed the address to the new page's first
     // frame (a loading state counts). The first view of a load has none (LCP covers it); a switch with no known start
     // (a push from code), or one slower than SWITCH_MAX_MS, has none either. A start is used once, or dropped.
-    const path = `${trimPath(pathname)}|${page}`;
     const moved = lastPath.current !== null && lastPath.current !== path;
     lastPath.current = path;
     const start = switchStart.current;
@@ -101,7 +147,7 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
       chSignal(input);
       return undefined;
     }
-    const pending: PendingView = { input: { ...input, page }, start: start.at, frame: 0 };
+    const pending: PendingView = { input: route ? { ...input, page, route } : { ...input, page }, start: start.at, frame: 0 };
     pendingView.current = pending;
     // Two frames: the first runs before the new page paints, the second after it has.
     pending.frame = requestAnimationFrame(() => {
@@ -119,9 +165,9 @@ export function useChSignals({ enabled, role, teamId, userId = null, pathname, s
       cancelAnimationFrame(pending.frame);
       chSignal(pending.input);
     };
-  }, [enabled, role, teamId, userId, page, pathname]);
+  }, [enabled, hold, role, teamId, userId, page, route, here]);
 
-  useReportWebVitals(reportVital);
+  useReportWebVitals(useVitalsOnce());
 
   useEffect(() => {
     if (!enabled) return undefined;

@@ -74,6 +74,45 @@ describe('buildIngest', () => {
     expect(plan.sessions[0]!.hourly.map((r) => r.page_id).sort()).toEqual(['P007', 'P013']);
   });
 
+  it('splits the hourly rows by the screen they fired on, for the ingest function that keeps it', () => {
+    const plan = build({
+      routes: true,
+      signals: [
+        signal({ seq: 1, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm' }),
+        signal({ seq: 2, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm?view=ask' }),
+        signal({ seq: 3, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm?view=ask' }),
+      ],
+    });
+    const rows = plan.sessions[0]!.hourly.map((r) => [r.route, r.count]).sort();
+    expect(rows).toEqual([
+      ['/golf/dashboard/coachhelm', 1],
+      ['/golf/dashboard/coachhelm?view=ask', 2],
+    ]);
+  });
+
+  it("keeps only a screen the graph lists on the signal's own page", () => {
+    const plan = build({
+      routes: true,
+      signals: [
+        // Another page's screen, and one no page lists: one bucket with no screen, not a row each.
+        signal({ seq: 1, kind: 'view', outcome: undefined, code: undefined, page: 'P007', route: '/golf/dashboard/coachhelm?view=ask' }),
+        signal({ seq: 2, kind: 'view', outcome: undefined, code: undefined, page: 'P007', route: '/golf/dashboard/made-up' }),
+        signal({ seq: 3, kind: 'view', outcome: undefined, code: undefined, page: 'P007' }),
+      ],
+    });
+    expect(plan.sessions[0]!.hourly.map((r) => [r.route, r.count])).toEqual([['', 3]]);
+  });
+
+  it('sends no screen to the first ingest function, so its key never sees one row twice', () => {
+    const plan = build({
+      signals: [
+        signal({ seq: 1, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm' }),
+        signal({ seq: 2, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm?view=ask' }),
+      ],
+    });
+    expect(plan.sessions[0]!.hourly.map((r) => [r.route, r.count])).toEqual([['', 2]]);
+  });
+
   it("counts a view under its page's ready row, with that row's code", () => {
     const plan = build({ signals: [signal({ kind: 'view', outcome: undefined, code: undefined })] });
     expect(plan.sessions[0]!.hourly[0]).toMatchObject({ code: '70101', bridge_id: 70101, page_id: 'P007' });

@@ -16806,6 +16806,15 @@ $$;
 ALTER FUNCTION "public"."clubhouse_forget_user"("p_user" "uuid") OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") RETURNS "jsonb"
+    LANGUAGE "sql"
+    SET "search_path" TO 'public', 'pg_temp'
+    AS $$
+    select public.clubhouse_ingest_signals_v2(p_batch);
+$$;
+
+ALTER FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") OWNER TO "postgres";
+
+CREATE OR REPLACE FUNCTION "public"."clubhouse_ingest_signals_v2"("p_batch" "jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     SET "search_path" TO 'public', 'pg_temp'
     AS $_$
@@ -16955,7 +16964,7 @@ begin
 
     insert into public.clubhouse_signal_hourly as h (
         bucket_hour, code, kind, outcome, act, role, platform, release,
-        bridge_id, page_id, signal_count, user_ids, duration_buckets,
+        bridge_id, page_id, route, signal_count, user_ids, duration_buckets,
         p50_ms, p95_ms, p99_ms, first_at, last_at
     )
     select
@@ -16969,6 +16978,9 @@ begin
         r ->> 'release',
         (r ->> 'bridge_id')::integer,
         coalesce(r ->> 'page_id', ''),
+        -- The screen, as the route kept it: '' when the client sent none or
+        -- one the graph does not list on its page.
+        left(coalesce(r ->> 'route', ''), 160),
         (r ->> 'count')::bigint,
         -- A refused session's sender is not attributed.
         case
@@ -16998,7 +17010,8 @@ begin
         (r ->> 'last_at')::timestamptz
     from jsonb_array_elements(coalesce(p_batch -> 'hourly', '[]')) as r
     on conflict (
-        bucket_hour, code, kind, outcome, act, page_id, role, platform, release
+        bucket_hour, code, kind, outcome, act, page_id, route, role, platform,
+        release
     )
     do update set
         signal_count = h.signal_count + excluded.signal_count,
@@ -17042,6 +17055,7 @@ begin
         and h.outcome = coalesce(r ->> 'outcome', '')
         and h.act = coalesce(r ->> 'act', '')
         and h.page_id = coalesce(r ->> 'page_id', '')
+        and h.route = left(coalesce(r ->> 'route', ''), 160)
         and h.role = r ->> 'role'
         and h.platform = r ->> 'platform'
         and h.release = r ->> 'release'
@@ -17074,7 +17088,7 @@ begin
 end;
 $_$;
 
-ALTER FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") OWNER TO "postgres";
+ALTER FUNCTION "public"."clubhouse_ingest_signals_v2"("p_batch" "jsonb") OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."clubhouse_signals_prune"() RETURNS "void"
     LANGUAGE "sql"

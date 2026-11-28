@@ -13,7 +13,7 @@ import {
 import { getRecovery, requestRecovery } from '@/lib/recovery/client';
 import { useInClubhouse } from '@/clubhouse/shell/context';
 import { RouteErrorView, routeErrorWords, type RouteErrorViewProps } from '@/clubhouse/ui/Notices';
-import { chSignal } from '@/clubhouse/lib/signal';
+import { chSignalReport, currentReportSignal } from '@/clubhouse/lib/signal';
 import { useIsOffline } from '@/clubhouse/ui/Retry';
 
 interface RouteErrorBoundaryProps {
@@ -198,63 +198,72 @@ export function RouteErrorBoundary({
   useEffect(() => {
     // E3 (Bridge plan §4.2): inside Clubhouse the crash is counted under its route-error code, and the report below
     // carries its place so the Bridge stamps that row. Classified by the error alone, as the log is: an offline read
-    // counts under its transient or load code.
-    const signal = inClubhouse
-      ? chSignal({
+    // counts under its transient or load code. Sent as a reported signal (chSignalReport), as a section's crash is: on
+    // the front door while nobody is signed in the signal waits for a sign-in, and the log runs now without it, so the
+    // signal no longer says it was reported and the Bridge writes its row itself rather than stamping one that has no
+    // place to find.
+    const log = () => {
+      const signal = currentReportSignal();
+      logError(error, {
+        ...(signal ? { chSignal: signal } : {}),
+        component: component || route,
+        route,
+        digest: error.digest,
+        boundary: 'route',
+        errorKind: isChunk
+          ? 'chunk-load'
+          : isStaleAction
+            ? 'stale-server-action'
+            : isTransient
+              ? 'transient-network'
+              : isGenericLoad
+                ? 'generic-load-failure'
+                : 'unknown-route-error',
+        isChunkLoadError: isChunk,
+        isStaleActionError: isStaleAction,
+        isTransientError: isTransient,
+        isGenericLoadFailure: isGenericLoad,
+        retryCount,
+        sessionReloadFlags: (() => {
+          if (typeof window === 'undefined') return { chunkErrorReloaded: null, staleActionReloaded: null };
+          try {
+            return {
+              chunkErrorReloaded: String(getRecovery()?.attempts() ?? 'unavailable'),
+              staleActionReloaded: sessionStorage.getItem(STALE_ACTION_RELOAD_KEY),
+            };
+          } catch {
+            // sessionStorage may throw in private mode; surface that explicitly so we
+            // don't get a misleading "no reload happened" signal in error logs.
+            return { chunkErrorReloaded: 'unavailable', staleActionReloaded: 'unavailable' };
+          }
+        })(),
+        // Transient-network and generic-load failures are auto-retried below and
+        // shown to the user as "temporary" — they are NOT incidents. Logging them
+        // at 'error' let a single flaky/backgrounded tab flood error_logs + Sentry
+        // (one client wrote 320 `severity:error` rows from /rounds/new in 8h).
+        // Downgrade to 'medium' (warning) so they stay discoverable without
+        // polluting the error feed — but ONLY for pure client transience. A real
+        // HTTP 5xx (isServer5xx) stays at 'high' so a backend outage still pages,
+        // and unknown errors keep 'high' too.
+        //
+        // Chunk-load is ALSO not an incident (stale assets after a deploy, with a
+        // one-shot reload that recovers it), but it is capped centrally in
+        // logError rather than here — the global window handlers hit the same
+        // class and must reach the same tier. See capSeverityForSelfRecovering.
+      }, (isTransient || isGenericLoad) && !isServer5xx ? 'medium' : 'high');
+    };
+    if (inClubhouse) {
+      chSignalReport(
+        {
           kind: 'crash',
           code: routeErrorWords(isChunk ? 'chunk' : isStaleAction ? 'stale-action' : isTransient ? 'transient' : isGenericLoad ? 'load' : 'unknown', route).code,
           message: error.message,
-          reported: true,
-        })
-      : null;
-    // Log error to monitoring service
-    logError(error, {
-      ...(signal ? { chSignal: signal } : {}),
-      component: component || route,
-      route,
-      digest: error.digest,
-      boundary: 'route',
-      errorKind: isChunk
-        ? 'chunk-load'
-        : isStaleAction
-          ? 'stale-server-action'
-          : isTransient
-            ? 'transient-network'
-            : isGenericLoad
-              ? 'generic-load-failure'
-              : 'unknown-route-error',
-      isChunkLoadError: isChunk,
-      isStaleActionError: isStaleAction,
-      isTransientError: isTransient,
-      isGenericLoadFailure: isGenericLoad,
-      retryCount,
-      sessionReloadFlags: (() => {
-        if (typeof window === 'undefined') return { chunkErrorReloaded: null, staleActionReloaded: null };
-        try {
-          return {
-            chunkErrorReloaded: String(getRecovery()?.attempts() ?? 'unavailable'),
-            staleActionReloaded: sessionStorage.getItem(STALE_ACTION_RELOAD_KEY),
-          };
-        } catch {
-          // sessionStorage may throw in private mode; surface that explicitly so we
-          // don't get a misleading "no reload happened" signal in error logs.
-          return { chunkErrorReloaded: 'unavailable', staleActionReloaded: 'unavailable' };
-        }
-      })(),
-      // Transient-network and generic-load failures are auto-retried below and
-      // shown to the user as "temporary" — they are NOT incidents. Logging them
-      // at 'error' let a single flaky/backgrounded tab flood error_logs + Sentry
-      // (one client wrote 320 `severity:error` rows from /rounds/new in 8h).
-      // Downgrade to 'medium' (warning) so they stay discoverable without
-      // polluting the error feed — but ONLY for pure client transience. A real
-      // HTTP 5xx (isServer5xx) stays at 'high' so a backend outage still pages,
-      // and unknown errors keep 'high' too.
-      //
-      // Chunk-load is ALSO not an incident (stale assets after a deploy, with a
-      // one-shot reload that recovers it), but it is capped centrally in
-      // logError rather than here — the global window handlers hit the same
-      // class and must reach the same tier. See capSeverityForSelfRecovering.
-    }, (isTransient || isGenericLoad) && !isServer5xx ? 'medium' : 'high');
+        },
+        log,
+      );
+    } else {
+      log();
+    }
   }, [error, route, component, isChunk, isStaleAction, isTransient, isGenericLoad, isServer5xx, retryCount, inClubhouse]);
 
   // Auto-retry for transient errors OR generic load failures. Two guards stop the

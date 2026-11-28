@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { GateSignals } from '@/clubhouse/shell/GateSignals';
+import { isFlagEnabled } from '@/lib/flags/is-enabled';
 
 /**
  * GolfHelm segment layout. It sets the document-title template. Fairway's avatar
@@ -19,6 +21,16 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * The front door's Bridge signals (GateSignals): on its pages only, and only with the `clubhouse_signals` switch on. The
+ * switch is read here, at build time for the front door's static pages, because it lives in code
+ * (config/feature-flags.yml) and changes only with a deploy; reading it reads no request, so those pages stay static.
+ */
 export default function GolfLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      {children}
+      <GateSignals enabled={isFlagEnabled('clubhouse_signals', { skipTelemetry: true })} />
+    </>
+  );
 }

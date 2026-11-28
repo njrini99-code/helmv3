@@ -1759,6 +1759,7 @@ features:
         # glob (Phase 5 registry glob lint) — Bridge/Engineering-OS infra
         # and platform-wide feature-health/billing surfaces.
         - supabase/migrations/*bridge_*.sql
+        - supabase/migrations/*clubhouse_signal_*.sql
         - supabase/migrations/*integrity_checks*.sql
         - supabase/migrations/*feature_health*.sql
         - supabase/migrations/*billing*.sql

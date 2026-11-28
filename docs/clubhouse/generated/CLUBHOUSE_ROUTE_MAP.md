@@ -12,8 +12,8 @@ manifest's `screens` (`config/clubhouse/pages/*.json`) and
 under `src/app/golf` (outside `admin/`) has no label, if a named component does
 not exist, or if a label disagrees with `CH_REBUILT_ROUTES`.
 
-53 page addresses: 22 coach, 5 player, 22 shared, 4 signed out; 10 query views
-that are screens of their own; 15 other addresses below.
+56 page addresses: 23 coach, 6 player, 22 shared, 5 signed out; 10 query views
+that are screens of their own; 12 other addresses below.
 
 A role that has no screen at an address gets the frame's state instead:
 Clubhouse's coach-only state (CH-1301, or the page's own, such as Qualifiers'
@@ -83,10 +83,13 @@ pages send a player to `/golf/dashboard/practice`.
 | `/golf/dashboard/whats-new` | — | **coach** | What's New | `src/clubhouse/screens/whats-new/WhatsNew.tsx#WhatsNew` | — | — | P001 |
 | `/golf/demo` | — | **signed-out** | Demo | — | — | `src/clubhouse/screens/auth/DemoEntry.tsx#DemoEntry` | P015 |
 | `/golf/forgot-password` | — | **shared** | Forgot password, signed in (a signed-out visitor is sent to sign in's reset form) | `src/clubhouse/screens/auth/SignedInReset.tsx#SignedInReset` | `src/clubhouse/screens/auth/SignedInReset.tsx#SignedInReset` | — | P015 |
+| `/golf/join` | — | **signed-out** | Join a team (enter its code) | — | — | `src/clubhouse/screens/auth/JoinCode.tsx#JoinCode` | P015 |
+| `/golf/join/[code]` | — | **player** | Join a team from its code (a coach goes to their own entry) | — | `src/clubhouse/screens/auth/JoinTeam.tsx#JoinTeam` | — | P015 |
 | `/golf/login` | — | **signed-out** | Sign in | — | — | `src/clubhouse/screens/auth/SignIn.tsx#SignIn` | P015 |
 | `/golf/player` | — | **player** | Player sign-up | — | `src/clubhouse/screens/onboard/Onboard.tsx#Onboard` | — | P015 |
 | `/golf/reset-password` | — | **signed-out** | Reset password | — | — | `src/clubhouse/screens/auth/ResetPassword.tsx#ResetPassword` | P015 |
 | `/golf/signup` | — | **signed-out** | Sign up (picks coach or player) | — | — | `src/clubhouse/screens/onboard/Onboard.tsx#Onboard` | P015 |
+| `/golf/staff/join/[token]` | — | **coach** | Staff invitation | `src/clubhouse/screens/auth/StaffInvite.tsx#StaffInvite` | — | — | P015 |
 | `/golf/welcome` | — | **shared** | Welcome (just signed up) | `src/clubhouse/screens/auth/Welcome.tsx#Welcome` | `src/clubhouse/screens/auth/Welcome.tsx#Welcome` | — | P015 |
 
 ## Other addresses
@@ -108,6 +111,3 @@ dashboard's not-found page. A redirect row says where each role lands.
 | `/golf/dashboard/players/[playerId]/genome` | redirect | **coach** | `/golf/dashboard/stats?player=<id>&tab=game` | `coach-only state (CH-1301)` | — | `src/app/golf/(dashboard)/dashboard/players/[playerId]/layout.tsx` | — |
 | `/golf/dashboard/roster/[id]` | redirect | **shared** | `/golf/dashboard/stats?player=<id>` | `/golf/dashboard/roster` | — | `src/app/golf/(dashboard)/dashboard/roster/[id]/layout.tsx` | — |
 | `/golf/dashboard/team` | redirect | **shared** | `/golf/dashboard/settings?section=team` | `/golf/dashboard/settings?section=golf` | — | `src/app/golf/(dashboard)/dashboard/team/layout.tsx` | — |
-| `/golf/join` | screen | **signed-out** | — | — | `src/clubhouse/screens/auth/JoinCode.tsx#JoinCode` | `src/app/golf/join/page.tsx` | No page ID: it lives outside the (auth) group, so P015 does not list it. Anyone can open it; it reads no session. |
-| `/golf/join/[code]` | screen | **player** | `redirect to the coach's entry (resolveGolfCoachEntry)` | `src/clubhouse/screens/auth/JoinTeam.tsx#JoinTeam` | `/golf/signup?returnTo=…` | `src/app/golf/join/[code]/page.tsx` | No page ID (outside the (auth) group). A player who has not onboarded goes to /golf/player?joinCode= first. |
-| `/golf/staff/join/[token]` | screen | **coach** | `src/clubhouse/screens/auth/StaffInvite.tsx#StaffInvite` | — | — | `src/app/golf/staff/join/[token]/page.tsx` | No page ID (outside the (auth) group). An invited assistant coach opens it, usually signed out. |

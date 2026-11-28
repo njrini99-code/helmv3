@@ -24,14 +24,14 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | B16 | Today | /admin/spaces/today | 8 |
 | B17 | Teams activity | /admin/spaces/people | 10 |
 | B18 | One team | /admin/spaces/people/[teamId] | 11 |
-| B19 | Error feed | /admin/spaces/reliability | 15 |
+| B19 | Error feed | /admin/spaces/reliability | 18 |
 | B20 | Counting rules | /admin/spaces/reliability/rules | 5 |
 | B21 | Speed | /admin/spaces/reliability/speed | 12 |
 | B22 | Product | /admin/spaces/product | 6 |
 | B23 | Ship | /admin/spaces/ship | 6 |
 | B24 | Desk | /admin/spaces/desk | 6 |
 
-243 codes in all.
+246 codes in all.
 
 ## B01 Pulse
 
@@ -331,6 +331,9 @@ Every control and state on the Bridge's own screens, by its `BR-` code (plan §6
 | BR-1909 | Replay | Opens the session that hit it (B07) | `BR.feed.replay` |
 | BR-1910 | Copy report | Copies the feed as Markdown | `BR.feed.copy` |
 | BR-1911 | Space tab | Switches between the error feed, How it counts (B20) and Speed (B21) | `BR.feed.spaceTab` |
+| BR-1912 | View | Switches the feed between Issues, Pages and Every error | `BR.feed.view` |
+| BR-1913 | Issue row | Opens one issue's failures in Every error, newest first | `BR.feed.issueRow` |
+| BR-1914 | Page row | Opens one page's failures in Every error | `BR.feed.pageRow` |
 | BR-1990 | Loading | Shown while the space reads | `BR.feed.loading` |
 | BR-1991 | Empty | Nothing to show, said plainly | `BR.feed.empty` |
 | BR-1992 | Failed | The read failed; never shown as all clear | `BR.feed.failed` |

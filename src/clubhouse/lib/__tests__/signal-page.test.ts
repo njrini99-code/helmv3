@@ -25,6 +25,12 @@ describe('pageForPath', () => {
     expect(pageForPath('/golf/dashboard/stats', '', 'player')).toBe('P005');
   });
 
+  it('counts the team and staff invitations under the front door, whose controls and codes they use', () => {
+    expect(pageForPath('/golf/join', '', 'player')).toBe('P015');
+    expect(pageForPath('/golf/join/ABC123', '', 'player')).toBe('P015');
+    expect(pageForPath('/golf/staff/join/x1', '', 'coach')).toBe('P015');
+  });
+
   it('counts an address no page claims under the shell', () => {
     expect(pageForPath('/golf/dashboard/nowhere', '', 'coach')).toBe('P001');
     expect(pageForPath('/', '', 'coach')).toBe('P001');

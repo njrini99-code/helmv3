@@ -13,7 +13,10 @@
     "/golf/coach",
     "/golf/coach/pending",
     "/golf/demo",
-    "/golf/forgot-password"
+    "/golf/forgot-password",
+    "/golf/join",
+    "/golf/join/[code]",
+    "/golf/staff/join/[token]"
   ],
   "roles": [],
   "screens": [
@@ -72,6 +75,24 @@
       "audience": "player",
       "name": "Player sign-up",
       "player": "src/clubhouse/screens/onboard/Onboard.tsx#Onboard"
+    },
+    {
+      "route": "/golf/join",
+      "audience": "signed-out",
+      "name": "Join a team (enter its code)",
+      "visitor": "src/clubhouse/screens/auth/JoinCode.tsx#JoinCode"
+    },
+    {
+      "route": "/golf/join/[code]",
+      "audience": "player",
+      "name": "Join a team from its code (a coach goes to their own entry)",
+      "player": "src/clubhouse/screens/auth/JoinTeam.tsx#JoinTeam"
+    },
+    {
+      "route": "/golf/staff/join/[token]",
+      "audience": "coach",
+      "name": "Staff invitation",
+      "coach": "src/clubhouse/screens/auth/StaffInvite.tsx#StaffInvite"
     }
   ],
   "semanticFeatures": [

@@ -34,6 +34,9 @@ export type FeedRole = 'coach' | 'player' | 'signed-out';
 export const FEED_DEVICES = ['all', 'ios-app', 'ios-safari', 'desktop', 'other'] as const satisfies readonly LivePlatform[];
 export type FeedDevice = (typeof FEED_DEVICES)[number];
 export const DETAIL_TABS = ['where', 'trail', 'counts', 'server'] as const;
+/** Issues (failures grouped by code, most people first), Pages (each page's health from the hourly store), Every error. */
+export const FEED_VIEWS = ['issues', 'pages', 'errors'] as const;
+export type FeedView = (typeof FEED_VIEWS)[number];
 export type DetailTab = (typeof DETAIL_TABS)[number];
 
 export const DETAIL_TAB_LABEL: Readonly<Record<DetailTab, string>> = {
@@ -59,9 +62,22 @@ export interface FeedScope {
   sc: string | null;
   e: EventKey | null;
   tab: DetailTab;
+  /** One issue: only failures whose catalog code is this (a CH code or a Bridge ID). Opens the Every error view. */
+  code?: string | null;
+  /** The view the URL asked for; null lets feedView() choose (see there). */
+  v?: FeedView | null;
 }
 
 export const DEFAULT_FEED: FeedScope = { w: 'today', role: 'all', pf: 'all', page: null, sc: null, e: null, tab: 'where' };
+
+/**
+ * The view on screen: the one the URL names, else Every error when the URL points at failures (an error, a server code
+ * or an issue's code, as every older link and the issue rows do), else Issues.
+ */
+export function feedView(scope: Pick<FeedScope, 'v' | 'e' | 'sc' | 'code'>): FeedView {
+  if (scope.v) return scope.v;
+  return scope.e || scope.sc || scope.code ? 'errors' : 'issues';
+}
 
 type Params = Record<string, string | string[] | undefined>;
 const first = (raw: string | string[] | undefined) => (Array.isArray(raw) ? raw[0] : raw);
@@ -69,6 +85,8 @@ const pick = <T extends string>(list: readonly T[], raw: string | undefined, fal
 
 const SESSION_ID = /^[A-Za-z0-9_-]{8,64}$/;
 const SERVER_CODE = /^[A-Z0-9]{3,10}$/;
+/** A catalog code as the error log and the notes key on: a CH code, a Bridge ID, or an event's own code. */
+const CATALOG_CODE = /^[A-Za-z0-9][A-Za-z0-9-]{1,23}$/;
 
 /** `<sessionId>:<seq>`. Split on the last colon; anything malformed is no selection, never an error. */
 export function parseEventKey(raw: string | undefined | null): EventKey | null {
@@ -89,7 +107,9 @@ export function eventKey(k: EventKey): string {
 export function parseFeedScope(sp: Params | undefined): FeedScope {
   const page = first(sp?.page);
   const sc = first(sp?.sc)?.toUpperCase();
-  return {
+  const code = first(sp?.code);
+  const v = first(sp?.v);
+  const scope: FeedScope = {
     w: pick(FEED_WINDOWS, first(sp?.w), DEFAULT_FEED.w),
     role: pick(FEED_ROLES, first(sp?.role), DEFAULT_FEED.role),
     pf: pick(FEED_DEVICES, first(sp?.pf), DEFAULT_FEED.pf),
@@ -98,6 +118,10 @@ export function parseFeedScope(sp: Params | undefined): FeedScope {
     e: parseEventKey(first(sp?.e)),
     tab: pick(DETAIL_TABS, first(sp?.tab), DEFAULT_FEED.tab),
   };
+  // Added only when the URL carries them, so an older link parses to exactly what it always did.
+  if (code && CATALOG_CODE.test(code)) scope.code = code;
+  if (v && (FEED_VIEWS as readonly string[]).includes(v)) scope.v = v as FeedView;
+  return scope;
 }
 
 export const FEED_PATH = '/admin/spaces/reliability';
@@ -113,6 +137,9 @@ export function feedHref(scope: FeedScope, patch: Partial<FeedScope> = {}, hash?
   if (s.sc) q.set('sc', s.sc);
   if (s.e) q.set('e', eventKey(s.e));
   if (s.e && s.tab !== DEFAULT_FEED.tab) q.set('tab', s.tab);
+  if (s.code) q.set('code', s.code);
+  // The view goes in the URL only when it differs from the one the rest of the URL implies.
+  if (s.v && s.v !== feedView({ ...s, v: null })) q.set('v', s.v);
   const qs = q.toString();
   return `${FEED_PATH}${qs ? `?${qs}` : ''}${hash ? `#${hash}` : ''}`;
 }
@@ -370,14 +397,15 @@ export function buildFeed(i: BuildFeedInput): FeedItem[] {
   return items.sort((a, b) => b.at.localeCompare(a.at) || a.sessionId.localeCompare(b.sessionId) || b.seq - a.seq);
 }
 
-/** Items in the scope's role, device, page and server code. */
-export function filterFeed(items: readonly FeedItem[], scope: Pick<FeedScope, 'role' | 'pf' | 'page' | 'sc'>): FeedItem[] {
+/** Items in the scope's role, device, page, server code and issue. */
+export function filterFeed(items: readonly FeedItem[], scope: Pick<FeedScope, 'role' | 'pf' | 'page' | 'sc' | 'code'>): FeedItem[] {
   return items.filter(
     (i) =>
       (scope.role === 'all' || i.role === scope.role) &&
       (scope.pf === 'all' || i.platform === scope.pf) &&
       (!scope.page || i.page === scope.page) &&
-      (!scope.sc || i.serverCode === scope.sc),
+      (!scope.sc || i.serverCode === scope.sc) &&
+      (!scope.code || i.catalogCode === scope.code),
   );
 }
 

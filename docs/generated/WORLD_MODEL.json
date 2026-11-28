@@ -4114,7 +4114,11 @@
       },
       {
         "id": "clubhouse_ingest_signals",
-        "definedIn": "supabase/migrations/20261124090000_clubhouse_bridge_signals.sql"
+        "definedIn": "supabase/migrations/20261128090000_clubhouse_signal_routes.sql"
+      },
+      {
+        "id": "clubhouse_ingest_signals_v2",
+        "definedIn": "supabase/migrations/20261128090000_clubhouse_signal_routes.sql"
       },
       {
         "id": "clubhouse_signals_prune",

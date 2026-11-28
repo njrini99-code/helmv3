@@ -5,14 +5,16 @@
  * each session's plan to `clubhouse_ingest_signals` and writes or stamps the `admin_events` rows. Keeping it pure keeps
  * every rule here testable offline.
  *
- * - Every envelope adds one to its hourly row (hour × code × kind × outcome × act × page × role × platform × release),
- *   with a duration histogram whose edges match `clubhouse_bucket_quantile`.
+ * - Every envelope adds one to its hourly row (hour × code × kind × outcome × act × page × role × platform × release,
+ *   and, once the held route migration is applied, × screen), with a duration histogram whose edges match
+ *   `clubhouse_bucket_quantile`.
  * - A session's row counts what it sent; its timeline is stored by the database only once the session has a failure.
  * - A failure the client did not already report becomes an `admin_events` row (one error store, DECISIONS 5). A failure
  *   it did report through `chReport` is matched to that row by session and seq and stamped with the Bridge columns.
  * - Drift is counted over the batch's own envelopes, never over context (which was counted when first sent).
  */
 import type { BridgeGraph, BridgeId } from './graph';
+import { pageRouteKeys } from './route-key';
 import { actionIndex, countDrift, type DriftKind, resolveSignal, type ResolvedSignal, silentActions } from './resolve';
 import { type ChSignal, isFailureSignal } from './signal';
 
@@ -45,6 +47,8 @@ export interface HourlyRow {
   outcome: string;
   act: string;
   page_id: string;
+  /** The screen it fired on, as a route key the graph lists on its page; '' when unknown or not split (route-key.ts). */
+  route: string;
   role: ChSignal['role'];
   platform: ChSignal['platform'];
   release: string;
@@ -160,6 +164,12 @@ export interface IngestInput {
    * so a made-up release can't mint hourly and drift rows (security review of #2611, M3). Unset: kept as sent.
    */
   serverRelease?: string | null;
+  /**
+   * Split the hourly rows by screen. Only `clubhouse_ingest_signals_v2` (the held route migration) has the screen in
+   * its conflict key: sent to the first function, two rows that differ by screen alone would hit one row twice in one
+   * statement and fail the batch. So the route turns this on for v2 and builds the plan again without it for v1.
+   */
+  routes?: boolean;
 }
 
 /** Drift rows one session's batch may add; the rest are still in the session's events. */
@@ -205,7 +215,21 @@ function titleFor(s: ChSignal, r: ResolvedSignal, graph: BridgeGraph, code: stri
   return (code ? `${what} (${code})` : what).slice(0, 500);
 }
 
-function addHourly(rows: Map<string, HourlyRow>, s: ChSignal, r: ResolvedSignal, at: number, graph: BridgeGraph, userId: string | null): void {
+/**
+ * The screen a signal names, kept only where the graph lists it on the signal's own page: a key the client made up, or
+ * one from another page, is '' (one bucket, not a new row each), as an unknown act or control is.
+ */
+function routeOf(s: ChSignal, graph: BridgeGraph, keysByPage: Map<string, ReadonlySet<string>>): string {
+  if (!s.route) return '';
+  let keys = keysByPage.get(s.page);
+  if (!keys) {
+    keys = new Set(pageRouteKeys(graph.pages[s.page as keyof typeof graph.pages]?.screens));
+    keysByPage.set(s.page, keys);
+  }
+  return keys.has(s.route) ? s.route : '';
+}
+
+function addHourly(rows: Map<string, HourlyRow>, s: ChSignal, r: ResolvedSignal, at: number, graph: BridgeGraph, userId: string | null, route: string): void {
   const row: Omit<HourlyRow, 'count' | 'user_ids' | 'buckets' | 'first_at' | 'last_at'> = {
     hour: hourOf(at),
     code: r.bridgeId === null && s.code !== undefined ? 'unknown' : codeFor(s, r, graph),
@@ -215,13 +239,14 @@ function addHourly(rows: Map<string, HourlyRow>, s: ChSignal, r: ResolvedSignal,
     // A vital keeps its metric (INP, LCP, CLS): without it the three would merge into one CH-1954 histogram (B09, R-12).
     act: r.actionId && s.act ? s.act : s.kind === 'vital' && s.act && VITAL_ACTS.has(s.act) ? s.act : s.control && CONTROL_ID.test(s.control) ? s.control : '',
     page_id: s.page,
+    route,
     role: s.role,
     platform: s.platform,
     release: s.release,
     bridge_id: r.bridgeId,
   };
   // One row per key in a batch: ON CONFLICT DO UPDATE cannot touch the same row twice in one statement.
-  const key = [row.hour, row.code, row.kind, row.outcome, row.act, row.page_id, row.role, row.platform, row.release].join('|');
+  const key = [row.hour, row.code, row.kind, row.outcome, row.act, row.page_id, row.route, row.role, row.platform, row.release].join('|');
   const iso = new Date(at).toISOString();
   let out = rows.get(key);
   if (!out) {
@@ -284,6 +309,8 @@ export function buildIngest(input: IngestInput): IngestPlan {
   const signals = normalize(input.signals);
   const context = normalize(input.context);
   const actions = actionIndex(graph);
+  const keysByPage = new Map<string, ReadonlySet<string>>();
+  const routeFor = (s: ChSignal) => (input.routes ? routeOf(s, graph, keysByPage) : '');
   const sessions: SessionPlan[] = [];
   const adminRows: AdminFailure[] = [];
   const stamps: AdminStamp[] = [];
@@ -311,7 +338,7 @@ export function buildIngest(input: IngestInput): IngestPlan {
       const at = clampAt(s.at, now);
       const r = resolveSignal(s, graph, actions);
       const drift: DriftKind[] = silent.has(s) ? [...r.drift, 'silent-action'] : r.drift;
-      addHourly(hourly, s, r, at, graph, userId);
+      addHourly(hourly, s, r, at, graph, userId, routeFor(s));
       events.set(s.seq, eventFor(s, r, at, graph, drift));
       // A silent start has no code of its own; its drift row names the action instead.
       if (r.drift.length) driftItems.push({ signal: { ...s, at }, drift: r.drift });
