@@ -173,8 +173,10 @@ test('an auth page (sign in, welcome) lives outside the dashboard, in the (auth)
   const auth = (over = {}) => page({ id: 'P015', name: 'Auth', slug: 'auth', bridgeNamespace: 15, area: 'auth', routes: ['/golf/login', '/golf/welcome'], roles: [], progressRow: 'Auth', ...over });
   const withAuthProgress = { progressMd: progress.replace('| Messages |', '| Auth | /a | done | done | done | doing | doing | done | doing | doing | doing | doing | doing |\n| Messages |') };
   const only = (pages) => ({ manifests: pages, rows: [], bridge: [], map: { ...map, overrides: {} }, ...withAuthProgress });
-  assert.deepEqual(authRouteToPages('/golf/login'), ['src/app/golf/(auth)/login/page.tsx', 'src/app/golf/(onboarding)/login/page.tsx']);
-  assert.deepEqual(authRouteToPages('/golf/player?joinCode=1'), ['src/app/golf/(auth)/player/page.tsx', 'src/app/golf/(onboarding)/player/page.tsx']);
+  assert.deepEqual(authRouteToPages('/golf/login'), ['src/app/golf/(auth)/login/page.tsx', 'src/app/golf/(onboarding)/login/page.tsx', 'src/app/golf/login/page.tsx']);
+  assert.deepEqual(authRouteToPages('/golf/player?joinCode=1'), ['src/app/golf/(auth)/player/page.tsx', 'src/app/golf/(onboarding)/player/page.tsx', 'src/app/golf/player/page.tsx']);
+  // The invitations a code or link opens sit straight under /golf/, outside any route group.
+  assert.ok(authRouteToPages('/golf/staff/join/[token]').includes('src/app/golf/staff/join/[token]/page.tsx'));
   assert.deepEqual(checkRegistry(ctx(only([auth()]))), []);
   // A route with no page in either group, and a dashboard route on an auth page, are refused.
   assert.ok(checkRegistry({ ...ctx(only([auth({ routes: ['/golf/nowhere'] })])), exists: (p) => !p.includes('nowhere') }).some((x) => x.includes('/golf/nowhere has none of')));

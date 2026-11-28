@@ -327,3 +327,16 @@
   .bs .rl-row.rl-page > .rl-page-fail { grid-column: 1; text-align: left; }
   .bs .rl-row.rl-page > .rl-issue-trend { grid-column: 2; }
 }
+
+/* Screens not heard from, grouped by page (every route is counted, not only the pages). */
+.bs .rl-silent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.bs .rl-silent-group { display: grid; grid-template-columns: minmax(140px, 200px) minmax(0, 1fr); gap: 4px 16px; padding: 9px 0; border-top: 1px solid var(--bs-line); }
+.bs .rl-silent-group:first-child { border-top: 0; padding-top: 2px; }
+.bs .rl-silent-page { font-size: 14px; font-weight: 600; color: var(--bs-ink); display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.bs .rl-silent-count { font-size: 12px; font-weight: 500; color: var(--bs-ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bs .rl-silent-group .rl-silent-names { font-size: 14px; line-height: 1.5; }
+.bs .rl-silent-untold { margin: 0; }
+.bs .rl-screens { white-space: nowrap; }
+@media (max-width: 640px) {
+  .bs .rl-silent-group { grid-template-columns: minmax(0, 1fr); gap: 2px; padding: 10px 0; }
+}

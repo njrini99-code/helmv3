@@ -20,9 +20,10 @@ const SECTIONS: readonly (readonly [string, string])[] = [
 ];
 
 /**
- * The front door (P015): signing in, onboarding, and the team and staff invitations a code or link opens. The graph
- * lists no page for the invitations (they sit outside the (auth) group), but their screens' controls and codes are
- * P015's (CTL-P015-…, CH-15…): counted anywhere else, every one of their signals would read as wrong-page drift.
+ * The front door (P015): signing in, onboarding, and the team and staff invitations a code or link opens. The
+ * invitations sit outside the (auth) group, but P015's routes list them (config/clubhouse/pages/P015-auth.json) and
+ * their controls and codes are P015's (CTL-P015-…, CH-15…): counted anywhere else, every one of their signals would
+ * read as wrong-page drift.
  */
 const AUTH = new Set(['login', 'welcome', 'signup', 'player', 'reset-password', 'coach', 'demo', 'forgot-password', 'join', 'staff']);
 

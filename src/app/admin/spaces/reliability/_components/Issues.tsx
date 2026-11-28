@@ -3,7 +3,7 @@ import { BR } from '@/lib/admin/clubhouse/br-codes';
 import { OWNER_TONE } from '@/lib/admin/clubhouse/explain';
 import { STATE_WORDS, feedHref, type FeedScope } from '@/lib/admin/clubhouse/feed';
 import { whoWords, type Issue, type SparkFrame } from '@/lib/admin/clubhouse/issues';
-import { KIND_WORDS, rateWords, type PageHealth } from '@/lib/admin/clubhouse/page-health';
+import { KIND_WORDS, rateWords, screenWords, type Coverage, type PageHealth } from '@/lib/admin/clubhouse/page-health';
 import { LocalTime } from '@/app/admin/_components/LocalTime';
 import { Pill } from '../../_ui/ui';
 
@@ -137,6 +137,7 @@ function kindsWords(kinds: readonly string[]): string {
 
 export function PageRow({ page, scope, frame }: { page: PageHealth; scope: FeedScope; frame: SparkFrame }) {
   const broken = page.failures > 0;
+  const screens = screenWords(page.screens);
   return (
     <Link href={feedHref(scope, { page: page.page, v: 'errors', e: null, code: null })} className="rl-row rl-page" data-br={BR.feed.pageRow} data-feed-row="">
       <span className="rl-main">
@@ -146,6 +147,12 @@ export function PageRow({ page, scope, frame }: { page: PageHealth; scope: FeedS
         </span>
         <span className="rl-where">
           {plural(page.people, 'person', 'people')} · {plural(page.views, 'view')}
+          {screens ? (
+            <span className="rl-screens">
+              {' · '}
+              {screens}
+            </span>
+          ) : null}
           <span className="rl-team"> · sent {kindsWords(page.kinds)}</span>
         </span>
       </span>
@@ -188,21 +195,48 @@ export function PageList({ pages, scope, frame }: { pages: readonly PageHealth[]
   );
 }
 
-/** The pages that sent nothing: named, so their zero is never read as a zero. */
-export function SilentPages({ names, windowWords }: { names: readonly string[]; windowWords: string }) {
-  if (!names.length) return null;
+/**
+ * The screens that sent nothing, grouped by page, so their zero is never read as a zero. A page that sent nothing at
+ * all is marked; a screen two pages share is listed once.
+ */
+export function SilentScreens({ coverage, windowWords }: { coverage: Coverage; windowWords: string }) {
+  const groups = coverage.silentScreens;
+  if (!groups.length) return null;
+  const silentCount = coverage.screensTotal - coverage.screensHeard;
+  const label = coverage.screensTotal > 0 ? `${silentCount} of ${plural(coverage.screensTotal, 'screen')} not heard from` : `${plural(coverage.silent.length, 'page')} not heard from`;
   return (
-    <section className="bs-panel bs-panel-pad rl-silent" aria-label="Pages not heard from">
+    <section className="bs-panel bs-panel-pad rl-silent" aria-label="Screens not heard from">
       <div className="rl-silent-head">
         <Pill tone="watch" dot>
-          {plural(names.length, 'page')} not heard from
+          {label}
         </Pill>
         <span className="bs-panel-note">
           They sent no signal at all {windowWords}, so no errors there is not a zero: nobody may have opened them, or their
           tracking may not be reaching the Bridge.
         </span>
       </div>
-      <p className="rl-silent-names">{names.join(' · ')}</p>
+      <ul className="rl-silent-list">
+        {groups.map((g) => (
+          <li key={g.page} className="rl-silent-group">
+            <span className="rl-silent-page">
+              {g.name}
+              {g.total > 1 ? <span className="rl-silent-count">{g.screens.length === g.total ? `all ${g.total}` : `${g.screens.length} of ${g.total}`}</span> : null}
+            </span>
+            {g.screens.length && !(g.screens.length === 1 && g.screens[0] === g.name) ? <span className="rl-silent-names">{g.screens.join(' · ')}</span> : null}
+          </li>
+        ))}
+      </ul>
+      {coverage.untold.length ? (
+        <p className="bs-panel-note rl-silent-untold">
+          {listWords(coverage.untold)} sent signals that do not say which screen, so a screen listed under {coverage.untold.length === 1 ? 'it' : 'them'} may
+          still have been opened. Each screen says so itself once the route update is applied.
+        </p>
+      ) : null}
     </section>
   );
+}
+
+/** "Rounds, Settings and Practice". */
+function listWords(names: readonly string[]): string {
+  return names.length < 2 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 }

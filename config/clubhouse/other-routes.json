@@ -9,32 +9,6 @@
     "source": "src/app/golf/page.tsx"
   },
   {
-    "route": "/golf/join",
-    "kind": "screen",
-    "audience": "signed-out",
-    "visitor": "src/clubhouse/screens/auth/JoinCode.tsx#JoinCode",
-    "source": "src/app/golf/join/page.tsx",
-    "note": "No page ID: it lives outside the (auth) group, so P015 does not list it. Anyone can open it; it reads no session."
-  },
-  {
-    "route": "/golf/join/[code]",
-    "kind": "screen",
-    "audience": "player",
-    "player": "src/clubhouse/screens/auth/JoinTeam.tsx#JoinTeam",
-    "coach": "redirect to the coach's entry (resolveGolfCoachEntry)",
-    "visitor": "/golf/signup?returnTo=\u2026",
-    "source": "src/app/golf/join/[code]/page.tsx",
-    "note": "No page ID (outside the (auth) group). A player who has not onboarded goes to /golf/player?joinCode= first."
-  },
-  {
-    "route": "/golf/staff/join/[token]",
-    "kind": "screen",
-    "audience": "coach",
-    "coach": "src/clubhouse/screens/auth/StaffInvite.tsx#StaffInvite",
-    "source": "src/app/golf/staff/join/[token]/page.tsx",
-    "note": "No page ID (outside the (auth) group). An invited assistant coach opens it, usually signed out."
-  },
-  {
     "route": "/golf/dashboard/[...missing]",
     "kind": "not-found",
     "audience": "shared",

@@ -19,9 +19,10 @@ Held items:     none
   page, not the page the shell configured. On the same address the shell's
   page still wins (it knows whose Stats these are).
 - `lib/signal-page.ts`: `/golf/join…` and `/golf/staff/join/…` count under
-  P015. The graph lists no page for them (outside the (auth) group), but
-  their controls and codes are P015's, so counted anywhere else every one of
-  their signals would read as wrong-page drift.
+  P015. They sit outside the (auth) group, but their controls and codes are
+  P015's, so counted anywhere else every one of their signals would read as
+  wrong-page drift. P015's routes now list them too (see
+  `2026-11-28-every-screen-reports.md`).
 
 ### Why
 

@@ -8,6 +8,8 @@ COMMENT ON TABLE "public"."billing_customers" IS 'Idempotent organization -> Str
 
 COMMENT ON TABLE "public"."billing_invoices" IS 'Local mirror of Stripe invoices, synced by the Stripe webhook. Platform-plane; RLS deny-by-default, service-role access only. Stripe remains source of truth.';
 
+COMMENT ON COLUMN "public"."clubhouse_signal_hourly"."route" IS 'The screen it fired on: a route key the graph lists on page_id (src/lib/admin/clubhouse/route-key.ts), never an id. Empty when the client did not say.';
+
 COMMENT ON COLUMN "public"."crm_coaches"."last_email_event_type" IS 'Latest Resend event type for this coach (sent|delivered|delivery_delayed|opened|clicked|bounced|complained), stripped of the email. prefix. Maintained by trigger on email_events.';
 
 COMMENT ON COLUMN "public"."crm_coaches"."last_email_event_at" IS 'Timestamp of the latest Resend webhook event linked to this coach. Maintained by trigger on email_events.';

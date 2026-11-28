@@ -337,7 +337,7 @@ ALTER TABLE ONLY "public"."clubhouse_sessions"
     ADD CONSTRAINT "clubhouse_sessions_pkey" PRIMARY KEY ("session_id");
 
 ALTER TABLE ONLY "public"."clubhouse_signal_hourly"
-    ADD CONSTRAINT "clubhouse_signal_hourly_pkey" PRIMARY KEY ("bucket_hour", "code", "kind", "outcome", "act", "page_id", "role", "platform", "release");
+    ADD CONSTRAINT "clubhouse_signal_hourly_pkey" PRIMARY KEY ("bucket_hour", "code", "kind", "outcome", "act", "page_id", "route", "role", "platform", "release");
 
 ALTER TABLE ONLY "public"."bridge_notes"
     ADD CONSTRAINT "bridge_notes_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE SET NULL;

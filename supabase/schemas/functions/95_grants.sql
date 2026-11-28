@@ -1859,6 +1859,8 @@ GRANT ALL ON FUNCTION "public"."clubhouse_forget_user"("p_user" "uuid") TO "serv
 
 REVOKE ALL ON FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") FROM PUBLIC, "anon", "authenticated";
 GRANT ALL ON FUNCTION "public"."clubhouse_ingest_signals"("p_batch" "jsonb") TO "service_role";
+REVOKE ALL ON FUNCTION "public"."clubhouse_ingest_signals_v2"("p_batch" "jsonb") FROM PUBLIC, "anon", "authenticated";
+GRANT ALL ON FUNCTION "public"."clubhouse_ingest_signals_v2"("p_batch" "jsonb") TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."clubhouse_signals_prune"() FROM PUBLIC, "anon", "authenticated";
 GRANT ALL ON FUNCTION "public"."clubhouse_signals_prune"() TO "service_role";

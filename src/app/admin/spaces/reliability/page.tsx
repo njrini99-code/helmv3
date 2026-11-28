@@ -56,7 +56,7 @@ import { SignalNotThere, ReadFailed } from '../_ui/states';
 import { ExpectedNote, WatchControl } from '@/app/admin/clubhouse/_components/CodeNotes';
 import { ErrorDetail, noteBlocker } from './_components/ErrorDetail';
 import { LinkGroup, ReliabilityTabs, PipeTruth } from './_components/shared';
-import { IssueList, PageList, SilentPages } from './_components/Issues';
+import { IssueList, PageList, SilentScreens } from './_components/Issues';
 import { FeedKeys } from './_components/FeedKeys';
 
 export const metadata: Metadata = { title: 'Reliability · Error feed' };
@@ -294,10 +294,12 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
   const filtered = scope.role !== 'all' || scope.pf !== 'all' || Boolean(scope.page) || Boolean(scope.sc) || Boolean(scope.code);
   // What a "no errors" covers: the pages that reported at all. Named on every empty state, never left to be assumed.
   const silentNote =
-    coverage && coverage.silent.length ? (
+    coverage && (coverage.silent.length || coverage.screensHeard < coverage.screensTotal) ? (
       <>
         {' '}
-        {coverage.heard} of {coverage.total} pages sent any signal; the other {coverage.silent.length} sent nothing, so this zero does not cover them.{' '}
+        {coverage.heard} of {coverage.total} pages
+        {coverage.screensTotal ? ` and ${coverage.screensHeard} of ${coverage.screensTotal} screens` : ''} sent any signal; the rest sent nothing, so this
+        zero does not cover them.{' '}
         <Link className="bs-link" href={feedHref(scope, { v: 'pages', e: null, code: null })} data-br={BR.feed.view}>
           See the pages
         </Link>
@@ -403,7 +405,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
               view === 'issues'
                 ? issuesReport(issues, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label })
                 : view === 'pages'
-                  ? pagesReport(health, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label })
+                  ? pagesReport(health, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label, coverage })
                   : feedReport(items, summary, scope.w, pipe.label)
             }
             variant="labeled"
@@ -432,7 +434,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
                 {pipe.label}. With nothing arriving, no page can be called healthy.
               </SpaceState>
             )}
-            <SilentPages names={coverage?.silent ?? []} windowWords={windowWords(scope.w)} />
+            {coverage ? <SilentScreens coverage={coverage} windowWords={windowWords(scope.w)} /> : null}
           </>
         )
       ) : failures.state === 'error' ? (

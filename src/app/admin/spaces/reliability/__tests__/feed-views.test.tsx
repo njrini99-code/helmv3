@@ -91,14 +91,20 @@ describe('B19 feed views', () => {
     for (const id of U) expect(container.textContent).not.toContain(id);
   });
 
-  it('Pages lists the pages that reported, worst first, and names the silent ones', async () => {
+  it('Pages lists the pages that reported, worst first, and names the silent screens by page', async () => {
     const { container } = await open({ v: 'pages' });
     const rows = [...container.querySelectorAll(`a[data-br="${BR.feed.pageRow}"]`)];
     expect(rows.map((r) => r.querySelector('.bs-chip')?.textContent)).toEqual(['P007', 'P013']);
     expect(rows[0]!.textContent).toContain('2 failures');
     expect(rows[1]!.textContent).toContain('No failures');
-    expect(container.textContent).toContain('2 pages not heard from');
-    expect(container.querySelector('.rl-silent-names')?.textContent).toBe('Shell · Practice');
+    // Coverage counts screens, not only pages: CoachHelm reported, but not from which of its two screens.
+    expect(container.textContent).toContain('Heard from 2 of 4 pages and 1 of 3 screens');
+    expect(rows[1]!.textContent).toContain('screen not known yet');
+    expect(container.textContent).toContain('2 of 3 screens not heard from');
+    const groups = [...container.querySelectorAll('.rl-silent-group')].map((g) => g.querySelector('.rl-silent-page')?.firstChild?.textContent);
+    expect(groups).toEqual(['Shell', 'CoachHelm', 'Practice']);
+    expect(container.querySelector('.rl-silent-group .rl-silent-names')?.textContent).toBe('CoachHelm home · Ask');
+    expect(container.querySelector('.rl-silent-untold')?.textContent).toContain('CoachHelm sent signals that do not say which screen');
   });
 
   it('Every error keeps the per-failure list, and an issue link filters it to one code', async () => {
@@ -111,7 +117,7 @@ describe('B19 feed views', () => {
     mode = 'quiet';
     const { container } = await open();
     expect(container.querySelectorAll(`a[data-br="${BR.feed.issueRow}"]`)).toHaveLength(0);
-    expect(container.textContent).toContain('2 of 4 pages sent any signal');
+    expect(container.textContent).toContain('2 of 4 pages and 1 of 3 screens sent any signal');
     expect(container.textContent).not.toMatch(/all clear/i);
   });
 });

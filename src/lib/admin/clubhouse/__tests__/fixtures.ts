@@ -1,9 +1,12 @@
-import type { BridgeGraph } from '../graph';
+import type { BridgeGraph, GraphScreen } from '../graph';
 import type { ChSignal } from '../signal';
 
-/** A small graph: Messages (P007) with one action, the shell (P001), and Practice (P017) borrowing a P013 row. */
+/**
+ * A small graph: Messages (P007) with one action and one screen, CoachHelm (P013) with two screens, the shell (P001),
+ * and Practice (P017) borrowing a P013 row.
+ */
 export function fixtureGraph(): BridgeGraph {
-  const page = (name: string, borrows: number[] = []) => ({
+  const page = (name: string, borrows: number[] = [], screens: GraphScreen[] = []) => ({
     name,
     slug: name.toLowerCase(),
     namespace: 0,
@@ -14,13 +17,21 @@ export function fixtureGraph(): BridgeGraph {
     catalog: null,
     docs: {},
     held: [],
-    screens: [],
+    screens,
     borrows,
   });
   return {
     version: 1,
     contentHash: 'fixture',
-    pages: { P001: page('Shell'), P007: page('Messages'), P013: page('CoachHelm'), P017: page('Practice', [130645]) },
+    pages: {
+      P001: page('Shell'),
+      P007: page('Messages', [], [{ route: '/golf/dashboard/messages', audience: 'shared', name: 'Messages' }]),
+      P013: page('CoachHelm', [], [
+        { route: '/golf/dashboard/coachhelm', audience: 'coach', name: 'CoachHelm home' },
+        { route: '/golf/dashboard/coachhelm', view: '?view=ask', audience: 'coach', name: 'Ask' },
+      ]),
+      P017: page('Practice', [130645]),
+    },
     surfaces: {},
     controls: {},
     actions: {

@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { NextResponse, type NextRequest } from 'next/server';
 import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
 import { type AdminFailure, buildIngest, type BridgeColumns } from '@/lib/admin/clubhouse/ingest';
+import { INGEST_V1, INGEST_V2, noteV2Missing, tryRoutesAt } from '@/lib/admin/clubhouse/ingest-version';
 import { stampReport } from '@/lib/admin/clubhouse/report-stamp';
 import { type ChSignal, parseSignalBatch, redactSignal } from '@/lib/admin/clubhouse/signal';
 import { buildIncidentSignature } from '@/lib/admin/incident-grouping';
@@ -28,12 +29,15 @@ import { describeError } from '@/lib/utils/describe-error';
  *    limiter has fallen back to its per-instance memory;
  * 3. parses the batch, dropping and counting what doesn't fit (signal.ts), and redacts free text as /api/log-error does;
  * 4. resolves each envelope against the graph this deploy was built with and builds one ingest call per session
- *    (ingest.ts), sent to `clubhouse_ingest_signals` through the service role;
+ *    (ingest.ts), sent to `clubhouse_ingest_signals_v2` through the service role (or the first function while v2 is
+ *    held, ingest-version.ts);
  * 5. writes a failure nobody reported yet as an `admin_events` row, and stamps the Bridge columns on the row a failure
  *    `chReport` already wrote (report-stamp.ts; when the report lands after the signal, /api/log-error stamps it).
  *
  * Until the held migration 20261124090000 is applied, the ingest function doesn't exist: the route says
- * `persisted: false` and still writes failures to `admin_events` without the new columns.
+ * `persisted: false` and still writes failures to `admin_events` without the new columns. The hourly rows split by
+ * screen only through `clubhouse_ingest_signals_v2` (the held route migration 20261128090000): until it exists, the
+ * route builds the plan again without screens and sends it to the first function, so nothing is lost meanwhile.
  *
  * Sending never fails a tap: the client never awaits this, and it ignores the answer.
  */
@@ -49,8 +53,9 @@ const MAX_STAMPS_PER_BATCH = 5;
 const MAX_BODY_BYTES = 256 * 1024;
 /** One batch is one tab's; more sessions than this in one post is not a Clubhouse page. */
 const MAX_SESSIONS_PER_BATCH = 3;
-// PostgREST: the function isn't in the schema cache (the migration is held); a column isn't (same).
-const FUNCTION_MISSING = 'PGRST202';
+// The function isn't there: not in PostgREST's schema cache (the migration is held), or dropped since the cache was
+// read (a rolled-back migration, before the cache reloads). A column isn't there (same).
+const FUNCTION_MISSING = new Set(['PGRST202', '42883']);
 const COLUMN_MISSING = new Set(['PGRST204', '42703']);
 
 type DbError = { code?: string; message?: string } | null;
@@ -211,7 +216,7 @@ export async function POST(request: NextRequest) {
       redactionFailed = true;
     };
     const redact = (list: ChSignal[]) => list.map((s) => redactSignal(s, onRedactionError));
-    const plan = buildIngest({
+    const ingestInput = {
       signals: redact(batch.signals),
       context: redact(batch.context),
       ended: batch.ended,
@@ -219,7 +224,9 @@ export async function POST(request: NextRequest) {
       userId: user.id,
       now: Date.now(),
       serverRelease: process.env.NEXT_PUBLIC_SENTRY_RELEASE || null,
-    });
+    };
+    let routes = tryRoutesAt(Date.now());
+    let plan = buildIngest({ ...ingestInput, routes });
     if (redactionFailed) Sentry.captureMessage('Clubhouse signal route: redaction fell back to a placeholder', { level: 'warning', tags: { component: 'ch-signal-route' } });
 
     // The ingest function and admin_events don't share a transaction: counts are best-effort telemetry, a failure row
@@ -228,10 +235,20 @@ export async function POST(request: NextRequest) {
     // Failure rows first: they are the incident record, so a counts call the database rejects can't take them with it.
     const admin = await insertAdminRows(db, plan.adminRows, user);
     let held = false;
-    for (const session of plan.sessions) {
-      const { error } = await db.rpc('clubhouse_ingest_signals', { p_batch: session });
+    for (let i = 0; i < plan.sessions.length; i += 1) {
+      const fn = routes ? INGEST_V2 : INGEST_V1;
+      const { error } = await db.rpc(fn, { p_batch: plan.sessions[i] });
       if (!error) continue;
-      if ((error as DbError)?.code === FUNCTION_MISSING) {
+      if (FUNCTION_MISSING.has((error as DbError)?.code ?? '') && routes) {
+        // The route migration is held: the same batch, without screens, to the first function. A session v2 already
+        // stored is not sent again (v2 stores a whole session or none of it).
+        noteV2Missing(Date.now());
+        routes = false;
+        plan = buildIngest({ ...ingestInput, routes });
+        i -= 1;
+        continue;
+      }
+      if (FUNCTION_MISSING.has((error as DbError)?.code ?? '')) {
         held = true;
         break;
       }

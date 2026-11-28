@@ -11,6 +11,7 @@ vi.mock('@/lib/server-error-logger', () => ({ logServerError: vi.fn(async () => 
 vi.mock('@sentry/nextjs', () => ({ captureException: vi.fn(), captureMessage: vi.fn() }));
 
 import { POST } from '@/app/api/ch/signal/route';
+import { resetIngestVersionForTests, V2_RETRY_MS } from '@/lib/admin/clubhouse/ingest-version';
 import { loadBridgeGraph } from '@/lib/admin/clubhouse/graph-server';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { isFlagEnabled } from '@/lib/flags/is-enabled';
@@ -22,13 +23,15 @@ const USER = { id: '11111111-2222-4333-8444-555555555555', email: 'coach@example
 
 type Call = { op: string; table?: string; payload?: unknown; filters?: [string, string, unknown][] };
 
-function fakeDb(opts: { rpcError?: { code: string } | null; insertErrors?: ({ code: string } | null)[]; updateCount?: number } = {}) {
+function fakeDb(
+  opts: { rpcError?: { code: string } | null; rpcErrors?: Record<string, { code: string }>; insertErrors?: ({ code: string } | null)[]; updateCount?: number } = {},
+) {
   const calls: Call[] = [];
   const insertErrors = [...(opts.insertErrors ?? [])];
   const db = {
     rpc: vi.fn(async (name: string, args: unknown) => {
       calls.push({ op: 'rpc', table: name, payload: args });
-      return { data: {}, error: opts.rpcError ?? null };
+      return { data: {}, error: opts.rpcErrors?.[name] ?? opts.rpcError ?? null };
     }),
     from: vi.fn((table: string) => ({
       insert: vi.fn(async (payload: unknown) => {
@@ -73,6 +76,8 @@ describe('POST /api/ch/signal', () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.unstubAllEnvs();
+    vi.useRealTimers();
+    resetIngestVersionForTests();
   });
 
   it('does nothing while the kill switch is off', async () => {
@@ -181,7 +186,7 @@ describe('POST /api/ch/signal', () => {
     expect(await res.json()).toMatchObject({ accepted: 2, persisted: true, failures: 1 });
 
     const rpc = calls.find((c) => c.op === 'rpc')!;
-    expect(rpc.table).toBe('clubhouse_ingest_signals');
+    expect(rpc.table).toBe('clubhouse_ingest_signals_v2');
     const batch = (rpc.payload as { p_batch: { session: { user_id: string; failures: number }; events: { message: string | null }[] } }).p_batch;
     expect(batch.session).toMatchObject({ user_id: USER.id, failures: 1 });
     expect(batch.events[1]!.message).not.toContain('coach@example.test');
@@ -239,6 +244,54 @@ describe('POST /api/ch/signal', () => {
     expect(fallback).not.toHaveProperty('ch_code');
     expect(fallback.metadata).toMatchObject({ bridge: { code: 'CH-7004', bridgeId: 70603, sessionId: 'sess_12345678', seq: 1 } });
     expect(calls.some((c) => c.op === 'update')).toBe(false);
+  });
+
+  it('keeps the screen each row fired on through v2', async () => {
+    const calls = fakeDb();
+    await post({
+      signals: [
+        signal({ seq: 1, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm' }),
+        signal({ seq: 2, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm?view=ask' }),
+      ],
+    });
+    const rpcs = calls.filter((c) => c.op === 'rpc');
+    expect(rpcs.map((c) => c.table)).toEqual(['clubhouse_ingest_signals_v2']);
+    const hourly = (rpcs[0]!.payload as { p_batch: { hourly: { route: string }[] } }).p_batch.hourly;
+    expect(hourly.map((r) => r.route).sort()).toEqual(['/golf/dashboard/coachhelm', '/golf/dashboard/coachhelm?view=ask']);
+  });
+
+  it('while the route migration is held: sends the same batch without screens to the first function, and stays there a while', async () => {
+    vi.useFakeTimers({ now: Date.UTC(2026, 10, 28, 9), toFake: ['Date'] });
+    const calls = fakeDb({ rpcErrors: { clubhouse_ingest_signals_v2: { code: 'PGRST202' } } });
+    const batch = {
+      signals: [
+        signal({ seq: 1, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm' }),
+        signal({ seq: 2, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm?view=ask' }),
+      ],
+    };
+    const res = await post(batch);
+    expect(await res.json()).toMatchObject({ persisted: true });
+    let rpcs = calls.filter((c) => c.op === 'rpc');
+    expect(rpcs.map((c) => c.table)).toEqual(['clubhouse_ingest_signals_v2', 'clubhouse_ingest_signals']);
+    const hourly = (rpcs[1]!.payload as { p_batch: { hourly: { route: string; count: number }[] } }).p_batch.hourly;
+    expect(hourly.map((r) => [r.route, r.count])).toEqual([['', 2]]);
+
+    calls.length = 0;
+    await post(batch);
+    rpcs = calls.filter((c) => c.op === 'rpc');
+    expect(rpcs.map((c) => c.table)).toEqual(['clubhouse_ingest_signals']);
+
+    calls.length = 0;
+    vi.setSystemTime(Date.now() + V2_RETRY_MS);
+    await post(batch);
+    expect(calls.filter((c) => c.op === 'rpc')[0]!.table).toBe('clubhouse_ingest_signals_v2');
+  });
+
+  it('after the route migration is rolled back, before the schema cache reloads: the same fallback, nothing lost', async () => {
+    const calls = fakeDb({ rpcErrors: { clubhouse_ingest_signals_v2: { code: '42883' } } });
+    const res = await post({ signals: [signal({ seq: 1, kind: 'view', outcome: undefined, code: undefined, page: 'P013', route: '/golf/dashboard/coachhelm' })] });
+    expect(await res.json()).toMatchObject({ persisted: true });
+    expect(calls.filter((c) => c.op === 'rpc').map((c) => c.table)).toEqual(['clubhouse_ingest_signals_v2', 'clubhouse_ingest_signals']);
   });
 
   it('keeps the failure row and reports it when the counts call fails', async () => {

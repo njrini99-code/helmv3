@@ -5,6 +5,7 @@ import type { ChSignal, SignalKind, SignalOutcome } from '@/lib/admin/clubhouse/
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { CH_PHONE_QUERY } from './phone-query';
 import { pageForPath } from './signal-page';
+import { ROUTE_KEYS, routeForPath } from './signal-route';
 
 /**
  * Clubhouse signals, client side (Bridge plan §4.1-§4.4). A signal is one thing that happened on a Clubhouse page: a
@@ -67,12 +68,14 @@ export type ChSignalInput = {
   reported?: boolean;
   /** A page other than the shell's current one. */
   page?: string;
+  /** That page's route key (signal-route.ts), with `page`. */
+  route?: string;
 };
 
 /** What chReport carries as `chSignal`, so the route can find the row it wrote and stamp it. */
 export type ChSignalRef = { sessionId: string; seq: number; code?: string; page: string; act?: string };
 
-type Config = { enabled: boolean; role: SignalRole; teamId: string | null; page: string; userId: string | null };
+type Config = { enabled: boolean; role: SignalRole; teamId: string | null; page: string; route: string | null; userId: string | null };
 
 type Pending = {
   input: ChSignalInput;
@@ -80,6 +83,8 @@ type Pending = {
   at: number;
   trail: string[] | undefined;
   page: string | undefined;
+  /** The route key that goes with `page`, when the signal names its own page. */
+  route?: string;
   /** Where a held signal was sent from (path and query), so it keeps its own page if the shell configures elsewhere. */
   path?: string;
   /** A held chReport call (chSignalReport before the shell configured): run once, when the signal goes out or can't. */
@@ -234,6 +239,10 @@ function build(p: Pending, config: Config): ChSignal | null {
     reducedMotion: matches('(prefers-reduced-motion: reduce)'),
     animationsOff: typeof document !== 'undefined' && document.documentElement.dataset.motion === 'off',
   };
+  // The screen it fired on: the shell's, or the one that goes with a page the signal names. A key the list doesn't hold
+  // is left off, never sent as typed: a route key carries no id (signal-route.ts).
+  const route = p.page && PAGE.test(p.page) ? p.route : config.route;
+  if (route && ROUTE_KEYS.has(route)) env.route = route;
   if (code) env.code = code;
   if (input.outcome) env.outcome = input.outcome;
   if (input.surface && SURFACE.test(input.surface) && input.surface.length <= 80) env.surface = input.surface;
@@ -358,7 +367,7 @@ function listen(): void {
  * The shell's word on whether signals go out, and as whom. Called on every page, role or team change; the first call
  * with `enabled` sends what waited for it, and `enabled: false` drops everything queued.
  */
-export function configureSignals(next: { enabled: boolean; role: string; teamId?: string | null; page: string; userId?: string | null }): void {
+export function configureSignals(next: { enabled: boolean; role: string; teamId?: string | null; page: string; route?: string | null; userId?: string | null }): void {
   try {
     const role: SignalRole = next.role === 'coach' || next.role === 'player' ? next.role : 'signed-out';
     const userId = next.userId ?? null;
@@ -375,7 +384,7 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
         for (const p of state.pending) p.seq = state.session.seq++;
       } else state.session.user = userId;
     }
-    state.config = { enabled: next.enabled, role, teamId: next.teamId ?? null, page: next.page, userId };
+    state.config = { enabled: next.enabled, role, teamId: next.teamId ?? null, page: next.page, route: next.route ?? null, userId };
     if (!next.enabled) {
       // The signals are dropped; a report held with one still runs, without a place.
       const held = state.pending;
@@ -393,7 +402,7 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
     for (const p of waiting) {
       let ref: ChSignalRef | null = null;
       try {
-        p.page = heldPage(p, state.config);
+        held(p, state.config);
         const env = build(p, state.config);
         if (env) {
           enqueue(env);
@@ -438,7 +447,7 @@ function numbered(input: ChSignalInput): Pending {
   const trail = isFailure(input.kind, input.outcome) && state.trail.length ? state.trail.slice(-TRAIL_MAX) : undefined;
   noteSignalTrail(trailEntry(input));
   const { seq } = nextSeq();
-  const p: Pending = { input, seq, at: Date.now(), trail, page: input.page };
+  const p: Pending = { input, seq, at: Date.now(), trail, page: input.page, route: input.route };
   // Not configured yet: the signal may be held across a move to another page (a sign-in on the front door, then the
   // dashboard), so it keeps the address it was sent from.
   if (!state.config) p.path = here();
@@ -455,14 +464,17 @@ function here(): string | undefined {
 }
 
 /**
- * The page a held signal was sent from. On the address the shell configured on, the shell's own page (it knows whose
- * Stats these are); on another (a front-door page with no shell, left by a sign-in), that address's page, so a failed
- * sign-in counts under Auth and not under the Home it led to.
+ * The page and screen a held signal was sent from. On the address the shell configured on, the shell's own (it knows
+ * whose Stats these are); on another (a front-door page with no shell, left by a sign-in), that address's, so a failed
+ * sign-in counts under Auth and its sign-in screen, not under the Home it led to.
  */
-function heldPage(p: Pending, config: Config): string | undefined {
-  if (p.page || !p.path || p.path === here()) return p.page;
+function held(p: Pending, config: Config): void {
+  if (p.page || !p.path || p.path === here()) return;
   const at = p.path.indexOf('?');
-  return pageForPath(at < 0 ? p.path : p.path.slice(0, at), at < 0 ? '' : p.path.slice(at), config.role);
+  const path = at < 0 ? p.path : p.path.slice(0, at);
+  const search = at < 0 ? '' : p.path.slice(at);
+  p.page = pageForPath(path, search, config.role);
+  p.route = routeForPath(path, search) ?? undefined;
 }
 
 /** Keeps a signal for the shell's configure. The oldest go first when the buffer is full, their reports run then. */

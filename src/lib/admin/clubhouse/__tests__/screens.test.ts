@@ -117,7 +117,9 @@ describe('pages (B02, B12)', () => {
     const rows = pageRows(g);
     expect(sortPageRows(rows, 'gates')[0]!.gatesMet).toBe(0);
     expect(filterPageRows(g, rows, { ...DEFAULT_SCOPE, role: 'signed-out' }).map((r) => r.id)).toEqual(['P015']);
-    expect(filterPageRows(g, rows, { ...DEFAULT_SCOPE, role: 'coach' }).map((r) => r.id)).toEqual(['P007']);
+    // P007 by its roles, P013 by its coach-only screens (fixtureGraph); the shell and Practice list no screens.
+    expect(filterPageRows(g, rows, { ...DEFAULT_SCOPE, role: 'coach' }).map((r) => r.id)).toEqual(['P007', 'P013']);
+    expect(filterPageRows(g, rows, { ...DEFAULT_SCOPE, role: 'player' }).map((r) => r.id)).toEqual(['P007']);
   });
 
   it('reads manifest gate values as met, partial or open', () => {

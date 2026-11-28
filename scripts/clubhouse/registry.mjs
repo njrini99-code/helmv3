@@ -282,14 +282,15 @@ function routeToPage(route) {
 }
 
 /**
- * The pages that sit outside the dashboard (sign in, welcome, sign up, onboarding) are drawn for a visitor with no
- * role: a manifest marks them `"area": "auth"`. Their routes live under /golf/ in the (auth) or (onboarding) route
- * groups, and they have no roles.
+ * The pages that sit outside the dashboard (sign in, welcome, sign up, onboarding, the team and staff invitations) are
+ * drawn for a visitor with no role: a manifest marks them `"area": "auth"`. Their routes live under /golf/ in the (auth)
+ * or (onboarding) route groups, or straight under /golf/ for the invitations a code or link opens (/golf/join,
+ * /golf/staff/join/[token]), and they have no roles.
  */
 const AUTH_GROUPS = ['(auth)', '(onboarding)'];
 export function authRouteToPages(route) {
   const rest = route.replace(/^\/golf/, '').replace(/\?.*$/, '');
-  return AUTH_GROUPS.map((group) => join('src/app/golf', group, rest, 'page.tsx'));
+  return [...AUTH_GROUPS.map((group) => join('src/app/golf', group, rest, 'page.tsx')), join('src/app/golf', rest, 'page.tsx')];
 }
 
 // ── Who each screen is for (routing) ──

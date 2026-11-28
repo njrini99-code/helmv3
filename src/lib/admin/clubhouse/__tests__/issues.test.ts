@@ -167,9 +167,12 @@ describe('pageHealth and coverage', () => {
   });
   it('counts how much of Clubhouse reported, and names the pages that did not', () => {
     const c = coverageOf(health, graph);
-    expect(c).toEqual({ heard: 3, total: 4, silent: ['Shell'] });
-    expect(coverageWords(c)).toBe('Heard from 3 of 4 pages');
-    expect(coverageWords({ heard: 4, total: 4, silent: [] })).toBe('Heard from all 4 pages');
+    expect(c).toMatchObject({ heard: 3, total: 4, silent: ['Shell'] });
+    // Messages' one screen is heard; CoachHelm's coach rows fit both its screens, so neither is credited.
+    expect(c).toMatchObject({ screensHeard: 1, screensTotal: 3, untold: ['CoachHelm'] });
+    expect(coverageWords(c)).toBe('Heard from 3 of 4 pages and 1 of 3 screens');
+    expect(coverageWords({ heard: 4, total: 4 })).toBe('Heard from all 4 pages');
+    expect(coverageWords({ heard: 4, total: 4, screensHeard: 9, screensTotal: 9 })).toBe('Heard from all 4 pages and all 9 screens');
   });
   it('words a rate without inventing a zero', () => {
     expect(rateWords(null)).toBe('no views');
@@ -180,6 +183,11 @@ describe('pageHealth and coverage', () => {
   it('copies the Pages view as names and counts, never a person, and names the pages that stayed silent', () => {
     const report = pagesReport(health, { windowLabel: 'Today', pipeLabel: 'Signals arriving' });
     expect(report.split('\n')[2]).toBe('Heard from 3 of 4 pages · Signals arriving');
+    const withScreens = pagesReport(health, { windowLabel: 'Today', pipeLabel: 'Signals arriving', coverage: coverageOf(health, graph) });
+    expect(withScreens.split('\n')[2]).toBe('Heard from 3 of 4 pages and 1 of 3 screens · Signals arriving');
+    expect(withScreens).toContain('- **CoachHelm**: 4 views, no failures; screen not known yet');
+    expect(withScreens).toContain('Screens not heard from (2 of 3):\n- **CoachHelm**: CoachHelm home, Ask');
+    expect(withScreens).toContain('CoachHelm sent signals that do not say which screen');
     expect(report).toContain('- **Messages**: 20 views, 5 failures, 1 person hit (25% of views); most often CH-7004');
     expect(report).toContain('- **CoachHelm**: 4 views, no failures');
     expect(report).toContain('Not heard from (1): Shell.');
