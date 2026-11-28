@@ -137,6 +137,16 @@ transitions and unmanaged or undefined shadow tokens are compared with the
 immutable Git base; existing reviewed variants are retained by exact source
 identity. The default base is the merge base with `origin/main`.
 
+The ratchet counts are not compared with that base: each file's counts are
+held to `config/clubhouse/css-ratchet.json` in the same tree, and on a pull
+request CI checks the PR merged into current `main`. A PR whose own branch
+passes can still fail there when `main` lowered the same file in the meantime
+(the two records merge to a number neither tree has). Then merge
+`origin/main` into the branch, run `npm run clubhouse:css -- --ratchet`, which
+lowers the record to the merged counts and refuses to raise one, and commit
+the record; the failure prints these steps. Nothing in CI compares the record
+with `main`'s, so a record raised by hand is caught only in review.
+
 The performance reader consumes raw captures from the existing Clubhouse
 performance harness. It requires comparable CPU throttling, recorded dates,
 at least three unique samples per case and required metrics. It checks
