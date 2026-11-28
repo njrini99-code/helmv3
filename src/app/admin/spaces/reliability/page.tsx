@@ -36,12 +36,13 @@ import {
   windowTail,
   windowWords,
   type FeedItem,
+  type FeedRole,
   type FeedScope,
   type FeedView,
   type RoleCard,
 } from '@/lib/admin/clubhouse/feed';
 import { groupIssues, issuesReport, sparkFrame } from '@/lib/admin/clubhouse/issues';
-import { coverageOf, coverageWords, pageHealth, pagesReport } from '@/lib/admin/clubhouse/page-health';
+import { coverageOf, coverageWords, hourlyInScope, pageHealth, pagesReport } from '@/lib/admin/clubhouse/page-health';
 import { readErrorLogForSession, readEventByKey, readFailureCodeReleases, readFailures, readSessionsByIds, readTeamNames } from '@/lib/admin/clubhouse/feed-server';
 import { readHourly, readNotes, readPipe, readSessionEvents } from '@/lib/admin/clubhouse/live';
 import { OWNER_TONE } from '@/lib/admin/clubhouse/explain';
@@ -65,6 +66,8 @@ export const dynamic = 'force-dynamic';
 
 const DAY_MS = 24 * 3_600_000;
 const DEVICE_LABEL: Record<(typeof FEED_DEVICES)[number], string> = { all: 'Every device', 'ios-app': 'iOS app', 'ios-safari': 'iPhone Safari', desktop: 'Desktop', other: 'Other' };
+/** Who a role filter keeps, as the Pages view names it. */
+const ROLE_WORDS: Record<FeedRole, string> = { coach: 'Coaches', player: 'Players', 'signed-out': 'Signed out' };
 const STATE_TONE = { expected: 'muted', watching: 'watch', new: 'bad' } as const;
 const VIEW_LABEL: Record<FeedView, string> = { issues: 'Issues', pages: 'Pages', errors: 'Every error' };
 
@@ -198,8 +201,22 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
   const frame = sparkFrame(scope.w, now);
   const issues = groupIssues(issueItems, { w: scope.w, now });
   const health = hourly.state === 'ok' ? pageHealth(hourly.data, graph, { w: scope.w, now }) : [];
+  // Which pages reported at all, every role and device: what a "no errors" on any view is read against, so it never
+  // narrows with a filter (a coach-only page is not silent because Players is on).
   const coverage = hourly.state === 'ok' ? coverageOf(health, graph) : null;
-  const heardPages = health.filter((p) => p.lastAt !== null);
+  // The Pages list itself follows the role, device and page filter, as Issues and Every error do.
+  const pageScoped = scope.role !== 'all' || scope.pf !== 'all' || Boolean(scope.page);
+  const listHealth = hourly.state === 'ok' && pageScoped ? pageHealth(hourlyInScope(hourly.data, scope), graph, { w: scope.w, now }) : health;
+  const heardPages = listHealth.filter((p) => p.lastAt !== null);
+  const scopeWords = pageScoped
+    ? [
+        scope.role === 'all' ? null : ROLE_WORDS[scope.role],
+        scope.pf === 'all' ? null : DEVICE_LABEL[scope.pf],
+        scope.page ? (graph.pages[scope.page as keyof typeof graph.pages]?.name ?? scope.page) : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
 
   // The selected failure (Every error only): the URL's, else the newest in view. An older stored link is read on its own.
   let selected: FeedItem | null = view !== 'errors' ? null : scope.e ? (all.find((i) => i.key === eventKey(scope.e!)) ?? null) : (items[0] ?? null);
@@ -379,7 +396,9 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
       <PipeTruth pipe={pipe}>
         {view === 'pages' ? (
           <span>
-            {coverage ? coverageWords(coverage) : 'Pages not read'} {windowWords(scope.w)} · from the hourly store (clubhouse_signal_hourly), every signal counted
+            {coverage ? coverageWords(coverage) : 'Pages not read'} {windowWords(scope.w)}
+            {scopeWords ? ` · showing ${scopeWords}: ${heardPages.length} ${heardPages.length === 1 ? 'page' : 'pages'}` : ''} · from the hourly store
+            (clubhouse_signal_hourly), every signal counted
           </span>
         ) : (
           <span>
@@ -405,7 +424,7 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
               view === 'issues'
                 ? issuesReport(issues, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label })
                 : view === 'pages'
-                  ? pagesReport(health, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label, coverage })
+                  ? pagesReport(listHealth, { windowLabel: WINDOW_LABEL[scope.w], pipeLabel: pipe.label, coverage, filter: scopeWords })
                   : feedReport(items, summary, scope.w, pipe.label)
             }
             variant="labeled"
@@ -429,6 +448,13 @@ export default async function ReliabilitySpacePage({ searchParams }: { searchPar
           <>
             {heardPages.length ? (
               <PageList pages={heardPages} scope={scope} frame={frame} />
+            ) : scopeWords && coverage && coverage.heard > 0 ? (
+              <SpaceState br={BR.feed.empty} title={`No page sent a signal ${windowWords(scope.w)} for ${scopeWords}.`}>
+                {coverage.heard} {coverage.heard === 1 ? 'page' : 'pages'} did for everyone else.{' '}
+                <Link className="bs-link" href={feedHref(scope, { role: 'all', pf: 'all', page: null, e: null })} data-br={BR.feed.filter}>
+                  Clear the filters
+                </Link>
+              </SpaceState>
             ) : (
               <SpaceState br={pipe.untrusted ? BR.feed.noSignal : BR.feed.empty} title={`No page sent a signal ${windowWords(scope.w)}.`}>
                 {pipe.label}. With nothing arriving, no page can be called healthy.

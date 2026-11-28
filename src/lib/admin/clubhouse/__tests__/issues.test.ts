@@ -3,7 +3,7 @@ import { fixtureGraph } from './fixtures';
 import { NOW, HOUR, U, ev, h, session, LIVE_RELEASE, BASE_RELEASE } from './fixtures-live';
 import { buildFeed, feedHref, feedView, filterFeed, parseFeedScope, DEFAULT_FEED } from '../feed';
 import { bucketCounts, groupIssues, isRising, issuesReport, mostlyOf, sparkFrame, whoWords } from '../issues';
-import { coverageOf, coverageWords, pageHealth, pagesReport, rateWords } from '../page-health';
+import { coverageOf, coverageWords, hourlyInScope, pageHealth, pagesReport, rateWords } from '../page-health';
 import { EMPTY_NOTES } from '../notes';
 import type { SessionEventRow, SessionRow } from '../live-model';
 
@@ -192,6 +192,43 @@ describe('pageHealth and coverage', () => {
     expect(report).toContain('- **CoachHelm**: 4 views, no failures');
     expect(report).toContain('Not heard from (1): Shell.');
     for (const id of U) expect(report).not.toContain(id);
+  });
+});
+
+describe('the Pages view in a filter', () => {
+  const rows = [
+    h({ kind: 'view', outcome: '', page_id: 'P007', role: 'coach', platform: 'ios-safari', signal_count: 20, hoursAgo: 2 }),
+    h({ kind: 'action', outcome: 'failure', code: 'CH-7004', page_id: 'P007', role: 'coach', platform: 'ios-safari', signal_count: 5, hoursAgo: 0 }),
+    h({ kind: 'view', outcome: '', page_id: 'P007', role: 'player', platform: 'ios-app', signal_count: 3, user_ids: [U[3]!], hoursAgo: 1 }),
+    h({ kind: 'view', outcome: '', page_id: 'P013', role: 'coach', platform: 'desktop', signal_count: 4, hoursAgo: 3 }),
+  ];
+  const all = { role: 'all', pf: 'all', page: null } as const;
+
+  it('keeps the rows the role, device and page filter keep, as filterFeed does for Issues and Every error', () => {
+    expect(hourlyInScope(rows, all)).toHaveLength(4);
+    expect(hourlyInScope(rows, { ...all, role: 'player' }).map((r) => r.page_id)).toEqual(['P007']);
+    expect(hourlyInScope(rows, { ...all, pf: 'desktop' }).map((r) => r.page_id)).toEqual(['P013']);
+    expect(hourlyInScope(rows, { ...all, page: 'P013' }).map((r) => r.kind)).toEqual(['view']);
+    expect(hourlyInScope(rows, { role: 'coach', pf: 'ios-safari', page: 'P007' }).map((r) => r.signal_count)).toEqual([20, 5]);
+  });
+
+  it("counts a page from the filter's rows only: Players see Messages' player views, none of the coaches' failures", () => {
+    const players = pageHealth(hourlyInScope(rows, { ...all, role: 'player' }), graph, { w: 'today', now: NOW });
+    expect(players.find((p) => p.page === 'P007')).toMatchObject({ views: 3, failures: 0, people: 1 });
+    expect(players.filter((p) => p.lastAt !== null).map((p) => p.page)).toEqual(['P007']);
+  });
+
+  it('copies the filtered list, and calls silent only the pages that sent nothing for anyone', () => {
+    const health = pageHealth(rows, graph, { w: 'today', now: NOW });
+    const coverage = coverageOf(health, graph);
+    const desktop = pageHealth(hourlyInScope(rows, { ...all, pf: 'desktop' }), graph, { w: 'today', now: NOW });
+    const report = pagesReport(desktop, { windowLabel: 'Today', pipeLabel: 'Signals arriving', coverage, filter: 'Desktop' });
+    expect(report).toContain('Showing Desktop: 1 page.');
+    expect(report).toContain('- **CoachHelm**: 4 views');
+    expect(report).not.toContain('- **Messages**');
+    // Messages reported, just not on a desktop: it is not silent. Only the two pages nobody opened are.
+    expect(report).toContain(`Not heard from (${coverage.silent.length}): ${coverage.silent.join(', ')}.`);
+    expect(coverage.silent).not.toContain('Messages');
   });
 });
 

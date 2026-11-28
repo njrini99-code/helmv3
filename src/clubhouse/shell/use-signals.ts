@@ -2,7 +2,7 @@
 
 import { useReportWebVitals } from 'next/web-vitals';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { chSignal, configureSignals, flushSignals } from '../lib/signal';
+import { chSignal, configureSignals, flushSignals, suspendSignals } from '../lib/signal';
 import { pageForPath } from '../lib/signal-page';
 import { routeForPath } from '../lib/signal-route';
 
@@ -93,8 +93,9 @@ export function resetVitalsForTests(): void {
  * - E8: three clicks inside 600 ms on the same thing that isn't a working control (a disabled button, a label that looks
  *   like one) is a rage click, CH-1951. A text selection (a triple-click to select a paragraph) is not.
  *
- * The front door mounts it too (GateSignals), with `hold` while nobody is signed in: then it tells the queue nothing, so
- * what happens there waits in memory and nothing leaves the browser until a sign-in says whose it is. The view a
+ * The front door mounts it too (GateSignals), with `hold` while nobody is signed in: then the queue forgets whoever it
+ * was configured for, so what happens there waits in memory and nothing leaves the browser until a sign-in says whose
+ * it is. The view a
  * sign-in finds already counted on its page is not counted again.
  */
 export function useChSignals({ enabled, hold = false, role, teamId, userId = null, pathname, search }: { enabled: boolean; hold?: boolean; role: string; teamId: string | null; userId?: string | null; pathname: string; search: string }): void {
@@ -121,7 +122,10 @@ export function useChSignals({ enabled, hold = false, role, teamId, userId = nul
   // the queue is configured and the view counted before anything the new page sends. (A crash's componentDidCatch runs
   // in the same layout phase, before this; chSignalReport holds its report until configure.)
   useLayoutEffect(() => {
-    if (!hold) configureSignals({ enabled, role, teamId, page, route, userId });
+    // Held: the queue forgets whoever it was configured for (a sign-out that moved here without a reload), so nothing
+    // here goes out as them; a queue never configured has nothing to forget.
+    if (hold) suspendSignals();
+    else configureSignals({ enabled, role, teamId, page, route, userId });
     if (!enabled) return undefined;
     const path = here;
     // A sign-in on the page whose view was held: that view goes out now as theirs, so this is not another one.
