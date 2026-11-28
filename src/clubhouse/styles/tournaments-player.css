@@ -295,7 +295,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-pl-res__open {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -326,7 +326,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-pl-res__tot {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
@@ -383,7 +383,7 @@
 }
 .ch-tour-pl-row__t b,
 .ch-tour-pl-row__r b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);

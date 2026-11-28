@@ -505,7 +505,8 @@
   align-items: center;
   gap: 8px;
   margin: 24px 0 8px;
-  font: var(--ch-type-figure);
+  font: var(--ch-type-subhead);
+  font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   font-variant-numeric: tabular-nums;
   color: var(--ch-green-700);

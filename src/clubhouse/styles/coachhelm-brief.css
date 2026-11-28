@@ -148,7 +148,7 @@
   color: var(--ch-warning-600);
 }
 .ch-hmb-row__t {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);

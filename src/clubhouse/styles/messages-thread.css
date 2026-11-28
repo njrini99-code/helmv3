@@ -185,7 +185,7 @@
   letter-spacing: var(--ch-track-20);
 }
 [data-ch-ms-v2] .ch-msv-hello > small {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }

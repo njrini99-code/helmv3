@@ -953,7 +953,7 @@
 }
 .ch-lgr__title {
   overflow: hidden;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -1178,7 +1178,7 @@ button.ch-feat {
 .ch-intro__brief {
   margin: 0;
   max-width: 60ch;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -1740,7 +1740,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-zn__def {
   margin: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -1811,7 +1811,7 @@ html[data-fw-theme='dark'] .ch-scoreboard .ch-score--double {
 }
 .ch-znb h3 {
   margin: 0 0 4px;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);

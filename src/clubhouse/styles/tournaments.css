@@ -265,7 +265,7 @@
   min-width: 0;
 }
 .ch-tour-led__open {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -297,7 +297,7 @@
   color: var(--ch-text-secondary);
 }
 .ch-tour-led__fin {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
@@ -360,7 +360,7 @@
   display: block;
 }
 .ch-tour-led__m b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);

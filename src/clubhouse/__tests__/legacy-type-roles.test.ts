@@ -22,6 +22,16 @@ describe('type roles (MOTION-AND-VISUAL 4.3)', () => {
     expect(tokens).toMatch(/--ch-type-figure-hero: 600 calc\(56 \* var\(--ch-type-k\)\)\/1/);
     expect(tokens).toMatch(/--ch-type-figure-hero: 600 calc\(44 \* var\(--ch-type-k\)\)\/1/);
   });
+  it('the subhead is 15/20 on phone and desk, a step under the phone body (dsx-07)', () => {
+    // The 15 step's reads sit on it, so secondary text keeps its 15 on a phone, where the body is 17/24.
+    const subhead = /--ch-type-subhead: (\d{3}) calc\(15 \* var\(--ch-type-k\)\)\/calc\(20 \* var\(--ch-type-k\)\) var\(--ch-font-sans\);/g;
+    expect([...tokens.matchAll(subhead)].map((m) => m[1])).toEqual(['400', '450']);
+    const phone = tokens.match(/\/\* The nine roles on a phone[\s\S]*?\n\}\n/)?.[0] ?? '';
+    expect(phone).toMatch(/--ch-type-body: 400 calc\(17 /);
+    expect(phone).not.toMatch(/--ch-type-subhead:/);
+    const oneX = tokens.match(/@media \(max-resolution: 1\.5dppx\) \{[\s\S]*?\n\}\n/)?.[0] ?? '';
+    expect(oneX).toMatch(/--ch-type-subhead: 450 /);
+  });
   it('no older named role is defined or read anywhere in Clubhouse', () => {
     expect(hits(OLD, walk(ROOT, /\.(tsx?|css)$/))).toEqual([]);
   });

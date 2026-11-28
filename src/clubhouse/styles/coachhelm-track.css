@@ -56,7 +56,7 @@
   white-space: nowrap;
 }
 .ch-htr-fig span {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
@@ -71,7 +71,7 @@
 }
 /* Under the figure the sentence is the supporting line, not a second headline. */
 .ch-htr-prog.is-under {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
   text-wrap: pretty;
@@ -79,7 +79,7 @@
 .ch-htr-note,
 .ch-htr-corr {
   max-width: 64ch;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -117,14 +117,14 @@
 .ch-htr-rung__w {
   grid-area: w;
   align-self: start;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-htr-rung__l {
   grid-area: l;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -151,14 +151,14 @@
 }
 .ch-htr-rung.is-none .ch-htr-rung__w,
 .ch-htr-fam.is-none .ch-htr-fam__n {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
 .ch-htr-rung.is-none .ch-htr-rung__l,
 .ch-htr-fam.is-none .ch-htr-fam__l {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
@@ -209,13 +209,13 @@
   border-top: 0;
 }
 .ch-htr-fam__n {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
 .ch-htr-fam__l {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);

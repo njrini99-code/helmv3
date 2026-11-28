@@ -85,7 +85,7 @@
 /* The Surface keeps its own head and body (ui.css): only the section's stack inside the body is laid out here. */
 .ch-hr-body { display: flex; flex-direction: column; gap: 16px; }
 .ch-hr-aside { font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); color: var(--ch-text-tertiary); white-space: nowrap; }
-.ch-hr-p { margin: 0; font: var(--ch-type-body); letter-spacing: var(--ch-track-15); color: var(--ch-text-secondary); text-wrap: pretty; }
+.ch-hr-p { margin: 0; font: var(--ch-type-subhead); letter-spacing: var(--ch-track-15); color: var(--ch-text-secondary); text-wrap: pretty; }
 
 /* measured: the number and its label on one baseline, the window under it */
 .ch-hr-sec .ch-hd-meas { display: flex; flex-direction: column; gap: 2px; margin: 0; padding: 0; background: none; box-shadow: none; }
@@ -162,7 +162,7 @@
 }
 .ch-hr-week { margin: 0; padding: 0; border: 0; background: none; box-shadow: none; }
 .ch-hr-week p { margin: 0; }
-.ch-hr-week .ch-hl-week__t { margin-bottom: 4px; font: var(--ch-type-body); letter-spacing: var(--ch-track-15); }
+.ch-hr-week .ch-hl-week__t { margin-bottom: 4px; font: var(--ch-type-subhead); letter-spacing: var(--ch-track-15); }
 .ch-hr-week p + p { font: var(--ch-type-callout); font-weight: var(--ch-fw-400); color: var(--ch-text-secondary); }
 
 /* is this right: the chips flush on the page, at the end */

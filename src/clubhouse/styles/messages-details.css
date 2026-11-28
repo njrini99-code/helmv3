@@ -103,7 +103,7 @@
   color: var(--ch-text-primary);
 }
 [data-ch-ms-v2] .ch-msd-hero > span {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
@@ -148,7 +148,7 @@
 }
 /* The header's quiet note ("Players you haven't messaged"): 15k, ink-2, on the header's baseline. */
 [data-ch-ms-v2] .ch-msd-lcard__h > small {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }
@@ -193,7 +193,7 @@
   letter-spacing: 0;
 }
 [data-ch-ms-v2] .ch-msd-lcard__h > .ch-num {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-accent-ink);
 }
@@ -211,7 +211,7 @@
   border: 0;
   background: none;
   color: var(--ch-accent-ink);
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   cursor: pointer;
@@ -243,7 +243,7 @@
 }
 [data-ch-ms-v2] .ch-msd-seeall {
   color: var(--ch-accent-ink);
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
 }
@@ -275,7 +275,7 @@
 }
 [data-ch-ms-v2] .ch-msd-class__t {
   min-width: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -564,7 +564,7 @@
 }
 .ch-msd-vg__name {
   overflow: hidden;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   text-overflow: ellipsis;
@@ -697,7 +697,7 @@
   letter-spacing: -0.015em;
 }
 [data-ch-ms-v2] .ch-msd-hello > small {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-tertiary);
 }

@@ -141,7 +141,7 @@
   gap: 4px;
 }
 .ch-hv-link b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }

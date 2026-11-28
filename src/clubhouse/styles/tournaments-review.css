@@ -74,7 +74,7 @@
   gap: 8px;
 }
 .ch-tour-rev-note__n {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -155,7 +155,7 @@
 }
 .ch-tour-rev-trend__t {
   margin: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);

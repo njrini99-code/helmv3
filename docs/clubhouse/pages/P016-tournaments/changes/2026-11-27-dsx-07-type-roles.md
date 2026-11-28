@@ -20,8 +20,10 @@ Held items: none
   `--ch-fw-*`, so emphasis and hierarchy hold.
 - Sizes move by at most 2px; most are unchanged on a desk (12, 13, 14, 15
   and 16 map onto roles of the same size). On a phone shared rules take the
-  role's phone size (body and headline 17, callout 15), as the type system
-  sets.
+  role's phone size (headline 17, callout 15), as the type system sets. The
+  15 step reads the subhead, `--ch-type-subhead` (15/20 on phone and desk),
+  not the body, so secondary text keeps its 15 on a phone, a step under the
+  17 body, and its 20 leading on a desk.
 
 ### Why
 

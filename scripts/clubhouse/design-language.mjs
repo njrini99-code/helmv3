@@ -190,6 +190,7 @@ const TYPE = [
   ['--ch-type-figure', 'Row figure, tabular: scores and averages in rows'],
   ['--ch-type-display', 'Display (Title 1): a heading or big figure inside a card, at 28'],
   ['--ch-type-display-xl', 'Display large (Large Title): the same at 34'],
+  ['--ch-type-subhead', 'Subhead (Subheadline): a row name, a second line, a label or a row figure at 15, under the phone body'],
 ];
 
 function colourOf(tokens, name, theme) {

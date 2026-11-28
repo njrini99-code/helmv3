@@ -445,6 +445,10 @@
      page title (that is large-title). Weight is set by the rule through --ch-fw-*. */
   --ch-type-display: 600 calc(28 * var(--ch-type-k))/calc(34 * var(--ch-type-k)) var(--ch-font-sans);
   --ch-type-display-xl: 600 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
+  /* The subhead (dsx-07): a row's name, a secondary line, a label or a row figure at 15/20 (Apple's Subheadline), the
+     same on phone and desk. It sits a step under the phone's 17 body, so phone secondary text keeps its hierarchy; the
+     body is 15/22 on a desk and 17/24 on a phone. Weight is set by the rule through --ch-fw-*. */
+  --ch-type-subhead: 400 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
 
   /* Space and layout */
   /* B2: the spacing scale (a 4px grid with 2 and 6 for tight pairs). A stylesheet in spacing-scale.test.ts's MIGRATED
@@ -1572,7 +1576,8 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
 }
 
 /* The nine roles on a phone (MOTION-AND-VISUAL 4.3): large title 34/41, headline 17/22, body 17/24, callout 15/20,
-   hero figure 44, row figure 17/22; title, footnote and caption are the same on both. */
+   hero figure 44, row figure 17/22; title, footnote and caption are the same on both, as are the display pair and the
+   subhead (dsx-07). */
 @media (max-width: 820px), (max-height: 500px) and (pointer: coarse) {
   [data-ui='clubhouse'] {
     --ch-type-large-title: 700 calc(34 * var(--ch-type-k))/calc(41 * var(--ch-type-k)) var(--ch-font-sans);
@@ -1714,6 +1719,7 @@ html[data-fw-theme='dark']:has([data-ui='clubhouse']) body {
     --ch-type-callout: 560 calc(14 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
     /* dsx-07: a rule that reads a role and keeps its old weight through --ch-fw-400/500 gets the same 1x lift. */
     --ch-type-body: 450 calc(15 * var(--ch-type-k))/calc(22 * var(--ch-type-k)) var(--ch-font-sans);
+    --ch-type-subhead: 450 calc(15 * var(--ch-type-k))/calc(20 * var(--ch-type-k)) var(--ch-font-sans);
     --ch-fw-400: 450;
     --ch-fw-500: 560;
   }

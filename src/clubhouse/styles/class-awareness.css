@@ -46,7 +46,7 @@
 }
 .ch-ca-row__name {
   overflow: hidden;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -113,7 +113,7 @@
   min-width: 0;
 }
 .ch-ca-home__l1 {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   overflow-wrap: anywhere;
@@ -387,7 +387,7 @@
   min-height: 96px;
 }
 .ch-ca-panel > h2 {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
@@ -403,7 +403,7 @@
   color: var(--ch-ink-500);
 }
 .ch-ca-panel__top p {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -435,7 +435,7 @@
   gap: var(--ch-space-4);
 }
 .ch-ca-panel__row p {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -456,7 +456,7 @@
   padding-top: var(--ch-space-1);
   border-top: var(--ch-hairline-w) solid var(--ch-border-hairline);
   color: var(--ch-text-primary);
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   text-align: start;
   cursor: pointer;
@@ -507,7 +507,7 @@
   gap: var(--ch-space-3);
   min-height: 52px;
   color: var(--ch-text-primary);
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   cursor: pointer;
 }

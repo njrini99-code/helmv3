@@ -2238,7 +2238,7 @@ html[data-fw-theme='dark'] .ch-cl-ok__ic {
 .ch-cl-dhero__n {
   font: var(--ch-type-title); letter-spacing: var(--ch-track-20); }
 .ch-cl-dhero em {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   color: var(--ch-text-secondary); letter-spacing: var(--ch-track-15); }
 .ch-cl-facts.is-grid {
   display: grid;
@@ -2447,7 +2447,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
 }
 [data-ch-crh='on'] .ch-cl-term__soon dd {
   margin: 4px 0 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   display: -webkit-box;
   overflow: hidden;
@@ -2547,7 +2547,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
 }
 .ch-cl-card__prof {
   overflow: hidden;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-style: italic;
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
@@ -2602,7 +2602,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   padding: 12px;
   border-radius: var(--ch-radius-md);
   box-shadow: inset 0 0 0 var(--ch-hairline-w) var(--ch-cl-tb);
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -2614,7 +2614,7 @@ html[data-fw-theme='dark'] .ch-cl[data-ch-crh='on'] {
   min-width: 0;
   padding-top: 12px;
   border-top: 1px dashed var(--ch-cl-tb);
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }

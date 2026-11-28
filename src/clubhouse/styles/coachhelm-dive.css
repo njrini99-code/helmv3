@@ -45,7 +45,7 @@
   padding: 0 6px;
 }
 .ch-hd-grp h3 {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: -0.01em;
 }
@@ -139,7 +139,7 @@
   text-wrap: pretty;
 }
 .ch-hd-it__v {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
@@ -270,7 +270,7 @@
 .ch-hd-read dd {
   margin: 0;
   max-width: 62ch;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
@@ -355,7 +355,7 @@
 }
 .ch-hd-meas__v span {
   max-width: 40ch;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
@@ -412,7 +412,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-tr li > b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-hd-fig);
@@ -574,7 +574,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-r__s {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
@@ -686,7 +686,7 @@
 }
 .ch-hd-why {
   max-width: 62ch;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-700);
   text-wrap: pretty;
@@ -754,7 +754,7 @@
   color: var(--ch-text-tertiary);
 }
 .ch-hd-plan__b b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   text-wrap: pretty;

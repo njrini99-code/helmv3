@@ -45,7 +45,7 @@ section.ch-lv-card {
   margin: 0;
   flex: 1 1 auto;
   min-width: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -186,7 +186,7 @@ section.ch-lv-card {
   background: var(--ch-bg-selected);
 }
 .ch-lv-lane.is-selected .ch-lv-name {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
@@ -210,7 +210,7 @@ section.ch-lv-card {
 }
 .ch-lv-name {
   overflow: hidden;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -594,7 +594,7 @@ section.ch-lv-card {
 }
 .ch-lv-empty__title {
   margin: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-ink-500);
 }
@@ -622,7 +622,7 @@ section.ch-lv-card {
 }
 .ch-lv-panel__title {
   margin: 0 0 var(--ch-space-3);
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -665,7 +665,7 @@ section.ch-lv-card {
 }
 .ch-lv-figure__side {
   display: grid;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }
@@ -823,7 +823,7 @@ section.ch-lv-card {
   color: var(--ch-ink-600);
 }
 .ch-lv-peek b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
@@ -864,7 +864,7 @@ section.ch-lv-card {
   color: var(--ch-score-under);
 }
 .ch-lv-own__thru {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-primary);
 }

@@ -132,7 +132,7 @@
   gap: 8px;
 }
 .ch-th-think {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -148,7 +148,7 @@
 }
 .ch-th-note {
   max-width: 68ch;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -548,7 +548,7 @@
 .ch-th-rank__name {
   position: relative;
   min-width: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   color: inherit;
@@ -606,7 +606,7 @@ a.ch-th-rank__name::after {
 .ch-th-rank__val {
   min-width: 48px;
   text-align: right;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
@@ -744,7 +744,7 @@ a.ch-th-reads__r:focus-visible {
   color: var(--ch-text-tertiary);
 }
 .ch-th-reads__b b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-500);
   letter-spacing: var(--ch-track-15);
   overflow-wrap: anywhere;
@@ -1134,7 +1134,7 @@ a.ch-th-reads__r:focus-visible {
   display: grid;
   grid-template-columns: 120px minmax(0, 1fr);
   gap: 12px;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
 }
 .ch-th-act__facts > div + div {
@@ -1156,7 +1156,7 @@ a.ch-th-reads__r:focus-visible {
 }
 .ch-th-act__sum {
   padding: 16px 20px 6px;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   letter-spacing: var(--ch-track-15);
   color: var(--ch-text-secondary);
 }
@@ -1269,7 +1269,7 @@ a.ch-th-reads__r:focus-visible {
   background: var(--ch-chart-loss);
 }
 .ch-th-receipt__title {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }
@@ -1349,7 +1349,7 @@ a.ch-th-reads__r:focus-visible {
   min-width: 0;
 }
 .ch-th-evp__titles b {
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }

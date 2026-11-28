@@ -132,7 +132,7 @@
 }
 .ch-hs-r__h h3 {
   margin: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
   text-wrap: balance;
@@ -594,7 +594,7 @@
 }
 .ch-hs-ld__h h3 {
   margin: 0;
-  font: var(--ch-type-body);
+  font: var(--ch-type-subhead);
   font-weight: var(--ch-fw-600);
   letter-spacing: var(--ch-track-15);
 }

@@ -248,7 +248,7 @@ html[data-fw-theme='dark'] .ch-qck.is-desk .hkey__disc { background: rgb(107 187
 [data-ui='clubhouse'] .ch-landslot { position: relative; }
 [data-ui='clubhouse'] .ch-landslot__tint { position: absolute; inset: 0; border-radius: inherit; background: var(--ch-accent-tint); opacity: 0; pointer-events: none; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 [data-ui='clubhouse'] .ch-landslot[data-phase='saved'] .ch-landslot__tint { opacity: 1; }
-[data-ui='clubhouse'] .ch-landslot__t { font: var(--ch-type-body); font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-ui='clubhouse'] .ch-landslot__t { font: var(--ch-type-subhead); font-weight: var(--ch-fw-500); letter-spacing: var(--ch-track-15); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 [data-ui='clubhouse'] .ch-landslot__s { display: grid; font: var(--ch-type-footnote); font-weight: var(--ch-fw-400); letter-spacing: var(--ch-track-13); }
 [data-ui='clubhouse'] .ch-landslot__s > span { grid-area: 1 / 1; opacity: 0; transition: opacity var(--ch-dur-quick) var(--ch-ease-out); }
 [data-ui='clubhouse'] .ch-landslot__s > span[data-on] { opacity: 1; }
