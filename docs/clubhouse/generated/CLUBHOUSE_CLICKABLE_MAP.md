@@ -2975,8 +2975,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/ui/HeaderToolbar.tsx`
 
-- CTL-P000-055 139 `IconButton` "Clear selection" (button, onClick)
-- CTL-P000-056 154 `IconButton` "More" (button)
+- CTL-P000-055 170 `IconButton` "Clear selection" (button, onClick)
+- CTL-P000-056 185 `IconButton` "More" (button)
 
 ### `src/clubhouse/ui/Ledger.tsx`
 

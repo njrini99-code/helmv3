@@ -41,7 +41,8 @@ const TOOL =
 /**
  * The header's toolbar (WAI-ARIA toolbar): one Tab stop for the group, the arrow keys walk its controls, Home and End
  * jump; a single control is left as it is (a toolbar of one is just a button). With a `selection` of one or more it
- * shows the count and the selection's actions instead, announced politely, and Escape ends the selection.
+ * shows the count and the selection's actions instead, announced politely (the first count too), and Escape ends the
+ * selection; ending it from inside the toolbar leaves the focus on the toolbar, not on the page.
  */
 export function HeaderToolbar({
   label,
@@ -51,6 +52,8 @@ export function HeaderToolbar({
   className,
 }: ToolbarProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  /** Set when the selection is ended from inside the toolbar, whose controls then unmount under the focus. */
+  const refocus = useRef(false);
   const selecting = !!selection && selection.count > 0;
   const many =
     Children.toArray(children).filter(isValidElement).length +
@@ -100,11 +103,33 @@ export function HeaderToolbar({
     };
   }, [many, selecting]);
 
+  // Escape or Clear selection swaps the selection's controls out from under the focus, which would drop it to <body>.
+  // It lands on the toolbar's stop instead (after the roving effect above has set it), unless it already went somewhere.
+  useEffect(() => {
+    const wanted = refocus.current;
+    refocus.current = false;
+    if (selecting || !wanted) return;
+    const at = document.activeElement;
+    if (at && at !== document.body && at.isConnected) return;
+    const el = ref.current;
+    const tools = el
+      ? Array.from(el.querySelectorAll<HTMLElement>(TOOL)).filter(
+          (t) => t.closest("[data-ch-toolbar]") === el,
+        )
+      : [];
+    (tools.find((t) => t.tabIndex === 0) ?? tools[0])?.focus();
+  }, [selecting]);
+
+  const clear = () => {
+    refocus.current = !!ref.current?.contains(document.activeElement);
+    selection?.onClear();
+  };
+
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
     if (e.key === "Escape" && selecting) {
       e.preventDefault();
-      selection!.onClear();
+      clear();
       return;
     }
     // A key typed into a field inside the toolbar (a search) stays the field's.
@@ -122,25 +147,31 @@ export function HeaderToolbar({
     all[to]?.focus();
   };
 
-  if (!children && !overflow?.length && !selecting) return null;
+  // A toolbar that can select keeps its live region mounted (empty at rest), so the first count is announced: a region
+  // that arrives already holding its words is not read.
+  if (!children && !overflow?.length && !selection) return null;
   const n = selection?.count ?? 0;
   const body = (
     <>
+      {selection && (
+        <span
+          className={selecting ? "ch-head__count ch-num" : "ch-sr-only"}
+          role="status"
+          aria-live="polite"
+        >
+          {selecting
+            ? `${n} ${n === 1 ? selection.noun[0] : selection.noun[1]} selected`
+            : ""}
+        </span>
+      )}
       {selecting ? (
         <>
-          <span
-            className="ch-head__count ch-num"
-            role="status"
-            aria-live="polite"
-          >
-            {n} {n === 1 ? selection!.noun[0] : selection!.noun[1]} selected
-          </span>
           {selection!.actions}
           <IconButton
             data-ctl="CTL-P000-055"
             icon={X}
             label="Clear selection"
-            onClick={selection!.onClear}
+            onClick={clear}
           />
         </>
       ) : (

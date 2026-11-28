@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EntityHeader, PageHeader, SectionHeader } from '../Header';
 import { HeaderToolbar } from '../HeaderToolbar';
@@ -114,9 +115,56 @@ describe('the contextual toolbar', () => {
     expect(onClear).toHaveBeenCalledTimes(1);
   });
 
-  it('with nothing selected it shows its usual actions', () => {
+  it('with nothing selected it shows its usual actions, and no count', () => {
     render(<Tools selection={{ count: 0, noun: ['player', 'players'], actions: <button type="button">Message</button>, onClear: () => {} }} />);
     expect(screen.getByRole('button', { name: 'Invite' })).toBeInTheDocument();
-    expect(screen.queryByRole('status')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Message' })).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent(/^$/);
+  });
+
+  it('announces the first count: its live region is in the page before anything is selected', () => {
+    const selection = (count: number) => ({ count, noun: ['player', 'players'] as [string, string], actions: <button type="button">Message</button>, onClear: () => {} });
+    const { rerender } = render(<Tools selection={selection(0)} />);
+    const region = screen.getByRole('status');
+    expect(region).toHaveAttribute('aria-live', 'polite');
+    rerender(<Tools selection={selection(1)} />);
+    // The same node, now holding the words, so a screen reader reads the change.
+    expect(screen.getByRole('status')).toBe(region);
+    expect(region).toHaveTextContent('1 player selected');
+    rerender(<Tools selection={selection(2)} />);
+    expect(region).toHaveTextContent('2 players selected');
+  });
+
+  /** A page that owns the selection, as a roster does: clearing it brings the usual actions back. */
+  function Selecting() {
+    const [count, setCount] = useState(2);
+    return <Tools selection={{ count, noun: ['player', 'players'], actions: <button type="button">Message</button>, onClear: () => setCount(0) }} />;
+  }
+
+  it('Escape ends the selection and leaves the focus on the toolbar, not on the page', () => {
+    render(<Selecting />);
+    const msg = screen.getByRole('button', { name: 'Message' });
+    msg.focus();
+    fireEvent.keyDown(msg, { key: 'Escape' });
+    expect(screen.queryByRole('button', { name: 'Message' })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Invite' }));
+  });
+
+  it('Clear selection, pressed from the keyboard, leaves the focus on the toolbar too', () => {
+    render(<Selecting />);
+    const clear = screen.getByRole('button', { name: 'Clear selection' });
+    clear.focus();
+    fireEvent.click(clear);
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Invite' }));
+  });
+
+  it('a selection cleared from elsewhere (the last row unticked) does not pull the focus into the toolbar', () => {
+    const outside = document.createElement('button');
+    document.body.appendChild(outside);
+    const { rerender } = render(<Tools selection={{ count: 1, noun: ['player', 'players'], actions: null, onClear: () => {} }} />);
+    outside.focus();
+    rerender(<Tools selection={{ count: 0, noun: ['player', 'players'], actions: null, onClear: () => {} }} />);
+    expect(document.activeElement).toBe(outside);
+    outside.remove();
   });
 });
