@@ -1125,7 +1125,7 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
     expect(nav.parentElement!.firstElementChild).toBe(nav);
     expect(nav.closest('.ch-h-dash')!.previousElementSibling?.className).toMatch(/ch-h-head/);
     const links = within(nav).getAllByRole('link');
-    // Each card's count is its figure; the link is named with the count and its words.
+    // Each card's count is its figure; the link is named with the count, its words and its verb.
     expect(links.map((a) => [a.querySelector('.ch-h-qc__n')!.textContent, a.getAttribute('href')])).toEqual([
       ['1', '/golf/dashboard/roster?tab=requests'],
       ['3', '/golf/dashboard/calendar'],
@@ -1133,10 +1133,10 @@ describe('Home · the team’s game and what’s waiting on the coach (spec B)',
       ['1', '/golf/dashboard/team-hub?tab=ann'],
     ]);
     expect(links.map((a) => [a.getAttribute('aria-label'), a.getAttribute('href')])).toEqual([
-      ['1 join request', '/golf/dashboard/roster?tab=requests'],
-      ['3 replies missing', '/golf/dashboard/calendar'],
-      ['2 tasks overdue', '/golf/dashboard/team-hub?tab=tasks'],
-      ['1 post awaiting acknowledgement', '/golf/dashboard/team-hub?tab=ann'],
+      ['1 join request, Review', '/golf/dashboard/roster?tab=requests'],
+      ['3 replies missing, See who', '/golf/dashboard/calendar'],
+      ['2 tasks overdue, Review', '/golf/dashboard/team-hub?tab=tasks'],
+      ['1 post awaiting acknowledgement, See who', '/golf/dashboard/team-hub?tab=ann'],
     ]);
     expect(links[1]!.getAttribute('title')).toBe('across 2 events');
   });

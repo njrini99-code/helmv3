@@ -314,12 +314,14 @@ journeys:
         observable_signals:
           - type: e2e
             spec_path: e2e/golf-critical-paths.spec.ts
-            test_name: "team stats renders"
-            line: 68
+            test_name: "Stats renders, and its old /stats/team address lands there"
+            line: 76
         notes: >
-          Asserts `/golf/dashboard/stats/team` renders without an error
-          boundary; matches stats_analytics's registered
-          `dashboard/stats/**` glob in memory/registry.yml. Does not cover
+          Asserts `/golf/dashboard/stats` renders without an error boundary
+          and that the old `/golf/dashboard/stats/team` address lands there
+          (Fairway retired 2026-11-14; dsx-09 retargeted the test); matches
+          stats_analytics's registered `dashboard/stats/**` glob in
+          memory/registry.yml. Does not cover
           the per-player deep-dive surface at
           `/golf/dashboard/players/[id]/game` — see the file-header note on
           that registry gap.
@@ -345,10 +347,12 @@ journeys:
         observable_signals:
           - type: e2e
             spec_path: e2e/golf-critical-paths.spec.ts
-            test_name: "CoachHelm intelligence hub renders"
-            line: 61
+            test_name: "CoachHelm renders, and its old /intelligence address lands there"
+            line: 66
         notes: >
-          Asserts `/golf/dashboard/intelligence`, which matches
+          Asserts the live CoachHelm screen renders and that the old
+          `/golf/dashboard/intelligence` address lands on it (Fairway retired
+          2026-11-14; dsx-09 retargeted the test). The old address matches
           coach_intelligence_triage's registered
           `dashboard/intelligence/**` glob in memory/registry.yml (a
           separate feature id from `coachhelm_ai`, which owns
