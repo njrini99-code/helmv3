@@ -1104,6 +1104,7 @@ them would bury everything above.
 | `docs/clubhouse/changes/2026-11-27-headers-and-touch.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-28-every-screen-reports.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-28-held-signals-keep-their-page.md` | current | - | - | - | - |
+| `docs/clubhouse/changes/2026-11-28-signals-forget-on-sign-out.md` | current | - | - | - | - |
 | `docs/clubhouse/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/CAPABILITIES.md` | current | - | - | - | - |
 | `docs/clubhouse/coachhelm-chat-v3/LOOK.md` | current | - | - | - | - |
@@ -1284,6 +1285,7 @@ them would bury everything above.
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-signals-before-children.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-27-ui-check-fixes.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-28-front-door-signals.md` | current | - | - | - | - |
+| `docs/clubhouse/pages/P001-shell/changes/2026-11-28-signals-forget-on-sign-out.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P001-shell/changes/2026-11-28-type-detail-role.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CHANGELOG.md` | current | - | - | - | - |
 | `docs/clubhouse/pages/P002-home/CONTRACT.md` | current | - | - | yes | - |
