@@ -15,6 +15,10 @@ import { heroScene } from './scenes/heroScene';
  * out of the photograph's horizon and becomes the corridor every chapter below
  * travels down.
  *
+ * The arc draws ALONE. A dark ball used to ride its head on scroll, sliding
+ * across the course photo; the owner had it removed (2026-11-27). Do not bring
+ * a marker back onto the arc.
+ *
  * The entrance is owned by `heroScene` (GSAP), not by CSS keyframes — the old
  * `landing-hero-*` classes were removed rather than left in place, because a
  * CSS animation and a GSAP tween writing the same transform is a race whose
@@ -43,10 +47,8 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
 
           The trace is a WARM GRAPHITE HAIRLINE, not a bright line: it has to
           read against the champagne canvas on the left AND the sunlit
-          photograph on the right, and a cream stroke disappears on cream. A
-          hairline + a single bright ball also matches the depth model — the
-          canvas plane stays quiet, and the DATUM (the ball) is the only thing
-          allowed to be loud. */}
+          photograph on the right, and a cream stroke disappears on cream. It
+          stays quiet on purpose: nothing on the canvas plane is loud. */}
       {/* z-[3]: ABOVE the photograph. At z-[1] the trace ran behind the plate
           and only the faint cream-on-cream half was visible, which read as a
           rendering artifact rather than a deliberate mark. A trace that crosses
@@ -56,8 +58,8 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
           anchored top-left — so on a portrait phone the scale is driven by
           height (828/700 ≈ 1.18) and the 1000-unit-wide viewBox renders ~1183px
           across a 390px screen. Two thirds of the arc, including the entire
-          start and most of the ball's flight, was being clipped off the right
-          edge: the ball flew in from nowhere with no trace under it.
+          start, was being clipped off the right edge: the shot drew in from
+          nowhere.
 
           A single responsive path cannot fix that, because the visible user-space
           window differs per aspect ratio. So the landscape frame keeps the
@@ -100,10 +102,6 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
-        <g data-hero="ball">
-          <circle r="9" cx="0" cy="0" fill="oklch(0.953 0.022 83 / 0.55)" />
-          <circle r="4.5" cx="0" cy="0" fill="oklch(0.28 0.02 60)" />
-        </g>
       </svg>
 
       <svg
@@ -121,14 +119,6 @@ export function LandingHero({ onRequestDemo }: LandingHeroProps) {
           strokeLinecap="round"
           vectorEffect="non-scaling-stroke"
         />
-        {/* The ball carries a soft halo so it stays legible crossing from the
-            dark photograph onto the light canvas without changing colour. Both
-            marks live in ONE group so the scene translates a single node —
-            two elements sharing the hook would leave the halo behind. */}
-        <g data-hero="ball">
-          <circle r="9" cx="0" cy="0" fill="oklch(0.953 0.022 83 / 0.55)" />
-          <circle r="4.5" cx="0" cy="0" fill="oklch(0.28 0.02 60)" />
-        </g>
       </svg>
 
       <div
