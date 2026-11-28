@@ -19,7 +19,7 @@ export type CapturedBy = 'console' | 'failed-request' | 'sdk';
 export interface BridgeCopy {
   /** The error to write: the original when the SDK had one, otherwise one built from the event's own message and frames. */
   error: Error;
-  severity: 'medium' | 'critical';
+  severity: 'high' | 'critical';
   context: {
     component: 'SentryCapture';
     action: CapturedBy;
