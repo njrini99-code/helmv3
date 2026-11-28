@@ -85,8 +85,12 @@
 /* Section level: the Ledger heading (ui/Section): the title role, near-black, an engraved rule under it, a caption in
    the tertiary ink. */
 :where(.ch-head--section) {
+  /* The rule is drawn inside the head, so it takes no height. It is named on the head rather than in tokens.css so it
+     reads the ledger rule and the hairline where the head sits: Qualifiers, CoachHelm and Ask darken the rule in light,
+     and print greys it. */
+  --ch-head-rule: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
   padding-bottom: 12px;
-  box-shadow: inset 0 calc(-1 * var(--ch-hairline-w)) 0 var(--ch-ledger-rule);
+  box-shadow: var(--ch-head-rule);
 }
 :where(.ch-head--section .ch-head__title) {
   font: var(--ch-type-title);
