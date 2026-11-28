@@ -376,7 +376,6 @@
   font: var(--ch-type-15-strong);
   letter-spacing: var(--ch-track-15);
   line-height: var(--ch-lead-tight);
-  font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
 .ch-h-topar.is-under {
@@ -2148,75 +2147,81 @@
   font-variant-numeric: tabular-nums;
   color: var(--ch-text-secondary);
 }
-/* A leg's trend across the card (PlayerGame Spark): the plot stretches to the card's width; the dot is HTML so it stays
-   round. Ink when steady, green when it moved the good way, amber when not. */
+/* A leg's trend across the card (PlayerGame Spark): one bar per round, standing above the reference line when the round beat it
+   and hanging below when it didn't, on the leg's fixed reach. Beat is solid green, missed is amber tint inside a fine amber ring
+   (gains green, losses amber; solid against hollow still reads in grey). The reference is named at the line's end. */
 .ch-ph-spark {
-  margin: 4px 0 0;
-  /* Steady is ink at 3:1 or more on the card and the linen (audit PMAC-10; ink-400 was 2.98:1). */
-  --ch-spark: var(--ch-ink-500);
-}
-.ch-ph-spark.is-gain {
-  --ch-spark: var(--ch-chart-gain);
-}
-.ch-ph-spark.is-loss {
-  --ch-spark: var(--ch-chart-loss);
+  margin: 14px 0 0;
 }
 .ch-ph-spark__plot {
   position: relative;
   display: block;
-  height: 44px;
+  height: 64px;
+  margin-right: 64px;
 }
-.ch-ph-spark__plot svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-}
-.ch-ph-spark__f0 {
-  stop-color: var(--ch-spark);
-  stop-opacity: 0.16;
-}
-.ch-ph-spark__f1 {
-  stop-color: var(--ch-spark);
-  stop-opacity: 0;
-}
-.ch-ph-spark__mean {
-  stroke: rgb(28 25 18 / 0.14);
-  stroke-dasharray: 2 4;
-  vector-effect: non-scaling-stroke;
-}
-.ch-ph-spark__line {
-  fill: none;
-  stroke: var(--ch-spark);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-.ch-ph-spark__dot {
+/* The reference: the Tour's figure as a dashed data-gilt line (3.97:1 on the card), the player's own average in the zero ink. */
+.ch-ph-spark__ref {
   position: absolute;
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
-  border-radius: 50%;
-  background: var(--ch-spark);
-  box-shadow: 0 0 0 3px var(--ch-bg-surface);
+  left: 0;
+  right: -6px;
+  top: 50%;
+  height: 0;
+  border-top: 1.5px solid var(--ch-chart-zero);
+}
+.ch-ph-spark__ref.is-bench {
+  border-top: 1.5px dashed var(--ch-chart-gilt);
+}
+.ch-ph-spark__bar {
+  position: absolute;
+  width: min(16px, 9%);
+  transform: translateX(-50%);
+  box-sizing: border-box;
+}
+.ch-ph-spark__bar.is-beat {
+  border-radius: 3px 3px 0 0;
+  background: var(--ch-chart-gain-fill);
+}
+.ch-ph-spark__bar.is-miss {
+  border-radius: 0 0 3px 3px;
+  background: var(--ch-chart-loss-tint);
+  box-shadow: inset 0 0 0 1.5px var(--ch-chart-loss-fill);
+}
+/* The reference's name and figure at the line's end. */
+.ch-ph-spark__refk {
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  font: var(--ch-type-caption);
+  line-height: var(--ch-lead-tight);
+  white-space: nowrap;
+  color: var(--ch-text-secondary);
+}
+.ch-ph-spark__refk b {
+  font: var(--ch-type-footnote);
+  color: var(--ch-text-primary);
+}
+.ch-ph-spark__refk.is-bench {
+  color: var(--ch-champagne-ink);
 }
 .ch-ph-spark figcaption {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
+  margin-top: 10px;
   font: var(--ch-type-caption);
   line-height: var(--ch-lead-tight);
   font-variant-numeric: tabular-nums;
-  color: var(--ch-text-tertiary);
+  color: var(--ch-text-secondary);
 }
 .ch-ph-spark__word {
-  color: var(--ch-spark);
+  color: var(--ch-chart-gain);
   font-weight: 600;
+  white-space: nowrap;
+}
+.ch-ph-spark.is-loss .ch-ph-spark__word {
+  color: var(--ch-chart-loss);
 }
 .ch-ph-spark:not(.is-gain, .is-loss) .ch-ph-spark__word {
-  color: var(--ch-text-secondary);
+  color: var(--ch-text-primary);
 }
 
 /* Phone (m-player-home.css). The hero's two keys are the shared buttons (PlayerHomePhone), side by side. */
@@ -3587,9 +3592,6 @@
     font-size: calc(15 * var(--ch-type-k));
     color: var(--ch-text-primary);
   }
-  :is(.ch-hm--player, .ch-hm--coach) .ch-ph-spark__dot {
-    box-shadow: 0 0 0 3px var(--ch-workspace);
-  }
 }
 
 /* Home's page notice (CH-1209, ui/RefreshNotice.tsx): two or more failed reads are told once, under the head, with one
@@ -3672,9 +3674,6 @@ html[data-fw-theme='dark'] .ch-ph-note {
 html[data-fw-theme='dark'] .ch-ph-leg__sg.is-flat,
 html[data-fw-theme='dark'] .ch-ph-bench__t {
   background: rgb(237 231 216 / 0.09);
-}
-html[data-fw-theme='dark'] .ch-ph-spark__mean {
-  stroke: rgb(237 231 216 / 0.2);
 }
 html[data-fw-theme='dark'] .ch-ph-pg button::before {
   box-shadow: 0 0 0 1px var(--ch-border-control);
