@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs';
 import type { ChSignal, SignalKind, SignalOutcome } from '@/lib/admin/clubhouse/signal';
 import { isNativeApp } from '@/lib/utils/capacitor';
 import { CH_PHONE_QUERY } from './phone-query';
+import { pageForPath } from './signal-page';
 
 /**
  * Clubhouse signals, client side (Bridge plan §4.1-§4.4). A signal is one thing that happened on a Clubhouse page: a
@@ -79,6 +80,8 @@ type Pending = {
   at: number;
   trail: string[] | undefined;
   page: string | undefined;
+  /** Where a held signal was sent from (path and query), so it keeps its own page if the shell configures elsewhere. */
+  path?: string;
   /** A held chReport call (chSignalReport before the shell configured): run once, when the signal goes out or can't. */
   report?: () => void;
 };
@@ -390,6 +393,7 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
     for (const p of waiting) {
       let ref: ChSignalRef | null = null;
       try {
+        p.page = heldPage(p, state.config);
         const env = build(p, state.config);
         if (env) {
           enqueue(env);
@@ -434,7 +438,31 @@ function numbered(input: ChSignalInput): Pending {
   const trail = isFailure(input.kind, input.outcome) && state.trail.length ? state.trail.slice(-TRAIL_MAX) : undefined;
   noteSignalTrail(trailEntry(input));
   const { seq } = nextSeq();
-  return { input, seq, at: Date.now(), trail, page: input.page };
+  const p: Pending = { input, seq, at: Date.now(), trail, page: input.page };
+  // Not configured yet: the signal may be held across a move to another page (a sign-in on the front door, then the
+  // dashboard), so it keeps the address it was sent from.
+  if (!state.config) p.path = here();
+  return p;
+}
+
+/** This tab's address, path and query, or undefined where there is none to read. */
+function here(): string | undefined {
+  try {
+    return typeof location === 'undefined' ? undefined : location.pathname + location.search;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The page a held signal was sent from. On the address the shell configured on, the shell's own page (it knows whose
+ * Stats these are); on another (a front-door page with no shell, left by a sign-in), that address's page, so a failed
+ * sign-in counts under Auth and not under the Home it led to.
+ */
+function heldPage(p: Pending, config: Config): string | undefined {
+  if (p.page || !p.path || p.path === here()) return p.page;
+  const at = p.path.indexOf('?');
+  return pageForPath(at < 0 ? p.path : p.path.slice(0, at), at < 0 ? '' : p.path.slice(at), config.role);
 }
 
 /** Keeps a signal for the shell's configure. The oldest go first when the buffer is full, their reports run then. */

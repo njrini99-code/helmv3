@@ -19,7 +19,12 @@ const SECTIONS: readonly (readonly [string, string])[] = [
   ['practice', 'P017'],
 ];
 
-const AUTH = new Set(['login', 'welcome', 'signup', 'player', 'reset-password', 'coach', 'demo', 'forgot-password']);
+/**
+ * The front door (P015): signing in, onboarding, and the team and staff invitations a code or link opens. The graph
+ * lists no page for the invitations (they sit outside the (auth) group), but their screens' controls and codes are
+ * P015's (CTL-P015-…, CH-15…): counted anywhere else, every one of their signals would read as wrong-page drift.
+ */
+const AUTH = new Set(['login', 'welcome', 'signup', 'player', 'reset-password', 'coach', 'demo', 'forgot-password', 'join', 'staff']);
 
 export function pageForPath(pathname: string, search: string, role: string): string {
   const parts = pathname.replace(/\/+$/, '').split('/').filter(Boolean);

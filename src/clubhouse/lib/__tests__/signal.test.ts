@@ -111,6 +111,23 @@ describe('client signals', () => {
     expect(beacons(beacon)[0]!.signals[0]).toMatchObject({ page: 'P003', code: 'CH-1211', seq: 0 });
   });
 
+  it('keeps a held signal under the page it was sent from when the shell configures on another (a sign-in, then Home)', () => {
+    window.history.pushState(null, '', '/golf/login?returnTo=%2Fgolf%2Fdashboard');
+    try {
+      chSignal({ kind: 'tap', control: 'CTL-P015-001' });
+      window.history.pushState(null, '', '/golf/dashboard');
+      configureSignals({ enabled: true, role: 'coach', page: 'P002', userId: 'coach-1' });
+      chSignal({ kind: 'view' });
+      flushSignals();
+      expect(beacons(beacon)[0]!.signals.map((s) => [s.kind, s.page])).toEqual([
+        ['tap', 'P015'],
+        ['view', 'P002'],
+      ]);
+    } finally {
+      window.history.pushState(null, '', '/');
+    }
+  });
+
   it('drops what waited when the switch turns out to be off', () => {
     chSignal({ kind: 'state', code: 'CH-1211' });
     configureSignals({ enabled: false, role: 'coach', page: 'P003' });
