@@ -65,7 +65,7 @@ import {
 import { FilterEmpty, NineHint, StatsFilter } from './StatsFilter';
 import { DeskDetail, DeskOverview, useDeskReturn } from './DeskPane';
 import { DetailHero, StatsDetailScreen } from './StatsDetailScreen';
-import { ShsArrow, ShsCard, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
+import { ShsCard, ShsChangeChip, ShsChevron, ShsIcon, ShsPill, SummaryCard, type ShsIconName } from './SummaryCard';
 import { useStatsDetail, type StatsArrivalState } from './use-stats-detail';
 import { useStuck, WindowCrossfade } from './shs-motion';
 import { useChReducedMotion } from '../../lib/reduced-motion';
@@ -497,15 +497,7 @@ function ScoringCard({ data, onOpen }: { data: ChPlayerProfile; onOpen: () => vo
           {round ? (
             <span>{round.course}</span>
           ) : (
-            <>
-              {change.chip && (
-                <ShsPill tone={change.tone}>
-                  {change.direction !== 'flat' && <ShsArrow direction={change.direction} />}
-                  {change.chip}
-                </ShsPill>
-              )}
-              <span>{change.words}</span>
-            </>
+            <ShsChangeChip change={change} />
           )}
         </div>
       </div>
@@ -938,15 +930,7 @@ function GameAreaDetail({ id, data, reads, onRetry }: { id: 'scoring' | 'tee' | 
         caption={`Scoring average${data.win.toPar == null ? '' : ` · ${formatToPar(data.win.toPar)} to par`} · ${label}${coach && data.teamAvg != null ? ` · Team ${formatAvg(data.teamAvg)}` : ''}`}
         gauge={data.win.avg != null && data.win.toPar != null ? <FigureGauge gauge={{ kind: 'par', toPar: data.win.toPar }} n={data.win.avg} /> : undefined}
         chips={
-          <>
-            {change.chip && (
-              <ShsPill tone={change.tone}>
-                {change.direction !== 'flat' && <ShsArrow direction={change.direction} />}
-                {change.chip}
-              </ShsPill>
-            )}
-            <span>{change.words}</span>
-          </>
+          <ShsChangeChip change={change} />
         }
       />
     );

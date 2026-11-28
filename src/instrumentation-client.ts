@@ -3,11 +3,15 @@ import '@supabase/supabase-js/tracing';
 import { redactEventPii } from '@/lib/observability/redact-pii';
 import { fingerprintSupabaseAutoCapture } from '@/lib/observability/supabase-error-grouping';
 import { isAlreadyBridgeLogged } from '@/lib/bridge-logged-marker';
+import { bridgeCopyOf } from '@/lib/observability/sentry-bridge-copy';
+import { logCapturedErrorToBridge, setupGlobalErrorHandlers } from '@/lib/error-logging';
 import { buildClientSentryOptions, isHealthProbeFetchEcho } from '@/lib/sentry-client-options';
+import { sendsErrorEventsToSentry } from '@/lib/sentry-environment';
 import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
 import { createRepeatErrorSampler } from '@/lib/observability/repeat-error-sampler';
+import { uiSurfaceForPath } from '@/lib/observability/ui-surface';
 
 /**
  * MAC-12 (production audit 2026-11-15): the same error sent on every render or retry rate limited the Sentry tunnel
@@ -140,7 +144,15 @@ Sentry.init({
     // error boundary console.errors, hydration warnings, unhandled promise
     // rejections that get logged but not thrown.
     Sentry.captureConsoleIntegration({ levels: ['error'] }),
-    // Drops (or tags) events whose stack is entirely third-party script.
+    // Drops events whose stack is entirely third-party script (a browser
+    // extension, an external CDN script). `exclusively`, not `contains`: with
+    // `contains`, ONE frame without the marker drops the whole error, and the
+    // Turbopack runtime chunk (turbopack-*.js, the code that runs every module
+    // factory) never carries the marker, because the build plugin stamps
+    // modules and the runtime is not a module. So every error thrown while a
+    // module evaluates (a lazy import, next/dynamic, a top-level throw) and
+    // every stack that passes through an inline <script> on the page was
+    // silently dropped from Sentry while still reaching the Bridge.
     // `applicationKey: 'helm-web'` in next.config.mjs's withSentryConfig
     // marks first-party modules at build time — PRODUCTION BUILDS ONLY:
     // withSentryConfig itself is skipped in dev (next.config.mjs `isDev`
@@ -149,7 +161,7 @@ Sentry.init({
     // replay is gated above, for the same reason.
     ...(!isDev ? [Sentry.thirdPartyErrorFilterIntegration({
       filterKeys: ['helm-web'],
-      behaviour: 'drop-error-if-contains-third-party-frames',
+      behaviour: 'drop-error-if-exclusively-contains-third-party-frames',
     })] : []),
     // Programmatic feedback form only — `autoInject: false` means NO
     // floating widget is injected. Opened via the `ReportProblemButton`
@@ -184,6 +196,12 @@ Sentry.init({
   // duplicated event.contexts.location written by error-logging.ts.
   // Replay already masks DOM text.
   beforeSend(event, hint) {
+    // Only production's errors go to Sentry: a preview's or a local build's would use up production's allowance.
+    // Before every other rule, so nothing below runs for an event that is not sent. See sendsErrorEventsToSentry.
+    if (!sendsErrorEventsToSentry(event.environment, process.env.NEXT_PUBLIC_SENTRY_ERRORS_ALL_ENVIRONMENTS)) {
+      return null;
+    }
+
     // /api/health's database readiness failure is independently captured on
     // the server and persisted through the Bridge. The connectivity hook
     // intentionally accepts its 503 response as proof that the DEVICE is
@@ -213,6 +231,10 @@ Sentry.init({
     if (isBackgroundPresenceHeartbeatTimeout(event)) {
       return null;
     }
+
+    // An error Sentry caught by itself (a console.error, a failed request, an SDK's own capture) reaches the Bridge
+    // too, before the repeat sampling below and whether or not Sentry accepts it. See copyToBridge.
+    copyToBridge(event, hint);
 
     // Last of the drops, so an event dropped above never uses up an error's allowance.
     if (!repeatErrors.keep(event)) {
@@ -285,6 +307,17 @@ Sentry.init({
       if (feature) {
         event.tags.feature = feature;
       }
+
+      // The Bridge's Clubhouse-only Sentry views search `ui:clubhouse`. The
+      // browser sets that tag for the session only once the Clubhouse frame
+      // mounts (chTagSession), so a crash while a Clubhouse page is still
+      // loading, before the frame mounts, went out untagged and never showed
+      // in those views. Fill it from the address,
+      // the same rule /api/log-error uses; an existing tag is left alone.
+      const ui = uiSurfaceForPath(path);
+      if (ui && !event.tags.ui) {
+        event.tags.ui = ui;
+      }
     }
     // Mask email addresses in message / extra / contexts / exception values.
     // The scrubbing above covers only the request envelope; the free-text fields
@@ -295,6 +328,28 @@ Sentry.init({
     return fingerprintSupabaseAutoCapture(redactEventPii(event), hint);
   },
 });
+
+/**
+ * Writes the Bridge copy of an event Sentry captured by itself (lib/observability/sentry-bridge-copy.ts decides which).
+ * It waits for the rest of this task: React logs an error a boundary caught before or after the boundary reports it,
+ * so the copy is written only if no Bridge path has claimed the same error by then.
+ */
+function copyToBridge(event: Sentry.ErrorEvent, hint: Sentry.EventHint | undefined): void {
+  if (typeof window === 'undefined') return;
+  const copy = bridgeCopyOf(event, hint, window.location.origin);
+  if (!copy) return;
+  const original = hint?.originalException;
+  setTimeout(() => {
+    if (isAlreadyBridgeLogged(original)) return;
+    logCapturedErrorToBridge(copy.error, copy.context, copy.severity);
+  }, 0);
+}
+
+// The Bridge's window handlers, installed before the page hydrates: an error while the page loads reaches the Bridge
+// too, not only Sentry. GlobalErrorHandlerSetup installs the same handlers after hydration, which then does nothing.
+if (typeof window !== 'undefined') {
+  setupGlobalErrorHandlers();
+}
 
 // Required by @sentry/nextjs v8+ for App Router navigation tracing.
 // Without this export, client-side route transitions aren't traced.
