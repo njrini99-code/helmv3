@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 import path from 'node:path';
 
 // Presentation fixtures require development mode and never authenticate or seed data.
@@ -13,7 +13,7 @@ if (visual && !process.env.CH_VISUAL_BASELINES) {
 }
 export default defineConfig({
   testDir: './e2e',
-  testMatch: ['clubhouse-quality.spec.ts', 'clubhouse-playground.spec.ts', 'clubhouse-gate.spec.ts', 'clubhouse-motion-gate.spec.ts', 'clubhouse-pixels.spec.ts'],
+  testMatch: ['clubhouse-quality.spec.ts', 'clubhouse-playground.spec.ts', 'clubhouse-gate.spec.ts', 'clubhouse-motion-gate.spec.ts', 'clubhouse-pixels.spec.ts', 'clubhouse-ui-check.spec.ts'],
   // Compiles every route the suite opens before the first test (see the setup file); the server keeps them compiled.
   globalSetup: './e2e/clubhouse-quality.setup.ts',
   fullyParallel: false,
@@ -38,7 +38,7 @@ export default defineConfig({
     ...['chromium', 'webkit'].flatMap((browserName) =>
       (['no-preference', 'reduce'] as const).map((reducedMotion) => ({
         name: `${browserName}-${reducedMotion}`,
-        testIgnore: ['clubhouse-gate.spec.ts', 'clubhouse-motion-gate.spec.ts', 'clubhouse-pixels.spec.ts'],
+        testIgnore: ['clubhouse-gate.spec.ts', 'clubhouse-motion-gate.spec.ts', 'clubhouse-pixels.spec.ts', 'clubhouse-ui-check.spec.ts'],
         use: { browserName: browserName as 'chromium' | 'webkit', reducedMotion },
       })),
     ),
@@ -50,6 +50,10 @@ export default defineConfig({
     // Pixel regression on the same screens and sizes as the gate, against baselines from the nightly run on main.
     { name: 'pixels-phone', testMatch: 'clubhouse-pixels.spec.ts', use: { browserName: 'webkit' as const, viewport: { width: 390, height: 844 } } },
     { name: 'pixels-desktop', testMatch: 'clubhouse-pixels.spec.ts', use: { browserName: 'chromium' as const, viewport: { width: 1440, height: 900 } } },
+    // The UI check (dsx-09): every live coach and player screen renders, holds its axe record and leaves a screenshot.
+    // Phone on the iPhone 17 Pro preset (touch, DPR 3, WebKit: .claude/rules/browsers.md tier W); desk in Chromium.
+    { name: 'ui-phone', testMatch: 'clubhouse-ui-check.spec.ts', use: { ...devices['iPhone 17 Pro'] } },
+    { name: 'ui-desktop', testMatch: 'clubhouse-ui-check.spec.ts', use: { browserName: 'chromium' as const, viewport: { width: 1440, height: 900 } } },
   ],
   webServer: process.env.CH_BASE ? undefined : {
     command: './node_modules/.bin/next dev --webpack --hostname 127.0.0.1 --port 3100',

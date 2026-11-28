@@ -96,72 +96,6 @@ export type Database = {
         }
         Relationships: []
       }
-      admin_api_perf_log: {
-        Row: {
-          action_name: string
-          created_at: string
-          duration_ms: number
-          error_message: string | null
-          id: string
-          metadata: Json | null
-          status: string
-          user_id: string | null
-        }
-        Insert: {
-          action_name: string
-          created_at?: string
-          duration_ms: number
-          error_message?: string | null
-          id?: string
-          metadata?: Json | null
-          status: string
-          user_id?: string | null
-        }
-        Update: {
-          action_name?: string
-          created_at?: string
-          duration_ms?: number
-          error_message?: string | null
-          id?: string
-          metadata?: Json | null
-          status?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      admin_client_errors: {
-        Row: {
-          created_at: string
-          error_message: string
-          error_stack: string | null
-          id: string
-          metadata: Json | null
-          page_url: string | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          error_message: string
-          error_stack?: string | null
-          id?: string
-          metadata?: Json | null
-          page_url?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          error_message?: string
-          error_stack?: string | null
-          id?: string
-          metadata?: Json | null
-          page_url?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       admin_error_resolutions: {
         Row: {
           created_at: string
@@ -17249,9 +17183,12 @@ export type Database = {
           created_at: string | null
           error_distribution: Json | null
           id: string
+          interval_coverage: number | null
           mean_absolute_error: number | null
           model_type: string
           model_version: string | null
+          naive_mean_absolute_error: number | null
+          naive_sample_count: number | null
           overconfidence_rate: number | null
           period_end: string
           period_start: string
@@ -17270,9 +17207,12 @@ export type Database = {
           created_at?: string | null
           error_distribution?: Json | null
           id?: string
+          interval_coverage?: number | null
           mean_absolute_error?: number | null
           model_type: string
           model_version?: string | null
+          naive_mean_absolute_error?: number | null
+          naive_sample_count?: number | null
           overconfidence_rate?: number | null
           period_end: string
           period_start: string
@@ -17291,9 +17231,12 @@ export type Database = {
           created_at?: string | null
           error_distribution?: Json | null
           id?: string
+          interval_coverage?: number | null
           mean_absolute_error?: number | null
           model_type?: string
           model_version?: string | null
+          naive_mean_absolute_error?: number | null
+          naive_sample_count?: number | null
           overconfidence_rate?: number | null
           period_end?: string
           period_start?: string

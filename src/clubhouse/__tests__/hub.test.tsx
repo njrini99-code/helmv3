@@ -527,7 +527,8 @@ describe('Team Hub · coach', () => {
     expect(within(week).getByText(/4 going · 1 maybe · 0 can’t · 1 no reply/)).toBeTruthy();
     const post = screen.getByRole('region', { name: 'Latest post' });
     expect(within(post).getByText('of 6 acknowledged')).toBeTruthy();
-    await user.click(within(post).getByRole('button', { name: 'Jonah Okafor' }));
+    // The chip shows the initials, so its name starts with them (label in name, dsx-09).
+    await user.click(within(post).getByRole('button', { name: 'JO, Jonah Okafor' }));
     expect(within(post).getByText('Jonah Okafor hasn’t acknowledged it yet.')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Got it' })).toBeNull();
     // MAC-20: the count is the row's words, not an image inside its button.

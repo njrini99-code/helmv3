@@ -3450,8 +3450,8 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] .ch-ms-poll {
   padding: 12px 16px;
   border-radius: var(--ch-radius-xl);
   border-bottom-left-radius: var(--ch-radius-tail);
+  /* Flat like every received bubble (DM-06): the old filter read an undefined token, so it never drew (dsx-09). */
   background: var(--ch-bubble-theirs-bg);
-  filter: var(--ch-bubble-theirs-shadow);
   /* Late content: it crossfades in on the quick beat, with no pop (MOTION-AND-VISUAL 3.5). */
   animation: ch-in var(--ch-dur-quick) var(--ch-ease-out) backwards;
 }
@@ -4136,7 +4136,7 @@ body:has([data-ch-ms-v2]) .ch-toast {
   color: var(--ch-text-secondary); letter-spacing: var(--ch-track-16); }
 [data-ch-ms-v2] .ch-msp-tok {
   background: var(--ch-accent);
-  color: var(--ch-on-accent, #fff);
+  color: var(--ch-text-on-accent);
 }
 .ch-msv-newpane {
   position: relative;
