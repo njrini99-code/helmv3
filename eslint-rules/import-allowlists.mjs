@@ -17,7 +17,7 @@ export const CLUBHOUSE_IMPORT_ALLOWLIST = [
   'src/components/errors/RouteErrorBoundary.tsx',
 ];
 
-// TODO(phase-7b): 39 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
+// TODO(phase-7b): 40 files import src/lib/error-logging.ts. Migrate to server-error-logger (logServerError / logServerEvent) or observed-action.
 export const ERROR_LOGGING_ALLOWLIST = [
   'src/app/admin/_components/PanelBoundary.tsx',
   'src/app/baseball/(dashboard)/dashboard/roster/RosterClient.tsx',
@@ -55,6 +55,9 @@ export const ERROR_LOGGING_ALLOWLIST = [
   'src/hooks/use-messages.ts',
   'src/hooks/use-presence.ts',
   'src/hooks/use-watchlist.ts',
+  // The browser's Sentry setup: it installs the Bridge's window handlers before hydration and copies to the Bridge
+  // the errors Sentry captures by itself. error-logging.ts is still the browser's Bridge pipeline.
+  'src/instrumentation-client.ts',
   'src/lib/golf/round-session/use-new-round-session.ts',
   'src/lib/offline/indexed-db.ts',
   'src/lib/offline/shot-storage.ts',

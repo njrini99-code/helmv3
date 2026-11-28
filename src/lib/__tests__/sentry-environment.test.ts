@@ -4,6 +4,7 @@ import {
   resolveClientEnvironment,
   isLocalHostname,
   LOCAL_BUILD_ENVIRONMENT,
+  sendsErrorEventsToSentry,
 } from '../sentry-environment';
 
 /**
@@ -127,5 +128,34 @@ describe('resolveClientEnvironment — the browser cannot read VERCEL', () => {
 
   it('development stays development', () => {
     expect(resolveClientEnvironment({ NODE_ENV: 'development' }, 'localhost')).toBe('development');
+  });
+});
+
+describe('sendsErrorEventsToSentry — only production uses the error allowance', () => {
+  it('sends a production error', () => {
+    expect(sendsErrorEventsToSentry('production', undefined)).toBe(true);
+  });
+
+  it('sends an event without an environment, which Sentry files as production', () => {
+    expect(sendsErrorEventsToSentry(undefined, undefined)).toBe(true);
+  });
+
+  it.each(['preview', 'development', LOCAL_BUILD_ENVIRONMENT, 'test', ''])('does not send a %j error', (environment) => {
+    expect(sendsErrorEventsToSentry(environment, undefined)).toBe(false);
+  });
+
+  it('a real production event is sent whatever the opt-in says', () => {
+    for (const optIn of [undefined, '', '0', 'false', 'no']) {
+      expect(sendsErrorEventsToSentry('production', optIn)).toBe(true);
+    }
+  });
+
+  it.each(['1', 'true', 'TRUE', ' true '])('the opt-in %j sends every environment again', (optIn) => {
+    expect(sendsErrorEventsToSentry('preview', optIn)).toBe(true);
+    expect(sendsErrorEventsToSentry(LOCAL_BUILD_ENVIRONMENT, optIn)).toBe(true);
+  });
+
+  it.each(['', '0', 'false', 'yes', 'production'])('any other opt-in value %j keeps them out', (optIn) => {
+    expect(sendsErrorEventsToSentry('preview', optIn)).toBe(false);
   });
 });
