@@ -34,8 +34,9 @@ describe('golf_prediction_model_performance extended columns migration', () => {
     expect(statements).toMatch(/ALTER TABLE public\.golf_prediction_model_performance/);
   });
 
-  it('is registered in HELD.md', () => {
+  it('is registered in HELD.md as applied', () => {
+    // Applied to production 2026-11-27 (db-apply workflow); the row keeps its history.
     const held = readFileSync(join(process.cwd(), 'supabase/migrations/HELD.md'), 'utf8');
-    expect(held).toContain('`20261023150000_golf_prediction_perf_extended_columns.sql` | **HOLD**');
+    expect(held).toContain('`20261023150000_golf_prediction_perf_extended_columns.sql` | **APPLIED 2026-11-27');
   });
 });

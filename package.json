@@ -185,6 +185,8 @@
     "clubhouse:quality:full": "CH_QUALITY=1 CH_FULL=1 playwright test --config playwright.clubhouse.config.ts",
     "clubhouse:catalog": "node scripts/clubhouse/component-catalog.mjs",
     "clubhouse:css": "node scripts/clubhouse/css-quality.mjs",
+    "clubhouse:raw-values": "node scripts/clubhouse/raw-values.mjs",
+    "clubhouse:token-refs": "node scripts/clubhouse/token-refs.mjs",
     "clubhouse:perf:check": "node scripts/clubhouse/perf-budget.mjs",
     "clubhouse:js-budget": "node scripts/clubhouse/route-js-budget.mjs",
     "clubhouse:tools": "node scripts/clubhouse/tools.mjs",

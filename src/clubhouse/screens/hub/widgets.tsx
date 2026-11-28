@@ -707,7 +707,7 @@ export function PostTile({ a, role, error, covered, acked, pending, onAck, onOpe
                     key={n}
                     type="button"
                     aria-pressed={who === n}
-                    aria-label={n}
+                    aria-label={`${initials(n)}, ${n}`}
                     onClick={() => {
                       haptic('select');
                       setWho((w) => (w === n ? null : n));

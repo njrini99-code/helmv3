@@ -10627,19 +10627,7 @@
         "TeamFeatureChart"
       ],
       "styles": [
-        "src/clubhouse/styles/base.css",
-        "src/clubhouse/styles/calendar.css",
-        "src/clubhouse/styles/class-awareness.css",
-        "src/clubhouse/styles/goals.css",
-        "src/clubhouse/styles/home.css",
-        "src/clubhouse/styles/hub.css",
-        "src/clubhouse/styles/messages-details.css",
-        "src/clubhouse/styles/messages-inbox.css",
-        "src/clubhouse/styles/messages.css",
-        "src/clubhouse/styles/qualifiers.css",
         "src/clubhouse/styles/stats-redesign.css",
-        "src/clubhouse/styles/stats.css",
-        "src/clubhouse/styles/tournaments-desk.css",
         "src/clubhouse/styles/ui.css"
       ],
       "examples": [],
@@ -11021,6 +11009,7 @@
       "exports": [
         "ShsArrow",
         "ShsCard",
+        "ShsChangeChip",
         "ShsChevron",
         "ShsIcon",
         "ShsPill",
@@ -24567,11 +24556,15 @@
         "ch-shs-sum",
         "ch-shs-sum__key",
         "ch-shs-sumfoot",
+        "ch-shs-tbar",
+        "ch-shs-tbars",
+        "ch-shs-tbars__par",
         "ch-shs-tbl",
         "ch-shs-tick",
         "ch-shs-tour",
         "ch-shs-tour-key",
         "ch-shs-tp",
+        "ch-shs-tscore",
         "ch-shs-under",
         "ch-shs-whisk",
         "ch-shs-who",
@@ -24815,6 +24808,26 @@
           "name": "--ch-shs-s-card",
           "value": "var(--ch-green-800)",
           "scope": ".ch-shs-feature"
+        },
+        {
+          "name": "--ch-shs-tbar",
+          "value": "color-mix(in srgb, var(--ch-shs-s-ink-3) 65%, var(--ch-shs-s-card))",
+          "scope": ".ch-shs-tbar"
+        },
+        {
+          "name": "--ch-shs-tbar",
+          "value": "color-mix(in srgb, var(--ch-shs-s-gain-fill) 65%, var(--ch-shs-s-card))",
+          "scope": ".ch-shs-tbar.is-under"
+        },
+        {
+          "name": "--ch-shs-tbar",
+          "value": "var(--ch-shs-s-ink)",
+          "scope": ".ch-shs-tbar.is-last"
+        },
+        {
+          "name": "--ch-shs-tbar",
+          "value": "var(--ch-shs-s-gain-fill)",
+          "scope": ".ch-shs-tbar.is-last.is-under"
         },
         {
           "name": "--ch-shs-tone",
@@ -26656,7 +26669,7 @@
         },
         {
           "name": "--ch-border-control",
-          "value": "#85817a",
+          "value": "#7d7972",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27866,7 +27879,7 @@
         },
         {
           "name": "--ch-elevation-card",
-          "value": "0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)",
+          "value": "0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.07), 0 6px 16px -6px rgb(28 25 18 / 0.14)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27921,7 +27934,7 @@
         },
         {
           "name": "--ch-elevation-cast",
-          "value": "0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)",
+          "value": "0 1px 2px rgb(28 25 18 / 0.07), 0 6px 16px -6px rgb(28 25 18 / 0.14)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27936,7 +27949,7 @@
         },
         {
           "name": "--ch-medallion-shadow",
-          "value": "0 1px 2px rgb(11 58 37 / 0.18), 0 4px 10px -4px rgb(11 58 37 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.1)",
+          "value": "0 1px 2px rgb(11 58 37 / 0.22), 0 6px 14px -6px rgb(11 58 37 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.1)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -27946,7 +27959,7 @@
         },
         {
           "name": "--ch-elevation-raised",
-          "value": "0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)",
+          "value": "0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.08), 0 16px 36px -10px rgb(28 25 18 / 0.22)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -28062,6 +28075,11 @@
         {
           "name": "--ch-card-ring",
           "value": "rgb(28 25 18 / 0.08)",
+          "scope": "[data-ui='clubhouse']"
+        },
+        {
+          "name": "--ch-icon-well-edge",
+          "value": "inset 0 0 0 1px var(--ch-card-ring)",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -28236,7 +28254,7 @@
         },
         {
           "name": "--ch-chart-bogey",
-          "value": "#b3884a",
+          "value": "#a87d40",
           "scope": "[data-ui='clubhouse']"
         },
         {
@@ -30151,17 +30169,17 @@
         },
         {
           "name": "--ch-elevation-card",
-          "value": "0 0 0 1px var(--ch-card-ring)",
+          "value": "0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(0 0 0 / 0.28), 0 6px 16px -6px rgb(0 0 0 / 0.44)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-cast",
-          "value": "0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -4px rgb(0 0 0 / 0.4)",
+          "value": "0 1px 2px rgb(0 0 0 / 0.28), 0 6px 16px -6px rgb(0 0 0 / 0.44)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {
           "name": "--ch-elevation-raised",
-          "value": "0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)",
+          "value": "0 0 0 1px rgb(241 236 223 / 0.1), 0 2px 6px rgb(0 0 0 / 0.36), 0 16px 36px -10px rgb(0 0 0 / 0.6)",
           "scope": "html[data-fw-theme='dark'] [data-ui='clubhouse']"
         },
         {

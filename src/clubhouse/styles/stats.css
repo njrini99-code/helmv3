@@ -4940,7 +4940,7 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   opacity: 1;
 }
 .ch-st[data-canopy] .ch-sgt__reflab {
-  fill: var(--ch-champagne-600, var(--ch-text-tertiary));
+  fill: var(--ch-text-tertiary);
 }
 .ch-st[data-canopy] .ch-sgt__scrub {
   pointer-events: none;
@@ -7211,9 +7211,10 @@ html[data-fw-theme='dark'] .ch-sv-mix .is-double {
   -webkit-tap-highlight-color: transparent;
   transition: opacity var(--ch-dur-quick) var(--ch-ease);
 }
-/* Par is parchment on parchment: a hairline keeps its edge. */
+/* Par is parchment on parchment: its edge is the control border, 3:1 or better on the card by day and at night (WCAG
+   1.4.11), so the quiet fill still reads as a segment (the ledger hairline it wore was 1.3:1). */
 .ch-sv-mix-seg.is-par {
-  box-shadow: inset 0 0 0 1px var(--ch-ledger-rule);
+  box-shadow: inset 0 0 0 1px var(--ch-border-control);
 }
 .ch-sv-mix-seg b {
   font: var(--ch-type-13-strong);

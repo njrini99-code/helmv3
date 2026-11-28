@@ -359,12 +359,68 @@ export function logError(
   context?: ErrorContext,
   requestedSeverity: ErrorLogEntry['severity'] = 'medium'
 ): void {
+  const logEntry = admitClientReport(error, context, requestedSeverity);
+  if (!logEntry) return;
+
+  // Send to Sentry — captures stack, breadcrumbs, replay, user context
+  Sentry.withScope((scope) => {
+    scope.setLevel(SEVERITY_TO_SENTRY_LEVEL[logEntry.severity]);
+    if (logEntry.context) {
+      const { browser, location, viewport, document: docCtx, history, network, ...rest } = logEntry.context as Record<string, unknown>;
+      // Promote diagnostic blocks to Sentry contexts (queryable in UI)
+      if (browser) scope.setContext('browser', browser as Record<string, unknown>);
+      if (location) scope.setContext('location', location as Record<string, unknown>);
+      if (viewport) scope.setContext('viewport', viewport as Record<string, unknown>);
+      if (docCtx) scope.setContext('document', docCtx as Record<string, unknown>);
+      if (history) scope.setContext('history', history as Record<string, unknown>);
+      if (network) scope.setContext('network', network as Record<string, unknown>);
+      // Remaining keys become tags / extras
+      for (const [key, value] of Object.entries(rest)) {
+        if (value === undefined || value === null) continue;
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          scope.setTag(key, String(value));
+        } else {
+          scope.setExtra(key, value);
+        }
+      }
+    }
+    Sentry.captureException(error);
+  });
+
+  // Also persist to error_logs table for product analytics
+  sendToMonitoringService(logEntry);
+}
+
+/**
+ * Writes to the Bridge an error that Sentry captured by itself: a console.error, a failed request, an SDK's own
+ * capture (src/lib/observability/sentry-bridge-copy.ts decides which). Sentry already has the event, so this sends
+ * no second one. It goes through the same filters and per-tab throttle as `logError`, so a crawler, browser noise
+ * or one flaky tab writes no more rows this way than the other.
+ */
+export function logCapturedErrorToBridge(
+  error: Error,
+  context: ErrorContext,
+  severity: ErrorLogEntry['severity'],
+): void {
+  const logEntry = admitClientReport(error, context, severity);
+  if (logEntry) sendToMonitoringService(logEntry);
+}
+
+/**
+ * The checks every client report passes before it is sent anywhere: the stale-deployment, browser-noise and crawler
+ * filters, the severity cap, the diagnostics, and the per-tab throttle. Null when the report is not sent.
+ */
+function admitClientReport(
+  error: Error,
+  context: ErrorContext | undefined,
+  requestedSeverity: ErrorLogEntry['severity'],
+): ErrorLogEntry | null {
   // Claim this error for the Bridge pipeline BEFORE anything else runs.
   //
   // Every class/effect boundary that funnels through here (PanelBoundary,
   // RouteErrorBoundary, CompactRouteErrorBoundary — ~140 route error.tsx
-  // files) produced TWO Sentry issues per crash: one from the
-  // Sentry.captureException below, and a second when React's default
+  // files) produced TWO Sentry issues per crash: one from logError's
+  // Sentry.captureException, and a second when React's default
   // onCaughtError console.error's the same object into
   // captureConsoleIntegration. instrumentation-client.ts's beforeSend reads
   // this marker to drop that console-origin echo. Marking here rather than at
@@ -383,7 +439,7 @@ export function logError(
       staleActionWarnedThisSession = true;
       console.warn('[error-logging] stale server action detected — client will reload to pick up the new bundle');
     }
-    if (!context?.bypassStaleActionFilter) return;
+    if (!context?.bypassStaleActionFilter) return null;
     // Otherwise fall through: a critical flow (round-start, tee-pick) asked
     // to be recorded even here. Force `low` so this never pages, and continue
     // to the normal enrich/send path — the row is what we need, not a page.
@@ -394,14 +450,14 @@ export function logError(
   // not just from Sentry's ignoreErrors. See isResizeObserverLoopNoise and
   // isEmbeddedBrowserBridgeNoise above.
   if (isResizeObserverLoopNoise(error.message) || isEmbeddedBrowserBridgeNoise(error.message)) {
-    return;
+    return null;
   }
 
   // Nobody is looking at the screen. See isAutomatedClient above: a crawler's
   // failure is not a user's failure, and it is reported against pages and
   // states no user flow reaches.
   if (isAutomatedClient()) {
-    return;
+    return null;
   }
 
   const severity = capSeverityForSelfRecovering(error.message, requestedSeverity);
@@ -428,36 +484,10 @@ export function logError(
   // De-duplicate identical reports from a single tab before paying the
   // network/Sentry cost. Dev console logging above is unaffected.
   if (shouldThrottleClientReport(severity, error, context)) {
-    return;
+    return null;
   }
 
-  // Send to Sentry — captures stack, breadcrumbs, replay, user context
-  Sentry.withScope((scope) => {
-    scope.setLevel(SEVERITY_TO_SENTRY_LEVEL[severity]);
-    if (enrichedContext) {
-      const { browser, location, viewport, document: docCtx, history, network, ...rest } = enrichedContext as Record<string, unknown>;
-      // Promote diagnostic blocks to Sentry contexts (queryable in UI)
-      if (browser) scope.setContext('browser', browser as Record<string, unknown>);
-      if (location) scope.setContext('location', location as Record<string, unknown>);
-      if (viewport) scope.setContext('viewport', viewport as Record<string, unknown>);
-      if (docCtx) scope.setContext('document', docCtx as Record<string, unknown>);
-      if (history) scope.setContext('history', history as Record<string, unknown>);
-      if (network) scope.setContext('network', network as Record<string, unknown>);
-      // Remaining keys become tags / extras
-      for (const [key, value] of Object.entries(rest)) {
-        if (value === undefined || value === null) continue;
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-          scope.setTag(key, String(value));
-        } else {
-          scope.setExtra(key, value);
-        }
-      }
-    }
-    Sentry.captureException(error);
-  });
-
-  // Also persist to error_logs table for product analytics
-  sendToMonitoringService(logEntry);
+  return logEntry;
 }
 
 /** 429 (rate-limited) and 5xx (backend fault) are worth retrying; other 4xx are not — the
@@ -490,6 +520,10 @@ function sendToMonitoringService(logEntry: ErrorLogEntry): void {
     severity: logEntry.severity,
     timestamp: logEntry.timestamp,
     url: window.location.href,
+    // The deploy this tab is running, which can be older than the server's after a release. The Bridge shows it in the
+    // row's release, and it names the uploaded source maps that turn the stack back into source lines. next.config.mjs
+    // bakes it into the bundle, the same value Sentry's events carry.
+    release: process.env.NEXT_PUBLIC_SENTRY_RELEASE || undefined,
   });
 
   const fallbackToBeacon = (): void => {
@@ -631,11 +665,16 @@ function classifyGlobalErrorKind(message: string): 'chunk-load' | 'hydration' | 
   return undefined;
 }
 
+let globalHandlersInstalled = false;
+
 /**
- * Capture and log unhandled promise rejections
+ * Sends to the Bridge every error the page does not catch. Installed once, as early as possible: by
+ * instrumentation-client.ts before the page hydrates, so a crash while the page loads is written too, and again by
+ * `GlobalErrorHandlerSetup`, which then does nothing. A second install would write every error twice.
  */
 export function setupGlobalErrorHandlers(): void {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && !globalHandlersInstalled) {
+    globalHandlersInstalled = true;
     // The page going away cancels the stylesheets still loading: those are not failures (stylesheet-load-failure.ts).
     let leaving = false;
     window.addEventListener('pagehide', () => {
@@ -674,8 +713,10 @@ export function setupGlobalErrorHandlers(): void {
       }
 
       const errorKind = classifyGlobalErrorKind(reasonMessage);
+      // A rejection with an Error is logged as that Error: its own stack, not this handler's, and the same object
+      // Sentry's handler sees, so the marker logError sets keeps Sentry from filing it twice.
       logError(
-        new Error(reasonMessage || 'Unhandled Promise Rejection'),
+        reason instanceof Error ? reason : new Error(reasonMessage || 'Unhandled Promise Rejection'),
         {
           component: 'GlobalErrorHandler',
           action: 'unhandledrejection',

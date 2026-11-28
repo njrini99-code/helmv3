@@ -113,6 +113,8 @@ export interface ShsChange {
   direction: 'down' | 'up' | 'flat';
   /** "than the 10 before", "newest 5 vs first 5", or "3 rounds so far. A change shows from 4." */
   words: string;
+  /** With no clear change, what the signed figure is against ("vs previous 10"): the chip says the verdict and this follows the figure. */
+  vs?: string;
 }
 
 /**
@@ -123,7 +125,7 @@ export interface ShsChange {
  */
 export function scoreChangeChip(delta: number, se: number | null | undefined, lowerIsBetter: boolean, words: { than: string; vs: string }, digits = 1): ShsChange {
   const tone = changeTone(delta, se, lowerIsBetter);
-  if (tone === 'flat') return { chip: formatSigned(delta, digits), tone, direction: 'flat', words: `No clear change ${words.vs}` };
+  if (tone === 'flat') return { chip: formatSigned(delta, digits), tone, direction: 'flat', words: `No clear change ${words.vs}`, vs: words.vs };
   return { chip: `${formatFixed(Math.abs(delta), digits)} ${delta < 0 ? 'lower' : 'higher'}`, tone, direction: delta < 0 ? 'down' : 'up', words: words.than };
 }
 
