@@ -54,6 +54,42 @@ export interface MaskedLinesResult {
 const ARIA_MODE = 'none' as const;
 
 /**
+ * Room below each mask for DESCENDERS, in the text's own em.
+ *
+ * A mask is exactly one line box tall, and `overflow: clip` cuts at that box.
+ * Display type here is set tighter than the font's own ascent + descent (the
+ * landing hero is `leading-[0.98]`, the products hero `lineHeight: 0.98`), so
+ * the tails of g, p, y and q hang BELOW the line box — and the mask sliced them
+ * flat. Because the split is only reverted on unmount, that was not a frame
+ * of the entrance: "your program." shipped permanently clipped on phone and
+ * desktop.
+ *
+ * The room goes on the LINE as bottom padding (so the mask, which wraps it,
+ * grows to hold the tails) and is handed straight back as a negative bottom
+ * margin on the MASK, so every line, and everything after the paragraph, sits
+ * exactly where it did. Because the line itself is taller, `yPercent: 110`
+ * still parks it fully below its (now taller) mask before the entrance.
+ *
+ * 0.25em clears the deepest descender of every sans in the stack (SF, Segoe,
+ * Roboto) at the tightest leading the site uses.
+ */
+const DESCENDER_ROOM = '0.25em';
+
+/**
+ * Give each masked piece room for its descenders without moving it. `pieces`
+ * and `masks` are SplitText's own parallel arrays: one mask per line or word,
+ * in the same order.
+ */
+function makeRoomForDescenders(pieces: readonly HTMLElement[], masks: readonly Element[]): void {
+  pieces.forEach((piece, i) => {
+    const mask = masks[i] as HTMLElement | undefined;
+    if (!mask) return;
+    piece.style.paddingBottom = DESCENDER_ROOM;
+    mask.style.marginBottom = `-${DESCENDER_ROOM}`;
+  });
+}
+
+/**
  * Split an element into lines, each wrapped in an overflow-hidden mask, and set
  * them to their pre-entrance position (fully below the mask, fully opaque).
  *
@@ -67,14 +103,16 @@ const ARIA_MODE = 'none' as const;
 export function maskedLines(target: HTMLElement): MaskedLinesResult {
   const split = new SplitText(target, {
     type: 'lines',
-    // Each line gets its own mask element, so `overflow: hidden` clips the
-    // line's own travel without clipping descenders of neighbouring lines.
+    // Each line gets its own mask element, so `overflow: clip` clips the
+    // line's own travel without clipping neighbouring lines. Its OWN
+    // descenders need the room added below (see DESCENDER_ROOM).
     mask: 'lines',
     linesClass: 'fw-line',
     aria: ARIA_MODE,
   });
 
   const lines = split.lines as HTMLElement[];
+  makeRoomForDescenders(lines, split.masks);
   gsap.set(lines, { yPercent: 110 });
 
   return {
@@ -137,6 +175,7 @@ export function revealLines(lines: HTMLElement[], vars: gsap.TweenVars = {}): gs
 export function maskedWords(target: HTMLElement): MaskedLinesResult {
   const split = new SplitText(target, { type: 'words', mask: 'words', wordsClass: 'fw-word', aria: ARIA_MODE });
   const words = split.words as HTMLElement[];
+  makeRoomForDescenders(words, split.masks);
   gsap.set(words, { yPercent: 110 });
   return { lines: words, revert: () => split.revert() };
 }
