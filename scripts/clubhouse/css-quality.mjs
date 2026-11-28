@@ -107,12 +107,28 @@ export function compareRatchet(current, recorded) {
     for (const rule of RATCHET_RULES) {
       const now = current[file]?.[rule] ?? 0;
       const was = recorded[file]?.[rule] ?? 0;
-      if (now > was) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, reason: `${now} here, ${was} recorded. Use a token or a shared component instead of adding one.` });
+      if (now > was) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, kind: 'over', reason: `${now} here, ${was} recorded. Use a token or a shared component instead of adding one.` });
       // A ceiling (motion, keyframes) may sit below its record until the motion work lands; the strict rules may not.
-      else if (now < was && !systemRatchet.ceiling.includes(rule)) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, reason: `${now} here, ${was} recorded. Good: lower the record with npm run clubhouse:css -- --ratchet.` });
+      else if (now < was && !systemRatchet.ceiling.includes(rule)) problems.push({ file, rule: `clubhouse/ratchet-${rule}`, kind: 'under', reason: `${now} here, ${was} recorded. Good: lower the record with npm run clubhouse:css -- --ratchet.` });
     }
   }
   return problems;
+}
+/**
+ * What to do about ratchet findings, printed once under them. The counts are compared with the record in the same tree,
+ * and a pull request's CI checks the PR merged into current main, so a PR whose own branch passes can still fail when
+ * main moved under it (another PR lowered the same file, and the two records merged to a number neither tree has). The
+ * way out is the one that keeps the ratchet: merge main, then lower the record to the merged counts. Nothing here raises one.
+ */
+export function ratchetHelp(problems) {
+  const over = problems.some((p) => p.kind === 'over');
+  const under = problems.some((p) => p.kind === 'under');
+  if (!over && !under) return [];
+  return [
+    `The CSS ratchet holds each file's counts to ${RATCHET_PATH} in the same tree, and on a pull request CI checks the PR merged into current main. If npm run clubhouse:css passes on your branch but fails in CI, main moved under it: run git fetch origin && git merge origin/main, then npm run clubhouse:css again to see the merged counts.`,
+    ...(under ? [`Below its record: run npm run clubhouse:css -- --ratchet (it lowers the record to the counts in this tree and refuses to raise one), then commit ${RATCHET_PATH}.`] : []),
+    ...(over ? [`Above its record: replace the new value with a --ch-* token or a shared component. Do not raise ${RATCHET_PATH} by hand; --ratchet will not.`] : []),
+  ];
 }
 export async function lintCSS(css, file = 'fixture.css') {
   const { default: stylelint } = await import('stylelint');
@@ -162,12 +178,19 @@ export async function main(args = process.argv.slice(2)) {
   }
   const recorded = JSON.parse(readFileSync(join(ROOT, RATCHET_PATH), 'utf8'));
   const ratchet = compareRatchet(current, recorded);
+  let help = [];
   if (lowering) {
-    const raised = ratchet.filter((p) => !p.reason.includes('Good:'));
-    if (raised.length) findings.push(...raised);
-    else writeFileSync(join(ROOT, RATCHET_PATH), `${JSON.stringify(Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b))), null, 2)}\n`);
-  } else findings.push(...ratchet);
+    const raised = ratchet.filter((p) => p.kind === 'over');
+    if (raised.length) {
+      findings.push(...raised);
+      help = ratchetHelp(raised);
+    } else writeFileSync(join(ROOT, RATCHET_PATH), `${JSON.stringify(Object.fromEntries(Object.entries(current).sort(([a], [b]) => a.localeCompare(b))), null, 2)}\n`);
+  } else {
+    findings.push(...ratchet);
+    help = ratchetHelp(ratchet);
+  }
   for (const finding of findings) console.error(`${finding.file}:${finding.line ?? 1} ${finding.rule}: ${finding.reason}`);
+  for (const line of help) console.error(line);
   console.log(`Clubhouse CSS quality: ${findings.length} findings; shadow comparison ${sha.slice(0, 7)}.`);
   return findings.length ? 1 : 0;
 }

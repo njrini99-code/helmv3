@@ -16,8 +16,10 @@
  *      "settle" verb, stated once, cleanly.
  *
  *   2. THE TEE SHOT (scroll-scrubbed). A flight arc draws from the horizon of
- *      the photograph down toward the page below, with a ball riding its head.
- *      The arc is the page's spine: the corridor every later chapter travels.
+ *      the photograph down toward the page below. The arc is the page's spine:
+ *      the corridor every later chapter travels. It draws ALONE: the ball
+ *      that used to ride its head was removed at the owner's request
+ *      (2026-11-27).
  *      Scrubbed, so the reader's own scroll is what hits the shot — the first
  *      and cheapest way to teach "this page responds to you".
  *
@@ -41,7 +43,6 @@ export const HERO = {
   actions: '[data-hero="actions"]',
   plate: '[data-hero="plate"]',
   arc: '[data-hero="arc"]',
-  ball: '[data-hero="ball"]',
 } as const;
 
 export function heroScene({ root, reduced }: SceneContext): void | (() => void) {
@@ -54,13 +55,10 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
   // The hero ships TWO arc frames — a portrait one and a landscape one — because
   // the viewBox window a `slice` scale exposes depends on the aspect ratio, and
   // one path cannot sit inside both. Exactly one is rendered at any width, so
-  // take the one that actually has a box, and take the ball from ITS svg:
-  // `q(...)[0]` would animate the hidden portrait arc on desktop and leave the
-  // visible one blank, and pairing a ball with the wrong frame would put it in
-  // another coordinate space entirely.
+  // take the one that actually has a box: `q(...)[0]` would animate the hidden
+  // portrait arc on desktop and leave the visible one blank.
   const rendered = (el: Element) => el.getClientRects().length > 0;
   const arc = (q(HERO.arc) as unknown as SVGPathElement[]).find(rendered);
-  const ball = arc?.ownerSVGElement?.querySelector<SVGGElement>(HERO.ball) ?? undefined;
 
   // The first-paint entrance gate (lib/motion/anim-gate.ts) is hiding the four
   // arrival targets right now so the server's settled hero cannot be painted and
@@ -71,7 +69,6 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
   // ── Reduced motion: everything settled, nothing scrubbed, arc fully drawn ──
   if (reduced) {
     if (arc) gsap.set(arc, { strokeDasharray: 'none', strokeDashoffset: 0, opacity: 1 });
-    if (ball) gsap.set(ball, { opacity: 1 });
     markAllAnimReady(gated);
     return () => unmarkAllAnimReady(gated);
   }
@@ -132,12 +129,9 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
   if (!arc) return cleanup;
 
   const length = prepareDraw(arc);
-  if (ball) gsap.set(ball, { opacity: 0 });
 
-  // One scrubbed proxy drives BOTH the stroke reveal and the ball's position,
-  // so the ball can never desync from the head of the line it is supposed to be
-  // cutting. `getPointAtLength` is read once per frame off a value GSAP already
-  // computed — no layout is measured during scroll.
+  // One scrubbed proxy drives the stroke reveal. Nothing is measured during
+  // scroll: the offset is computed off a value GSAP already has.
   const head = { progress: 0 };
 
   const shot = gsap.timeline({
@@ -160,12 +154,6 @@ export function heroScene({ root, reduced }: SceneContext): void | (() => void) 
       ease: EASE.none,
       onUpdate: () => {
         gsap.set(arc, { strokeDashoffset: length * (1 - head.progress) });
-        if (!ball) return;
-        // The ball is a <g> holding halo + core, translated as one node. Using
-        // `attr: {cx, cy}` here would move only whichever circle the selector
-        // matched and leave the other behind.
-        const point = arc.getPointAtLength(length * head.progress);
-        gsap.set(ball, { x: point.x, y: point.y, opacity: head.progress > 0.02 ? 1 : 0 });
       },
     },
     0,

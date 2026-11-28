@@ -215,6 +215,7 @@
   border-radius: var(--ch-radius-sm);
   background: var(--ch-bg-subtle);
   color: var(--ch-text-secondary);
+  box-shadow: var(--ch-icon-well-edge);
 }
 .ch-tsw__opt[aria-selected='true'] .ch-tsw__ic {
   background: var(--ch-selected-bg);
@@ -1032,6 +1033,8 @@
   border-radius: var(--ch-radius-md);
   background: var(--ch-bg-subtle);
   color: var(--ch-text-secondary);
+  /* Depth pass (27 Nov): the tinted well is 1.07:1 on the card, so a hairline gives it an edge (an object, not a smudge). */
+  box-shadow: var(--ch-icon-well-edge);
 }
 .ch-more__label {
   flex: 1;
@@ -3184,6 +3187,7 @@ html[data-fw-theme='dark'] .ch-offline {
     height: 24px;
     border-radius: 0;
     background: none;
+    box-shadow: none;
   }
   .ch-more__row[aria-current] .ch-more__ic {
     color: var(--ch-green-700);

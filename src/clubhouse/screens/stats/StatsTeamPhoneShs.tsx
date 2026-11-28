@@ -39,7 +39,7 @@ import { StatsTeamFirstRun } from './StatsTeamFirstRun';
 import { PhoneWindowSwitch, RetryNotice, ShowSeason, TeamFilter, TeamFilterEmpty } from './StatsTeamIslands';
 import { figureValue, Players, Putting, reference, teamDaysMean, teamTrendReading, type ChLegPick } from './StatsTeamPhone';
 import { TeamInsight } from './StatsInsight';
-import { ShsArrow, ShsCard, ShsPill, SummaryCard } from './SummaryCard';
+import { ShsCard, ShsChangeChip, ShsPill, SummaryCard } from './SummaryCard';
 import { teamRankRows } from './team-rank';
 import { TeamRank } from './TeamRank';
 import { sgIsEstimate, sgMixWords } from '../../data/stats-sg-mix';
@@ -69,7 +69,7 @@ function scoringFigure(data: ChTeamStats) {
   return data.figures.find((x) => x.label === TERMS.scoringAvg.long) ?? null;
 }
 
-function changeBits(data: ChTeamStats): { chip: string | null; tone: ShsTone; direction: 'down' | 'up' | 'flat'; words: string } {
+function changeBits(data: ChTeamStats): { chip: string | null; tone: ShsTone; direction: 'down' | 'up' | 'flat'; words: string; vs?: string } {
   const f = scoringFigure(data);
   if (!f || f.delta == null) return { chip: null, tone: 'flat', direction: 'flat', words: 'Nothing earlier to compare with' };
   // One phrasing with My stats ("0.9 lower than the 10 before") and one rule with Home ("No clear change vs previous 10" under the
@@ -79,19 +79,7 @@ function changeBits(data: ChTeamStats): { chip: string | null; tone: ShsTone; di
 }
 
 function Change({ data }: { data: ChTeamStats }) {
-  const c = changeBits(data);
-  return (
-    <>
-      {c.chip && (
-        <ShsPill tone={c.tone}>
-          {/* No glyph for no clear change: a dash beside a signed number read as "— −0.8" (the Islands hero's rule). */}
-          {c.direction !== 'flat' && <ShsArrow direction={c.direction} />}
-          {c.chip}
-        </ShsPill>
-      )}
-      <span>{c.words}</span>
-    </>
-  );
+  return <ShsChangeChip change={changeBits(data)} />;
 }
 
 const toPar = (data: ChTeamStats): string | null => {
@@ -212,7 +200,7 @@ export function StatsTeamPhoneShs({
                   <h2 className="ch-shs-sech">Overview</h2>
                   <SectionBoundary surface="stats.team.figures" label="Team figures" code="CH-4204">
                     {data.cacheError && <RetryNotice code="CH-4202" title="Some team figures didn’t load" body="Scoring is correct; greens, putts and scrambling are missing." covered={covered} />}
-                    <TeamScoringCard data={data} days={days} mean={mean} onOpen={() => go('tscore')} />
+                    <TeamScoringCard data={data} days={days} onOpen={() => go('tscore')} />
                   </SectionBoundary>
                   {below && (
                     <>
@@ -336,21 +324,24 @@ function TeamFailedCard({ seen }: { /** The page's data: a new copy means the re
  * The Overview card. Its own component, so the boundary around it holds everything it reads: a figures list that is not one crashes
  * this card (CH-4204), never the page. Looking the figure up while the page built the card's props answered /stats with a 500.
  */
-function TeamScoringCard({ data, days, mean, onOpen }: { data: ChTeamStats; days: ReadonlyArray<TeamDay & { score: number }>; mean: number | null; onOpen: () => void }) {
+function TeamScoringCard({ data, days, onOpen }: { data: ChTeamStats; days: ReadonlyArray<TeamDay & { score: number }>; onOpen: () => void }) {
   const f = scoringFigure(data);
   const par = toPar(data);
   return (
     <SummaryCard feature go="tscore" onOpen={onOpen} icon="flag" title="Scoring average" meta={windowDays(data)} ariaLabel={`Team scoring average ${f ? figureValue(f) : 'no value'}. Open details`}>
-      <div className="ch-shs-figs">
-        <div className="ch-shs-figline">
-          <span className="ch-shs-fig">{f ? figureValue(f) : <NoData />}</span>
-          {par && <span className="ch-shs-fig-sub">{par}</span>}
+      {/* The figure and the drawing: one column on a phone; side by side once the card is wide, as Health's trend cards are on iPad. */}
+      <div className="ch-shs-tscore">
+        <div className="ch-shs-figs">
+          <div className="ch-shs-figline">
+            <span className="ch-shs-fig">{f ? figureValue(f) : <NoData />}</span>
+            {par && <span className="ch-shs-fig-sub">{par}</span>}
+          </div>
+          <div className="ch-shs-delta">
+            <Change data={data} />
+          </div>
         </div>
-        <div className="ch-shs-delta">
-          <Change data={data} />
-        </div>
+        {days.length >= 2 ? <TeamFeatureChart days={days} /> : <p className="ch-shs-anote">The trend draws once the team has rounds on a second day.</p>}
       </div>
-      {days.length >= 2 ? <TeamFeatureChart days={days} mean={mean} /> : <p className="ch-shs-anote">The trend draws once the team has rounds on a second day.</p>}
     </SummaryCard>
   );
 }

@@ -21,6 +21,7 @@ import noEmptyCollectionOnError from "./eslint-rules/no-empty-collection-on-erro
 import noHealthyValueOnError from "./eslint-rules/no-healthy-value-on-error.mjs";
 import noRawErrorInConsole from "./eslint-rules/no-raw-error-in-console.mjs";
 import noUncheckedPaginatedRead from "./eslint-rules/no-unchecked-paginated-read.mjs";
+import clubhouseNoRawValue from "./eslint-rules/clubhouse-no-raw-value.mjs";
 // D8 (db-tooling-drift) — the .in() PostgREST URL-length trap
 // (.claude/rules/database.md). Ratcheted by scripts/audits/supabase-chunk-audit.mjs.
 import noUnchunkedInFilter from "./eslint-rules/no-unchunked-in-filter.mjs";
@@ -170,6 +171,7 @@ export default tseslint.config(
           "no-raw-error-in-console": noRawErrorInConsole,
           "no-unchecked-paginated-read": noUncheckedPaginatedRead,
           "no-unchunked-in-filter": noUnchunkedInFilter,
+          "clubhouse-no-raw-value": clubhouseNoRawValue,
         },
       },
     },
@@ -296,6 +298,16 @@ export default tseslint.config(
           message: "Navigation is silent (D-70): drop haptic('select') before router.push. A primary action may use haptic('press').",
         },
       ],
+    },
+  },
+  {
+    // Clubhouse paints and sizes through --ch-* tokens (design lab GAP-S2, dsx-09): colour and size literals in a
+    // style, an SVG paint attribute or a Tailwind arbitrary class are counted per file against
+    // config/clubhouse/tsx-raw-values.json, and the counts may only fall (npm run clubhouse:raw-values -- --update).
+    files: ["src/clubhouse/**/*.{ts,tsx}"],
+    ignores: ["src/clubhouse/**/__tests__/**", "src/clubhouse/**/*.test.{ts,tsx}", "src/clubhouse/preview/**"],
+    rules: {
+      "helm/clubhouse-no-raw-value": "error",
     },
   },
   {

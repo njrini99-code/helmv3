@@ -58,8 +58,8 @@ describe('retired admin telemetry tables', () => {
     expect(statements).not.toMatch(/\b(DELETE|TRUNCATE|UPDATE)\b/i);
   });
 
-  it('the migration is registered HOLD in HELD.md', () => {
+  it('the migration is registered APPLIED in HELD.md (applied to production 2026-11-27)', () => {
     const held = readFileSync(join(ROOT, 'supabase/migrations/HELD.md'), 'utf8');
-    expect(held).toMatch(/\| `20261023151000_graveyard_orphan_admin_telemetry_tables\.sql` \| \*\*HOLD\*\* \|/);
+    expect(held).toMatch(/\| `20261023151000_graveyard_orphan_admin_telemetry_tables\.sql` \| \*\*APPLIED 2026-11-27\b/);
   });
 });

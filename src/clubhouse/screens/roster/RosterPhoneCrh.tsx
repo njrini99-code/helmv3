@@ -491,7 +491,7 @@ export function RequestsRow({ jr, error, covered, clock, onRetry, onOpen }: { jr
         {n > 3 && <span className="ch-rsx-req__more ch-num">+{n - 3}</span>}
       </span>
       <span className="ch-rsx-row__b">
-        <b>{pluralWord(n, 'Join request')}</b>
+        <b>{pluralWord(n, 'Join request')}</b>{' '}
         <span>{who}</span>
       </span>
       <span className="ch-rsx-badge ch-num" aria-hidden="true">

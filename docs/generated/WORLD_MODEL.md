@@ -16,7 +16,7 @@ A dependency graph over `memory/registry.yml`'s feature ownership, not a second 
 
 Admin Incidents · active · criticality high · owner platform
 
-- **Relations:** 9 doc/structurally-evidenced, 2 import-graph-only (weak)
+- **Relations:** 9 doc/structurally-evidenced, 3 import-graph-only (weak)
 - **Tables:** `helm_debug`
 - **RPCs:** `admin_unresolve_error_fingerprint`, `resolve_admin_event`
 - **Test surfaces:** 7
@@ -196,7 +196,7 @@ Lift Lab (helm_lifting_*) · active · criticality high · owner product
 
 Sentry Observability — Telemetry Vocabulary · active · criticality medium · owner platform
 
-- **Relations:** 4 doc/structurally-evidenced, 10 import-graph-only (weak)
+- **Relations:** 4 doc/structurally-evidenced, 11 import-graph-only (weak)
 - **Tables:** none
 - **RPCs:** `helm_debug_finalize_trace`, `helm_debug_record_trace_step`, `helm_debug_record_trace_steps`, `helm_debug_start_trace`
 - **Test surfaces:** 2
@@ -468,6 +468,7 @@ Team Operations · active · criticality high · owner product
 | `lift_lab` | `email_outbound` | import_graph (weak) |
 | `lift_lab` | `ios_native_shell` | import_graph (weak) |
 | `lift_lab` | `observability_sentry` | import_graph (weak) |
+| `observability_sentry` | `admin_incidents` | import_graph (weak) |
 | `observability_sentry` | `admin_platform` | import_graph (weak) |
 | `observability_sentry` | `auth_onboarding_join` | feature_doc_contract, import_graph |
 | `observability_sentry` | `coachhelm_ai` | feature_doc_contract |

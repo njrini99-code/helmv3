@@ -29,7 +29,7 @@ describe('the team scoring line (W26)', () => {
     expect([...teamLineDays([{ n: 3 }, { n: 0.5 }, { n: 4 }]).one]).toEqual([1]);
   });
 
-  it('renders the hollow day, a straight line and a named average', () => {
+  it('renders the hollow day, a straight line, and only its two dates as words', () => {
     const { container } = render(
       <TeamFeatureChart
         days={[
@@ -38,20 +38,20 @@ describe('the team scoring line (W26)', () => {
           { label: 'Sep 20', score: 73.9, n: 7 },
           { label: 'Oct 1', score: 73.1, n: 7 },
         ]}
-        mean={75.3}
       />,
     );
     expect(container.querySelectorAll('.ch-shs-rdot.is-one')).toHaveLength(1);
     const d = container.querySelector('.ch-shs-avgline')!.getAttribute('d')!;
     expect(d).not.toMatch(/[CQS]/);
     expect(d.match(/L/g)).toHaveLength(3);
-    expect(container.textContent).toContain('Round-day avg 75.3');
+    // No number in the drawing: the card's figure is the only average on it, and the newest day (73.1) would sit under it.
+    expect([...container.querySelectorAll('svg text')].map((t) => t.textContent)).toEqual(['Sep 3', 'Oct 1']);
+    expect(container.querySelector('.ch-shs-rdot:last-of-type')!.getAttribute('r')).toBe('5');
   });
 
-  // F-0009 (audit, 13 Nov 2026, coach phone): "Avg of these days 76.4" was drawn on the dashed line where the scoring line crossed
-  // it, so the line ran through the words (1.93:1 painted), and it read as a second scoring average under the 75.6 headline. The
-  // name says which average it is, and it is the chart's key under the drawing: no line can cross it, whatever the rounds do.
-  it('names the dashed average in a key under the chart, never in the drawing', () => {
+  // Owner's screenshot (27 Nov 2026, team Scoring average): "Round-day avg 73.9" sat under a 73.6 headline, the second average beside
+  // the headline that W26, F-0009 and STATS-P-04 each flagged. The preview draws no second average; the tap-through keeps its reference.
+  it('draws no second average on the preview, in the drawing or under it', () => {
     const { container } = render(
       <TeamFeatureChart
         days={[
@@ -59,20 +59,29 @@ describe('the team scoring line (W26)', () => {
           { label: 'Sep 20', score: 76.4, n: 7 },
           { label: 'Oct 1', score: 78.1, n: 7 },
         ]}
-        mean={76.4}
       />,
     );
-    const svg = container.querySelector('.ch-shs-chart svg')!;
-    expect([...svg.querySelectorAll('text')].map((t) => t.textContent).join(' ')).not.toMatch(/avg/i);
-    const key = container.querySelector('.ch-shs-mean-key')!;
-    expect(key.closest('svg')).toBeNull();
-    expect(key.textContent).toBe('Round-day avg 76.4');
-    // The key's mark is the line's own dash.
-    expect(key.querySelector('line.ch-shs-parline')).not.toBeNull();
+    expect(container.textContent).not.toMatch(/avg|mean|average/i);
+    expect(container.querySelector('.ch-shs-ref, .ch-shs-meanline')).toBeNull();
+    expect(container.querySelectorAll('.ch-shs-grid')).toHaveLength(0);
   });
 
-  it('draws no key when there is no average', () => {
-    const { container } = render(<TeamFeatureChart days={[{ label: 'Sep 3', score: 74.6 }, { label: 'Sep 20', score: 76.4 }]} mean={null} />);
-    expect(container.querySelector('.ch-shs-mean-key')).toBeNull();
+  // The axis is inverted like every Clubhouse score chart, and with no axis numbers the words under the drawing say which way is better.
+  it('says under the drawing that lower scores sit higher, and draws them so', () => {
+    const { container } = render(<TeamFeatureChart days={[{ label: 'Sep 3', score: 74.6 }, { label: 'Sep 20', score: 72.4 }]} />);
+    const key = container.querySelector('.ch-shs-mean-key')!;
+    expect(key.closest('svg')).toBeNull();
+    expect(key.textContent).toBe('Lower scores sit higher');
+    const [a, b] = [...container.querySelectorAll('.ch-shs-rdot')].map((c) => Number(c.getAttribute('cy')));
+    expect(b!).toBeLessThan(a!);
+  });
+  // With no axis numbers the scale has a floor: 1.7 strokes drawn edge to edge read as a big change beside "No clear change".
+  it('draws a small spread as a small move', () => {
+    const { container } = render(
+      <TeamFeatureChart days={[74.8, 74.2, 73.9, 73.1, 73.4].map((score, i) => ({ label: `Sep ${i + 1}`, score, n: 6 }))} />,
+    );
+    const ys = [...container.querySelectorAll('.ch-shs-rdot')].map((c) => Number(c.getAttribute('cy')));
+    // The plot is 160 less 8 above and the date row below (26 at Text Size 1): 126 tall. 1.7 of 4 strokes is under half of it.
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(126 * 0.45);
   });
 });

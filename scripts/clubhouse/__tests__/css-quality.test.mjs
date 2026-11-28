@@ -91,3 +91,24 @@ test('the system ratchet counts raw radii, raw shadows, raw motion and stray key
   assert.equal(compareRatchet({ [f]: { 'raw-motion': 1, keyframes: 0 } }, { [f]: { 'raw-motion': 2, keyframes: 1 } }).length, 0);
   assert.equal(compareRatchet({ [f]: { keyframes: 2 } }, { [f]: { keyframes: 1 } }).length, 1);
 });
+test('the ratchet judges the merged tree against its own record, so a base that moved shows as a count below its record, and the help says how to lower it after merging main', async () => {
+  const { compareRatchet, ratchetHelp, RATCHET_PATH } = await import('../css-quality.mjs');
+  const f = 'src/clubhouse/styles/x.css';
+  // This PR and main each took one hex out of the same file and each recorded 2: the two records merge cleanly, the file has 1.
+  const under = compareRatchet({ [f]: { hex: 1 } }, { [f]: { hex: 2 } });
+  assert.deepEqual(under.map((p) => p.kind), ['under']);
+  const lower = ratchetHelp(under).join('\n');
+  assert.match(lower, /git fetch origin && git merge origin\/main/);
+  assert.match(lower, /npm run clubhouse:css -- --ratchet/);
+  assert(lower.includes(`commit ${RATCHET_PATH}`));
+  assert.doesNotMatch(lower, /Above its record/);
+  // A count above its record is never answered by moving the record.
+  const over = compareRatchet({ [f]: { hex: 3 } }, { [f]: { hex: 2 } });
+  assert.deepEqual(over.map((p) => p.kind), ['over']);
+  const raise = ratchetHelp(over).join('\n');
+  assert.match(raise, /Above its record: replace the new value with a --ch-\* token/);
+  assert.doesNotMatch(raise, /Below its record/);
+  // Nothing to say when the tree matches its record, or when only a ceiling sits below its record.
+  assert.deepEqual(ratchetHelp(compareRatchet({ [f]: { hex: 2 } }, { [f]: { hex: 2 } })), []);
+  assert.deepEqual(ratchetHelp(compareRatchet({ [f]: { keyframes: 0 } }, { [f]: { keyframes: 1 } })), []);
+});

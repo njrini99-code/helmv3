@@ -155,7 +155,7 @@ export function TeamHole({
                 {v != null && <circle className="core" cx={t.x} cy={t.y} r={4.5} />}
                 <ChartText className="sl" size={labelSize} weight={station === s ? 600 : 500} x={textX} y={spot.y + labelSize} textAnchor={spot.anchor}>
                   {STATION_SHORT[s]}
-                </ChartText>
+                </ChartText>{' '}
                 <ChartText className="sv" size={valueSize} weight={600} x={textX} y={spot.y + labelSize + valueSize + 2} textAnchor={spot.anchor}>
                   {v == null ? 'Not measured' : formatSigned(v)}
                 </ChartText>
