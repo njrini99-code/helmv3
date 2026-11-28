@@ -590,7 +590,7 @@ function TeamGameDetail({ data }: { data: ChTeamStats }) {
           </>
         }
         chips={worst && worst.value < -0.05 ? <span>{worst.label} costs the most, {formatFixed(Math.abs(worst.value))} a round</span> : undefined} />
-      <ShsCard title="Strokes gained by leg" meta="Per round">
+      <ShsCard title="Strokes gained by leg" meta="Per round" feature>
         <p className="ch-shs-readout" aria-live="polite">
           {pinned ? `${pinned.label}: ${formatSigned(pinned.value)} a round.` : 'Tap a leg to read it.'}
         </p>

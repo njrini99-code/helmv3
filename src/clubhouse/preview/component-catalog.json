@@ -9813,6 +9813,7 @@
       ],
       "styles": [
         "src/clubhouse/styles/base.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
@@ -14245,6 +14246,7 @@
         "src/clubhouse/styles/base.css",
         "src/clubhouse/styles/component-playground.css",
         "src/clubhouse/styles/controls.css",
+        "src/clubhouse/styles/roster.css",
         "src/clubhouse/styles/settings.css",
         "src/clubhouse/styles/shell.css",
         "src/clubhouse/styles/stats-redesign.css",
@@ -22646,7 +22648,10 @@
         "ch-rsx-sort",
         "ch-rsx-well",
         "ch-seg__b",
-        "ch-skel"
+        "ch-skel",
+        "ch-surface--card",
+        "ch-surface__head",
+        "ch-surface__title"
       ],
       "tokens": [
         {
@@ -24348,6 +24353,7 @@
         "ch-avatar",
         "ch-badge",
         "ch-btn",
+        "ch-btn--ghost",
         "ch-cmp__bar",
         "ch-cmp__l",
         "ch-cmp__r",
@@ -24356,6 +24362,7 @@
         "ch-es__copy",
         "ch-gain",
         "ch-gd",
+        "ch-gl-st",
         "ch-gm",
         "ch-gm-p",
         "ch-gm-p__n",

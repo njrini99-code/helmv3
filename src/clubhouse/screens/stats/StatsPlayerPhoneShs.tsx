@@ -37,7 +37,7 @@ import { FocusLoop } from './FocusLoop';
 import { GameDetail, type ChReadsSource } from './GameDetail';
 import { GoalSetButton, GoalStatus, GoalSuggestions } from './Goals';
 import { legReadout, sgLegRows } from './leg-rows';
-import { GoalBar, MiniDiverging, MiniRails, RoundStrip, RoundTicker, type MiniRailRow } from './MiniCharts';
+import { GoalBar, MiniDiverging, MiniRails, RoundStrip, RoundTicker, tickerBars, type MiniRailRow } from './MiniCharts';
 import { CACHE_ERROR, countWords, shotsWords } from './notes';
 import { sgIsEstimate, sgMixWords } from '../../data/stats-sg-mix';
 import { ProposalAnswer } from './ProposalAnswer';
@@ -1091,7 +1091,7 @@ function SgDetail({ data, onPart }: { data: ChPlayerProfile; onPart: (id: StatsD
           </>
         }
       />
-      <ShsCard title="By part of the game" meta="Per round">
+      <ShsCard title="By part of the game" meta="Per round" feature>
         <p className="ch-shs-readout" aria-live="polite">
           {pinned ? legReadout(pinned) : 'Tap a part to see its likely range.'}
         </p>
@@ -1173,9 +1173,9 @@ function RoundsDetail({ data }: { data: ChPlayerProfile }) {
   return (
     <>
       <DetailHero figure={String(n)} caption={`Rounds · averaging ${formatFixed(data.win.avg)} · ${label}`} chips={<span className="ch-num">{countWords(n, data.win.effRounds)} in this window.</span>} />
-      <ShsCard title="Round by round" meta="Lower scores sit higher">
+      <ShsCard title="Round by round" meta="Lower scores sit higher" feature>
         <RoundTicker rounds={tickerRounds(data)} />
-        <p className="ch-shs-mini-cap">{n > 1 ? 'Best round in green. Score by round is on the Scoring page.' : 'Score by round is on the Scoring page.'}</p>
+        <p className="ch-shs-mini-cap">{tickerBars(tickerRounds(data)).some((b) => b.best) ? 'Best round in green. Score by round is on the Scoring page.' : 'Score by round is on the Scoring page.'}</p>
       </ShsCard>
       {data.rounds.length > 0 && <RoundsExtra noCompare x={data.extra} filter={data.filter} phone share={{ viewer: data.viewer, name: data.name, coach: data.attestingCoach }} />}
       {data.rounds.length > 0 && <AgainstBefore compare={data.extra.compare} rows={COMPARE_ROWS.all} previous={hasPrevious(data)} how={SHS_HOW.scoring} />}
@@ -1234,9 +1234,9 @@ function GoalsDetail({ data, coach, onAddFocus, onRetry }: { data: ChPlayerProfi
       {data.devError && <InlineNotice code="CH-5203" title="Some development items didn’t load." body="Try again." onRetry={onRetry} />}
       {data.goals[0] && (() => {
         const lead = data.goals[0]!;
-        return <DetailHero figure={devValue(lead.current, devMetric(lead.title, lead.metric))} caption={[devTitle(lead.title), goalLine(lead)].filter(Boolean).join(' · ')} chips={<GoalStatus id={lead.id} title={devTitle(lead.title)} state={lead.state} coach={coach} />} />;
+        return <DetailHero figure={devValue(lead.current, devMetric(lead.title, lead.metric))} caption={[devTitle(lead.title), goalLine(lead)].filter(Boolean).join(' · ')} chips={<GoalStatus id={lead.id} title={devTitle(lead.title)} state={lead.state} coach={false} />} />;
       })()}
-      <ShsCard title="Goals this season" meta={plural(data.goals.length, 'goal')}>
+      <ShsCard title="Goals this season" meta={plural(data.goals.length, 'goal')} feature>
         {!coach && (
           <>
             <GoalSetButton data-ctl="CTL-P005-050" />

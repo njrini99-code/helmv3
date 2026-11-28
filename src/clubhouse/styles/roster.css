@@ -3946,3 +3946,31 @@ html:has([data-ui='clubhouse'])::view-transition-new(.ch-rsm-reorder) {
 .ch-rs-limitp .ch-rs-limit__over {
   margin-top: 4px;
 }
+
+/* Option F (look-09): the season card is the roster's one green feature; every other stat card wears the green title
+   bar. A leader card's kicker becomes its bar, the figure and who stay on the ivory; a list card's head likewise. */
+[data-ch-crh='on'] .ch-rs-ldr {
+  overflow: hidden;
+}
+[data-ch-crh='on'] .ch-rs-ldr__k.ch-rs-ldr__k {
+  margin: -12px -16px 4px;
+  padding: 10px 16px;
+  background: var(--ch-feature-bg);
+  color: var(--ch-feature-ink);
+}
+[data-ch-crh='on'] .ch-rs-ldr__k.ch-rs-ldr__k svg {
+  color: var(--ch-feature-ink-2);
+}
+.ch-rsx .ch-surface--card > .ch-surface__head.ch-surface__head {
+  padding: 12px 16px;
+  background: var(--ch-feature-bg);
+}
+.ch-rsx .ch-surface--card > .ch-surface__head.ch-surface__head::after {
+  display: none;
+}
+.ch-rsx .ch-surface--card > .ch-surface__head .ch-surface__title.ch-surface__title {
+  color: var(--ch-feature-ink);
+}
+.ch-rsx .ch-surface--card > .ch-surface__head .ch-rsx-meta.ch-rsx-meta {
+  color: var(--ch-feature-ink-2);
+}

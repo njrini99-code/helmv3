@@ -4554,3 +4554,37 @@ button.ch-qf-prounds__r.is-open {
     }
   }
 }
+
+/* Option F (look-09): on a desk each qualifier card's head is the green title bar across the card's top, its title in
+   the plate's ink and its line under it in the plate's second ink; the phone keeps its ledger sections on the parchment. */
+@media (min-width: 821px) and ((min-height: 501px) or (pointer: fine)) {
+  .ch-qf[data-canopy] :is(.ch-qf-panel, .ch-qf-side, .ch-qf-board) {
+    overflow: hidden;
+  }
+  .ch-qf[data-canopy] :is(.ch-qf-panel, .ch-qf-side, .ch-qf-board) > .ch-qf-panel__head.ch-qf-panel__head {
+    align-items: center;
+    margin: -24px -32px 16px;
+    padding: 14px 32px;
+    background: var(--ch-feature-bg);
+    box-shadow: none;
+  }
+  .ch-qf[data-canopy] :is(.ch-qf-panel, .ch-qf-side, .ch-qf-board) > .ch-qf-panel__head.ch-qf-panel__head h2 {
+    margin-bottom: 0;
+    font: var(--ch-type-headline);
+    letter-spacing: var(--ch-track-17);
+    color: var(--ch-feature-ink);
+  }
+  .ch-qf[data-canopy] :is(.ch-qf-panel, .ch-qf-side, .ch-qf-board) > .ch-qf-panel__head.ch-qf-panel__head p {
+    margin-top: 2px;
+    color: var(--ch-feature-ink-2);
+  }
+  .ch-qf[data-canopy] .ch-qf-side > .ch-qf-panel__head.ch-qf-panel__head {
+    flex-wrap: wrap;
+  }
+  .ch-qf[data-canopy] .ch-qf-panel__head.ch-qf-panel__head .ch-qf-feed .ch-badge {
+    padding: 2px 8px;
+    border-radius: var(--ch-radius-full);
+    background: var(--ch-feature-flat-tint);
+    color: var(--ch-feature-ink);
+  }
+}

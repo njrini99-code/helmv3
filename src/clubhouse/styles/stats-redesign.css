@@ -2019,7 +2019,7 @@ li + li > .ch-shs-rrow::before {
 .ch-shs-dev b {
   display: block;
   font: var(--ch-type-16-medium); letter-spacing: var(--ch-track-16); }
-.ch-shs-dev span.ch-num {
+.ch-shs-dev span.ch-num:not(.ch-shs-gbar__k) {
   display: block;
   margin-top: 2px;
   font: var(--ch-type-15);
@@ -3064,4 +3064,19 @@ p.ch-shs-mini-cap {
 .ch-shs-feature a:not(.ch-btn),
 .ch-shs-feature .ch-howc-link.ch-howc-link {
   color: var(--ch-feature-ink);
+}
+
+/* A goal's Pause and Abandon on the green feature card read in the plate's ink on a faint wash, as the player file's feature does (look-09). */
+.ch-shs-feature .ch-btn--ghost {
+  color: var(--ch-on-green-ink);
+  background: color-mix(in srgb, var(--ch-feature-ink) 10%, transparent);
+}
+@media (hover: hover) {
+  .ch-shs-feature .ch-btn--ghost:hover:not(:disabled) {
+    color: var(--ch-on-green-ink);
+    background: color-mix(in srgb, var(--ch-feature-ink) 16%, transparent);
+  }
+}
+.ch-shs-feature .ch-gl-st {
+  color: var(--ch-feature-ink-2);
 }
