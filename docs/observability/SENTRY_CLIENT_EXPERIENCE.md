@@ -247,6 +247,47 @@ surface of their own:
 
 ---
 
+## The Bridge's own copy of browser errors
+
+The Bridge (`admin_events`, `source = 'client'`) keeps its own record of every
+production browser error, whether or not Sentry accepts the event. Before this,
+it only saw what `logError` and the window handlers wrote, and those handlers
+were installed after hydration, so about half of what Sentry captured never
+reached it (Nov 10 to 19, 2026: 45 Bridge rows against 98 Sentry errors).
+
+- **Window handlers before hydration.** `instrumentation-client.ts` calls
+  `setupGlobalErrorHandlers()` right after `Sentry.init`, so a crash while the
+  page loads is written too. `GlobalErrorHandlerSetup` still calls it after
+  hydration; a second call does nothing, so nothing is written twice.
+- **What Sentry captures by itself.** `beforeSend` hands each event to
+  `copyToBridge`, before the repeat sampling. `lib/observability/sentry-bridge-copy.ts`
+  decides what is copied: production events at error or fatal level from a
+  `console.error`, a failed request (named `Request failed (status): METHOD path`,
+  ids in the path as `:id`, never the query) or an SDK's own capture. It skips
+  what a Bridge path already wrote (the bridge-logged marker), uncaught errors
+  (the window handlers write those) and failures of `/api/log-error` itself.
+  The copy waits for the rest of the task, so an error a boundary reports a
+  moment later is written once, by the boundary.
+- **Same limits as `logError`.** The copy goes through the same noise, crawler
+  and stale-deployment filters and the same per-tab throttle
+  (`logCapturedErrorToBridge`), and the route's 30-per-minute cap still holds.
+- **Filed as errors.** An error-level copy is sent as `high` (stored as
+  `error`), so it counts in the Bridge's failure totals and release reports;
+  a fatal one as `critical`. A stale chunk or a dropped request is still
+  capped to a warning, as it is for `logError`.
+- **Release.** Each report carries `NEXT_PUBLIC_SENTRY_RELEASE`, stored in
+  `admin_events.release` when it looks like a commit SHA or a version name.
+- **Unhandled rejections keep their Error.** A rejection with an `Error` is
+  logged as that object, so its own stack reaches the Bridge and Sentry's
+  handler sees the marker.
+- **Still minified.** Stacks in the Bridge are the bundle's. Source maps go to
+  Sentry only, so turning them back into source lines needs a follow-up.
+
+**Roll back:** remove the `copyToBridge(event, hint)` line from `beforeSend`
+and the `setupGlobalErrorHandlers()` call after `Sentry.init`.
+
+---
+
 ## Env var reference
 
 | Var | Default (dev / prod) | Controls |
