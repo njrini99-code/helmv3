@@ -115,3 +115,22 @@ export function resolveClientEnvironment(
 
   return declared;
 }
+
+/**
+ * Whether an error event goes to Sentry. Only production's do. Errors from previews, local builds and `next dev`
+ * used up the same monthly error allowance as production's (Sentry stopped accepting errors on Nov 19, 2026), while
+ * the Bridge reads production's only. Traces, logs, metrics and user feedback are not error events and still go.
+ *
+ * `environment` is the event's own: Sentry stamps it from the init option before `beforeSend` runs, and files an event
+ * without one as production, so this does the same. `allEnvironments` is `NEXT_PUBLIC_SENTRY_ERRORS_ALL_ENVIRONMENTS`:
+ * `1` or `true` sends every environment's errors again, for a window when a preview or a local build is being
+ * debugged in Sentry. Both runtimes read it by that literal name, so Next inlines it into the browser bundle.
+ */
+export function sendsErrorEventsToSentry(
+  environment: string | undefined,
+  allEnvironments: string | undefined,
+): boolean {
+  if (environment === undefined || environment === 'production') return true;
+  const optIn = allEnvironments?.trim().toLowerCase();
+  return optIn === '1' || optIn === 'true';
+}
