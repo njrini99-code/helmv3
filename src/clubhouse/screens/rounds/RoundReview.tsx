@@ -45,6 +45,7 @@ import { hasCard } from './card/card-model';
 import { useJustSubmitted } from './card/just-submitted';
 import { RoundCard } from './card/RoundCard';
 import { useRoundRecap } from './use-round-recap';
+import { useCoachHelmReview } from './use-coachhelm-review';
 import { openedFromLibrary } from './return-state';
 import { SideScroll } from '../../ui/SideScroll';
 import { rebuiltHref } from '../../shell/nav';
@@ -507,6 +508,9 @@ export function RoundReview({
   // does); then D13: less any sentence its own figures contradict (recap-check.ts).
   // With the debrief drawn in its place (chs-30), no recap is asked for.
   const recapText = useRoundRecap(r.id, r.recap, r.recapPending === true && !r.debrief);
+  // The round's CoachHelm review, written once on open when it has none (as the Fairway review page did). Asked after
+  // the recap, so the recap the page draws is not queued behind it.
+  useCoachHelmReview(r.id, r.playerId, r.coachHelmPending === true);
   const recap = useMemo(() => checkedRecap({ ...r, recap: recapText }), [r, recapText]);
   const holesScored = r.holes.filter((h) => h.score != null).length || r.holesPlayed;
   const maxD = Math.max(1, ...dist.map((d) => d.count));

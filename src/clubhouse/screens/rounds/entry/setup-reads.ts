@@ -22,7 +22,10 @@ async function read<T>(action: string, run: () => Promise<ChResult<T>>): Promise
   try {
     return await run();
   } catch (err) {
-    chReport(err, { surface: 'rounds', action: `rounds.${action}` });
+    // A setup read that failed because the tab outlived a deploy (a stale server action) is still a player who could not
+    // start a round, so it is recorded (at low, never a page), as Fairway's course picker recorded its loads and tee picks.
+    // Without the flag logError drops it as a deployment artifact and the Bridge never sees the lost start.
+    chReport(err, { surface: 'rounds', action: `rounds.${action}`, extra: { featureArea: 'round_tracking', bypassStaleActionFilter: true } });
     return { ok: false, error: words(err) };
   }
 }

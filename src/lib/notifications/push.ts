@@ -349,6 +349,28 @@ function pushExtras(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
+ * Whether a push's recipient is a golf coach or player, for the Bridge: a failure logged with `sport: 'golf'` from the
+ * job queue or a cron is tagged Clubhouse (server-error-logger), so a push that failed for a golf person shows in the
+ * Bridge's Clubhouse-only views however it was sent. Read only on a failure path, at most once per send, and never
+ * throws: an unreadable answer leaves the row as it was.
+ */
+async function readRecipientSport(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  userId: string,
+): Promise<'golf' | undefined> {
+  try {
+    const [coach, player] = await Promise.all([
+      supabase.from('golf_coaches').select('id').eq('user_id', userId).limit(1),
+      supabase.from('golf_players').select('id').eq('user_id', userId).limit(1),
+    ]) as [{ data: unknown[] | null }, { data: unknown[] | null }];
+    return (coach.data?.length ?? 0) > 0 || (player.data?.length ?? 0) > 0 ? 'golf' : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * The real work of sending a push notification. Called directly by
  * `sendPushNotification` when the queue is off/unavailable, and by the
  * jobs-consume route's `push_send` handler when a queued message is
@@ -381,6 +403,8 @@ export async function sendPushNotificationDirect(
     // never reads cookies and works in both contexts; device-token reads/writes
     // here are server-trusted and keyed by user_id.
     const supabase = createAdminClient();
+    let recipientSport: Promise<'golf' | undefined> | null = null;
+    const sportForLog = () => (recipientSport ??= readRecipientSport(supabase, userId));
 
     // Get user's active device tokens
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -395,7 +419,7 @@ export async function sendPushNotificationDirect(
     if (tokenError) {
       await logServerError(
         `[push] device-token read failed for user ${userId}; reporting non-delivery instead of a phantom send: ${tokenError.message}`,
-        { action: 'push.sendPushNotification.readTokens', featureArea: 'notifications', userId },
+        { action: 'push.sendPushNotification.readTokens', featureArea: 'notifications', userId, sport: await sportForLog() },
       );
       recordPushOutcome(type, 'failure', 'token_read_failed');
       return { success: false, error: 'Could not read device tokens' };
@@ -542,6 +566,7 @@ export async function sendPushNotificationDirect(
               action: 'push.sendPushNotification.tokenInvoke',
               featureArea: 'notifications',
               userId,
+              sport: await sportForLog(),
               skipSentry: true,
               extra: { tokenPrefix: deviceToken.token.slice(0, 8) },
             },
@@ -600,6 +625,7 @@ export async function sendPushNotificationDirect(
           action: 'push.sendPushNotification.tokenException',
           featureArea: 'notifications',
           userId,
+          sport: await sportForLog(),
           extra: { tokenPrefix: deviceToken.token.slice(0, 8), platform: deviceToken.platform },
         }, 'warning');
       }
@@ -615,7 +641,7 @@ export async function sendPushNotificationDirect(
     if (delivered === 0) {
       await logServerError(
         `[push] no device accepted this ${type} for user ${userId} (${tokens.length} token(s) tried); previously reported as sent`,
-        { action: 'push.sendPushNotification.deliver', featureArea: 'notifications', userId },
+        { action: 'push.sendPushNotification.deliver', featureArea: 'notifications', userId, sport: await sportForLog() },
       );
       recordPushOutcome(type, 'failure', 'no_device_accepted');
       return { success: false, error: 'No device accepted the notification' };

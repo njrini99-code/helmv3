@@ -118,6 +118,8 @@ export async function loadRoundReview(roundId: string, viewerIn: ChReviewViewer 
     tourError: !!teamRes.error,
     coachNote: noteRes.error ? null : (noteRes.data?.coach_notes ?? null),
     coachNoteError: !!noteRes.error,
+    // No review row at all: the round's CoachHelm review was never written (Fairway's review page wrote it on open).
+    reviewRowMissing: !noteRes.error && !noteRes.data,
   });
   // P-7 stage 3 reads the player's other rounds and then their holes (two reads in a row): the route streams it after the review,
   // from what is known here, so the review does not wait for it.
