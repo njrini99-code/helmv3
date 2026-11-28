@@ -74,3 +74,26 @@ describe('chart marks hold 3:1 on what they sit on', () => {
     expect(ruleDecl(team, '.ch-htb .scn.early circle', 'stroke')).toBe('var(--ch-feature-ink)');
   });
 });
+
+describe('the scoring mix and control edges hold 3:1 (depth and contrast pass, 27 Nov 2026)', () => {
+  const tokens = read('src/clubhouse/styles/tokens.css');
+  const stats = read('src/clubhouse/styles/stats.css');
+  const card = firstDecl(tokens, '--ch-bg-surface');
+  const page = firstDecl(tokens, '--ch-bg-page');
+
+  it('paints a bogey segment that reads on the card, with its numeral at 4.5:1', () => {
+    const bogey = firstDecl(tokens, '--ch-chart-bogey').split(/\s/)[0]!;
+    expect(ratio(bogey, card)).toBeGreaterThanOrEqual(3.3);
+    expect(ratio(firstDecl(tokens, '--ch-ink-950'), bogey)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it("edges the quiet par segment in the control border, not the 1.3:1 ledger hairline", () => {
+    expect(ruleDecl(stats, '.ch-sv-mix-seg.is-par', 'box-shadow')).toBe('inset 0 0 0 1px var(--ch-border-control)');
+  });
+
+  it('keeps the control border at 3:1 or better on the page and the card, with room to spare', () => {
+    const border = firstDecl(tokens, '--ch-border-control').split(/\s/)[0]!;
+    expect(ratio(border, page)).toBeGreaterThanOrEqual(3.3);
+    expect(ratio(border, card)).toBeGreaterThanOrEqual(3.3);
+  });
+});

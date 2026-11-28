@@ -5,6 +5,7 @@ vi.mock('../../../lib/haptics', () => ({ haptic: vi.fn(), hapticScrub: vi.fn() }
 vi.mock('../../../lib/reduced-motion', () => ({ useChReducedMotion: () => true }));
 
 import { ScoringFeatureChart, TeamFeatureChart } from '../ScoringFeatureChart';
+import { barYs } from './_bars';
 import type { TrendRound } from '../round-trend';
 
 /**
@@ -120,7 +121,7 @@ describe('scoring hero · the average is straight segments (CH-15)', () => {
 
 describe('team hero · round days sit by their dates (CH-11)', () => {
   const xs = (days: Array<{ label: string; score: number; n: number; date?: string }>) =>
-    [...render(<TeamFeatureChart days={days} mean={null} />).container.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cx')));
+    [...render(<TeamFeatureChart days={days} />).container.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cx')));
 
   it('a month between two round days draws wider than the days a week apart', () => {
     const x = xs([
@@ -150,7 +151,6 @@ describe('team hero · round days sit by their dates (CH-11)', () => {
           { label: 'Sep 8', score: 79, n: 1, date: '2026-09-08' },
           { label: 'Oct 5', score: 74, n: 6, date: '2026-10-05' },
         ]}
-        mean={74.7}
       />,
     ).container;
     const [, , w, h] = c.querySelector('.ch-shs-chart svg')!.getAttribute('viewBox')!.split(' ').map(Number);
@@ -163,9 +163,9 @@ describe('team hero · round days sit by their dates (CH-11)', () => {
     }
   });
 
-  // The presentation gate (card-escape, desk and phone): the top axis figure's box, 13 tall over its baseline, rose 1 past the
-  // drawing's top. The figures are 13 type, so each baseline needs 13 above it.
-  it('leaves each axis figure room for its box above its baseline', () => {
+  // The presentation gate (card-escape, desk and phone): text drawn past the drawing's edge. The chart carries no axis figures
+  // now, only the end dates, 13 type centred under the end dots: each needs 13 above its baseline and stays inside the drawing.
+  it('keeps each date label inside the drawing', () => {
     const c = render(
       <TeamFeatureChart
         days={[
@@ -173,12 +173,15 @@ describe('team hero · round days sit by their dates (CH-11)', () => {
           { label: 'Sep 8', score: 79, n: 1, date: '2026-09-08' },
           { label: 'Oct 5', score: 74, n: 6, date: '2026-10-05' },
         ]}
-        mean={74.7}
       />,
     ).container;
-    const figures = [...c.querySelectorAll('.ch-shs-chart svg g > text.ch-shs-ax')];
-    expect(figures.length).toBeGreaterThan(1);
-    for (const t of figures) expect(Number(t.getAttribute('y')) - 13).toBeGreaterThanOrEqual(0);
+    const [, , , h] = c.querySelector('.ch-shs-chart svg')!.getAttribute('viewBox')!.split(' ').map(Number);
+    const labels = [...c.querySelectorAll('.ch-shs-chart svg text.ch-shs-ax')];
+    expect(labels.map((t) => t.textContent)).toEqual(['Sep 1', 'Oct 5']);
+    for (const t of labels) {
+      expect(Number(t.getAttribute('y')) - 13).toBeGreaterThanOrEqual(0);
+      expect(Number(t.getAttribute('y'))).toBeLessThanOrEqual(h!);
+    }
   });
 });
 
@@ -190,21 +193,26 @@ describe('team hero · against par when every day has it (CH-01)', () => {
     { label: 'Sep 15', score: 73, toPar: 2, n: 6, date: '2026-09-15' },
   ];
 
-  it('draws one flat line, the dashed line is par and named so, and the axis reads against par', () => {
-    const c = render(<TeamFeatureChart days={days} mean={73} />).container;
-    const ys = [...c.querySelectorAll('.ch-shs-rdot')].map((d) => Number(d.getAttribute('cy')));
-    for (const y of ys) expect(y).toBeCloseTo(ys[0]!, 5);
-    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Par');
-    const ticks = [...c.querySelectorAll('.ch-shs-ax')].map((t) => t.textContent);
-    expect(ticks).toContain('E');
-    expect(ticks).toContain('+2');
-    // Under par sits higher: par's dashed line is above the +2 days.
-    expect(Number(c.querySelector('.ch-shs-parline')!.getAttribute('y1'))).toBeLessThan(ys[0]!);
-    expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(/^Team score against par, per 18 holes, by round day, from \+2\.0 to \+2\.0\. Under par sits higher\./);
+  it('draws a bar from par for each day, every +2 day the same length and below par, and the reading is against par', () => {
+    const c = render(<TeamFeatureChart days={days} />).container;
+    const bars = [...c.querySelectorAll('.ch-shs-tbar')];
+    expect(bars).toHaveLength(3);
+    expect(c.querySelector('.ch-shs-avgline')).toBeNull();
+    const par = Number(c.querySelector('.ch-shs-tbars__par')!.getAttribute('y1'));
+    const ends = bars.map((b) => barYs(b.getAttribute('d')!).bottom);
+    for (const e of ends) expect(e).toBeCloseTo(ends[0]!, 5);
+    // Over par hangs below par's line.
+    expect(ends[0]!).toBeGreaterThan(par);
+    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Each bar is a round day, against par');
+    expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(
+      /^Team score against par, per 18 holes, by round day, from \+2\.0 on Sep 1 to \+2\.0 on Sep 15\. Bars hang below par for days over par/,
+    );
   });
 
-  it('a day with no figure against par keeps the whole chart in strokes, against the days’ average', () => {
-    const c = render(<TeamFeatureChart days={[...days.slice(0, 2), { ...days[2]!, toPar: null }]} mean={73} />).container;
-    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Round-day avg 73.0');
+  it('a day with no figure against par keeps the whole chart in strokes, with no par line', () => {
+    const c = render(<TeamFeatureChart days={[...days.slice(0, 2), { ...days[2]!, toPar: null }]} />).container;
+    expect(c.querySelector('.ch-shs-mean-key')!.textContent).toBe('Lower scores sit higher');
+    expect(c.querySelector('.ch-shs-parline, .ch-shs-tbars__par, .ch-shs-tbar')).toBeNull();
+    expect(c.querySelector('[role="img"]')!.getAttribute('aria-label')).toMatch(/^Team scoring average by round day, from 72\.0 to 73\.0\./);
   });
 });

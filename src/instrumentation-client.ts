@@ -9,6 +9,7 @@ import { classifyTraceSurface } from '@/lib/error-trace-classification';
 import { enforceMetricAttributeAllowlist } from '@/lib/observability/metrics';
 import { enforceLogAttributeAllowlist } from '@/lib/observability/structured-log';
 import { createRepeatErrorSampler } from '@/lib/observability/repeat-error-sampler';
+import { uiSurfaceForPath } from '@/lib/observability/ui-surface';
 
 /**
  * MAC-12 (production audit 2026-11-15): the same error sent on every render or retry rate limited the Sentry tunnel
@@ -141,7 +142,15 @@ Sentry.init({
     // error boundary console.errors, hydration warnings, unhandled promise
     // rejections that get logged but not thrown.
     Sentry.captureConsoleIntegration({ levels: ['error'] }),
-    // Drops (or tags) events whose stack is entirely third-party script.
+    // Drops events whose stack is entirely third-party script (a browser
+    // extension, an external CDN script). `exclusively`, not `contains`: with
+    // `contains`, ONE frame without the marker drops the whole error, and the
+    // Turbopack runtime chunk (turbopack-*.js, the code that runs every module
+    // factory) never carries the marker, because the build plugin stamps
+    // modules and the runtime is not a module. So every error thrown while a
+    // module evaluates (a lazy import, next/dynamic, a top-level throw) and
+    // every stack that passes through an inline <script> on the page was
+    // silently dropped from Sentry while still reaching the Bridge.
     // `applicationKey: 'helm-web'` in next.config.mjs's withSentryConfig
     // marks first-party modules at build time — PRODUCTION BUILDS ONLY:
     // withSentryConfig itself is skipped in dev (next.config.mjs `isDev`
@@ -150,7 +159,7 @@ Sentry.init({
     // replay is gated above, for the same reason.
     ...(!isDev ? [Sentry.thirdPartyErrorFilterIntegration({
       filterKeys: ['helm-web'],
-      behaviour: 'drop-error-if-contains-third-party-frames',
+      behaviour: 'drop-error-if-exclusively-contains-third-party-frames',
     })] : []),
     // Programmatic feedback form only — `autoInject: false` means NO
     // floating widget is injected. Opened via the `ReportProblemButton`
@@ -291,6 +300,17 @@ Sentry.init({
       const { feature } = classifyTraceSurface(path);
       if (feature) {
         event.tags.feature = feature;
+      }
+
+      // The Bridge's Clubhouse-only Sentry views search `ui:clubhouse`. The
+      // browser sets that tag for the session only once the Clubhouse frame
+      // mounts (chTagSession), so a crash while a Clubhouse page is still
+      // loading, before the frame mounts, went out untagged and never showed
+      // in those views. Fill it from the address,
+      // the same rule /api/log-error uses; an existing tag is left alone.
+      const ui = uiSurfaceForPath(path);
+      if (ui && !event.tags.ui) {
+        event.tags.ui = ui;
       }
     }
     // Mask email addresses in message / extra / contexts / exception values.
