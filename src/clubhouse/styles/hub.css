@@ -2708,9 +2708,11 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-btn:focus-visible {
     box-shadow: 0 0 0 2px var(--ch-green-800), 0 0 0 4px var(--ch-border-focus-on-dark);
   }
-  .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-iconbtn:hover,
-  .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-reads--open:hover {
-    background: rgb(255 255 255 / 0.08);
+  @media (hover: hover) {
+    .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-iconbtn:hover,
+    .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-reads--open:hover {
+      background: rgb(255 255 255 / 0.08);
+    }
   }
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-iconbtn:focus-visible,
   .ch-hb[data-canopy] .ch-hb-ann.is-lead .ch-hb-reads--open:focus-visible,
@@ -2750,8 +2752,10 @@ html[data-fw-theme='dark'] .ch-hb-chip {
   .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-iconbtn {
     color: var(--ch-on-green-ink-soft);
   }
-  .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-iconbtn:hover {
-    background: rgb(255 255 255 / 0.08);
+  @media (hover: hover) {
+    .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-iconbtn:hover {
+      background: rgb(255 255 255 / 0.08);
+    }
   }
   .ch-hb[data-canopy] .ch-hb-pass.is-next.is-big .ch-hb-iconbtn:focus-visible {
     outline-color: var(--ch-border-focus-on-dark);

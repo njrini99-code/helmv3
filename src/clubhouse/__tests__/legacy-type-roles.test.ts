@@ -82,7 +82,7 @@ const STEP_READS: Record<string, number> = {
   'styles/rounds-setup.css': 53,
   'styles/rounds-track.css': 75,
   'styles/rounds.css': 152,
-  'styles/settings.css': 51,
+  'styles/settings.css': 50,
   'styles/shell.css': 45,
   'styles/stats-redesign.css': 94,
   'styles/stats.css': 189,

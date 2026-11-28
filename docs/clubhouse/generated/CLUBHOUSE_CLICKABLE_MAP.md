@@ -16,7 +16,7 @@ the ledger knows is marked `(ledger)`. `forwards` marks a shared component's
 element that carries its caller's id. This supersedes the 2026-09-30
 snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
-1799 controls in 394 files; 15 forward their caller's id.
+1801 controls in 395 files; 15 forward their caller's id.
 
 ## P001 Shell
 
@@ -1081,9 +1081,9 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/settings/SettingsView.tsx`
 
-- CTL-P008-026 179 `button` "{label} {hint}" (button, onClick)
-- CTL-P008-027 237 `Button` "Keep editing" (button, onClick) CH-8507
-- CTL-P008-028 240 `Button` "Discard changes" (button, onClick) CH-8507
+- CTL-P008-026 175 `button` "{label} {hint}" (button, onClick)
+- CTL-P008-027 233 `Button` "Keep editing" (button, onClick) CH-8507
+- CTL-P008-028 236 `Button` "Discard changes" (button, onClick) CH-8507
 
 ### `src/clubhouse/screens/settings/Staff.tsx`
 
@@ -2393,13 +2393,13 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/recruiting/RecruitingDesktop.tsx`
 
-- CTL-P014-017 38 `Button` "New prospect" (button, onClick) CH-14904
-- CTL-P014-018 69 `Button` "Add your first prospect" (button, onClick) CH-14301
-- CTL-P014-019 112 `Button` "{Search all stages|Show all sta…" (button, onClick)
-- CTL-P014-020 116 `Button` "Clear search" (button, onClick)
-- CTL-P014-021 158 `button` "{name} {rowLineOf}" (button, onClick) CH-14802
-- CTL-P014-022 209 `Button` "Edit" (button, onClick)
-- CTL-P014-023 216 `IconButton` "More for {name}" (button)
+- CTL-P014-017 42 `Button` "New prospect" (button, onClick) CH-14904
+- CTL-P014-018 74 `Button` "Add your first prospect" (button, onClick) CH-14301
+- CTL-P014-019 117 `Button` "{Search all stages|Show all sta…" (button, onClick)
+- CTL-P014-020 121 `Button` "Clear search" (button, onClick)
+- CTL-P014-021 163 `button` "{name} {rowLineOf}" (button, onClick) CH-14802
+- CTL-P014-022 214 `Button` "Edit" (button, onClick)
+- CTL-P014-023 221 `IconButton` "More for {name}" (button)
 
 ### `src/clubhouse/screens/recruiting/RecruitingPhone.tsx`
 
@@ -2773,7 +2773,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/screens/tournaments/parts.tsx`
 
-- CTL-P016-133 120 `Link` "{children}" (link, href)
+- CTL-P016-133 126 `Link` "{children}" (link, href)
 
 ### `src/clubhouse/screens/tournaments/track-actions.tsx`
 
@@ -2925,7 +2925,7 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ## Shared (no page manifest claims these files)
 
-69 controls.
+71 controls.
 
 ### `src/clubhouse/ui/Button.tsx`
 
@@ -2972,6 +2972,11 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 - CTL-P000-017 241 `dialog` "{retainContent}" (onClick)
 - CTL-P000-018 264 `button` "{label}" (button, onClick)
 - CTL-P000-019 269 `button` "{cancelLabel}" (button, onClick)
+
+### `src/clubhouse/ui/HeaderToolbar.tsx`
+
+- CTL-P000-055 170 `IconButton` "Clear selection" (button, onClick)
+- CTL-P000-056 185 `IconButton` "More" (button)
 
 ### `src/clubhouse/ui/Ledger.tsx`
 
@@ -3030,8 +3035,8 @@ snapshot in [CLICKABLES.md](../history/CLICKABLES.md).
 
 ### `src/clubhouse/ui/Section.tsx`
 
-- forwards 59 `Link` "{body}" (link, href)
-- forwards 63 `button` "{body}" (button, onClick)
+- forwards 58 `Link` "{body}" (link, href)
+- forwards 62 `button` "{body}" (button, onClick)
 
 ### `src/clubhouse/ui/Segmented.tsx`
 

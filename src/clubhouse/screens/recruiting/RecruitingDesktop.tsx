@@ -4,6 +4,7 @@ import { Ellipsis, Plus, SearchX, Trash2, UserSearch } from 'lucide-react';
 import { useRef } from 'react';
 import { CH_STAGES, isNextStepLate, nextStepLine, rowLineOf, stageMeta, subtitleOf, whenLabel, type ChProspect, type ChStage } from '../../data/recruiting-shape';
 import { Button, IconButton } from '../../ui/Button';
+import { PageHeader } from '../../ui/Header';
 import { Menu } from '../../ui/Menu';
 import { FAILURE_COPY, InlineNotice } from '../../ui/Notices';
 import { SearchField } from '../../ui/SearchField';
@@ -27,19 +28,23 @@ export function RecruitingDesktop({ c }: { c: RecCtx }) {
   const nothing = c.total === 0;
   return (
     <main className="ch-rec" data-canopy="" aria-labelledby="ch-rec-title" data-ch-code="CH-14904">
-      <header className="ch-rec-head" data-canopy-head="tight" data-canopy-tight-always="">
-        <div>
-          <h1 id="ch-rec-title">Recruiting</h1>
-          <p>Prospects you’re following, from first look to commitment.</p>
-          {!c.error && !nothing && <CalendarLine c={c} />}
-        </div>
-        {/* One primary per screen: first run carries Add your first prospect in the page below. */}
-        {(!nothing || c.error) && (
-          <Button data-ctl="CTL-P014-017" variant="primary" leftIcon={Plus} onClick={c.startAdd}>
-            New prospect
-          </Button>
-        )}
-      </header>
+      <PageHeader
+        slots={{ root: 'ch-rec-head' }}
+        tight="always"
+        large={false}
+        title="Recruiting"
+        titleId="ch-rec-title"
+        meta="Prospects you’re following, from first look to commitment."
+        detail={!c.error && !nothing ? <CalendarLine c={c} /> : undefined}
+        toolbar={
+          /* One primary per screen: first run carries Add your first prospect in the page below. */
+          (!nothing || c.error) && (
+            <Button data-ctl="CTL-P014-017" variant="primary" leftIcon={Plus} onClick={c.startAdd}>
+              New prospect
+            </Button>
+          )
+        }
+      />
 
       {c.error ? (
         <InlineNotice

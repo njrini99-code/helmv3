@@ -2268,9 +2268,11 @@ html[data-fw-theme='dark'] .ch-ox-rules li[data-ok] {
 html[data-fw-theme='dark'] .ch-ox-field > label {
   color: var(--ch-ink-700);
 }
-html[data-fw-theme='dark'] .ch-ox-back:hover:not(:disabled) {
-  background: rgb(237 231 216 / 0.06);
-  color: var(--ch-text-primary);
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-ox-back:hover:not(:disabled) {
+    background: rgb(237 231 216 / 0.06);
+    color: var(--ch-text-primary);
+  }
 }
 html[data-fw-theme='dark'] .ch-ox-eyebrow {
   color: var(--ch-green-600);
