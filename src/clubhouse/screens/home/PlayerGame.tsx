@@ -11,7 +11,6 @@ import { changeTone, formatFixed, formatHcp, formatSigned, NO_DATA } from '../..
 import { NoData } from '../../ui/NoData';
 import { changeSe, deltaTone, deltaWords, halvesChange, type DeltaTone } from '../../lib/stats-signal';
 import { sgBaseline, type ChSgTour } from '../../lib/sg';
-import { monotonePath } from '../../lib/chart';
 import { useChSessionState } from '../../lib/session-state';
 
 type Span = 5 | 10 | 20;
@@ -412,10 +411,6 @@ function Legs({ legs, tour, phone, covered }: { legs: ChPlayerHome['legs']; tour
 
 function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
   const fmt = (v: number) => (g.unit === '%' ? `${Math.round(v)}%` : v.toFixed(g.digits));
-  // The benchmark bar: a share of the scale for percentages, or a putts band (fewer is further right).
-  const pos = (v: number) => (g.unit === '%' ? Math.max(0, Math.min(100, v)) : Math.max(0, Math.min(100, ((36 - v) / (36 - 26)) * 100)));
-  // Against the Tour as the two figures print (a whole percent, putts to a tenth): level is neither, and an early read is never toned.
-  const against = g.value != null && g.bench != null && !g.early ? changeTone(g.value - g.bench, g.lowerIsBetter, g.unit === '%' ? 0 : g.digits) : '';
   return (
     <article className="ch-ph-leg" aria-labelledby={`ch-ph-leg-${g.key}`}>
       <div className="ch-ph-leg__h">
@@ -431,70 +426,77 @@ function Leg({ g, tour }: { g: ChPlayerLeg; tour: ChSgTour }) {
         <span className="ch-num">{g.value == null ? <NoData /> : fmt(g.value)}</span>
         <em>{g.needs ? `${g.stat} · ${g.needs}` : g.early ? `${g.stat} · ${g.early}` : g.stat}</em>
       </div>
-      <Spark data={g.trend} lowerIsBetter={g.lowerIsBetter} label={g.stat} />
-      {g.value != null && g.bench != null && (
-        <div className="ch-ph-bench">
-          <span className="ch-ph-bench__t" aria-hidden="true">
-            <i className={against} style={{ width: `${pos(g.value)}%` }} />
-            <em style={{ left: `${pos(g.bench)}%` }} />
-          </span>
-          <span className="ch-ph-bench__k ch-num">
-            <span>You {fmt(g.value)}</span>
-            <span>
-              {sgBaseline(tour).mark} {fmt(g.bench)}
-            </span>
-          </span>
-        </div>
-      )}
+      {/* The Tour's figure is the trend's reference line (one picture per column, the same in all four), so no second bar. */}
+      <Spark data={g.trend} leg={g} benchMark={sgBaseline(tour).mark} format={fmt} />
       {g.note && <p className="ch-ph-leg__n ch-num">{g.note}</p>}
     </article>
   );
 }
 
 /**
- * A leg's last rounds across the card: a smooth line over a soft fill, the rounds' average as a faint guide and the
- * latest round as a dot, green when it moved the good way and amber when not, with the window and the direction in
- * words underneath. The better direction is always up: fewer putts sit higher.
+ * How far one round can sit from the reference before its bar reaches the edge of the plot: the same for every player and every
+ * card, so a bar's height means the same on all four columns and a putt or a fairway either way stays a short bar (the old spark
+ * scaled to its own rounds, so noise read as drama). A round further out is drawn to the edge.
  */
-function Spark({ data, lowerIsBetter, label }: { data: number[]; lowerIsBetter: boolean; label: string }) {
-  const gid = useId();
+export const LEG_REACH: Record<ChPlayerLeg['key'], number> = { tee: 10, approach: 10, short: 12, putting: 2.5 };
+
+/**
+ * A leg's last rounds as one bar each, oldest on the left, standing above the reference line when the round beat it and hanging
+ * below when it didn't: the reference is the Tour's figure where the app has one, else the player's own average, and it is named
+ * at the line's end. A round that beat it is solid green and one that missed is amber tint with a fine amber ring, so the gains and
+ * the misses read at a glance and still read in grey (solid against hollow). Better is always up: fewer putts stand above the
+ * line. The caption leads with the trend's verdict (green or amber only when the newer rounds clear the older ones' spread).
+ */
+function Spark({ data, leg, benchMark, format }: { data: number[]; leg: ChPlayerLeg; benchMark: string; format: (v: number) => string }) {
   if (data.length < 2) return null;
-  const w = 240;
-  const h = 44;
-  const pad = 5;
-  const span = Math.max(...data) - Math.min(...data) || 1;
-  const lo = Math.min(...data) - span * 0.18;
-  const hi = Math.max(...data) + span * 0.18;
-  const x = (i: number) => (i * w) / (data.length - 1);
-  const y = (v: number) => pad + ((lowerIsBetter ? v - lo : hi - v) / (hi - lo)) * (h - pad * 2);
+  const { lowerIsBetter, bench } = leg;
+  const mean = data.reduce((a, b) => a + b, 0) / data.length;
+  const ref = bench ?? mean;
+  const reach = LEG_REACH[leg.key];
   // The newer half of the rounds against the older half, past its standard error (A1): never the first round against the last.
   const ch = halvesChange(data, null);
-  const mean = data.reduce((a, b) => a + b, 0) / data.length;
   const tone = ch ? deltaTone(ch.delta, ch.se, lowerIsBetter) : '';
   const word = tone === 'is-gain' ? 'Improving' : tone === 'is-loss' ? 'Slipping' : 'No clear change';
-  const pts = data.map((v, i) => [x(i), y(v)] as [number, number]);
-  const line = monotonePath(pts);
-  const last = pts[pts.length - 1]!;
+  const refName = bench != null ? benchMark : 'Your average';
+  const refWords = bench != null ? `${benchMark} ${format(bench)}` : `your average ${format(mean)}`;
+  const beat = data.filter((v) => (lowerIsBetter ? v < ref : v > ref)).length;
+  const n = data.length;
   return (
     <figure className={'ch-ph-spark ' + tone}>
-      <span className="ch-ph-spark__plot">
-        <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label}, your last ${data.length} rounds, ${word.toLowerCase()}`}>
-          <defs>
-            <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0" className="ch-ph-spark__f0" />
-              <stop offset="1" className="ch-ph-spark__f1" />
-            </linearGradient>
-          </defs>
-          <path d={`${line} L${w},${h} L0,${h} Z`} fill={`url(#${gid})`} />
-          <line x1={0} x2={w} y1={y(mean)} y2={y(mean)} className="ch-ph-spark__mean" />
-          <path d={line} className="ch-ph-spark__line" />
-        </svg>
-        {/* The dot is drawn in HTML so the stretched plot doesn't squash it into an oval. */}
-        <i className="ch-ph-spark__dot" style={{ left: `${(last[0] / w) * 100}%`, top: `${(last[1] / h) * 100}%` }} aria-hidden="true" />
+      <span className="ch-ph-spark__plot" aria-hidden="true">
+        <span className={'ch-ph-spark__ref' + (bench != null ? ' is-bench' : '')} />
+        {data.map((v, i) => {
+          // Signed so that up is always better: a round fewer putts than the reference stands above the line.
+          const lead = (lowerIsBetter ? ref - v : v - ref) / reach;
+          const size = Math.max(0.14, Math.min(1, Math.abs(lead)));
+          const up = lead > 0;
+          return (
+            <i
+              key={i}
+              className={'ch-ph-spark__bar' + (up ? ' is-beat' : ' is-miss')}
+              style={{ left: `${((i + 0.5) / n) * 100}%`, height: `${size * 50}%`, [up ? 'bottom' : 'top']: '50%' }}
+            />
+          );
+        })}
+        <span className={'ch-ph-spark__refk' + (bench != null ? ' is-bench' : '')}>
+          <span>{refName === 'Your average' ? 'Avg' : refName}</span>
+          <b className="ch-num">{format(ref)}</b>
+        </span>
       </span>
       <figcaption>
-        <span>Last {data.length} rounds</span>
-        <span className="ch-ph-spark__word">{word}</span>
+        <span className="ch-sr-only">
+          {leg.stat}, your last {n} rounds: {beat} of {n} better than {refWords}; latest {format(data[n - 1]!)}; {word.toLowerCase()}.
+        </span>
+        <span className="ch-ph-spark__word" aria-hidden="true">
+          {word}
+        </span>
+        <span aria-hidden="true">
+          {' · '}
+          <b className="ch-ph-spark__count ch-num">
+            {beat} of {n}
+          </b>{' '}
+          rounds beat {refWords}
+        </span>
       </figcaption>
     </figure>
   );

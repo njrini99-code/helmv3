@@ -221,6 +221,10 @@ before, after, baseline or evidence.
 | `P002__team-form__coach__390__default__before__2b3c6f5.png` | before | 2b3c6f5 | team-form (coach), 390px, default, before: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
 | `P002__team-form__coach__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | team-form (coach), 390px, default, after: phone team form change tones and words; /clubhouse-preview/home; synthetic preview, captured in the cloud container (Chromium) |
 | `P002__player-scoring__player__390__default__after__2b3c6f5.png` | after | 2b3c6f5 | player-scoring (player), 390px, default, after: player home scoring caption; /clubhouse-preview/home-player; synthetic preview, captured in the cloud container (Chromium) |
+| `P002__your-game__player__1440__default__after__032778b.png` | after | 032778b | your-game (player), 1440px, default; synthetic-preview |
+| `P002__your-game__player__1440__default__before__032778b.png` | before | 032778b | your-game (player), 1440px, default; synthetic-preview |
+| `P002__your-game__player__402__default__after__032778b.png` | after | 032778b | your-game (player), 402px, default; synthetic-preview |
+| `P002__your-game__player__402__default__before__032778b.png` | before | 032778b | your-game (player), 402px, default; synthetic-preview |
 
 ## Historical verification gaps
 
