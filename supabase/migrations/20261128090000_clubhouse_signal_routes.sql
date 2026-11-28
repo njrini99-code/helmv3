@@ -40,7 +40,8 @@
 --
 -- ROLLBACK: the full rollback, with the first function's definition as
 -- ROLLBACK: captured from production on 28 Nov 2026, is
--- ROLLBACK: supabase/rollbacks/20261128090000_clubhouse_signal_routes.rollback.sql.
+-- ROLLBACK: supabase/rollbacks/
+-- ROLLBACK: 20261128090000_clubhouse_signal_routes.rollback.sql.
 -- ROLLBACK: In order: fold every row with a route into its page's row
 -- ROLLBACK: (counts and histograms summed, senders merged), restore the
 -- ROLLBACK: first function's body, drop clubhouse_ingest_signals_v2(jsonb),
@@ -76,7 +77,9 @@ alter table public.clubhouse_signal_hourly
 add column if not exists route text not null default '';
 
 comment on column public.clubhouse_signal_hourly.route is
-'The screen it fired on: a route key the graph lists on page_id (src/lib/admin/clubhouse/route-key.ts), never an id. Empty when the client did not say.';
+'The screen it fired on: a route key the graph lists on page_id '
+'(src/lib/admin/clubhouse/route-key.ts), never an id. '
+'Empty when the client did not say.';
 
 -- 2. The primary key gains the screen ---------------------------------------
 
@@ -121,7 +124,8 @@ set search_path = public, pg_temp
 as $$
 declare
     v_uuid constant text :=
-        '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
+        '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-'
+        '[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$';
     v_session jsonb := p_batch -> 'session';
     v_session_id text := v_session ->> 'session_id';
     v_user_id uuid;
@@ -215,7 +219,8 @@ begin
             failure_count = s.failure_count + excluded.failure_count,
             replay_id = coalesce(excluded.replay_id, s.replay_id)
         -- A session already owned by another user is left as it is.
-        where s.user_id is null or s.user_id is not distinct from excluded.user_id
+        where s.user_id is null
+            or s.user_id is not distinct from excluded.user_id
         returning s.failure_count into v_failures;
 
         -- No row back: the WHERE above refused the update. v_failures is

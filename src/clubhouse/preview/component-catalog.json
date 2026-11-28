@@ -12209,6 +12209,16 @@
       "fixture": "Contextual module"
     },
     {
+      "file": "src/clubhouse/shell/GateSignals.tsx",
+      "group": "shell",
+      "exports": [
+        "GateSignals"
+      ],
+      "styles": [],
+      "examples": [],
+      "fixture": "Contextual module"
+    },
+    {
       "file": "src/clubhouse/shell/LinkPending.tsx",
       "group": "shell",
       "exports": [

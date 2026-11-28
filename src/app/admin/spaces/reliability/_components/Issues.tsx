@@ -28,7 +28,7 @@ function lastBucketWords(frame: Pick<SparkFrame, 'unit'>): string {
  * Failures per bucket as bars: a hairline where a bucket had none, so a quiet stretch reads as quiet rather than
  * missing. The scale is the issue's own busiest bucket; the label carries the numbers for a screen reader.
  */
-export function Spark({ counts, frame, label }: { counts: readonly number[]; frame: Pick<SparkFrame, 'unit'>; label: string }) {
+function FailureBars({ counts, frame, label }: { counts: readonly number[]; frame: Pick<SparkFrame, 'unit'>; label: string }) {
   const n = counts.length;
   const max = Math.max(1, ...counts);
   const w = 112;
@@ -105,7 +105,7 @@ export function IssueRow({ issue, scope, frame }: { issue: Issue; scope: FeedSco
         ) : null}
       </span>
       <span className="rl-issue-trend">
-        <Spark counts={issue.spark} frame={frame} label={issue.headline} />
+        <FailureBars counts={issue.spark} frame={frame} label={issue.headline} />
         <span>
           last <LocalTime iso={issue.lastAt} variant={frame.unit === 'day' ? 'datetime' : 'time'} />
         </span>
@@ -172,7 +172,7 @@ export function PageRow({ page, scope, frame }: { page: PageHealth; scope: FeedS
         )}
       </span>
       <span className="rl-issue-trend">
-        <Spark counts={page.spark} frame={frame} label={`${page.name} failures`} />
+        <FailureBars counts={page.spark} frame={frame} label={`${page.name} failures`} />
         {page.lastAt ? (
           <span>
             heard <LocalTime iso={page.lastAt} variant={frame.unit === 'day' ? 'datetime' : 'time'} />
