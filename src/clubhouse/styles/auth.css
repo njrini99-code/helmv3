@@ -1646,12 +1646,16 @@
    The tokens carry the panel, the sheet and the fields; these are the literals they can't reach. The painted course
    keeps its own clock (the veil, the say line and the phone's mark follow the hour, not the theme); the reading sheet
    over it is dark whatever the hour. */
-html[data-fw-theme='dark'] .ch-au a:where(:not(.ch-btn)):hover {
-  color: var(--ch-green-500);
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-au a:where(:not(.ch-btn)):hover {
+    color: var(--ch-green-500);
+  }
 }
-html[data-fw-theme='dark'] .ch-au-back:hover,
-html[data-fw-theme='dark'] .ch-au-eye:hover {
-  background: rgb(237 231 216 / 0.06);
+@media (hover: hover) {
+  html[data-fw-theme='dark'] .ch-au-back:hover,
+  html[data-fw-theme='dark'] .ch-au-eye:hover {
+    background: rgb(237 231 216 / 0.06);
+  }
 }
 html[data-fw-theme='dark'] .ch-au-back[data-ch-pressed] {
   background: rgb(237 231 216 / 0.1);

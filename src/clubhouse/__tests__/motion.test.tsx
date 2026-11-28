@@ -68,12 +68,15 @@ describe('CH-1606 press', () => {
 
   it('audit F02: rows, links and tabs do not scale, and neither does a button wider than a button', () => {
     const { getByText, getByTestId } = render(<Harness enabled />);
+    // They answer with a wash instead (dsx-08: the shared pressed look where a sheet draws none), never a scale.
+    const scaled = () => animate.mock.calls.some(([frames]) => (frames as Keyframe[]).some((k) => 'scale' in k));
     fireEvent.pointerDown(getByText('A nav row'), { button: 0 });
-    expect(animate).not.toHaveBeenCalled();
+    expect(scaled()).toBe(false);
+    expect(Object.keys((animate.mock.calls[0]?.[0] as Keyframe[] | undefined)?.[1] ?? {})).toEqual(['backgroundColor']);
     const wide = getByTestId('wide');
     wide.getBoundingClientRect = () => ({ width: PRESS_MAX_WIDTH + 1 }) as DOMRect;
     fireEvent.pointerDown(wide, { button: 0 });
-    expect(animate).not.toHaveBeenCalled();
+    expect(scaled()).toBe(false);
   });
 
   it('audit F02: a quick release springs back from where the press got to, not from the full press', () => {

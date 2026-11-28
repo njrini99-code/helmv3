@@ -12,27 +12,11 @@
   padding: var(--ch-page-top-no-eyebrow) var(--ch-page-gutter) var(--ch-page-bottom-tall);
 }
 .ch-set-head {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   margin-bottom: 32px;
 }
-.ch-set-head h1 {
-  font: 400 calc(52 * var(--ch-type-k))/1.02 var(--ch-font-serif);
-  letter-spacing: -0.01em;
-  color: var(--ch-text-primary);
-}
-/* The line above the title: the team and season, set as Roster's (owner, 24 Nov 2026: the head read bare). */
-.ch-set-head__k {
-  font: var(--ch-type-body);
-  color: var(--ch-text-primary);
-  overflow-wrap: anywhere;
-}
-.ch-set-head p {
-  font: var(--ch-type-14);
-  color: var(--ch-text-tertiary);
-  overflow-wrap: anywhere;
-}
+/* The head is the shared page head (ui/Header, styles/header.css; dsx-08): its title and meta line come from there and
+   the framed desk head (shell.css), not from here. The line above the title keeps Roster's face, the team and season
+   in the body ink (owner, 24 Nov 2026: the head read bare). */
 .ch-set-layout {
   display: grid;
   grid-template-columns: minmax(208px, 1fr) minmax(0, var(--ch-measure-reading));
@@ -709,9 +693,6 @@
   }
   .ch-set-head {
     margin-bottom: 20px;
-  }
-  .ch-set-head h1 {
-    font-size: calc(34 * var(--ch-type-k));
   }
   .ch-set-layout {
     grid-template-columns: minmax(0, 1fr);

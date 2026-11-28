@@ -13,7 +13,8 @@ describe('coach desktop polish (owner, 2026-11-05: "it looks sloppy")', () => {
     expect(shell).not.toMatch(/\[data-canopy-head\]::before/);
     for (const file of ['calendar/Calendar', 'calendar/CalendarSkeleton', 'hub/TeamHub', 'hub/HubSkeleton', 'rounds/TeamRounds', 'rounds/TeamRoundsSkeleton', 'qualifiers/QualifiersList', 'qualifiers/QualifiersSkeleton', 'settings/SettingsView', 'settings/SettingsSkeleton', 'stats/StatsSkeleton', 'tournaments/parts', 'whats-new/WhatsNew', 'whats-new/WhatsNewSkeleton']) {
       const src = readFileSync(join(ROOT, 'screens', `${file}.tsx`), 'utf8');
-      expect(src, file).toMatch(/data-canopy-head=(?:"tight"|\{phone \? undefined : 'tight'\})/);
+      // A head drawn by the one header (dsx-08) asks for the tight canopy through its `tight` prop.
+      expect(src, file).toMatch(/data-canopy-head=(?:"tight"|\{phone \? undefined : 'tight'\})|<PageHeader[^>]*\stight[\s=>]/);
       expect(src, file).not.toMatch(/data-canopy-head=(?:""|\{phone \? undefined : ''\})/);
     }
     expect(readFileSync(join(ROOT, 'screens/stats/StatsTeam.tsx'), 'utf8')).toMatch(/<PageHero\s+tight/);

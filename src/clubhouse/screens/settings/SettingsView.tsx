@@ -4,6 +4,7 @@ import { AnimatePresence, m } from 'motion/react';
 import { Bell, Flag, Settings2, Sparkles, UserRound, Users, type LucideIcon } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '../../ui/Button';
+import { PageHeader } from '../../ui/Header';
 import { Icon } from '../../ui/Icon';
 import { Modal } from '../../ui/Modal';
 import { SectionBoundary } from '../../ui/SectionBoundary';
@@ -158,20 +159,15 @@ export function SettingsView({
   return (
     <DirtyContext.Provider value={report}>
       <main className="ch-set" data-canopy="">
-        <header className="ch-set-head" data-canopy-head="tight">
-          {/* The page's eyebrow, as Roster's: whose settings these are (owner, 24 Nov 2026: the head read bare). */}
-          {data.teamName && (
-            <span className="ch-set-head__k">
-              {data.teamName}
-              {data.team && !data.team.error && data.team.value.season ? ` · ${data.team.value.season}` : ''}
-            </span>
-          )}
-          <h1 className="ch-display">Settings</h1>
-          <p>
-            {viewerRoleLabel(data)}
-            {data.email ? ` · ${data.email}` : ''}
-          </p>
-        </header>
+        {/* The page head (ui/Header, dsx-08). The eyebrow is whose settings these are (owner, 24 Nov 2026: the head read bare). */}
+        <PageHeader
+          className="ch-set-head"
+          tight
+          large={false}
+          eyebrow={data.teamName ? `${data.teamName}${data.team && !data.team.error && data.team.value.season ? ` · ${data.team.value.season}` : ''}` : undefined}
+          title="Settings"
+          meta={`${viewerRoleLabel(data)}${data.email ? ` · ${data.email}` : ''}`}
+        />
         <div className="ch-set-layout">
           {/* CH-8801: the section list is a navigation landmark; the open section is marked current. */}
           <nav ref={sectionRail} className="ch-set-rail" aria-label="Settings sections">

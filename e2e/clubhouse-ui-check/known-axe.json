@@ -1,0 +1,17 @@
+{
+  "note": "axe rules (WCAG 2.2 A/AA) each live Clubhouse screen breaks today, by screen and project (e2e/clubhouse-ui-check.spec.ts, dsx-09). May only shrink.",
+  "screens": {
+    "live-coach|ui-desktop": [
+      "label-content-name-mismatch"
+    ],
+    "live-coach|ui-phone": [
+      "label-content-name-mismatch"
+    ],
+    "roster-coach|ui-desktop": [
+      "label-content-name-mismatch"
+    ],
+    "roster-coach|ui-phone": [
+      "label-content-name-mismatch"
+    ]
+  }
+}

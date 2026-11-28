@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { useChPhone } from '../../lib/use-phone';
 import { PhoneTop } from '../../shell/phone-chrome';
+import { PageHeader } from '../../ui/Header';
 import { Icon } from '../../ui/Icon';
 import { LargeTitleSkeleton } from '../../ui/LargeTitle';
 import { PageIntro } from '../../ui/Ledger';
@@ -65,6 +66,9 @@ export function TourMain({ view, phone, labelledBy, className, busy, label, chil
  * The view's head. Desktop: the canopy head (an eyebrow, the title, one line, then `meta` such as a row of chips, and the
  * actions on the right). Phone: the kit's PageIntro, `meta`, and the actions at full width.
  */
+/** The desk head's own hooks on the one header (dsx-08): tournaments.css places it, the header draws it. */
+const TOUR_HEAD = { root: 'ch-tour-head', text: 'ch-tour-head__t', eyebrow: 'ch-tour-head__k', end: 'ch-tour-head__a' } as const;
+
 export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb, tightAlways = false }: { id: string; phone: boolean; tightAlways?: boolean; eyebrow: ReactNode; title: ReactNode; line?: ReactNode; meta?: ReactNode; actions?: ReactNode; crumb?: ReactNode }) {
   if (phone)
     return (
@@ -78,15 +82,17 @@ export function TourHead({ id, phone, eyebrow, title, line, meta, actions, crumb
   return (
     <>
       {crumb}
-      <header className="ch-tour-head" data-canopy-head="tight" data-canopy-tight-always={tightAlways ? '' : undefined}>
-        <div className="ch-tour-head__t">
-          <span className="ch-tour-head__k ch-num">{eyebrow}</span>
-          <h1 id={id}>{title}</h1>
-          {line && <p>{line}</p>}
-          {meta}
-        </div>
-        {actions && <div className="ch-tour-head__a">{actions}</div>}
-      </header>
+      <PageHeader
+        slots={TOUR_HEAD}
+        tight={tightAlways ? 'always' : true}
+        large={false}
+        eyebrow={eyebrow ?? ''}
+        title={title}
+        titleId={id}
+        meta={line || undefined}
+        detail={meta}
+        toolbar={actions || undefined}
+      />
     </>
   );
 }

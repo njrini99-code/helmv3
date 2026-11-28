@@ -531,6 +531,19 @@ describe('Stats player · who may open what', () => {
     expect(loadPlayerProfile).not.toHaveBeenCalled();
   });
 
+  it('CH-5306 an old player page or genome link (the players/[playerId] layout sends a coach to ?player=<id>&tab=game) for an id on no roster draws "not on your team", never an error', async () => {
+    asCoach();
+    vi.mocked(loadPlayerProfile).mockResolvedValue(null);
+    // The same id and address as the e2e smoke in e2e/golf-critical-paths.spec.ts; the redirect itself is pinned in alias.test.ts.
+    const el = (await ClubhouseStatsRoute({ player: '00000000-0000-4000-8000-000000000000', tab: 'game' })) as RouteEl;
+    expect(el.type).toBe(NotOnTeam);
+    expect(el.props.coach).toBe(true);
+    wrap(el);
+    expect(screen.getByRole('heading', { name: 'That player isn’t on your team' })).toBeTruthy();
+    expect(code('CH-5306')).not.toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
   it('50102 the address picks the window: last10 unless it says season or qualifiers', async () => {
     asCoach();
     vi.mocked(loadPlayerProfile).mockResolvedValue(player());

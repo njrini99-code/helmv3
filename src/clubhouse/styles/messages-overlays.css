@@ -232,8 +232,7 @@
     background: var(--ch-selected-tint);
   }
 }
-.ch-mso-rbar > button.is-on,
-.ch-mso-rbar > button.is-on:hover {
+.ch-mso-rbar > button.is-on {
   background: var(--ch-selected-strong);
   color: var(--ch-bubble-mine-ink);
 }

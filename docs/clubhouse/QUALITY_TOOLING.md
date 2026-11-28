@@ -16,12 +16,17 @@ that an external premium-design audit has passed.
 
 Rebuilt from the 15 Nov UI tooling audit (QUEUE rows tool-01 to tool-09). Every
 check names its tier (`.claude/rules/browsers.md`): W Playwright WebKit, S real
-Safari, D the real iPhone, C Chromium. None of them is a required check on
-`main` yet; making one required is a GitHub setting the owner holds.
+Safari, D the real iPhone, C Chromium. None of the browser checks is a
+required check on `main` yet; making one required is a GitHub setting the
+owner holds. Since 27 Nov 2026 (dsx-09) the static ones below run in CI's
+required Static checks and Lint jobs.
 
 | Check | Catches | Tier | Runs | Local command |
 | --- | --- | --- | --- | --- |
-| CSS ratchet and lint | Raw hex, SVG `overflow: visible`, layout transitions, untokened shadows; counts may only fall | static | Presentation workflow, first | `npm run clubhouse:css` |
+| CSS ratchet and lint | Raw hex, SVG `overflow: visible`, layout transitions, untokened shadows; counts may only fall | static | CI Static checks (required), and the presentation workflow | `npm run clubhouse:css` |
+| Module literals | Colour and size literals in Clubhouse TS and TSX: a `style`, an SVG paint attribute, a Tailwind arbitrary class (`helm/clubhouse-no-raw-value`); per-file counts in `config/clubhouse/tsx-raw-values.json` may only fall | static | CI Lint (required) | `npm run clubhouse:raw-values` (`-- --update` to lower) |
+| Token references | Every `var(--ch-*)` names a defined custom property; fallback-only hooks nothing sets are listed in `config/clubhouse/token-refs-baseline.json`, which may only shrink | static | CI Static checks, inside `clubhouse:check` | `npm run clubhouse:token-refs` |
+| UI check | Every live coach and player screen (25 fixtures, `e2e/clubhouse-ui-check/screens.ts`, held to `CH_REBUILT_ROUTES`): renders with no uncaught error, a full axe WCAG 2.2 A/AA pass against `e2e/clubhouse-ui-check/known-axe.json` (may only shrink), a full-page screenshot each | W iPhone 17 Pro, C 1440 | `clubhouse-quality.yml` job "Clubhouse UI check", every non-draft push; built to block, not yet required | `CH_QUALITY=1 npx playwright test -c playwright.clubhouse.config.ts --project ui-phone --project ui-desktop` |
 | Presentation gate | 36 fixture screens × light/dark: card escape, clipped and cramped text, nested surfaces, phone text, 44 pt targets, row inset, page edge, contrast | W 390, C 1440 | PRs (ready), nightly on `main` | `npm run clubhouse:quality` |
 | Motion gate | Every phone gate screen from its first frame, Reduce Motion on and off, plus every popup opening: no layout property animated, every duration a `--ch-dur-*` token, no first-paint entrance or stagger, nothing moving under Reduce Motion. Known breaks in `e2e/clubhouse-gate/motion-known.ts` (recorded 15 Nov from a Mac run and a CI run) may only shrink | W 390 | Same, after the gate; advisory for its first week on `main`, then it fails the job | `CH_QUALITY=1 npx playwright test -c playwright.clubhouse.config.ts --project motion-phone` |
 | Pixel regression | Any changed pixel on the gate screens, phone and desktop, light and dark | W 390, C 1440 | Nightly on `main` renders baselines (artifact `clubhouse-pixel-baselines`); PRs compare against the newest, advisory | `CH_QUALITY=1 CH_PIXELS=1 CH_VISUAL_BASELINES=<dir> npx playwright test -c playwright.clubhouse.config.ts --project pixels-phone --project pixels-desktop` |
@@ -131,6 +136,16 @@ properties, empty blocks, broad transitions and layout keyframes. New layout
 transitions and unmanaged or undefined shadow tokens are compared with the
 immutable Git base; existing reviewed variants are retained by exact source
 identity. The default base is the merge base with `origin/main`.
+
+The ratchet counts are not compared with that base: each file's counts are
+held to `config/clubhouse/css-ratchet.json` in the same tree, and on a pull
+request CI checks the PR merged into current `main`. A PR whose own branch
+passes can still fail there when `main` lowered the same file in the meantime
+(the two records merge to a number neither tree has). Then merge
+`origin/main` into the branch, run `npm run clubhouse:css -- --ratchet`, which
+lowers the record to the merged counts and refuses to raise one, and commit
+the record; the failure prints these steps. Nothing in CI compares the record
+with `main`'s, so a record raised by hand is caught only in review.
 
 The performance reader consumes raw captures from the existing Clubhouse
 performance harness. It requires comparable CPU throttling, recorded dates,

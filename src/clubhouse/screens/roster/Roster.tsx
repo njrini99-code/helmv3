@@ -645,7 +645,7 @@ export function Roster({ data }: { data: ChRoster; }) {
                 width={200}
                 items={sortOptions.map((o) => ({ label: o.label, checked: sortBy === o.value, onSelect: () => setSort(o.value) }))}
                 trigger={(t) => (
-                  <Button data-ctl="CTL-P003-009" size="sm" rightIcon={ChevronDown} menu={t} aria={{ label: 'Sort players, by ' + sortLabel }}>
+                  <Button data-ctl="CTL-P003-009" size="sm" rightIcon={ChevronDown} menu={t} aria={{ label: 'Sort: ' + sortLabel }}>
                     {'Sort: ' + sortLabel}
                   </Button>
                 )}
@@ -787,11 +787,13 @@ function RosterList({
               openProfile(p.id);
             }
           }}
-          aria-label={p.name + '. Show in the panel'}
+          // Named by its own words, the name and the line under it, so the name holds what is drawn (WCAG 2.5.3, dsx-09);
+          // what a press does is the description, said once under the table.
+          aria-describedby={WHO_HINT_ID}
         >
           <Avatar name={p.name} id={p.id} size="lg" year={yearKeyOf(p.gradYear, clock)} dim={p.status === 'inactive'} />
           <span>
-            <b>{p.name}</b>
+            <b>{p.name}</b>{' '}
             <RowMeta p={p} line={classNoteFor(p, classLines.get(p.id))} />
           </span>
         </button>
@@ -836,7 +838,8 @@ function RosterList({
     {
       id: 'rounds',
       header: <span title="Rounds this season">Rds</span>,
-      headerLabel: 'Rounds this season',
+      // Opens with the header's own word, so a voice user can say what they see (WCAG 2.5.3, dsx-09).
+      headerLabel: 'Rds, rounds this season',
       align: 'end',
       sortKey: 'rounds',
       sortDirection: ROSTER_SORT_DIRECTION.rounds,
@@ -939,6 +942,9 @@ function RosterList({
           {/* §3.8 (owner, list as the desk default): the shared DataTable. Its header stays under the top bar, a column
               header sorts (the same orders as Sort, ./sort), and the table is one Tab stop: Up and Down, or J and K, walk
               the players and the panel beside it follows the keys (B11, CH-3801: every value in a cell under a header). */}
+          <span id={WHO_HINT_ID} hidden>
+            Shows in the panel
+          </span>
           <DataTable<ChRosterPlayer, Sort>
             label="Roster"
             rootRef={edges}
@@ -1155,6 +1161,9 @@ function FaceFigures({
  * The list row's line under the name: availability first when they are injured or away ("Injured · Sophomore · Charlotte,
  * NC"), the word in secondary ink and the rest tertiary, on one line with the whole of it in the title.
  */
+/** A player's name opens them in the panel beside the table; the one sentence that says so (dsx-09). */
+const WHO_HINT_ID = 'ch-rs-who-hint';
+
 function RowMeta({ p, line: classLine }: { p: ChRosterPlayer; line?: ReturnType<typeof classNoteFor> }) {
   const line = availabilityLine(p);
   // F-05: a player marked as not counting toward the roster limit says so first in the line.

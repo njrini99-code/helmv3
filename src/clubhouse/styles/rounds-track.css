@@ -2553,8 +2553,10 @@ path.ch-rt-map__shot {
     box-shadow: none;
     -webkit-tap-highlight-color: transparent;
   }
-  .ch-rt-strip button.ch-rt-strip__h:hover {
-    background: none;
+  @media (hover: hover) {
+    .ch-rt-strip button.ch-rt-strip__h:hover {
+      background: none;
+    }
   }
   .ch-rt-strip__h::before {
     position: absolute;
