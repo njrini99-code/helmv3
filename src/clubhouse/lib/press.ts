@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { CH_DUR_MS, CH_EASE_IOS, CH_EASE_OUT } from './motion';
+import { pressRules, sheetAnswersPress } from './press-rules';
 
 const bezier = (c: readonly number[]) => `cubic-bezier(${c.join(', ')})`;
 
@@ -64,19 +65,73 @@ export const PRESSED_TARGET = [
 export const PRESS_WASH_IN: KeyframeAnimationOptions = { duration: CH_DUR_MS.press, easing: bezier(CH_EASE_OUT) };
 export const PRESS_WASH_OUT: KeyframeAnimationOptions = { duration: CH_DUR_MS.release, easing: bezier(CH_EASE_IOS) };
 
-/** A colour as computed (`rgb()`, `rgba()` or `color(srgb …)`), as 0-255 channels and an alpha; null when it is none of these. */
-export function parseColor(c: string): [number, number, number, number] | null {
-  const m = /^rgba?\(([^)]+)\)$/.exec(c.trim());
-  if (m) {
-    const n = m[1]!.split(/[\s,/]+/).filter(Boolean).map(Number);
-    if (n.length < 3 || n.some((x) => !Number.isFinite(x))) return null;
-    return [n[0]!, n[1]!, n[2]!, n[3] ?? 1];
+type Rgba = [number, number, number, number];
+const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
+/** A colour function's arguments: split on commas, spaces and the alpha's `/`. */
+const args = (body: string) => body.trim().split(/\s*[,/]\s*|\s+/).filter(Boolean);
+/** One argument: a number, a percentage of `full`, or `none` (zero). NaN when it is none of these. */
+const arg = (s: string, full: number) => (s === 'none' ? 0 : s.endsWith('%') ? (Number(s.slice(0, -1)) / 100) * full : Number(s));
+/** A hue in degrees, from a bare number or one with its unit. NaN when it is neither. */
+const hue = (s: string) => {
+  if (s === 'none') return 0;
+  const m = /^(-?(?:\d+\.?\d*|\.\d+)(?:e[+-]?\d+)?)(deg|grad|rad|turn)?$/.exec(s);
+  if (!m) return NaN;
+  const n = Number(m[1]);
+  return m[2] === 'grad' ? n * 0.9 : m[2] === 'rad' ? (n * 180) / Math.PI : m[2] === 'turn' ? n * 360 : n;
+};
+/** Linear light to the sRGB curve, 0-1. */
+const encode = (x: number) => (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
+/** OKLab to sRGB 0-255 (Björn Ottosson's matrices), clipped to the sRGB gamut. */
+const fromOklab = (L: number, a: number, b: number) => {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+  const linear = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+  return linear.map((x) => clamp(encode(x), 0, 1) * 255);
+};
+/** Three 0-255 channels and the alpha as written (absent: opaque), or null when any of them is not a number. */
+const rgba = (c: readonly number[], alpha: string | undefined): Rgba | null => {
+  const a = alpha === undefined ? 1 : arg(alpha, 1);
+  if (c.length !== 3 || ![...c, a].every(Number.isFinite)) return null;
+  return [clamp(c[0]!, 0, 255), clamp(c[1]!, 0, 255), clamp(c[2]!, 0, 255), clamp(a, 0, 1)];
+};
+
+/**
+ * A colour as 0-255 sRGB channels and an alpha, from every form one reaches this file in. A colour property comes back
+ * from getComputedStyle as `rgb()`/`rgba()`, or as `color(srgb …)` for a `color-mix(in srgb …)` and `oklab()` for a
+ * `color-mix(in oklab …)` (both used across the sheets), or `oklch()`. A custom property comes back as its token was
+ * written, which is how `--ch-sel` arrives: a hex (`#rgb`, `#rgba`, `#rrggbb`, `#rrggbbaa`) or `transparent`. Null for
+ * anything else (`currentcolor`, a gradient, a `color-mix()` left unresolved), so a press never paints from a colour it
+ * misread.
+ */
+export function parseColor(input: string): Rgba | null {
+  const c = input.trim().toLowerCase();
+  if (c === 'transparent') return [0, 0, 0, 0];
+  const hex = /^#([\da-f]{3,4}|[\da-f]{6}|[\da-f]{8})$/.exec(c);
+  if (hex) {
+    const h = hex[1]!;
+    const [r, g, b, a] = (h.length <= 4 ? Array.from(h, (d) => d + d) : h.match(/../g)!).map((p) => parseInt(p, 16));
+    return [r!, g!, b!, a === undefined ? 1 : a / 255];
   }
-  const s = /^color\(srgb\s+([^)]+)\)$/.exec(c.trim());
-  if (s) {
-    const n = s[1]!.split(/[\s/]+/).filter(Boolean).map(Number);
-    if (n.length < 3 || n.some((x) => !Number.isFinite(x))) return null;
-    return [n[0]! * 255, n[1]! * 255, n[2]! * 255, n[3] ?? 1];
+  const fn = /^([a-z-]+)\(([^()]*)\)$/.exec(c);
+  if (!fn) return null;
+  const name = fn[1]!;
+  const p = args(fn[2]!);
+  if (name === 'color') {
+    const space = p.shift();
+    if ((space !== 'srgb' && space !== 'srgb-linear') || p.length < 3 || p.length > 4) return null;
+    return rgba(p.slice(0, 3).map((x) => (space === 'srgb' ? arg(x, 1) : encode(arg(x, 1))) * 255), p[3]);
+  }
+  if (p.length < 3 || p.length > 4) return null;
+  if (name === 'rgb' || name === 'rgba') return rgba(p.slice(0, 3).map((x) => arg(x, 255)), p[3]);
+  if (name === 'oklab' || name === 'oklch') {
+    // Lightness runs 0-1 (100%); a, b and chroma read 100% as 0.4 (CSS Color 4).
+    const L = arg(p[0]!, 1);
+    const one = arg(p[1]!, 0.4);
+    const two = name === 'oklab' ? arg(p[2]!, 0.4) : hue(p[2]!);
+    const [a, b] = name === 'oklab' ? [one, two] : [one * Math.cos((two * Math.PI) / 180), one * Math.sin((two * Math.PI) / 180)];
+    if (![L, a, b].every(Number.isFinite)) return null;
+    return rgba(fromOklab(L, a, b), p[3]);
   }
   return null;
 }
@@ -135,7 +190,11 @@ const animationsOff = () => document.documentElement.dataset.motion === 'off';
  *   acknowledged. This runs whatever the motion setting: it is a state, not a movement.
  * - The wash: a row, a menu item or an option (anything pressed that does not scale) paints `--ch-sel` from its pressed
  *   rule, and its background runs there over press (110ms, ease-out) and fades back over release (280ms, the iOS curve)
- *   from wherever it had got to. A colour, not a movement, so it runs under Reduce Motion; with Animations off it flips.
+ *   from wherever it had got to, to the colour the sheet gives it then. A colour, not a movement, so it runs under Reduce
+ *   Motion; with Animations off it flips.
+ * - The shared look (dsx-08): a control whose sheet draws no pressed look takes the wash, or on a plate the wash does
+ *   not suit leans toward its own ink, the same way. A sheet that draws one anywhere (on the control, a sibling or an
+ *   ancestor's layer through `:has()`) keeps it alone, and a bare hit area laid over its content takes none.
  * - The scale: a button (`.ch-btn`, `[data-ch-press]`, no wider than a button) goes to 0.97 over press (110ms, ease-out)
  *   and comes back over release (280ms, the iOS curve, no overshoot) from wherever it had got to. It animates the
  *   `scale` property, which composes with `transform` and `translate`, so it never fights framer-motion or a sheet drag.
@@ -181,16 +240,31 @@ export function useChPress(motion: boolean): void {
       if (pressed) target.setAttribute('data-ch-pressed', '');
       else target.removeAttribute('data-ch-pressed');
       if (!pressed && fallbacks.has(target)) return letGo(target);
-      // No sheet answered the mark (no colour changed, nothing started moving): the shared look stands in (dsx-08).
-      if (probe && looks(target) === before && !moved(target, had!)) return stand(target);
+      // No sheet answered the mark (no colour changed, nothing started moving, and no pressed rule matches because of it,
+      // as a `:has()` rule lighting a sibling or an ancestor's layer would): the shared look stands in (dsx-08).
+      if (probe && looks(target) === before && !moved(target, had!) && !sheetAnswersPress(target)) return stand(target);
       if (!tween) return;
       for (const a of target.getAnimations?.() ?? []) if ((a as CSSTransition).transitionProperty === 'background-color') a.cancel();
       const to = getComputedStyle(target).backgroundColor;
       if (!from || !to || from === to) return;
-      tweens.set(target, target.animate([{ backgroundColor: from }, { backgroundColor: to }], pressed ? PRESS_WASH_IN : PRESS_WASH_OUT));
+      const wash = pressed ? target.animate([{ backgroundColor: from }, { backgroundColor: to }], PRESS_WASH_IN) : fadeBack(target, 'backgroundColor', from);
+      if (wash) tweens.set(target, wash);
     };
-    /** The fallback look running on each control, and the value it rests at. */
-    const fallbacks = new Map<HTMLElement, { anim: Animation; prop: 'backgroundColor' | 'opacity'; rest: string }>();
+    /**
+     * Runs a property back from `from` over release to wherever the sheet puts it now, not to a colour read earlier: the
+     * end keyframe is left open, so it is the live value under the animation. A control whose state changes as it is let go
+     * (a day toggle turning on, a selection) fades to its new look instead of to its old one and then snapping. An engine
+     * that cannot leave the end open skips the fade, and the sheet's colour shows at once.
+     */
+    const fadeBack = (t: HTMLElement, prop: 'backgroundColor' | 'opacity', from: string): Animation | null => {
+      try {
+        return t.animate([{ [prop]: from, offset: 0 }], PRESS_WASH_OUT);
+      } catch {
+        return null;
+      }
+    };
+    /** The fallback look running on each control. */
+    const fallbacks = new Map<HTMLElement, { anim: Animation; prop: 'backgroundColor' | 'opacity' }>();
     /** What a pressed rule could change: on the control and its `::before`/`::after`, its parent (a `:has()` rule), its first children (a thumb). */
     const looks = (t: HTMLElement) =>
       [[t], [t, '::before'], [t, '::after'], [t.parentElement], ...Array.from(t.children).slice(0, 8).map((n) => [n])]
@@ -211,23 +285,34 @@ export function useChPress(motion: boolean): void {
       }
       return getComputedStyle(document.body).backgroundColor;
     };
+    /**
+     * A hit area laid over what it opens (out of the flow, with nothing of its own inside, as a step's open button sits over
+     * its row): a fill on it would cover the very content it stands for, so it takes no shared look.
+     */
+    const laidOver = (t: HTMLElement, c: CSSStyleDeclaration) => (c.position === 'absolute' || c.position === 'fixed') && !t.firstElementChild && !t.textContent?.trim();
     const stand = (t: HTMLElement) => {
       const c = getComputedStyle(t);
       const svg = t instanceof SVGElement;
+      if (!svg && laidOver(t, c)) return;
       const prop = svg ? 'opacity' : 'backgroundColor';
       const rest = svg ? c.opacity : c.backgroundColor;
       const to = svg ? String((Number(rest) || 1) * PRESS_FALLBACK_DIM) : pressWashColor(surface(t), c.getPropertyValue('--ch-sel'), c.color);
       if (!to) return;
       const anim = t.animate([{ [prop]: rest }, { [prop]: to }], animationsOff() ? { duration: 0, fill: 'forwards' } : { ...PRESS_WASH_IN, fill: 'forwards' });
       anim.id = 'ch-press';
-      fallbacks.set(t, { anim, prop, rest });
+      fallbacks.set(t, { anim, prop });
     };
+    /** Lets the shared look go: from where it shows now back to the control's look at rest as the sheet draws it now. */
     const letGo = (t: HTMLElement) => {
       const f = fallbacks.get(t)!;
       fallbacks.delete(t);
       const now = getComputedStyle(t)[f.prop];
       f.anim.cancel();
-      if (!animationsOff() && now !== f.rest) t.animate([{ [f.prop]: now }, { [f.prop]: f.rest }], PRESS_WASH_OUT).id = 'ch-press';
+      // Read at release, with the look gone: the colour the control rests at now, which a toggle may just have changed.
+      const rest = getComputedStyle(t)[f.prop];
+      if (animationsOff() || now === rest) return;
+      const back = fadeBack(t, f.prop, now);
+      if (back) back.id = 'ch-press';
     };
     const unmark = () => {
       if (!lingering) return;
@@ -327,6 +412,8 @@ export function useChPress(motion: boolean): void {
       el.animate([{ scale: String(fromScale) }, { scale: '1' }], { duration: CH_DUR_MS.release, easing: bezier(CH_EASE_IOS) });
       anim.cancel();
     };
+    // The sheets' pressed rules are read once while the page is idle, so the first press does not wait on them.
+    const idle = typeof window.requestIdleCallback === 'function' ? window.requestIdleCallback(() => void pressRules(document)) : 0;
     const passive = { capture: true, passive: true } as const;
     document.addEventListener('pointerdown', down, passive);
     document.addEventListener('pointermove', move, passive);
@@ -337,6 +424,7 @@ export function useChPress(motion: boolean): void {
     document.addEventListener('visibilitychange', hidden);
     window.addEventListener('blur', cancel);
     return () => {
+      if (idle) window.cancelIdleCallback(idle);
       cancel();
       unmark();
       document.removeEventListener('pointerdown', down, passive);

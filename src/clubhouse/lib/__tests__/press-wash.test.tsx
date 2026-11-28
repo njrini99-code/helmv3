@@ -84,7 +84,7 @@ describe('the row wash (3.8)', () => {
     expect(transition.cancel).toHaveBeenCalled();
   });
 
-  it('letting go fades the wash over release on the iOS curve', () => {
+  it('letting go fades the wash over release on the iOS curve, to the colour the sheet gives the row then', () => {
     render(<Harness />);
     act(() => void row().dispatchEvent(pointer('pointerdown', 'touch')));
     act(() => vi.advanceTimersByTime(300));
@@ -92,7 +92,8 @@ describe('the row wash (3.8)', () => {
     expect(pressed()).toBe(false);
     expect(washes()).toHaveLength(2);
     const [frames, opts] = washes()[1]!;
-    expect(frames).toEqual([{ backgroundColor: WASH }, { backgroundColor: REST }]);
+    // From the wash, with the end left open: the live colour under the fade, never one read before a toggle changed it.
+    expect(frames).toEqual([{ backgroundColor: WASH, offset: 0 }]);
     expect(opts).toEqual(PRESS_WASH_OUT);
     expect(opts).toEqual({ duration: 280, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' });
   });
