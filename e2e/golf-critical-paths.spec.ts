@@ -83,12 +83,20 @@ coachTest.describe('GolfHelm — Coach critical paths', () => {
     await expect(page).toHaveURL(/\/golf\/dashboard\/stats(\?|$)/);
   });
 
+  // The id is on no roster, so once the old address has moved to Stats the page must settle on its designed
+  // not-found state for a coach (CH-5306, NotOnTeam in src/clubhouse/routes/stats.tsx), never on the Clubhouse
+  // route error view (main.ch-notyet, "Stats didn’t load") or an application error.
   for (const old of ['game', 'genome'] as const) {
-    coachTest(`an old player ${old} address opens that player's Stats profile, not an error`, async ({ page }) => {
+    coachTest(`an old player ${old} address opens Stats, where an unknown player is "not on your team", not an error`, async ({ page }) => {
       const id = '00000000-0000-4000-8000-000000000000';
       await page.goto(`/golf/dashboard/players/${id}/${old}`, { waitUntil: 'domcontentloaded' });
       await expect(page).toHaveURL(new RegExp(`/golf/dashboard/stats\\?player=${id}&tab=game`));
-      await expect(page.getByText(/this page couldn't load|application error/i)).toHaveCount(0);
+
+      const notOnTeam = page.locator('[data-ch-code="CH-5306"]');
+      await expect(notOnTeam).toBeVisible({ timeout: 15_000 });
+      await expect(notOnTeam.getByRole('heading', { name: 'That player isn’t on your team' })).toBeVisible();
+      await expect(page.locator('main.ch-notyet[role="alert"]')).toHaveCount(0);
+      await expect(page.getByText(/something went wrong|this page couldn't load|application error/i)).toHaveCount(0);
     });
   }
 
