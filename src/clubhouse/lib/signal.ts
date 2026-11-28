@@ -376,6 +376,7 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
     if (state.config && state.session && (state.config.userId ?? null) !== userId) {
       if (state.queue.length) flushSignals();
       state.session = null;
+      forgetPerson();
     } else if (state.session && !state.config) {
       if (state.session.user !== undefined && state.session.user !== userId) {
         // A session carried on from storage that was someone else's: what waited moves to a new one, numbered from 0.
@@ -416,6 +417,36 @@ export function configureSignals(next: { enabled: boolean; role: string; teamId?
   } catch {
     // Misconfigured: nothing goes out. A held report still runs on its own (chSignalReport's fallback).
   }
+}
+
+/**
+ * The shell's word that nobody here is known any more (a sign-out that stays in this tab, such as the idle timeout's,
+ * which moves to the front door without a reload). What is queued goes out now as the person who was here; from then on
+ * signals wait in memory, as they do before the first configure, until a sign-in says whose they are. Without this the
+ * front door would keep sending under the last person's role, team, page and session (Codex review of #2672).
+ *
+ * The session is kept, with its owner, so the same person signing back in carries on with it and anyone else starts
+ * their own (configureSignals). The failure context and trail are that person's, so they are forgotten. Never throws.
+ */
+export function suspendSignals(): void {
+  try {
+    if (!state.config) return;
+    if (state.queue.length) flushSignals();
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = null;
+    state.queue = [];
+    state.config = null;
+    forgetPerson();
+  } catch {
+    // Nothing more can go out under the old config: the next configure sets it afresh.
+    state.config = null;
+  }
+}
+
+/** What one person did that a later failure would carry: the envelopes sent and the trail. Not someone else's to see. */
+function forgetPerson(): void {
+  state.ring = [];
+  state.trail = [];
 }
 
 /**

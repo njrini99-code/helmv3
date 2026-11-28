@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** E6-E8 (Bridge plan §4.2): the shell configures the queue, counts views and the team switch, numbered taps and rage clicks. */
 
-const signals = vi.hoisted(() => ({ chSignal: vi.fn((_input: unknown) => null), configureSignals: vi.fn(), flushSignals: vi.fn() }));
+const signals = vi.hoisted(() => ({ chSignal: vi.fn((_input: unknown) => null), configureSignals: vi.fn(), flushSignals: vi.fn(), suspendSignals: vi.fn() }));
 vi.mock('../../lib/signal', () => signals);
 vi.mock('next/web-vitals', () => ({ useReportWebVitals: vi.fn() }));
 
@@ -19,6 +19,7 @@ describe('useChSignals', () => {
   beforeEach(() => {
     signals.chSignal.mockClear();
     signals.configureSignals.mockClear();
+    signals.suspendSignals.mockClear();
     vi.mocked(useReportWebVitals).mockClear();
     resetVitalsForTests();
   });
@@ -72,6 +73,21 @@ describe('useChSignals', () => {
     rerender({ hold: false, role: 'coach', userId: 'coach-1' });
     expect(signals.configureSignals).toHaveBeenCalledWith({ enabled: true, role: 'coach', teamId: null, page: 'P015', route: '/golf/login', userId: 'coach-1' });
     expect(kinds()).toEqual([{ kind: 'view' }]);
+  });
+
+  it('tells the queue to forget whoever it was configured for while it holds (a sign-out that stays in the tab)', () => {
+    const { rerender } = renderHook((p: { hold: boolean; pathname: string; role: string; userId: string | null }) => useChSignals({ enabled: true, teamId: TEAM_A, search: '', ...p }), {
+      initialProps: { hold: false, pathname: '/golf/dashboard', role: 'coach', userId: 'coach-1' as string | null },
+    });
+    expect(signals.suspendSignals).not.toHaveBeenCalled();
+    signals.configureSignals.mockClear();
+    rerender({ hold: true, pathname: '/golf/login', role: 'signed-out', userId: null });
+    expect(signals.suspendSignals).toHaveBeenCalledOnce();
+    expect(signals.configureSignals).not.toHaveBeenCalled();
+    // The suspend comes before the view it holds, so that view never goes out as the coach.
+    expect(signals.suspendSignals.mock.invocationCallOrder[0]!).toBeLessThan(signals.chSignal.mock.invocationCallOrder.at(-1)!);
+    rerender({ hold: false, pathname: '/golf/login', role: 'player', userId: 'player-2' });
+    expect(signals.configureSignals).toHaveBeenCalledWith({ enabled: true, role: 'player', teamId: TEAM_A, page: 'P015', route: '/golf/login', userId: 'player-2' });
   });
 
   it('counts the next page after a sign-in as its own view', () => {

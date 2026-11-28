@@ -8,7 +8,7 @@
 import type { Audience, BridgeGraph, GraphScreen } from './graph';
 import { isFailureRow, type HourlyRow } from './live-model';
 import { bucketCounts, sparkFrame } from './issues';
-import type { FeedWindow } from './feed';
+import type { FeedScope, FeedWindow } from './feed';
 import { routeKey } from './route-key';
 
 /** The kinds of signal a page can send, in the order they read best, with their plural words. */
@@ -119,6 +119,14 @@ function people(rows: readonly HourlyRow[]): number {
 }
 
 const total = (rows: readonly HourlyRow[]) => rows.reduce((a, r) => a + Number(r.signal_count || 0), 0);
+
+/**
+ * The hourly rows in the feed's role, device and page filter, so the Pages view lists what Issues and Every error list
+ * (filterFeed). Role and device are the session's, as the feed's are; a page filter keeps that page's rows.
+ */
+export function hourlyInScope<T extends Pick<HourlyRow, 'role' | 'platform' | 'page_id'>>(rows: readonly T[], scope: Pick<FeedScope, 'role' | 'pf' | 'page'>): T[] {
+  return rows.filter((r) => (scope.role === 'all' || r.role === scope.role) && (scope.pf === 'all' || r.platform === scope.pf) && (!scope.page || r.page_id === scope.page));
+}
 
 /** Each of the graph's pages, heard-from first (most people hit by a failure, then most failures, then most views). */
 export function pageHealth(rows: readonly HourlyRow[], graph: Pick<BridgeGraph, 'pages'>, o: { w: FeedWindow; now: number }): PageHealth[] {
@@ -257,12 +265,17 @@ export function screenWords(s: ScreenCount): string | null {
   return `${n} of ${s.total} screens`;
 }
 
-/** The Pages view as Markdown for Copy report: names and counts only, never a person or an id. */
-export function pagesReport(health: readonly PageHealth[], o: { windowLabel: string; pipeLabel: string; coverage?: Coverage | null }): string {
+/**
+ * The Pages view as Markdown for Copy report: names and counts only, never a person or an id. With a filter, `health`
+ * is the filtered list and `filter` says what it shows; what was not heard from stays the coverage's, every role and
+ * device, so a page the filter leaves out is never called silent.
+ */
+export function pagesReport(health: readonly PageHealth[], o: { windowLabel: string; pipeLabel: string; coverage?: Coverage | null; filter?: string | null }): string {
   const heard = health.filter((p) => p.lastAt !== null);
-  const silent = health.filter((p) => p.lastAt === null);
+  const silent = o.coverage ? o.coverage.silent : health.filter((p) => p.lastAt === null).map((p) => p.name);
   const c = o.coverage ?? { heard: heard.length, total: health.length };
   const lines = [`# Page health · ${o.windowLabel}`, '', `${coverageWords(c)} · ${o.pipeLabel}`, ''];
+  if (o.filter) lines.push(`Showing ${o.filter}: ${heard.length} ${heard.length === 1 ? 'page' : 'pages'}.`, '');
   for (const p of heard) {
     const fail =
       p.failures === 0
@@ -272,7 +285,7 @@ export function pagesReport(health: readonly PageHealth[], o: { windowLabel: str
     lines.push(`- **${p.name}**: ${p.views} ${p.views === 1 ? 'view' : 'views'}, ${fail}${p.topCode ? `; most often ${p.topCode}` : ''}${screens ? `; ${screens}` : ''}`);
   }
   if (silent.length > 0) {
-    lines.push('', `Not heard from (${silent.length}): ${silent.map((p) => p.name).join(', ')}. Their zero errors are not a zero.`);
+    lines.push('', `Not heard from (${silent.length}): ${silent.join(', ')}. Their zero errors are not a zero.`);
   }
   const groups = (o.coverage?.silentScreens ?? []).filter((g) => g.screens.length > 0);
   if (o.coverage && groups.length > 0) {

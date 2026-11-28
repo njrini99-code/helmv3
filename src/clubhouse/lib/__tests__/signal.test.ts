@@ -19,6 +19,7 @@ import {
   reportingSignal,
   resetSignalsForTests,
   SIGNAL_ENDPOINT,
+  suspendSignals,
 } from '../signal';
 import { chReport } from '../track';
 
@@ -186,6 +187,65 @@ describe('client signals', () => {
     resetSignalsForTests();
     configureSignals({ enabled: true, role: 'coach', page: 'P007', userId: 'coach-1' });
     expect(chSignal({ kind: 'view' })!.sessionId).not.toBe(player.sessionId);
+  });
+
+  it('sends nothing as the last person once the shell holds after a sign-out, until a sign-in says whose it is', () => {
+    configureSignals({ enabled: true, role: 'coach', page: 'P002', teamId: TEAM, userId: 'coach-1' });
+    const coach = chSignal({ kind: 'view' })!;
+    chSignal({ kind: 'tap', control: 'CTL-P002-001' });
+    suspendSignals();
+    // What was queued went out as the coach, before the queue forgot them.
+    expect(beacons(beacon)).toHaveLength(1);
+    expect(beacons(beacon)[0]!.signals.map((s) => s.sessionId)).toEqual([coach.sessionId, coach.sessionId]);
+    // The front door after the sign-out: nothing leaves the browser, and nothing gets a place to report.
+    expect(chSignal({ kind: 'view' })).toBeNull();
+    expect(chSignal({ kind: 'crash', code: 'CH-1206', message: 'boom' })).toBeNull();
+    vi.advanceTimersByTime(FLUSH_MS);
+    flushSignals();
+    expect(beacons(beacon)).toHaveLength(1);
+    // Someone else signs in: what waited goes out as theirs, in a session of their own, with none of the coach's team,
+    // context or trail.
+    configureSignals({ enabled: true, role: 'player', page: 'P015', userId: 'player-2' });
+    flushSignals();
+    const sent = beacons(beacon).at(-1)!;
+    expect(sent.signals.map((s) => [s.kind, s.seq, s.role, s.page])).toEqual([
+      ['view', 0, 'player', 'P015'],
+      ['crash', 1, 'player', 'P015'],
+    ]);
+    expect(sent.signals[0]!.sessionId).not.toBe(coach.sessionId);
+    expect(sent.signals.some((s) => 'teamId' in s)).toBe(false);
+    expect(sent.context).toBeUndefined();
+    expect(sent.signals[1]!.trail).toEqual(['view']);
+  });
+
+  it('carries on the same session when the same person signs back in after a hold', () => {
+    configureSignals({ enabled: true, role: 'coach', page: 'P002', userId: 'coach-1' });
+    const before = chSignal({ kind: 'view' })!;
+    suspendSignals();
+    chSignal({ kind: 'view' });
+    configureSignals({ enabled: true, role: 'coach', page: 'P015', userId: 'coach-1' });
+    flushSignals();
+    expect(beacons(beacon).at(-1)!.signals[0]).toMatchObject({ sessionId: before.sessionId, seq: before.seq + 1, page: 'P015' });
+  });
+
+  it('does nothing when the shell holds before it ever configured', () => {
+    suspendSignals();
+    expect(chSignal({ kind: 'view' })).toBeNull();
+    configureSignals({ enabled: true, role: 'coach', page: 'P015', userId: 'coach-1' });
+    flushSignals();
+    expect(beacons(beacon).at(-1)!.signals[0]).toMatchObject({ kind: 'view', seq: 0, page: 'P015' });
+  });
+
+  it("gives a new person's failure none of the last person's context when they sign in on the same tab", () => {
+    configureSignals({ enabled: true, role: 'coach', page: 'P007', userId: 'coach-1' });
+    chSignal({ kind: 'view' });
+    flushSignals();
+    configureSignals({ enabled: true, role: 'player', page: 'P007', userId: 'player-2' });
+    chSignal({ kind: 'crash', code: 'CH-1206', message: 'boom' });
+    flushSignals();
+    const sent = beacons(beacon).at(-1)!;
+    expect(sent.context).toBeUndefined();
+    expect(sent.signals[0]!.trail).toBeUndefined();
   });
 
   it('keeps numbering through a reload in the same tab', () => {
