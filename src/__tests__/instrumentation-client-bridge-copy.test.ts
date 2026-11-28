@@ -76,7 +76,7 @@ describe('instrumentation-client: the Bridge', () => {
     const [error, context, severity] = logging.logCapturedErrorToBridge.mock.calls[0]!;
     expect((error as Error).message).toBe('Could not load the rounds');
     expect(context).toMatchObject({ component: 'SentryCapture', capturedBy: 'console' });
-    expect(severity).toBe('medium');
+    expect(severity).toBe('high');
   });
 
   it('writes nothing when a boundary reports the same error in that task', async () => {

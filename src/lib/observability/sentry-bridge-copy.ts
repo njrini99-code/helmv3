@@ -146,7 +146,10 @@ export function bridgeCopyOf(event: ErrorEvent, hint: EventHint | undefined, ori
 
   return {
     error: errorFor(event, hint, named),
-    severity: event.level === 'fatal' ? 'critical' : 'medium',
+    // Error-level copies are filed as errors, like the window handlers' own rows, so they count in the
+    // Bridge's failure totals. logCapturedErrorToBridge still caps self-recovering failures (a stale
+    // chunk, a dropped request) to 'medium', exactly as it does for logError.
+    severity: event.level === 'fatal' ? 'critical' : 'high',
     context: {
       component: 'SentryCapture',
       action: capturedBy,

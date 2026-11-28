@@ -59,7 +59,7 @@ describe('bridgeCopyOf: what Sentry caught by itself and the Bridge did not', ()
         '    at boot (app:///_next/static/chunks/main.js:1:10)',
       ].join('\n'),
     );
-    expect(copy!.severity).toBe('medium');
+    expect(copy!.severity).toBe('high');
     expect(copy!.context).toEqual({ component: 'SentryCapture', action: 'console', capturedBy: 'console', sentryEventId: 'evt-console-1' });
   });
 

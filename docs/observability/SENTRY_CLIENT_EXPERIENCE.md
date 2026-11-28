@@ -271,6 +271,10 @@ reached it (Nov 10 to 19, 2026: 45 Bridge rows against 98 Sentry errors).
 - **Same limits as `logError`.** The copy goes through the same noise, crawler
   and stale-deployment filters and the same per-tab throttle
   (`logCapturedErrorToBridge`), and the route's 30-per-minute cap still holds.
+- **Filed as errors.** An error-level copy is sent as `high` (stored as
+  `error`), so it counts in the Bridge's failure totals and release reports;
+  a fatal one as `critical`. A stale chunk or a dropped request is still
+  capped to a warning, as it is for `logError`.
 - **Release.** Each report carries `NEXT_PUBLIC_SENTRY_RELEASE`, stored in
   `admin_events.release` when it looks like a commit SHA or a version name.
 - **Unhandled rejections keep their Error.** A rejection with an `Error` is

@@ -51,16 +51,22 @@ afterEach(() => {
 describe('logCapturedErrorToBridge', () => {
   it('writes the row and sends nothing more to Sentry, which already has the event', async () => {
     const { logCapturedErrorToBridge } = await import('@/lib/error-logging');
-    logCapturedErrorToBridge(new Error('Could not load the rounds'), { component: 'SentryCapture', action: 'console', capturedBy: 'console' }, 'medium');
+    logCapturedErrorToBridge(new Error('Could not load the rounds'), { component: 'SentryCapture', action: 'console', capturedBy: 'console' }, 'high');
     expect(sentry.captureException).not.toHaveBeenCalled();
     expect(sentry.withScope).not.toHaveBeenCalled();
     const [body] = posted();
     expect(body).toMatchObject({
       message: 'Could not load the rounds',
-      severity: 'medium',
+      severity: 'high',
       release: 'a0480dbc8b97',
       context: { component: 'SentryCapture', capturedBy: 'console' },
     });
+  });
+
+  it('caps a dropped request to a warning, as logError does, so only real failures count as errors', async () => {
+    const { logCapturedErrorToBridge } = await import('@/lib/error-logging');
+    logCapturedErrorToBridge(new TypeError('Failed to fetch'), { component: 'SentryCapture', capturedBy: 'console' }, 'high');
+    expect(posted()).toEqual([expect.objectContaining({ message: 'Failed to fetch', severity: 'medium' })]);
   });
 
   it('marks the error, so a later Sentry copy of the same object is not written twice', async () => {
