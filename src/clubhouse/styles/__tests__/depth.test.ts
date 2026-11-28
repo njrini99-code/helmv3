@@ -38,21 +38,53 @@ describe('the one card', () => {
     }
   });
 
-  it('is the ring and two soft layers by day, and the ring alone at night (audit spec S1.5, Nick 15 Nov 2026)', () => {
-    // Ivory paper on the linen: one hairline edge and one soft shadow, no lit inset rim, no sun drift and no third
-    // ambient layer (the 5-layer recipe from depth.css's sheet read as a floating panel on every card).
+  it('is the ring and two soft layers, by day and at night (audit spec S1.5; depth pass, Nick 27 Nov 2026)', () => {
+    // Ivory paper on the linen: one hairline edge, a contact shadow and one ambient fall; no lit inset rim, no sun drift
+    // and no third ambient layer (the 5-layer recipe from depth.css's sheet read as a floating panel on every card).
+    // 27 Nov ("more depth, more modern premium look"): the same two layers, set to read.
     const [day, night] = decls('--ch-elevation-card');
-    expect(day).toBe('0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)');
-    expect(drops(day!)).toEqual(['1px 2px 0.05', '4px 12px -4px 0.08']);
+    expect(day).toBe('0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.07), 0 6px 16px -6px rgb(28 25 18 / 0.14)');
+    expect(drops(day!)).toEqual(['1px 2px 0.07', '6px 16px -6px 0.14']);
     expect(day).not.toMatch(/inset|--ch-light-(rim|drift)/);
-    // Dark cards are carried by tone and ring: a shadow does not read on near-black.
-    expect(night).toBe('0 0 0 1px var(--ch-card-ring)');
+    // At night the card is lighter than its page and casts as well, so the step reads by tone and by shadow.
+    expect(night).toBe('0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(0 0 0 / 0.28), 0 6px 16px -6px rgb(0 0 0 / 0.44)');
+    expect(drops(night!)).toEqual(['1px 2px 0.28', '6px 16px -6px 0.44']);
+    expect(night).not.toMatch(/inset/);
   });
 
-  it('casts the same drops with no ring or lit edge on a dark or branded surface', () => {
-    const cast = decls('--ch-elevation-cast')[0]!;
-    expect(drops(cast)).toEqual(drops(decls('--ch-elevation-card')[0]!));
-    expect(cast).not.toMatch(/inset|0 0 0 1px/);
+  it('keeps raised a clear step above the card, by day and at night', () => {
+    const alpha = (shadow: string) => Math.max(...drops(shadow).map((d) => Number(d.split(' ').pop())));
+    const reach = (shadow: string) => Math.max(...drops(shadow).map((d) => Number(d.split(' ')[1]!.replace('px', ''))));
+    const cards = decls('--ch-elevation-card');
+    const raised = decls('--ch-elevation-raised');
+    expect(raised).toHaveLength(2);
+    raised.forEach((r, i) => {
+      expect(alpha(r), `theme ${i}`).toBeGreaterThan(alpha(cards[i]!));
+      expect(reach(r), `theme ${i}`).toBeGreaterThan(reach(cards[i]!));
+      expect(drops(r), `theme ${i}`).toHaveLength(2);
+    });
+  });
+
+  it('casts the same drops with no ring or lit edge on a dark or branded surface, by day and at night', () => {
+    const casts = decls('--ch-elevation-cast');
+    const cards = decls('--ch-elevation-card');
+    expect(casts).toHaveLength(2);
+    casts.forEach((cast, i) => {
+      expect(drops(cast)).toEqual(drops(cards[i]!));
+      expect(cast).not.toMatch(/inset|0 0 0 1px/);
+    });
+  });
+
+  it("edges a tinted icon well with the card's own ring, inset (depth pass, 27 Nov 2026)", () => {
+    expect(decls('--ch-icon-well-edge')).toEqual(['inset 0 0 0 1px var(--ch-card-ring)']);
+    const shell = read('src/clubhouse/styles/shell.css');
+    for (const sel of ['.ch-more__ic', '.ch-tsw__ic']) {
+      let edge: string | undefined;
+      postcss.parse(shell).walkRules((r) => {
+        if (r.selector === sel && r.parent?.type === 'root') r.walkDecls('box-shadow', (d) => void (edge = d.value));
+      });
+      expect(edge, sel).toBe('var(--ch-icon-well-edge)');
+    }
   });
 
   it('is the only depth a shared Surface rule sets', () => {

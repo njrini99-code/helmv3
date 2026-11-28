@@ -14,6 +14,7 @@ describe('scoreChangeChip', () => {
     expect(c.direction).toBe('flat');
     expect(c.chip).toMatch(/^[−-]0\.8$/);
     expect(c.words).toBe('No clear change vs previous 10');
+    expect(c.vs).toBe('vs previous 10');
   });
 
   it('past two standard errors (stats and charts audit 2026-11-15, CH-05): the arrow, "lower", and the gain tone for a lower score', () => {

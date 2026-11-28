@@ -87,7 +87,7 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 |---|---|---|---|---|---|
 | `--ch-card-ring` | `rgb(28 25 18 / 0.08)` | `rgb(241 236 223 / 0.08)` | The card edge, drawn as `0 0 0 1px` (S1.4); a boundary, not a 3:1 line | 1.17 on card-bg, 1.17 on workspace | 1.25 on card-bg, 1.22 on workspace |
 | `--ch-separator` | `rgb(28 27 24 / 0.1)` | `rgb(241 236 223 / 0.1)` | Row hairlines, inset 16 from the leading edge | 1.22 on card-bg | 1.33 on card-bg |
-| `--ch-border-control` | `#85817a` | `#807b6e` | Inputs, search, chips, switch off-ring, chart track rings (S1.8, 3:1) | 3.62 on card-bg, 3.02 on workspace | 3.61 on card-bg, 4.26 on workspace |
+| `--ch-border-control` | `#7d7972` | `#807b6e` | Inputs, search, chips, switch off-ring, chart track rings (S1.8, 3:1) | 4.04 on card-bg, 3.38 on workspace | 3.61 on card-bg, 4.26 on workspace |
 | `--ch-border-focus` | `#1f6b45` | `#6db488` | Keyboard focus ring, 2px | 6.04 on card-bg, 5.04 on workspace | 6.19 on card-bg, 7.30 on workspace |
 
 #### Data marks
@@ -136,9 +136,9 @@ The page paint, once for every page, pushed screen and page copy: `var(--ch-ligh
 | Token | Light | Dark | Role |
 |---|---|---|---|
 | `--ch-elevation-flat` | `0 0 0 0 transparent` | same | Flat: on the surface, no lift (pills, chips, strips, bubbles) |
-| `--ch-elevation-card` | `0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08)` | `0 0 0 1px rgb(241 236 223 / 0.08)` | Card: every card (MOTION-AND-VISUAL 4.6) |
-| `--ch-elevation-raised` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)` | Raised: menus, the palette, pins, a lifted control (MOTION-AND-VISUAL 4.6) |
-| `--ch-elevation-overlay` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55)` | Overlay: sheets, dialogs, popovers, toasts (the raised step today) |
+| `--ch-elevation-card` | `0 0 0 1px rgb(28 25 18 / 0.08), 0 1px 2px rgb(28 25 18 / 0.07), 0 6px 16px -6px rgb(28 25 18 / 0.14)` | `0 0 0 1px rgb(241 236 223 / 0.08), 0 1px 2px rgb(0 0 0 / 0.28), 0 6px 16px -6px rgb(0 0 0 / 0.44)` | Card: every card (MOTION-AND-VISUAL 4.6) |
+| `--ch-elevation-raised` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.08), 0 16px 36px -10px rgb(28 25 18 / 0.22)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 2px 6px rgb(0 0 0 / 0.36), 0 16px 36px -10px rgb(0 0 0 / 0.6)` | Raised: menus, the palette, pins, a lifted control (MOTION-AND-VISUAL 4.6) |
+| `--ch-elevation-overlay` | `0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.08), 0 16px 36px -10px rgb(28 25 18 / 0.22)` | `0 0 0 1px rgb(241 236 223 / 0.1), 0 2px 6px rgb(0 0 0 / 0.36), 0 16px 36px -10px rgb(0 0 0 / 0.6)` | Overlay: sheets, dialogs, popovers, toasts (the raised step today) |
 | `--ch-scrim` | `rgb(28 25 18 / 0.24)` | `rgb(2 6 4 / 0.58)` | The scrim under a sheet or dialog |
 
 #### Motion roles
@@ -196,7 +196,7 @@ Sizes are at the default Text Size: every role multiplies by `--ch-type-k`, so t
 |---|---|---|---|---|
 | Page | `--ch-page-paint` (light, paper tint, linen) | none | n/a | Every page, pushed screen and page copy |
 | Recessed page | `--ch-bg-page`, the linen | none | n/a | Desktop main column, inset grouped lists |
-| Card | `--ch-card-bg`, ivory paper | `--ch-elevation-card`: ring plus two soft layers by day, ring only at night | 16 (`--ch-radius-lg`) | Every content group; `ui/Surface.tsx` |
+| Card | `--ch-card-bg`, ivory paper | `--ch-elevation-card`: ring plus two soft layers (a contact shadow and one ambient fall), by day and at night | 16 (`--ch-radius-lg`) | Every content group; `ui/Surface.tsx` |
 | Tile or well in a card | `--ch-bg-subtle` | a hairline, or the toggle well's inset | 12 | Evidence bands, figure tiles, the search field |
 | Raised | `--ch-bg-elevated` | `--ch-elevation-raised` | 12 or 16 | Menus, popovers, the palette, pins, the floating compose key, toasts |
 | Sheet | `--ch-sheet-bg` (the card) over `--ch-scrim` (`rgb(28 25 18 / 0.24)` by day) | `--ch-elevation-raised` (`--ch-elevation-sheet` names it) | 20 (`--ch-radius-xl`) | Sheets and dialogs |

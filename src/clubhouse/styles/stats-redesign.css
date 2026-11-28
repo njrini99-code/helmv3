@@ -200,6 +200,27 @@
   color: var(--ch-shs-s-ink-3);
 }
 
+/* The feature card's window under its title (owner's screenshot, 27 Nov 2026): at 390 "Each player’s last 10" beside "Scoring
+   average" broke the title over two lines. The title and chevron keep the first row; the window takes the next, under the title's
+   words, at every Text Size. */
+.ch-shs-sum.ch-shs-feature .ch-shs-ah:has(> .ch-shs-ah__meta) {
+  flex-wrap: wrap;
+  row-gap: var(--ch-space-0_5);
+}
+.ch-shs-sum.ch-shs-feature .ch-shs-ah > .ch-shs-ah__meta {
+  order: 1;
+  flex: 1 1 100%;
+  margin-left: 0;
+  white-space: normal;
+}
+.ch-shs-sum.ch-shs-feature .ch-shs-ah:has(h3 > .ch-shs-pi) > .ch-shs-ah__meta {
+  margin-left: calc(26 * var(--ch-type-k) + var(--ch-space-2));
+}
+.ch-shs.is-big .ch-shs-sum.ch-shs-feature .ch-shs-ah h3,
+.ch-shs-screen.is-big .ch-shs-sum.ch-shs-feature .ch-shs-ah h3 {
+  flex: 1 1 auto;
+}
+
 /* Big Text Size (1.24 and up): the title takes its own line, the meta and chevron the next. */
 .ch-shs.is-big .ch-shs-ah,
 .ch-shs-screen.is-big .ch-shs-ah {
@@ -1731,7 +1752,8 @@ li + li > .ch-shs-rrow::before {
   border-radius: var(--ch-radius-full);
   background: var(--ch-shs-s-ink);
 }
-/* The dashed mean's key, under the team chart (F-0009): on the line, the scoring line ran through its words. */
+/* The team chart's key, under the drawing: which way is better, and par's dash when the chart reads against par (F-0009: on the
+   line, the scoring line ran through its words). The preview draws no second average (owner's screenshot, 27 Nov 2026). */
 .ch-shs-mean-key {
   display: flex;
   align-items: center;
@@ -1814,6 +1836,45 @@ li + li > .ch-shs-rrow::before {
   fill: var(--ch-shs-s-card);
   stroke: var(--ch-shs-s-ink);
   stroke-width: 1.5;
+}
+/* The team card's round days as bars from par (owner, 27 Nov 2026). Every fill is opaque, mixed on the card's own green, and holds
+   3:1 or better on it by day and by night: an older day over par is 65% of the plate's third ink (3.76 day, 3.65 night), an older
+   day under par 65% of the gain fill (3.40, 3.29), and the newest day full strength (ink 11.3 and 10.8; gain fill 5.87 and 5.60).
+   A one-round day keeps its colour as an outline (W26). Par is a solid line: the bars stand on it, so it is their zero, not a guide. */
+.ch-shs-tbar {
+  --ch-shs-tbar: color-mix(in srgb, var(--ch-shs-s-ink-3) 65%, var(--ch-shs-s-card));
+  fill: var(--ch-shs-tbar);
+}
+.ch-shs-tbar.is-under {
+  --ch-shs-tbar: color-mix(in srgb, var(--ch-shs-s-gain-fill) 65%, var(--ch-shs-s-card));
+}
+.ch-shs-tbar.is-last {
+  --ch-shs-tbar: var(--ch-shs-s-ink);
+}
+.ch-shs-tbar.is-last.is-under {
+  --ch-shs-tbar: var(--ch-shs-s-gain-fill);
+}
+.ch-shs-tbar.is-one {
+  fill: var(--ch-shs-s-card);
+  stroke: var(--ch-shs-tbar);
+  stroke-width: 1.5;
+}
+.ch-shs-tbars__par {
+  stroke: var(--ch-shs-s-ink-3);
+  stroke-width: 1;
+}
+/* A wide card (a desk, an iPad) sets the figure and the bars side by side, as Health's trend cards do on iPad: at 1280 the bars ran
+   936 wide under a figure that used a third of the row. A phone keeps one column. */
+@container (min-width: 600px) {
+  .ch-shs-tscore:has(> .ch-shs-tbars) {
+    display: grid;
+    grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+    column-gap: var(--ch-space-8);
+    align-items: start;
+  }
+  .ch-shs-tscore > .ch-shs-tbars > .ch-shs-chart {
+    margin-top: var(--ch-space-1);
+  }
 }
 .ch-shs-scrub {
   stroke: var(--ch-shs-s-ink);

@@ -243,7 +243,7 @@
   --ch-border-subtle: rgb(28 25 18 / 0.13);
   /* An input, a search field or a chip's edge (S1.8): opaque, 3:1 at the darkest point of the canvas (3.04:1) and 3.7:1 on
      the card, so a control's boundary is seen (WCAG 1.4.11). Also the stroke for an icon that must be seen. */
-  --ch-border-control: #85817a;
+  --ch-border-control: #7d7972; /* 3.38:1 on the page and 4.0:1 on the card (was #85817a, 3.02:1 on the page) */
   --ch-border-strong: rgb(28 25 18 / 0.24);
   /* A seam between sections of one surface: an ink line with a lit line beside it, so it reads as an engraved join,
      not a faint hairline (owner, 2026-10-06: "add more borders in between the cards"). */
@@ -688,8 +688,12 @@
      under the card and never hazes the page. The face is the flat --ch-card-bg: text never sits on a gradient. Every
      card at rest reads this value. --ch-card-shadow is its name; the older names (reading, lifted, the Messages and
      Roster lanes' own) are the same recipe and remain only for the files that still spell them. */
-  /* S1.5 (Nov 15 audit): one hairline ring and two soft layers. No lit inset rim, no sun drift, no third ambient fall. */
-  --ch-elevation-card: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
+  /* S1.5 (Nov 15 audit): one hairline ring and two soft layers. No lit inset rim, no sun drift, no third ambient fall.
+     Depth pass (Nick, 27 Nov 2026: "more depth, more modern premium look"): the same two layers, set to read. A firmer
+     contact shadow (0.07) and an ambient fall that drops further (6px, 16px blur, -6px spread, 0.14) so the card lifts
+     off the linen below its edge and never hazes the page beside it (layered key and ambient shadows: Josh Comeau,
+     "Designing beautiful shadows"; Fluent 2 elevation; Stripe's two-layer tinted shadow). */
+  --ch-elevation-card: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(28 25 18 / 0.07), 0 6px 16px -6px rgb(28 25 18 / 0.14);
   --ch-glass-bg: color-mix(in oklab, var(--ch-workspace) 78%, transparent);
   /* Glass is for the floating navigation only (top bar, tab bar); 20px reads as frosted without the muddy edge. */
   --ch-glass-blur: 20px;
@@ -714,14 +718,15 @@
   --ch-elevation-lifted: var(--ch-elevation-card);
   /* The card's three drops alone, for dark and branded surfaces where a white top edge or ink hairline would draw a
      line (the green hero, the green Up next card). */
-  --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.05), 0 4px 12px -4px rgb(28 25 18 / 0.08);
+  --ch-elevation-cast: 0 1px 2px rgb(28 25 18 / 0.07), 0 6px 16px -6px rgb(28 25 18 / 0.14);
   /* A card that opens something, under the pointer: the same card with its ring a step darker, not a new elevation. */
   --ch-elevation-reading-hover: var(--ch-elevation-card);
   --ch-elevation-reading-accent: var(--ch-elevation-card);
   /* The page empty's medallion tile, cast on its rings (Tournaments' first run; the route error and every page empty,
      shell.css .ch-empty-page__ic / .ch-es__tile; W19 B). The danger tone casts its own. */
   /* L-047: one quiet cast, not a 30px drop that muddies the ring under it. */
-  --ch-medallion-shadow: 0 1px 2px rgb(11 58 37 / 0.18), 0 4px 10px -4px rgb(11 58 37 / 0.28), inset 0 1px 0 rgb(255 255 255 / 0.1);
+  /* Depth pass (27 Nov): the tile sits a step above the card it shares a page with, still one quiet green cast. */
+  --ch-medallion-shadow: 0 1px 2px rgb(11 58 37 / 0.22), 0 6px 14px -6px rgb(11 58 37 / 0.36), inset 0 1px 0 rgb(255 255 255 / 0.1);
   /* A control's contact shadow only: no lit white rim and no sun drift (S1.5, nothing white). */
   /* Named elevations (dsx-07, design lab foundation 2): four, and only four, for anything that sits on the page.
      flat: on the surface, no lift (a pill, a chip, a strip). card: a card at rest. raised: what floats (a menu, a
@@ -734,7 +739,8 @@
   /* Row 40: three elevation levels. Reading (a card at rest, above), raised (a menu, a popover, a lifted control) and
      overlay (a sheet, a dialog, below). Floating was the raised level's old name and folds into it. */
   /* S1.5b: menus, popovers, hover cards, toasts and the floating compose button, on --ch-bg-elevated. */
-  --ch-elevation-raised: 0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.06), 0 12px 32px -8px rgb(28 25 18 / 0.18);
+  /* Depth pass (27 Nov): kept a clear step above the deeper card (0.22 against the card's 0.14, a longer fall). */
+  --ch-elevation-raised: 0 0 0 1px rgb(28 25 18 / 0.1), 0 2px 6px rgb(28 25 18 / 0.08), 0 16px 36px -10px rgb(28 25 18 / 0.22);
   --ch-elevation-floating-focus: 0 0 0 1px var(--ch-border-focus), 0 0 0 4px var(--ch-focus-halo),
     var(--ch-elevation-raised);
   /* Row 40: tinted drops. A surface on the green or ink casts its shadow in its own colour (an ink shadow greys on
@@ -782,6 +788,9 @@
   --ch-separator: rgb(28 27 24 / 0.1);
   /* S1.4: the card's edge, 1.28:1 against the card on the canvas. */
   --ch-card-ring: rgb(28 25 18 / 0.08);
+  /* A tinted icon well's edge (the shell's More list and team switcher): the card's own ring, inset, so a well that is
+     1.07:1 on the card reads as an object. A ring, not an elevation and not a lit rim. */
+  --ch-icon-well-edge: inset 0 0 0 1px var(--ch-card-ring);
   --ch-card-shadow: var(--ch-elevation-card);
   --ch-gain: var(--ch-chart-gain);
   --ch-loss: var(--ch-chart-loss);
@@ -825,7 +834,7 @@
   --ch-chip-loss-bg: #f7f0e6;
   --ch-chip-flat-bg: #f2f1ee;
   --ch-chip-danger-bg: #f7e8e5;
-  --ch-chart-bogey: #b3884a;
+  --ch-chart-bogey: #a87d40; /* 3.46:1 on the card (was #b3884a, 3.00:1); its numeral in ink-950 holds 5.0:1 */
   --ch-chart-par: #c9c2b1;
   --ch-champagne-dot: #e2c98f;
   --ch-stats-accent: #155a39;
@@ -1372,10 +1381,12 @@ html[data-fw-theme='dark'] [data-ui='clubhouse'] {
   /* The one card at night: a card is lighter than its page, so the ring and the lit edge carry it and the drops
      only deepen it (depth.css has no night values; these are the reading surface's, unchanged). */
   /* S1.5: a night card is carried by tone and its ring; shadows do not read on near-black. */
-  --ch-elevation-card: 0 0 0 1px var(--ch-card-ring);
-  --ch-elevation-cast: 0 1px 2px rgb(0 0 0 / 0.3), 0 4px 12px -4px rgb(0 0 0 / 0.4);
+  /* Depth pass (27 Nov): a night card is lighter than its page and now also casts, as raised surfaces do in dark on
+     Atlassian's and Material's systems (Apple's elevated base is the lighter tone; a shadow below it deepens the step). */
+  --ch-elevation-card: 0 0 0 1px var(--ch-card-ring), 0 1px 2px rgb(0 0 0 / 0.28), 0 6px 16px -6px rgb(0 0 0 / 0.44);
+  --ch-elevation-cast: 0 1px 2px rgb(0 0 0 / 0.28), 0 6px 16px -6px rgb(0 0 0 / 0.44);
   /* S1.5b at night, on --ch-bg-elevated. */
-  --ch-elevation-raised: 0 0 0 1px rgb(241 236 223 / 0.1), 0 12px 32px -8px rgb(0 0 0 / 0.55);
+  --ch-elevation-raised: 0 0 0 1px rgb(241 236 223 / 0.1), 0 2px 6px rgb(0 0 0 / 0.36), 0 16px 36px -10px rgb(0 0 0 / 0.6);
   --ch-ledger-rule: rgb(205 187 142 / 0.15);
   --ch-ledger-rule-soft: rgb(205 187 142 / 0.08);
   --ch-ledger-rule-strong: rgb(205 187 142 / 0.42);
